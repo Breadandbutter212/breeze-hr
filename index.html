@@ -1,0 +1,1730 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breeze HR — Operations</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root {
+  --ink: #1A1917;
+  --ink2: #5C5954;
+  --ink3: #A09D98;
+  --paper: #FAFAF8;
+  --surface: #FFFFFF;
+  --surface2: #F2F1EE;
+  --border: #E4E1DA;
+  --border2: #CCC9C0;
+  --sage: #2A6049;
+  --sage-bg: #EAF3EC;
+  --sage-mid: #C8E3CC;
+  --amber: #8A5212;
+  --amber-bg: #FDF3E3;
+  --blue: #1A3F7A;
+  --blue-bg: #EBF0FA;
+  --purple: #4A1F8A;
+  --purple-bg: #F0EBFC;
+  --red: #861A1A;
+  --red-bg: #FAEAEA;
+  --r: 8px;
+  --r-sm: 5px;
+  --r-lg: 12px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+  --shadow-lg: 0 8px 32px rgba(0,0,0,0.10);
+}
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; }
+body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(--ink); font-size: 13px; line-height: 1.5; }
+::-webkit-scrollbar { width: 4px; }
+::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+/* ── SHELL ── */
+.shell { display: flex; height: 100vh; }
+
+/* ── SIDEBAR ── */
+.sidebar { width: 210px; flex-shrink: 0; background: var(--ink); display: flex; flex-direction: column; }
+.sidebar-logo { padding: 18px 16px 14px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 9px; }
+.logo-icon { width: 26px; height: 26px; background: var(--sage); border-radius: 6px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-name { font-size: 15px; font-weight: 600; color: white; letter-spacing: -0.02em; }
+.logo-sub { font-size: 9px; color: rgba(255,255,255,0.3); letter-spacing: 0.06em; margin-top: 1px; }
+.nav { padding: 12px 10px; flex: 1; }
+.nav-label { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.25); padding: 0 7px; margin: 10px 0 4px; }
+.nav-label:first-child { margin-top: 0; }
+.ni { display: flex; align-items: center; gap: 8px; padding: 7px 7px; border-radius: var(--r-sm); color: rgba(255,255,255,0.5); cursor: pointer; font-size: 12px; transition: all 0.12s; user-select: none; }
+.ni:hover { background: rgba(255,255,255,0.06); color: rgba(255,255,255,0.8); }
+.ni.active { background: rgba(255,255,255,0.1); color: white; font-weight: 500; }
+.ni svg { flex-shrink: 0; opacity: 0.6; }
+.ni.active svg { opacity: 1; }
+.ni-badge { margin-left: auto; background: var(--sage); color: white; font-size: 10px; font-family: 'DM Mono', monospace; padding: 1px 6px; border-radius: 8px; }
+.sidebar-foot { padding: 10px; border-top: 1px solid rgba(255,255,255,0.07); }
+.int-pill { display: flex; align-items: center; gap: 6px; padding: 6px 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.04); font-size: 11px; color: rgba(255,255,255,0.4); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #4CAF8A; flex-shrink: 0; animation: blink 2.5s infinite; }
+@keyframes blink { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+/* ── MAIN ── */
+.main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
+.view { display: none; flex: 1; overflow: hidden; }
+.view.active { display: flex; }
+
+/* ══════════════════════════════
+   INTAKE VIEW
+══════════════════════════════ */
+.intake-view { flex-direction: row; }
+
+/* LEFT — message list */
+.msg-col { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
+
+.source-bar { display: flex; border-bottom: 1px solid var(--border); }
+.src-tab { flex: 1; padding: 11px 0; text-align: center; font-size: 12px; font-weight: 500; color: var(--ink3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.src-tab:hover { color: var(--ink2); }
+.src-tab.active { color: var(--ink); border-bottom-color: var(--sage); }
+.src-tab .dot { width: 6px; height: 6px; border-radius: 50%; }
+.slack-dot { background: #4A90D9; }
+.email-dot { background: #E8A838; }
+
+.status-bar { display: flex; gap: 2px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
+.st-chip { font-size: 11px; padding: 3px 9px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; font-family: inherit; transition: all 0.1s; }
+.st-chip:hover { color: var(--ink2); border-color: var(--border2); }
+.st-chip.active { background: var(--ink); color: white; border-color: var(--ink); }
+.st-chip .n { font-family: 'DM Mono', monospace; }
+
+.msg-list { flex: 1; overflow-y: auto; }
+.msg-item { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; position: relative; }
+.msg-item:hover { background: var(--surface2); }
+.msg-item.active { background: var(--sage-bg); border-left: 3px solid var(--sage); padding-left: 11px; }
+.msg-item.active { background: var(--sage-bg); border-left: 3px solid var(--sage); padding-left: 11px; }
+.msg-item.active .mi-name { color: var(--sage); }
+.msg-item.unread-item .mi-name { font-weight: 700; color: var(--ink); }
+.msg-item.unread-item .mi-subject { color: var(--ink); font-weight: 500; }
+.mi-row1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+.mi-name { font-size: 13px; font-weight: 500; color: var(--ink); }
+.mi-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; }
+.mi-subject { font-size: 12px; color: var(--ink2); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-preview { font-size: 12px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.mi-dot-row { display: flex; align-items: center; gap: 5px; margin-top: 5px; }
+.tag { font-size: 10px; padding: 1px 6px; border-radius: 8px; font-weight: 500; }
+.tag-new { background: #FFF3CD; color: #7A5800; }
+.tag-open { background: var(--amber-bg); color: var(--amber); }
+.tag-inprog { background: var(--blue-bg); color: var(--blue); }
+.tag-resolved { background: var(--sage-bg); color: var(--sage); }
+.tag-type { background: var(--surface2); color: var(--ink2); border: 1px solid var(--border); }
+.unread { width: 7px; height: 7px; border-radius: 50%; background: var(--sage); flex-shrink: 0; }
+
+.log-btn { margin: 10px 12px; padding: 8px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.log-btn:hover { border-color: var(--sage); color: var(--sage); background: var(--sage-bg); }
+
+/* RIGHT — detail */
+.detail-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--paper); min-width: 0; }
+.detail-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink3); text-align: center; padding: 48px; }
+.detail-empty p { font-size: 13px; max-width: 260px; line-height: 1.7; }
+#detailContent { flex: 1; min-height: 0; overflow: hidden; }
+
+/* Detail header */
+.dh { padding: 14px 18px 12px; border-bottom: 1px solid var(--border); background: var(--surface); }
+.dh-from { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dh-av { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+.dh-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.dh-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+.dh-subject { font-size: 14px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 8px; line-height: 1.4; }
+.dh-tags { display: flex; gap: 5px; margin-bottom: 10px; }
+.dh-actions { display: flex; gap: 5px; }
+
+/* Original message */
+.orig-bubble { background: var(--surface2); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 14px; font-size: 13px; color: var(--ink); line-height: 1.65; }
+
+/* AI response block */
+.ai-block { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--shadow); }
+.ai-block-head { padding: 10px 14px; display: flex; align-items: center; gap: 8px; background: linear-gradient(135deg, #EBF0FA, #EAF3EC); border-bottom: 1px solid var(--border); }
+.ai-chip { width: 24px; height: 24px; border-radius: 5px; background: var(--ink); color: white; display: flex; align-items: center; justify-content: center; font-size: 11px; flex-shrink: 0; }
+.ai-head-title { font-size: 12px; font-weight: 600; color: var(--ink); }
+.ai-head-sub { font-size: 11px; color: var(--ink2); margin-top: 1px; }
+.ai-type-pill { margin-left: auto; font-size: 10px; padding: 2px 8px; border-radius: 10px; font-weight: 500; }
+.atp-answer { background: var(--sage-bg); color: var(--sage); }
+.atp-clarify { background: var(--amber-bg); color: var(--amber); }
+
+.ai-block-body { padding: 14px; }
+
+/* Draft answer */
+.draft-answer { background: var(--paper); border: 1px solid var(--border); border-radius: var(--r); padding: 12px 13px; font-size: 13px; color: var(--ink); line-height: 1.65; margin-bottom: 10px; white-space: pre-wrap; outline: none; }
+.draft-answer:focus { border-color: var(--sage); }
+.draft-answer[contenteditable="true"] { cursor: text; }
+
+/* Clarify questions */
+.clarify-qs { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+.cq { display: flex; align-items: flex-start; gap: 9px; padding: 9px 11px; background: var(--paper); border: 1px solid var(--border); border-radius: var(--r); cursor: pointer; transition: all 0.12s; }
+.cq:hover { border-color: var(--sage); background: var(--sage-bg); }
+.cq.sel { border-color: var(--sage); background: var(--sage-bg); }
+.cq-cb { width: 15px; height: 15px; border-radius: 3px; border: 1.5px solid var(--border2); flex-shrink: 0; margin-top: 1px; display: flex; align-items: center; justify-content: center; transition: all 0.12s; }
+.cq.sel .cq-cb { background: var(--sage); border-color: var(--sage); }
+.cq.sel .cq-cb::after { content: '✓'; font-size: 8px; color: white; }
+.cq-text { font-size: 12px; color: var(--ink); line-height: 1.5; flex: 1; }
+
+.ai-foot { display: flex; align-items: center; justify-content: space-between; padding-top: 10px; border-top: 1px solid var(--border); }
+.ai-note { font-size: 10px; color: var(--ink3); font-style: italic; max-width: 260px; }
+.ai-foot-actions { display: flex; gap: 5px; }
+
+/* Policy ref */
+.policy-ref { display: flex; align-items: center; gap: 6px; padding: 7px 10px; background: var(--paper); border: 1px solid var(--border); border-radius: var(--r-sm); font-size: 11px; color: var(--ink2); margin-bottom: 10px; }
+.policy-ref svg { flex-shrink: 0; color: var(--ink3); }
+.policy-ref strong { color: var(--ink); }
+
+/* Thread */
+.thread-wrap { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); overflow: hidden; }
+.thread-head { padding: 9px 12px; border-bottom: 1px solid var(--border); font-size: 11px; font-weight: 600; color: var(--ink2); letter-spacing: 0.02em; }
+.thread-body { padding: 10px; display: flex; flex-direction: column; gap: 6px; }
+.tm { padding: 9px 11px; border-radius: var(--r-sm); font-size: 12px; line-height: 1.6; border: 1px solid transparent; }
+.tm-in { background: var(--surface2); border-color: var(--border); }
+.tm-out { background: var(--sage-bg); border-color: var(--sage-mid); }
+.tm-sender { font-size: 10px; font-weight: 600; color: var(--ink2); margin-bottom: 3px; display: flex; justify-content: space-between; }
+.tm-sender span { font-weight: 400; color: var(--ink3); }
+
+.detail-body { flex: 1; overflow-y: auto; padding: 0; display: flex; flex-direction: column; }
+
+/* ── EMAIL STYLE DETAIL ── */
+.email-header {
+  padding: 12px 18px 10px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+}
+/* Single meta line: avatar · name · via · time · type dropdown · status dropdown */
+.eh-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.eh-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.eh-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.eh-sep { color: var(--border2); font-size: 12px; }
+.eh-via { font-size: 11px; color: var(--ink2); display: flex; align-items: center; gap: 3px; }
+.eh-time { font-size: 11px; color: var(--ink3); }
+.eh-subject { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: -0.01em; margin-bottom: 8px; line-height: 1.4; }
+.eh-controls { display: flex; align-items: center; gap: 6px; }
+
+/* detailContent inner wrapper */
+.detail-inner { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+/* Scrollable message body */
+.email-body { flex: 1; min-height: 0; max-height: 280px; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+
+/* Original message block — email style */
+.orig-email {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--r-lg);
+  overflow: hidden;
+}
+.orig-email-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface2);
+}
+.orig-email-from { display: flex; align-items: center; gap: 8px; }
+.oe-av { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
+.oe-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.oe-time { font-size: 11px; color: var(--ink3); }
+.orig-email-body { padding: 14px 16px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; }
+
+/* ── COMPOSE / ASK KONO BOTTOM PANEL ── */
+.compose-panel {
+  flex-shrink: 0;
+  border-top: 1px solid var(--border);
+  background: var(--surface);
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 320px;
+  overflow: hidden;
+}
+/* Mode toggle */
+.compose-toggle {
+  display: flex;
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+}
+.ctab {
+  flex: 1;
+  padding: 8px 0;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  color: var(--ink3);
+  border-bottom: 2px solid transparent;
+  transition: all 0.12s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  user-select: none;
+}
+.ctab:hover { color: var(--ink2); background: var(--surface2); }
+.ctab.active { color: var(--ink); border-bottom-color: var(--sage); background: var(--surface); }
+.ctab.active.breeze-tab { color: var(--blue); border-bottom-color: var(--blue); }
+
+/* Reply pane — now contains Kono suggestion above the textarea */
+.reply-pane { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.reply-kono-suggestion {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  background: linear-gradient(135deg, #EBF0FA 0%, #EAF3EC 100%);
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--ink2);
+  line-height: 1.6;
+}
+.rks-head { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.rks-icon { width: 18px; height: 18px; border-radius: 4px; background: var(--ink); color: white; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
+.rks-title { font-size: 11px; font-weight: 600; color: var(--ink); }
+.rks-source { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink2); margin-bottom: 5px; }
+.rks-source a { color: var(--blue); text-decoration: underline; cursor: pointer; }
+.rks-advice { font-size: 12px; color: var(--ink); line-height: 1.6; }
+.rks-advice strong { font-weight: 600; }
+
+.reply-to-row { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.reply-to-label { font-size: 11px; color: var(--ink3); width: 22px; flex-shrink: 0; }
+.reply-to-val { font-size: 12px; color: var(--ink); font-weight: 500; flex: 1; }
+.reply-type-select {
+  font-size: 11px;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 3px 6px;
+  font-family: inherit;
+  color: var(--ink2);
+  background: var(--paper);
+  outline: none;
+  cursor: pointer;
+}
+.reply-type-select:focus { border-color: var(--sage); }
+.reply-ta {
+  width: 100%;
+  border: none;
+  outline: none;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-family: inherit;
+  color: var(--ink);
+  background: transparent;
+  resize: none;
+  flex: 1;
+  min-height: 0;
+  line-height: 1.6;
+  overflow-y: auto;
+}
+.reply-actions-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 7px 14px;
+  border-top: 1px solid var(--border);
+  flex-shrink: 0;
+  background: var(--surface2);
+}
+.reply-via-info { font-size: 11px; color: var(--ink3); display: flex; align-items: center; gap: 4px; }
+
+/* Kono chat pane */
+.kono-pane { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.kono-pane.visible { display: flex; }
+.kono-history {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 10px 14px 6px;
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+}
+.kono-msg { display: flex; gap: 7px; align-items: flex-start; }
+.kono-msg.kono-u { flex-direction: row-reverse; }
+.kono-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.kono-av.ai { background: var(--ink); color: white; }
+.kono-av.u { background: var(--sage-bg); color: var(--sage); }
+.kono-bubble { max-width: 88%; padding: 7px 10px; font-size: 12px; line-height: 1.5; border-radius: var(--r); color: var(--ink); }
+.kono-bubble.ai { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 3px; }
+.kono-bubble.u { background: var(--blue-bg); border: 1px solid var(--blue-mid,#C5D4F0); border-top-right-radius: 3px; }
+.kono-bubble.ai a { color: var(--sage); font-weight: 500; cursor: pointer; text-decoration: underline; }
+.kono-input-row { display: flex; gap: 6px; align-items: flex-end; padding: 8px 14px; }
+.kono-ta {
+  flex: 1;
+  border: 1px solid var(--border);
+  border-radius: var(--r-sm);
+  padding: 7px 10px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--ink);
+  background: var(--paper);
+  resize: none;
+  min-height: 34px;
+  max-height: 80px;
+  outline: none;
+  line-height: 1.4;
+}
+.kono-ta:focus { border-color: var(--blue); }
+.kono-send { background: var(--blue); color: white; border: none; border-radius: var(--r-sm); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.12s; }
+.kono-send:hover { opacity: 0.85; }
+.kono-use-btn { font-size: 11px; padding: 3px 8px; border-radius: var(--r-sm); border: 1px solid var(--blue-mid,#C5D4F0); background: var(--blue-bg); color: var(--blue); cursor: pointer; font-family: inherit; font-weight: 500; display: inline-block; margin-top: 4px; }
+.kono-use-btn:hover { background: var(--blue); color: white; }
+
+/* ══════════════════════════════
+   DOCUMENTS VIEW
+══════════════════════════════ */
+.docs-view { flex-direction: column; }
+.docs-topbar { padding: 14px 20px 12px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+.docs-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.docs-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+.docs-body { flex: 1; overflow: hidden; display: flex; }
+
+.tmpl-lib { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; }
+.lib-search { padding: 10px; border-bottom: 1px solid var(--border); }
+.lib-search input { width: 100%; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 6px 9px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--paper); outline: none; }
+.lib-search input:focus { border-color: var(--sage); }
+.lib-scroll { flex: 1; overflow-y: auto; }
+.lib-sec { font-size: 9px; font-weight: 600; letter-spacing: 0.1em; text-transform: uppercase; color: var(--ink3); padding: 10px 12px 4px; }
+.ti { display: flex; align-items: center; gap: 9px; padding: 9px 12px; cursor: pointer; border-bottom: 1px solid var(--border); transition: background 0.1s; }
+.ti:hover { background: var(--surface2); }
+.ti.active { background: var(--sage-bg); border-left: 3px solid var(--sage); padding-left: 9px; }
+.ti-ico { width: 32px; height: 32px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 15px; flex-shrink: 0; }
+.ti-name { font-size: 12px; font-weight: 500; color: var(--ink); }
+.ti-sub { font-size: 10px; color: var(--ink3); margin-top: 1px; }
+.upload-zone { margin: 10px; padding: 10px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; cursor: pointer; font-size: 11px; color: var(--ink3); transition: all 0.12s; }
+.upload-zone:hover { border-color: var(--sage); color: var(--sage); background: var(--sage-bg); }
+
+.gen-area { flex: 1; display: flex; overflow: hidden; }
+.gen-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink3); text-align: center; padding: 40px; font-size: 13px; }
+.gen-split { flex: 1; display: flex; overflow: hidden; }
+
+.gen-chat { width: 320px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
+.gc-head { padding: 12px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, var(--sage-bg), var(--blue-bg)); }
+.gc-title { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.gc-sub { font-size: 11px; color: var(--ink2); margin-top: 2px; }
+.gc-msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
+.gm { display: flex; gap: 7px; align-items: flex-start; }
+.gm.u { flex-direction: row-reverse; }
+.gm-av { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.gm-av.ai { background: var(--ink); color: white; }
+.gm-av.u { background: var(--sage-bg); color: var(--sage); }
+.gm-b { max-width: 86%; padding: 8px 10px; font-size: 12px; line-height: 1.55; border-radius: var(--r); color: var(--ink); }
+.gm-b.ai { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 3px; }
+.gm-b.u { background: var(--sage-bg); border: 1px solid var(--sage-mid); border-top-right-radius: 3px; }
+.gc-field { padding: 10px 12px; border-top: 1px solid var(--border); }
+.gc-field-label { font-size: 10px; font-weight: 600; color: var(--ink2); margin-bottom: 5px; text-transform: uppercase; letter-spacing: 0.04em; }
+.gc-field-row { display: flex; gap: 5px; }
+.gc-input { flex: 1; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 9px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--paper); outline: none; }
+.gc-input:focus { border-color: var(--sage); }
+.gc-next { background: var(--sage); color: white; border: none; border-radius: var(--r-sm); padding: 0 12px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; }
+.gc-next:hover { opacity: 0.88; }
+
+.doc-preview { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--paper); }
+.dp-head { padding: 11px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+.dp-title { font-size: 12px; font-weight: 600; color: var(--ink); }
+.dp-btns { display: flex; gap: 5px; }
+.dp-body { flex: 1; overflow-y: auto; padding: 20px; }
+.doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 44px 48px; max-width: 640px; margin: 0 auto; min-height: 480px; font-family: 'DM Sans', sans-serif; line-height: 1.75; }
+.doc-co { font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 6px; }
+.doc-rule { height: 2px; background: var(--sage); border-radius: 1px; margin-bottom: 26px; }
+.doc-date { font-size: 12px; color: var(--ink3); margin-bottom: 20px; }
+.doc-body-text { font-size: 13px; color: var(--ink); }
+.doc-body-text p { margin-bottom: 12px; }
+.doc-sig { margin-top: 36px; font-size: 13px; }
+.doc-sig-name { font-weight: 600; margin-top: 24px; }
+.ph { color: var(--ink3); background: var(--surface2); border-radius: 3px; padding: 0 4px; font-style: italic; font-size: 12px; }
+.filled { color: var(--sage); font-weight: 500; }
+
+/* ══════════════════════════════
+   MANAGE VIEW (policies / process maps)
+══════════════════════════════ */
+.manage-view { flex-direction: column; background: var(--paper); }
+.manage-topbar { padding: 14px 20px 12px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+.manage-title { font-size: 15px; font-weight: 600; letter-spacing: -0.01em; }
+.manage-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
+.manage-tabs { display: flex; gap: 2px; background: var(--surface2); border-radius: var(--r-sm); padding: 3px; }
+.mtab { padding: 5px 14px; font-size: 12px; font-weight: 500; border-radius: 4px; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-family: inherit; transition: all 0.12s; }
+.mtab.active { background: var(--surface); color: var(--ink); box-shadow: 0 1px 3px rgba(0,0,0,0.08); }
+.manage-body { flex: 1; overflow-y: auto; padding: 20px; }
+
+.policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.policy-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; cursor: pointer; transition: all 0.12s; box-shadow: var(--shadow); }
+.policy-card:hover { border-color: var(--border2); box-shadow: 0 4px 16px rgba(0,0,0,0.08); }
+.pc-icon { font-size: 22px; margin-bottom: 10px; }
+.pc-name { font-size: 13px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.pc-desc { font-size: 12px; color: var(--ink3); line-height: 1.5; }
+.pc-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
+.pc-status { font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: 500; }
+.pcs-uploaded { background: var(--sage-bg); color: var(--sage); }
+.pcs-missing { background: var(--amber-bg); color: var(--amber); }
+.pc-action { font-size: 11px; color: var(--blue); cursor: pointer; }
+
+.process-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 12px; }
+.process-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; box-shadow: var(--shadow); }
+.prsc-head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.prsc-icon { font-size: 18px; }
+.prsc-name { font-size: 13px; font-weight: 600; color: var(--ink); }
+.prsc-badge { margin-left: auto; font-size: 10px; padding: 2px 7px; border-radius: 8px; font-weight: 500; }
+.prsb-auto { background: var(--blue-bg); color: var(--blue); }
+.prsb-beta { background: var(--purple-bg); color: var(--purple); }
+.prsc-steps { display: flex; flex-direction: column; gap: 4px; }
+.prsc-step { display: flex; align-items: center; gap: 8px; padding: 5px 0; font-size: 11px; color: var(--ink2); border-bottom: 1px solid var(--border); }
+.prsc-step:last-child { border: none; }
+.step-num { width: 18px; height: 18px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: var(--ink3); flex-shrink: 0; }
+.prsc-foot { margin-top: 10px; font-size: 11px; color: var(--ink3); font-style: italic; }
+
+/* ── SHARED BUTTONS ── */
+.btn { display: inline-flex; align-items: center; gap: 5px; padding: 6px 12px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.12s; border: 1px solid transparent; }
+.btn-sm { padding: 4px 10px; font-size: 11px; }
+.btn-xs { padding: 3px 8px; font-size: 10px; }
+.btn-primary { background: var(--sage); color: white; border-color: var(--sage); }
+.btn-primary:hover { opacity: 0.88; }
+.btn-secondary { background: var(--surface); color: var(--ink2); border-color: var(--border); }
+.btn-secondary:hover { border-color: var(--border2); color: var(--ink); }
+.btn-ghost { background: transparent; color: var(--ink2); border-color: transparent; }
+.btn-ghost:hover { background: var(--surface2); }
+.sec-label { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); margin-bottom: 10px; }
+
+/* ── LOGIN SCREEN ── */
+.login-screen {
+  position: fixed; inset: 0; background: var(--paper);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 999;
+}
+.login-box {
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 40px 36px;
+  width: 380px; box-shadow: var(--shadow-lg);
+}
+.login-logo { display: flex; align-items: center; gap: 10px; margin-bottom: 28px; }
+.login-logo-icon { width: 32px; height: 32px; background: var(--sage); border-radius: 8px; display: flex; align-items: center; justify-content: center; }
+.login-logo-name { font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.login-title { font-size: 16px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
+.login-sub { font-size: 13px; color: var(--ink3); margin-bottom: 24px; }
+.login-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
+.login-label { font-size: 12px; font-weight: 500; color: var(--ink2); }
+.login-input {
+  border: 1px solid var(--border); border-radius: var(--r-sm);
+  padding: 9px 11px; font-size: 13px; font-family: inherit;
+  color: var(--ink); background: var(--paper); outline: none;
+}
+.login-input:focus { border-color: var(--sage); }
+.login-btn {
+  width: 100%; padding: 10px; background: var(--sage); color: white;
+  border: none; border-radius: var(--r-sm); font-size: 14px;
+  font-weight: 500; font-family: inherit; cursor: pointer;
+  margin-top: 8px; transition: opacity 0.15s;
+}
+.login-btn:hover { opacity: 0.88; }
+.login-error { font-size: 12px; color: var(--red); margin-top: 8px; min-height: 16px; }
+.login-toggle { font-size: 12px; color: var(--ink3); text-align: center; margin-top: 14px; cursor: pointer; }
+.login-toggle a { color: var(--sage); text-decoration: underline; cursor: pointer; }
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div class="login-screen" id="loginScreen">
+  <div class="login-box">
+    <div class="login-logo">
+      <div class="login-logo-icon">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      </div>
+      <div class="login-logo-name">Breeze HR</div>
+    </div>
+    <div class="login-title" id="loginTitle">Sign in to your account</div>
+    <div class="login-sub" id="loginSub">HR operations platform</div>
+    <div class="login-field">
+      <label class="login-label">Email address</label>
+      <input class="login-input" type="email" id="loginEmail" placeholder="you@company.com">
+    </div>
+    <div class="login-field">
+      <label class="login-label">Password</label>
+      <input class="login-input" type="password" id="loginPassword" placeholder="••••••••"
+        onkeydown="if(event.key==='Enter') handleAuth()">
+    </div>
+    <div class="login-field" id="nameField" style="display:none;">
+      <label class="login-label">Your full name</label>
+      <input class="login-input" type="text" id="loginName" placeholder="Jane Smith">
+    </div>
+    <div class="login-field" id="companyField" style="display:none;">
+      <label class="login-label">Company name</label>
+      <input class="login-input" type="text" id="loginCompany" placeholder="Acme Corp">
+    </div>
+    <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
+    <div class="login-error" id="loginError"></div>
+    <div class="login-toggle" id="loginToggle">
+      Don't have an account? <a onclick="toggleAuthMode()">Create one</a>
+    </div>
+  </div>
+</div>
+
+<div class="shell" id="appShell" style="display:none;">
+
+<!-- SIDEBAR -->
+<div class="sidebar">
+  <div class="sidebar-logo">
+    <div class="logo-icon">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    </div>
+    <div>
+      <div class="logo-name">Breeze HR</div>
+      <div class="logo-sub">HR OPERATIONS</div>
+    </div>
+  </div>
+  <div class="nav">
+    <div class="nav-label">Workspace</div>
+    <div class="ni active" onclick="showView('intake',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Intake
+      <span class="ni-badge" id="nbNew">3</span>
+    </div>
+    <div class="ni" onclick="showView('docs',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      Documents
+    </div>
+    <div class="nav-label">Manage</div>
+    <div class="ni" onclick="showView('manage',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+      Policies &amp; processes
+    </div>
+    <div class="ni">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
+      Settings
+    </div>
+  </div>
+  <div class="sidebar-foot">
+    <div class="int-pill"><div class="live-dot"></div>Slack &amp; Email connected</div>
+    <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:4px 8px;">
+      <span style="font-size:11px;color:rgba(255,255,255,0.4);" id="userEmail"></span>
+      <span style="font-size:11px;color:rgba(255,255,255,0.35);cursor:pointer;text-decoration:underline;" onclick="signOut()">Sign out</span>
+    </div>
+  </div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<!-- ══ INTAKE VIEW ══ -->
+<div class="view intake-view active" id="view-intake">
+  <div class="msg-col">
+
+    <!-- Source tabs -->
+    <div class="source-bar">
+      <div class="src-tab active" onclick="setSource('all',this)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="9" y1="21" x2="9" y2="9"/></svg>
+        All
+      </div>
+      <div class="src-tab" onclick="setSource('slack',this)">
+        <div class="dot slack-dot"></div>
+        Slack
+      </div>
+      <div class="src-tab" onclick="setSource('email',this)">
+        <div class="dot email-dot"></div>
+        Email
+      </div>
+      <div class="src-tab" onclick="setSource('direct',this)">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+        Direct
+      </div>
+    </div>
+
+    <!-- Status chips -->
+    <div class="status-bar">
+      <button class="st-chip active" onclick="setStatus('all',this)">All</button>
+      <button class="st-chip" onclick="setStatus('new',this)">New <span class="n" id="cn">3</span></button>
+      <button class="st-chip" onclick="setStatus('open',this)">Open</button>
+      <button class="st-chip" onclick="setStatus('resolved',this)">Done</button>
+    </div>
+
+    <div class="msg-list" id="msgList"></div>
+
+    <div class="log-btn" onclick="logOffline()">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Log offline conversation
+    </div>
+  </div>
+
+  <div class="detail-col">
+    <div class="detail-empty" id="detailEmpty">
+      <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <p>Select a message. Kono will draft a response from your policies, or suggest questions for HR to ask — you review, edit and send.</p>
+    </div>
+    <div id="detailContent" style="display:none;flex-direction:column;height:100%;overflow:hidden;"></div>
+  </div>
+</div>
+
+<!-- ══ DOCUMENTS VIEW ══ -->
+<div class="view docs-view" id="view-docs">
+  <div class="docs-topbar">
+    <div>
+      <div class="docs-title">Document generator</div>
+      <div class="docs-sub">Select a template — chat fills in the fields, letter builds in real time</div>
+    </div>
+    <button class="btn btn-primary btn-sm">+ Upload template</button>
+  </div>
+  <div class="docs-body">
+    <div class="tmpl-lib">
+      <div class="lib-search"><input placeholder="Search templates..." oninput="filterTmpls(this.value)" id="tmplSearch"></div>
+      <div class="lib-scroll" id="tmplList"></div>
+      <div class="upload-zone">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;margin:0 auto 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+        Upload your own (.docx)
+      </div>
+    </div>
+    <div class="gen-area">
+      <div class="gen-empty" id="genEmpty">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.25"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <p style="font-size:12px;color:var(--ink3);margin-top:8px;max-width:180px;line-height:1.6;">Choose a template from the library to start</p>
+      </div>
+      <div class="gen-split" id="genSplit" style="display:none;flex:1;"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ MANAGE VIEW ══ -->
+<div class="view manage-view" id="view-manage">
+  <div class="manage-topbar">
+    <div>
+      <div class="manage-title">Policies &amp; processes</div>
+      <div class="manage-sub">Upload policies so Kono can answer questions accurately. Process maps build automatically over time.</div>
+    </div>
+    <div class="manage-tabs">
+      <button class="mtab active" onclick="switchMTab('policies',this)">Policies</button>
+      <button class="mtab" onclick="switchMTab('processes',this)">Process maps <span style="font-size:9px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:8px;margin-left:3px;">Beta</span></button>
+    </div>
+  </div>
+  <div class="manage-body" id="manageBody"></div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<script>
+// ════════════════════════════════
+// SUPABASE SETUP
+// ════════════════════════════════
+const SUPABASE_URL = 'https://uxwmlxbsqhtwexpfcemu.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4d21seGJzcWh0d2V4cGZjZW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MDcxODAsImV4cCI6MjA5NDA4MzE4MH0.XOqSQWU4JUnIGkZSNuVVMFYvfpQW9fAVKLtLoqpUqM8';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+let currentUser = null;
+let currentProfile = null;
+
+// ── AUTH ──
+let authMode = 'signin'; // or 'signup'
+
+function toggleAuthMode() {
+  authMode = authMode === 'signin' ? 'signup' : 'signin';
+  document.getElementById('loginTitle').textContent = authMode === 'signin' ? 'Sign in to your account' : 'Create your account';
+  document.getElementById('loginBtn').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('loginToggle').innerHTML = authMode === 'signin'
+    ? 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one</a>'
+    : 'Already have an account? <a onclick="toggleAuthMode()">Sign in</a>';
+  document.getElementById('nameField').style.display = authMode === 'signup' ? 'flex' : 'none';
+  document.getElementById('companyField').style.display = authMode === 'signup' ? 'flex' : 'none';
+  document.getElementById('loginError').textContent = '';
+}
+
+async function handleAuth() {
+  const email = document.getElementById('loginEmail').value.trim();
+  const password = document.getElementById('loginPassword').value;
+  const btn = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  errEl.textContent = '';
+  if (!email || !password) { errEl.textContent = 'Please enter your email and password.'; return; }
+  btn.textContent = 'Please wait...'; btn.disabled = true;
+
+  if (authMode === 'signin') {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password });
+    if (error) { errEl.textContent = error.message; btn.textContent = 'Sign in'; btn.disabled = false; return; }
+    await onSignedIn(data.user);
+  } else {
+    const name = document.getElementById('loginName').value.trim();
+    const company = document.getElementById('loginCompany').value.trim();
+    if (!name || !company) { errEl.textContent = 'Please enter your name and company.'; btn.textContent = 'Create account'; btn.disabled = false; return; }
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { emailRedirectTo: window.location.href }
+    });
+    if (error) { errEl.textContent = error.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
+    if (data.user && data.user.identities && data.user.identities.length === 0) {
+      errEl.textContent = 'An account with this email already exists. Please sign in instead.';
+      btn.textContent = 'Create account'; btn.disabled = false; return;
+    }
+    // Try to create company and profile immediately
+    try {
+      const { data: co } = await sb.from('companies').insert({ name: company }).select().single();
+      if (co) await sb.from('profiles').insert({ id: data.user.id, company_id: co.id, full_name: name });
+    } catch(e) { /* profile may already exist */ }
+    errEl.style.color = 'var(--sage)';
+    errEl.textContent = 'Account created — check your email to confirm, then sign in.';
+    btn.textContent = 'Create account'; btn.disabled = false;
+    // Switch to sign in mode
+    setTimeout(() => { authMode = 'signup'; toggleAuthMode(); }, 2000);
+  }
+}
+
+async function onSignedIn(user) {
+  currentUser = user;
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('userEmail').textContent = user.email;
+  // Load profile
+  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  currentProfile = profile;
+  // Load real messages from DB, fall back to demo data
+  await loadMessages();
+}
+
+async function signOut() {
+  await sb.auth.signOut();
+  currentUser = null; currentProfile = null;
+  document.getElementById('appShell').style.display = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+  document.getElementById('loginBtn').textContent = 'Sign in';
+  document.getElementById('loginBtn').disabled = false;
+}
+
+// ── DATABASE OPERATIONS ──
+async function loadMessages() {
+  if (!currentProfile) return;
+  const { data, error } = await sb.from('messages')
+    .select('*')
+    .eq('company_id', currentProfile.company_id)
+    .order('created_at', { ascending: false });
+  if (data && data.length > 0) {
+    // Map DB messages to app format
+    const dbMsgs = data.map(m => ({
+      id: m.id,
+      from: m.from_name,
+      initials: m.from_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(),
+      bg: '#EBF0FA', fg: '#1A3F7A',
+      source: m.source || 'direct',
+      type: m.type || 'General',
+      status: m.status || 'new',
+      time: new Date(m.created_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}),
+      subject: m.subject,
+      preview: m.body.substring(0, 80),
+      body: m.body,
+      aiType: 'clarify',
+      policyRef: null,
+      draftAnswer: null,
+      clarifyQs: [],
+      thread: []
+    }));
+    msgs.unshift(...dbMsgs);
+  }
+  renderMsgs();
+}
+
+async function saveMessage(m) {
+  if (!currentProfile) return;
+  const { data } = await sb.from('messages').insert({
+    company_id: currentProfile.company_id,
+    from_name: m.from,
+    from_email: '',
+    source: m.source,
+    subject: m.subject,
+    body: m.body,
+    type: m.type,
+    status: m.status
+  }).select().single();
+  return data;
+}
+
+async function saveResponse(messageId, aiDraft, hrSent) {
+  if (!currentProfile) return;
+  const edited = aiDraft !== hrSent;
+  await sb.from('responses').insert({
+    message_id: messageId,
+    ai_draft: aiDraft,
+    hr_sent: hrSent,
+    was_edited: edited
+  });
+}
+
+async function saveFeedback(type, questionsShown, questionsUsed) {
+  if (!currentProfile) return;
+  await sb.from('feedback').insert({
+    company_id: currentProfile.company_id,
+    message_type: type,
+    questions_suggested: questionsShown,
+    questions_used: questionsUsed
+  });
+}
+
+async function updateMessageStatus(id, status) {
+  await sb.from('messages').update({ status }).eq('id', id);
+}
+
+// Check if already logged in on page load
+window.addEventListener('load', async () => {
+  const { data: { session } } = await sb.auth.getSession();
+  if (session) {
+    await onSignedIn(session.user);
+  }
+});
+
+// ════════════════════════════════
+// DATA
+// ════════════════════════════════
+const msgs = [
+  {
+    id:'m1', from:'Tom Bradley', initials:'TB', bg:'#EBF0FA', fg:'#1A3F7A',
+    source:'slack', type:'Onboarding', status:'new', time:'9:14am',
+    subject:'New starter joining Monday',
+    preview:'Jamie Walsh is joining the backend team on 19 May...',
+    body:'Hey — just wanted to flag that Jamie Walsh is joining our backend team this coming Monday 19 May. She\'ll need a MacBook Pro, GitHub access, Slack invite, and AWS read access sorted. Can you also get her contract over to her? Thanks',
+    aiType:'clarify',
+    policyRef: null,
+    draftAnswer: null,
+    clarifyQs:[
+      'What is Jamie\'s exact job title and is this a permanent or fixed-term contract?',
+      'What salary has been agreed — needed to issue the contract?',
+      'Has a right to work check been completed, or is that still outstanding?',
+      'Who is her line manager and what team will she report into?'
+    ],
+    thread:[]
+  },
+  {
+    id:'m2', from:'Priya Sharma', initials:'PS', bg:'#F0EBFC', fg:'#4A1F8A',
+    source:'email', type:'Leave', status:'new', time:'10:32am',
+    subject:'Maternity leave — planning ahead',
+    preview:'I\'m 24 weeks pregnant and wanted to start planning my leave...',
+    body:'Hi, I\'m 24 weeks pregnant with a due date of 14 August. I wanted to start planning ahead and understand what I\'m entitled to and what I need to do. I\'m thinking of starting leave around 4 August.',
+    aiType:'answer',
+    policyRef:'Maternity Leave Policy (uploaded)',
+    draftAnswer:`Hi Priya,
+
+Congratulations! Thank you for letting us know — happy to help you plan ahead.
+
+Here's a summary of your entitlement:
+
+You're entitled to up to 52 weeks maternity leave. The first 16 weeks will be at full pay (our company top-up combined with statutory maternity pay), followed by 23 weeks at statutory maternity pay, and the remaining 13 weeks unpaid.
+
+As your due date is 14 August, your proposed start date of 4 August is well within the legal requirement of giving at least 15 weeks' notice — so you're all good on that front.
+
+Next steps:
+1. I'll send you our maternity leave policy and the MAT B1 form request
+2. Let me know if you'd like me to notify your manager, or if you'd prefer to do that yourself
+3. We'll arrange a brief call to go through everything in detail
+
+Please don't hesitate to get in touch with any questions.
+
+Best,
+HR`,
+    clarifyQs:[],
+    thread:[]
+  },
+  {
+    id:'m3', from:'Sarah Chen', initials:'SC', bg:'#FDF3E3', fg:'#8A5212',
+    source:'direct', type:'Performance', status:'new', time:'Yesterday',
+    subject:'Performance concern — team member',
+    preview:'Had a second informal conversation, no improvement...',
+    body:'Hi, I\'ve had a second informal conversation with someone in my team about repeatedly missing deadlines. The first was about 3 weeks ago and there\'s been no real improvement. They\'ve been with us about 14 months. I\'m not sure what the right next step is.',
+    aiType:'clarify',
+    policyRef:null,
+    draftAnswer:null,
+    clarifyQs:[
+      'Were the expectations set in both conversations specific and measurable, or more general feedback?',
+      'Was anything confirmed in writing to the employee after either conversation?',
+      'Are there any personal or health circumstances HR should be aware of before escalating?',
+      'Is this a performance issue (output/quality) or a conduct issue (attitude/behaviour) — the correct process differs?'
+    ],
+    thread:[]
+  },
+  {
+    id:'m4', from:'Marcus Webb', initials:'MW', bg:'#EAF3EC', fg:'#2A6049',
+    source:'slack', type:'Leave', status:'open', time:'2 days ago',
+    subject:'Paternity leave — partner due in 3 weeks',
+    preview:'My partner is due to give birth in about 3 weeks...',
+    body:'Hi, my partner is due to give birth in about 3 weeks. I\'d like to take paternity leave — can you let me know how much I\'m entitled to and how I request it officially?',
+    aiType:'answer',
+    policyRef:'Paternity Leave Policy (uploaded)',
+    draftAnswer:`Hi Marcus,
+
+Congratulations — exciting news!
+
+You're entitled to 2 weeks paid paternity leave at full pay, available from day one of employment. Your partner's due date in approximately 3 weeks means you've given well over the required 15 weeks' notice, so you're fine on that front.
+
+A couple of quick things to confirm:
+- What's your preferred start date? (Can be the day of birth, or up to 56 days after)
+- Would you like to take both weeks consecutively, or split them?
+
+Once confirmed I'll get this formally logged for payroll.
+
+Best,
+HR`,
+    clarifyQs:[],
+    thread:[
+      {dir:'in', sender:'Marcus Webb', time:'2 days ago', text:'Hi, my partner is due to give birth in about 3 weeks. I\'d like to take paternity leave — can you let me know how much I\'m entitled to and how I request it officially?'},
+      {dir:'out', sender:'HR', time:'2 days ago', text:'Hi Marcus — congratulations! You\'re entitled to 2 weeks paid at full pay. You\'ve well exceeded the 15 weeks notice requirement. Can you confirm your preferred start date and whether you\'d like both weeks consecutively?'}
+    ]
+  },
+  {
+    id:'m5', from:'Aisha Okonkwo', initials:'AO', bg:'#FDF3E3', fg:'#8A5212',
+    source:'email', type:'Pay & benefits', status:'resolved', time:'3 days ago',
+    subject:'How does the pension work?',
+    preview:'Could you explain how our pension scheme works and how I increase contributions...',
+    body:'Could you explain how our pension scheme works and how I go about increasing my contributions? I\'ve been here 6 months and want to make sure I\'m making the most of it.',
+    aiType:'answer',
+    policyRef:'Pension Policy (uploaded)',
+    draftAnswer:`Hi Aisha,
+
+Great question — good to hear you're thinking about this!
+
+Here's how our pension scheme works:
+
+We operate a workplace pension through Nest. The company contributes 5% of your qualifying earnings, and the minimum employee contribution is 3%. You can increase your contribution above 3% at any time.
+
+To increase your contributions, log into the Nest portal at nest.co.uk using your work email address. Navigate to My Contributions and update to your preferred percentage. Changes take effect from the following payroll run.
+
+If you have any trouble logging in, let me know and I can arrange a reset.
+
+Best,
+HR`,
+    clarifyQs:[],
+    thread:[
+      {dir:'in', sender:'Aisha Okonkwo', time:'3 days ago', text:'Could you explain how our pension scheme works and how I go about increasing my contributions?'},
+      {dir:'out', sender:'HR', time:'3 days ago', text:'Hi Aisha — great question. We use Nest, employer contributes 5%, minimum employee 3%. You can increase anytime via the Nest portal. Let me know if you need a login reset!'}
+    ]
+  }
+];
+
+// ════════════════════════════════
+// TEMPLATES
+// ════════════════════════════════
+const tmpls = [
+  { id:'t1', name:'Promotion letter', emoji:'🎉', type:'Letters', flow:[
+    {q:"What's the employee's full name?", f:'Employee name'},
+    {q:"What's their new job title?", f:'New job title'},
+    {q:"Effective date of promotion?", f:'Effective date'},
+    {q:"New annual salary? (e.g. £55,000)", f:'New salary'},
+    {q:"Which department?", f:'Department'},
+    {q:"Line manager's name? I'll generate the letter now.", f:'Manager name'}
+  ]},
+  { id:'t2', name:'Salary increase letter', emoji:'💰', type:'Letters', flow:[
+    {q:"Employee's full name?", f:'Employee name'},
+    {q:"Current salary?", f:'Current salary'},
+    {q:"New salary?", f:'New salary'},
+    {q:"Effective date?", f:'Effective date'},
+    {q:"Line manager's name? Generating now.", f:'Manager name'}
+  ]},
+  { id:'t3', name:'Offer letter', emoji:'✉️', type:'Letters', flow:[
+    {q:"Candidate's full name?", f:'Candidate name'},
+    {q:"Job title being offered?", f:'Job title'},
+    {q:"Start date?", f:'Start date'},
+    {q:"Annual salary? (e.g. £45,000)", f:'Salary'},
+    {q:"Work location? (e.g. London / Hybrid)", f:'Location'},
+    {q:"Probation period? (e.g. 3 months) — generating now.", f:'Probation period'}
+  ]},
+  { id:'t4', name:'Probation confirmation', emoji:'✅', type:'Letters', flow:[
+    {q:"Employee's full name?", f:'Employee name'},
+    {q:"Job title?", f:'Job title'},
+    {q:"Probation end date?", f:'Probation end date'},
+    {q:"Line manager's name? Producing now.", f:'Manager name'}
+  ]},
+  { id:'t5', name:'Flexible working approval', emoji:'🕐', type:'Letters', flow:[
+    {q:"Employee's full name?", f:'Employee name'},
+    {q:"Approved arrangement? (e.g. 4 days a week, WFH Fridays)", f:'Arrangement'},
+    {q:"Start date of new arrangement?", f:'Start date'},
+    {q:"Review date? Generating now.", f:'Review date'}
+  ]},
+  { id:'t6', name:'Formal warning letter', emoji:'📋', type:'Letters', flow:[
+    {q:"Employee's full name?", f:'Employee name'},
+    {q:"First written warning or final written warning?", f:'Warning type'},
+    {q:"Brief description of the issue?", f:'Issue'},
+    {q:"Improvement required and by when?", f:'Improvement required'},
+    {q:"Review date? Generating now.", f:'Review date'}
+  ]},
+  { id:'t7', name:'Contract variation', emoji:'📝', type:'Contracts', flow:[
+    {q:"Employee's full name?", f:'Employee name'},
+    {q:"What is changing? (e.g. hours from 5 to 4 days)", f:'Change'},
+    {q:"Effective date?", f:'Effective date'},
+    {q:"Line manager's name? Generating now.", f:'Manager name'}
+  ]},
+  { id:'t8', name:'Redundancy at-risk letter', emoji:'⚠️', type:'Contracts', flow:[
+    {q:"Employee's full name?", f:'Employee name'},
+    {q:"Job title?", f:'Job title'},
+    {q:"At-risk notification date?", f:'At-risk date'},
+    {q:"Consultation period end date? Generating now.", f:'Consultation end date'}
+  ]}
+];
+
+// ════════════════════════════════
+// INTAKE STATE
+// ════════════════════════════════
+let selMsg = null, srcFilter = 'all', stFilter = 'all';
+
+function renderMsgs() {
+  const list = document.getElementById('msgList');
+  let filtered = msgs.filter(m => {
+    if (srcFilter !== 'all' && m.source !== srcFilter) return false;
+    if (stFilter !== 'all' && m.status !== stFilter) return false;
+    return true;
+  });
+  list.innerHTML = '';
+  filtered.forEach(m => {
+    const div = document.createElement('div');
+    const isUnread = m.status === 'new';
+    div.className = 'msg-item' + (selMsg && selMsg.id === m.id ? ' active' : '') + (isUnread ? ' unread-item' : '');
+    div.onclick = () => openMsg(m);
+    div.innerHTML = `
+      <div class="mi-row1">
+        <div class="mi-name">${m.from}</div>
+        <div class="mi-time">${m.time}</div>
+      </div>
+      <div class="mi-subject">${m.subject}</div>
+      <div class="mi-preview">${m.preview}</div>
+      ${isUnread ? '<div class="mi-dot-row"><div class="unread"></div></div>' : ''}`;
+    list.appendChild(div);
+  });
+  const newCount = msgs.filter(m => m.status === 'new').length;
+  document.getElementById('nbNew').textContent = newCount;
+  document.getElementById('cn').textContent = newCount;
+}
+
+function setSource(src, el) {
+  srcFilter = src;
+  document.querySelectorAll('.src-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderMsgs();
+}
+function setStatus(st, el) {
+  stFilter = st;
+  document.querySelectorAll('.st-chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  renderMsgs();
+}
+
+// Kono chat history per message
+const konoChatHistory = {};
+
+function openMsg(m) {
+  selMsg = m;
+  if (m.status === 'new') m.status = 'open';
+  renderMsgs();
+
+  document.getElementById('detailEmpty').style.display = 'none';
+  const dc = document.getElementById('detailContent');
+  dc.style.display = 'flex';
+
+  if (!konoChatHistory[m.id]) {
+    konoChatHistory[m.id] = m.aiType === 'answer'
+      ? [{ role:'ai', text: `I've drafted a response to ${m.from.split(' ')[0]} based on your <strong>${m.policyRef || 'uploaded policies'}</strong> — it's pre-loaded in the reply box. Edit as needed and send whenever you're ready. Ask me anything if you want to think it through first.` }]
+      : [{ role:'ai', text: `Hi — I've looked at this message from ${m.from.split(' ')[0]}. The reply box has a suggested set of questions to gather the info you'd need before responding properly. You can edit or remove any of them. Ask me anything here if you'd like advice on how to handle this.` }];
+  }
+
+  const srcLabel = {slack:'Slack',email:'Email',direct:'Direct'}[m.source];
+  const srcIcon = m.source === 'slack'
+    ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/></svg>`
+    : m.source === 'email'
+    ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>`
+    : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
+
+  const sLabel = {new:'New',open:'Open',inprog:'In progress',resolved:'Resolved'}[m.status] || m.status;
+  const sTag = {new:'tag-new',open:'tag-open',inprog:'tag-inprog',resolved:'tag-resolved'}[m.status] || 'tag-open';
+
+  // Thread (previous replies)
+  const threadHtml = m.thread.length ? `
+    <div class="thread-wrap">
+      <div class="thread-head">Thread</div>
+      <div class="thread-body">${m.thread.map(t => `
+        <div class="tm ${t.dir === 'in' ? 'tm-in' : 'tm-out'}">
+          <div class="tm-sender">${t.sender}<span>${t.time}</span></div>
+          ${t.text}
+        </div>`).join('')}
+      </div>
+    </div>` : '';
+
+  // Kono suggestion block
+  let konoBlock = '';
+  if (m.aiType === 'answer') {
+    konoBlock = `
+      <div class="ai-block">
+        <div class="ai-block-head">
+          <div class="ai-chip">◈</div>
+          <div>
+            <div class="ai-head-title">Kono drafted a response</div>
+            <div class="ai-head-sub">From your ${m.policyRef || 'uploaded policies'} — edit in the reply box below</div>
+          </div>
+          <span class="ai-type-pill atp-answer">Policy answer</span>
+        </div>
+        <div class="ai-block-body">
+          ${m.policyRef ? `<div class="policy-ref">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+            Source: <strong>${m.policyRef}</strong>
+          </div>` : ''}
+          <div class="ai-note" style="padding:0;border:none;margin:0;">Draft loaded into reply box. Edit there then send — or ask Kono first using the tab below.</div>
+        </div>
+      </div>`;
+  } else if (m.clarifyQs.length) {
+    const qsHtml = m.clarifyQs.map((q, i) => `
+      <div class="cq" id="cq-${m.id}-${i}" onclick="toggleCQ(this)">
+        <div class="cq-cb"></div>
+        <div class="cq-text">${q}</div>
+      </div>`).join('');
+    konoBlock = `
+      <div class="ai-block">
+        <div class="ai-block-head">
+          <div class="ai-chip">◈</div>
+          <div>
+            <div class="ai-head-title">Kono suggests asking these questions</div>
+            <div class="ai-head-sub">Select any — click "Draft reply" to load into the reply box</div>
+          </div>
+          <span class="ai-type-pill atp-clarify">Needs info</span>
+        </div>
+        <div class="ai-block-body">
+          <div class="clarify-qs">${qsHtml}</div>
+          <div class="ai-foot">
+            <div class="ai-note">You reply — Kono never contacts employees directly.</div>
+            <div class="ai-foot-actions">
+              <button class="btn btn-secondary btn-sm" onclick="draftClarifyKono('${m.id}')">Draft reply with selected</button>
+            </div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  // Kono suggestion for inside the reply pane
+  let replySuggestion = '';
+  if (m.aiType === 'answer') {
+    replySuggestion = `
+      <div class="reply-kono-suggestion">
+        <div class="rks-head"><div class="rks-icon">◈</div><div class="rks-title">Breeze HR drafted this from your policies</div></div>
+        ${m.policyRef ? `<div class="rks-source"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Source: <a>📄 ${m.policyRef}</a></div>` : ''}
+        <div class="rks-advice">Edit the draft below as needed, then send directly to ${m.from.split(' ')[0]}.</div>
+      </div>`;
+  } else if (m.clarifyQs.length) {
+    const adviceText = m.type === 'Performance'
+      ? `<strong>Based on ACAS guidance:</strong> before escalating formally, ensure two informal conversations have taken place and been documented. If there's been no improvement after both, the recommended next step is a formal performance improvement plan (PIP) with clear measurable targets and a review period of 4–8 weeks. You'll want to confirm whether anything has been put in writing so far before deciding how to respond.`
+      : m.type === 'Onboarding'
+      ? `<strong>To action this properly</strong>, you'll need a few details from ${m.from.split(' ')[0]} before you can issue the contract or brief IT. The questions below are pre-loaded in the reply — remove any that don't apply and send.`
+      : `<strong>Breeze HR suggests</strong> gathering a bit more context before responding. The suggested questions cover the key things you'd typically need for this type of request.`;
+    replySuggestion = `
+      <div class="reply-kono-suggestion">
+        <div class="rks-head"><div class="rks-icon">◈</div><div class="rks-title">Breeze HR's suggestion</div></div>
+        <div class="rks-advice">${adviceText}</div>
+      </div>`;
+  }
+
+  // Initial reply text — policy answer pre-loaded, clarify questions pre-drafted
+  let initReply = '';
+  if (m.aiType === 'answer' && m.draftAnswer) {
+    initReply = m.draftAnswer;
+  } else if (m.clarifyQs.length) {
+    initReply = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this information.\n\nMany thanks,\nHR`;
+  }
+
+  dc.innerHTML = `<div class="detail-inner">
+
+    <!-- Compact single-line header -->
+    <div class="email-header">
+      <div class="eh-meta-line">
+        <div class="eh-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
+        <span class="eh-name">${m.from}</span>
+        <span class="eh-sep">·</span>
+        <span class="eh-via">${srcIcon} ${srcLabel}</span>
+        <span class="eh-time">${m.time}</span>
+        <span class="eh-sep">·</span>
+        <select class="reply-type-select" onchange="updateMsgType('${m.id}',this.value)">
+          <option ${m.type==='Onboarding'?'selected':''}>Onboarding</option>
+          <option ${m.type==='Leave'?'selected':''}>Leave</option>
+          <option ${m.type==='Performance'?'selected':''}>Performance</option>
+          <option ${m.type==='Pay & benefits'?'selected':''}>Pay & benefits</option>
+          <option ${m.type==='General'?'selected':''}>General</option>
+          <option ${m.type==='Offboarding'?'selected':''}>Offboarding</option>
+        </select>
+        <select class="reply-type-select" onchange="updateStatus('${m.id}',this.value)">
+          <option value="open" ${m.status==='open'?'selected':''}>Open</option>
+          <option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option>
+          <option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option>
+        </select>
+      </div>
+      <div class="eh-subject">${m.subject}</div>
+    </div>
+
+    <!-- Scrollable body — just the message and thread -->
+    <div class="email-body" id="emailBody-${m.id}">
+      <div class="orig-email">
+        <div class="orig-email-head">
+          <div class="orig-email-from">
+            <div class="oe-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
+            <div>
+              <div class="oe-name">${m.from}</div>
+              <div style="font-size:10px;color:var(--ink3);">${m.time} · ${srcLabel}</div>
+            </div>
+          </div>
+        </div>
+        <div class="orig-email-body">${m.body}</div>
+      </div>
+      ${threadHtml}
+    </div>
+
+    <!-- Compose panel -->
+    <div class="compose-panel">
+      <div class="compose-toggle">
+        <div class="ctab active" id="ctab-reply-${m.id}" onclick="switchCompose('reply','${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
+          Reply to ${m.from.split(' ')[0]}
+        </div>
+        <div class="ctab breeze-tab" id="ctab-breeze-${m.id}" onclick="switchCompose('breeze','${m.id}')">
+          ◈ Ask Breeze HR
+        </div>
+      </div>
+
+      <!-- Reply pane: suggestion strip + to row + textarea + send -->
+      <div class="reply-pane" id="replyPane-${m.id}">
+        ${replySuggestion}
+        <div class="reply-to-row">
+          <span class="reply-to-label">To</span>
+          <span class="reply-to-val">${m.from}</span>
+          <select class="reply-type-select">
+            <option>via ${srcLabel}</option>
+            <option>via Email</option>
+            <option>via Slack</option>
+          </select>
+        </div>
+        <textarea class="reply-ta" id="replyTa-${m.id}" placeholder="Write your reply to ${m.from.split(' ')[0]}...">${initReply}</textarea>
+        <div class="reply-actions-row">
+          <div class="reply-via-info">${srcIcon} <span>Direct to ${m.from} via ${srcLabel}</span></div>
+          <div style="display:flex;gap:5px;">
+            <button class="btn btn-secondary btn-sm">Save draft</button>
+            <button class="btn btn-primary btn-sm" onclick="sendReply('${m.id}')">Send</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Breeze HR chat pane -->
+      <div class="kono-pane" id="konoPane-${m.id}">
+        <div class="kono-history" id="konoHistory-${m.id}"></div>
+        <div class="kono-input-row" style="border-top:1px solid var(--border);">
+          <textarea class="kono-ta" id="konoTa-${m.id}" placeholder="Ask Breeze HR — ACAS guidance, policy advice, how to handle this..." rows="1"
+            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendKono('${m.id}')}"
+            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
+          <button class="kono-send" onclick="sendKono('${m.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>`;
+
+  renderKonoHistory(m.id);
+}
+
+function switchCompose(mode, msgId) {
+  const replyPane = document.getElementById('replyPane-' + msgId);
+  const konoPane = document.getElementById('konoPane-' + msgId);
+  const rtab = document.getElementById('ctab-reply-' + msgId);
+  const btab = document.getElementById('ctab-breeze-' + msgId);
+  if (mode === 'reply') {
+    replyPane.style.display = 'flex';
+    konoPane.classList.remove('visible');
+    rtab.classList.add('active');
+    if (btab) btab.classList.remove('active');
+    setTimeout(() => { const ta = document.getElementById('replyTa-' + msgId); if(ta) ta.focus(); }, 30);
+  } else {
+    replyPane.style.display = 'none';
+    konoPane.classList.add('visible');
+    if (btab) btab.classList.add('active');
+    rtab.classList.remove('active');
+    renderKonoHistory(msgId);
+    setTimeout(() => { const ta = document.getElementById('konoTa-' + msgId); if(ta) ta.focus(); }, 50);
+  }
+}
+
+function renderKonoHistory(msgId) {
+  const hist = konoChatHistory[msgId] || [];
+  const el = document.getElementById('konoHistory-' + msgId);
+  if (!el) return;
+  el.innerHTML = hist.map(h => `
+    <div class="kono-msg${h.role==='hr'?' kono-u':''}">
+      <div class="kono-av ${h.role==='ai'?'ai':'u'}">${h.role==='ai'?'◈':'HR'}</div>
+      <div class="kono-bubble ${h.role==='ai'?'ai':'u'}">${h.text}</div>
+    </div>`).join('');
+  el.scrollTop = el.scrollHeight;
+}
+
+function sendKono(msgId) {
+  const m = msgs.find(x => x.id === msgId);
+  const ta = document.getElementById('konoTa-' + msgId);
+  if (!ta || !ta.value.trim()) return;
+  const q = ta.value.trim();
+  ta.value = ''; ta.style.height = 'auto';
+  if (!konoChatHistory[msgId]) konoChatHistory[msgId] = [];
+  konoChatHistory[msgId].push({ role:'hr', text: q });
+  renderKonoHistory(msgId);
+
+  // Simulate Kono response
+  setTimeout(() => {
+    const ql = q.toLowerCase();
+    let reply = '';
+    if (ql.includes('tone') || ql.includes('formal')) {
+      reply = 'Given this is coming via ' + ({slack:'Slack',email:'email',direct:'a direct message'}[m.source] || 'message') + ', a conversational but professional tone works well. Avoid overly formal language — match the channel.';
+    } else if (ql.includes('legal') || ql.includes('law') || ql.includes('acas')) {
+      reply = 'Under ACAS guidance, the key principle here is to act reasonably and consistently. Make sure any actions are documented and proportionate. Would you like me to draft a response that reflects this?';
+    } else if (ql.includes('draft') || ql.includes('write') || ql.includes('help me')) {
+      const draft = m.aiType === 'answer' && m.draftAnswer ? m.draftAnswer : `Hi ${m.from.split(' ')[0]},\n\nThank you for reaching out. I'll look into this and come back to you shortly.\n\nBest,\nHR`;
+      konoChatHistory[msgId].push({ role:'ai', text: `Here's a suggested draft — <a onclick="useDraftFromKono('${msgId}')">click to use in reply box</a>.` });
+      m._konoDraft = draft;
+      renderKonoHistory(msgId);
+      return;
+    } else if (ql.includes('policy') || ql.includes('entitl') || ql.includes('allowance')) {
+      reply = m.policyRef
+        ? `Based on the ${m.policyRef}, the relevant details are already in the draft. If you need the full policy text, it's available under Manage → Policies.`
+        : `I don't have a specific uploaded policy for this yet. You can upload one under Manage → Policies and I'll reference it automatically next time.`;
+    } else if (ql.includes('escalate') || ql.includes('serious') || ql.includes('tribunal')) {
+      reply = `If this has the potential to escalate, make sure every interaction is documented in writing. I'd recommend acknowledging receipt now, asking any clarifying questions, then taking time to respond properly rather than rushing. Want me to draft an acknowledgement?`;
+    } else {
+      reply = `Good question. For this type of message (${m.type.toLowerCase()}), the key things to consider are: what information do you need before responding, whether there are policy implications, and what the employee is actually looking for — an answer, reassurance, or an action. Want me to help draft something?`;
+    }
+    konoChatHistory[msgId].push({ role:'ai', text: reply });
+    renderKonoHistory(msgId);
+  }, 600);
+}
+
+function useDraftFromKono(msgId) {
+  const m = msgs.find(x => x.id === msgId);
+  if (!m || !m._konoDraft) return;
+  switchCompose('reply', msgId);
+  const ta = document.getElementById('replyTa-' + msgId);
+  if (ta) { ta.value = m._konoDraft; ta.focus(); }
+}
+
+function toggleCQ(el) { el.classList.toggle('sel'); }
+
+function draftClarifyKono(msgId) {
+  const m = msgs.find(x => x.id === msgId);
+  const selected = [...document.querySelectorAll(`[id^="cq-${msgId}"].sel .cq-text`)].map(el => el.textContent);
+  if (!selected.length) { alert('Tick at least one question first'); return; }
+  const draft = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help me with a few quick questions:\n\n${selected.map((q,i) => `${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this information.\n\nMany thanks,\nHR`;
+  switchCompose('reply', msgId);
+  const ta = document.getElementById('replyTa-' + msgId);
+  if (ta) { ta.value = draft; ta.focus(); }
+}
+
+function updateMsgType(msgId, val) { const m = msgs.find(x => x.id === msgId); if (m) m.type = val; }
+function updateStatus(msgId, val) {
+  const m = msgs.find(x => x.id === msgId);
+  if (!m) return;
+  m.status = val;
+  renderMsgs();
+  const tag = document.getElementById('statusTag-' + msgId);
+  if (tag) {
+    const labels = {open:'Open',inprog:'In progress',resolved:'Resolved'};
+    const classes = {open:'tag-open',inprog:'tag-inprog',resolved:'tag-resolved'};
+    tag.textContent = labels[val] || val;
+    tag.className = 'tag ' + (classes[val] || 'tag-open');
+  }
+}
+
+async function sendReply(msgId) {
+  const m = msgs.find(x => x.id === msgId);
+  const ta = document.getElementById('replyTa-' + msgId);
+  if (!ta || !ta.value.trim()) return;
+  const text = ta.value.trim();
+  // Save to Supabase — log what AI drafted vs what HR sent
+  const aiDraft = m.draftAnswer || '';
+  await saveResponse(msgId, aiDraft, text);
+  // Save feedback on which questions were used if clarify type
+  if (m.aiType === 'clarify' && m.clarifyQs.length) {
+    const used = [...document.querySelectorAll(`[id^="cq-${msgId}"].sel .cq-text`)].map(el => el.textContent);
+    await saveFeedback(m.type, m.clarifyQs, used);
+  }
+  m.thread.push({dir:'out', sender:'HR', time:'Just now', text});
+  ta.value = '';
+  if (m.status !== 'resolved') {
+    m.status = 'inprog';
+    await updateMessageStatus(msgId, 'inprog');
+  }
+  const eb = document.getElementById('emailBody-' + msgId);
+  if (eb) {
+    const existingThread = eb.querySelector('.thread-wrap');
+    const newMsg = `<div class="tm tm-out"><div class="tm-sender">HR<span>Just now</span></div>${text}</div>`;
+    if (existingThread) {
+      existingThread.querySelector('.thread-body').insertAdjacentHTML('beforeend', newMsg);
+    } else {
+      eb.insertAdjacentHTML('beforeend', `<div class="thread-wrap"><div class="thread-head">Thread</div><div class="thread-body">${newMsg}</div></div>`);
+    }
+    eb.scrollTop = eb.scrollHeight;
+  }
+  renderMsgs();
+}
+
+async function resolveM(msgId) {
+  const m = msgs.find(x => x.id === msgId);
+  if (m) {
+    m.status = 'resolved';
+    await updateMessageStatus(msgId, 'resolved');
+    openMsg(m); renderMsgs();
+  }
+}
+
+async function logOffline() {
+  const from = prompt('Who is this about?'); if (!from) return;
+  const subj = prompt('Subject / brief description:'); if (!subj) return;
+  const body = prompt('What was discussed?') || subj;
+  const newMsg = {
+    id:'m'+Date.now(), from, initials: from.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(),
+    bg:'#EAF3EC', fg:'#2A6049', source:'direct', type:'General', status:'new',
+    time:'Just now', subject: subj, preview: body, body,
+    aiType:'clarify', policyRef:null, draftAnswer:null,
+    clarifyQs:['What outcome is HR looking to achieve?','Has anything been put in writing so far?'],
+    thread:[]
+  };
+  // Save to DB
+  const saved = await saveMessage(newMsg);
+  if (saved) newMsg.id = saved.id;
+  msgs.unshift(newMsg);
+  renderMsgs();
+}
+
+// ════════════════════════════════
+// DOCUMENT GENERATOR
+// ════════════════════════════════
+let selTmpl = null, genStep = 0, genVals = {};
+
+function renderTmpls(filter) {
+  const list = document.getElementById('tmplList');
+  const filtered = filter ? tmpls.filter(t => t.name.toLowerCase().includes(filter.toLowerCase())) : tmpls;
+  const groups = {};
+  filtered.forEach(t => { if (!groups[t.type]) groups[t.type] = []; groups[t.type].push(t); });
+  list.innerHTML = '';
+  Object.entries(groups).forEach(([grp, ts]) => {
+    const lbl = document.createElement('div'); lbl.className = 'lib-sec'; lbl.textContent = grp; list.appendChild(lbl);
+    ts.forEach(t => {
+      const div = document.createElement('div');
+      div.className = 'ti' + (selTmpl && selTmpl.id === t.id ? ' active' : '');
+      div.onclick = () => openTmpl(t);
+      div.innerHTML = `<div class="ti-ico" style="background:var(--sage-bg)">${t.emoji}</div><div><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields</div></div>`;
+      list.appendChild(div);
+    });
+  });
+}
+function filterTmpls(v) { renderTmpls(v); }
+
+function openTmpl(t) {
+  selTmpl = t; genStep = 0; genVals = {};
+  renderTmpls(document.getElementById('tmplSearch').value);
+  document.getElementById('genEmpty').style.display = 'none';
+  const split = document.getElementById('genSplit');
+  split.style.display = 'flex';
+  split.innerHTML = `
+    <div class="gen-chat">
+      <div class="gc-head">
+        <div class="gc-title">${t.emoji} ${t.name}</div>
+        <div class="gc-sub">Answer each question — letter builds in real time on the right</div>
+      </div>
+      <div class="gc-msgs" id="gcMsgs">
+        <div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. Answer each question and watch the letter build.</div></div>
+      </div>
+      <div class="gc-field" id="gcField"></div>
+    </div>
+    <div class="doc-preview">
+      <div class="dp-head">
+        <div class="dp-title">Letter preview</div>
+        <div class="dp-btns">
+          <button class="btn btn-secondary btn-sm" id="dlBtn" style="display:none" onclick="this.textContent='✓ Downloaded';setTimeout(()=>this.textContent='Download .docx',2000)">Download .docx</button>
+          <button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send to employee</button>
+        </div>
+      </div>
+      <div class="dp-body" id="dpBody">
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink3);font-size:12px;flex-direction:column;gap:8px;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          Answer the questions to see the letter appear
+        </div>
+      </div>
+    </div>`;
+  askQ();
+}
+
+function askQ() {
+  const q = selTmpl.flow[genStep];
+  if (!q) { finishTmpl(); return; }
+  addGMsg('ai', q.q);
+  const field = document.getElementById('gcField');
+  field.innerHTML = `
+    <div class="gc-field-label">${q.f}</div>
+    <div class="gc-field-row">
+      <input class="gc-input" id="gcInp" placeholder="Type here..." onkeydown="if(event.key==='Enter'){event.preventDefault();submitQ()}">
+      <button class="gc-next" onclick="submitQ()">→</button>
+    </div>`;
+  setTimeout(() => { const i = document.getElementById('gcInp'); if(i) i.focus(); }, 40);
+}
+
+function submitQ() {
+  const inp = document.getElementById('gcInp');
+  if (!inp || !inp.value.trim()) return;
+  const val = inp.value.trim();
+  genVals[selTmpl.flow[genStep].f] = val;
+  genStep++;
+  addGMsg('u', val);
+  updatePreview();
+  setTimeout(askQ, 280);
+}
+
+function addGMsg(role, text) {
+  const c = document.getElementById('gcMsgs'); if (!c) return;
+  const d = document.createElement('div');
+  d.className = 'gm' + (role === 'u' ? ' u' : '');
+  d.innerHTML = `<div class="gm-av ${role}">${role==='ai'?'◈':'HR'}</div><div class="gm-b ${role}">${text}</div>`;
+  c.appendChild(d); c.scrollTop = c.scrollHeight;
+}
+
+function ph(f) {
+  return genVals[f] ? `<span class="filled">${genVals[f]}</span>` : `<span class="ph">[${f}]</span>`;
+}
+
+function updatePreview() {
+  const body = document.getElementById('dpBody'); if (!body) return;
+  const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const t = selTmpl;
+  let content = '';
+  if (t.id === 't1') {
+    content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div>
+    <div style="margin-bottom:16px;font-size:13px;"><strong>Private &amp; Confidential</strong><br>Dear ${ph('Employee name')},</div>
+    <div class="doc-body-text">
+      <p>I am delighted to confirm your promotion to the role of ${ph('New job title')}, effective ${ph('Effective date')}.</p>
+      <p>This promotion recognises your outstanding contribution to ${ph('Department')} and the confidence we have in your continued growth.</p>
+      <p>Your new annual salary will be ${ph('New salary')}, payable monthly in arrears. All other terms and conditions of employment remain unchanged.</p>
+      <p>Please sign and return a copy of this letter to confirm your acceptance.</p>
+      <p>Yours sincerely,</p>
+    </div>
+    <div class="doc-sig"><div class="doc-sig-name">${ph('Manager name')}</div><div style="font-size:12px;color:var(--ink3);margin-top:3px;">Line Manager · ${ph('Department')}</div></div>`;
+  } else if (t.id === 't2') {
+    content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div>
+    <div style="margin-bottom:16px;font-size:13px;"><strong>Private &amp; Confidential</strong><br>Dear ${ph('Employee name')},</div>
+    <div class="doc-body-text">
+      <p>I am pleased to confirm that your salary will increase with effect from ${ph('Effective date')}.</p>
+      <p>Your new annual salary will be ${ph('New salary')} (previously ${ph('Current salary')}), payable monthly in arrears.</p>
+      <p>This reflects our appreciation of your contribution. All other terms remain unchanged.</p>
+      <p>Yours sincerely,</p>
+    </div>
+    <div class="doc-sig"><div class="doc-sig-name">${ph('Manager name')}</div></div>`;
+  } else if (t.id === 't3') {
+    content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div>
+    <div style="margin-bottom:16px;font-size:13px;"><strong>Private &amp; Confidential</strong><br>Dear ${ph('Candidate name')},</div>
+    <div class="doc-body-text">
+      <p>We are delighted to offer you the position of ${ph('Job title')} at Acme Corp, commencing ${ph('Start date')}.</p>
+      <p>Your annual salary will be ${ph('Salary')}, payable monthly. Your place of work will be ${ph('Location')}.</p>
+      <p>This offer is subject to satisfactory references and right to work verification. Your employment will include a probationary period of ${ph('Probation period')}.</p>
+      <p>Please sign and return this letter within 5 working days to confirm your acceptance.</p>
+      <p>Yours sincerely,</p>
+    </div>
+    <div class="doc-sig"><div class="doc-sig-name">HR Team · Acme Corp</div></div>`;
+  } else {
+    const rows = t.flow.map(f => `<p><strong>${f.f}:</strong> ${ph(f.f)}</p>`).join('');
+    content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div><div class="doc-body-text">${rows}</div>`;
+  }
+  body.innerHTML = `<div class="doc-page">${content}</div>`;
+}
+
+function finishTmpl() {
+  addGMsg('ai', `✓ The ${selTmpl.name.toLowerCase()} is complete. Download it or send directly.`);
+  const f = document.getElementById('gcField');
+  if (f) f.innerHTML = `<div style="padding:8px;font-size:11px;color:var(--sage);font-weight:500;text-align:center;">Complete — ready to download or send</div>`;
+  const dl = document.getElementById('dlBtn'), sb = document.getElementById('sendBtn');
+  if (dl) dl.style.display = 'inline-flex';
+  if (sb) sb.style.display = 'inline-flex';
+  updatePreview();
+}
+
+// ════════════════════════════════
+// MANAGE VIEW
+// ════════════════════════════════
+const policies = [
+  { icon:'🏖️', name:'Annual leave policy', desc:'Holiday entitlement, carry-over rules, booking process', status:'uploaded' },
+  { icon:'🤱', name:'Maternity leave policy', desc:'Enhanced pay, notification requirements, return to work', status:'uploaded' },
+  { icon:'👶', name:'Paternity leave policy', desc:'Entitlement, notice requirements, pay during leave', status:'uploaded' },
+  { icon:'💰', name:'Pension policy', desc:'Employer contributions, provider details, how to change contributions', status:'uploaded' },
+  { icon:'🏥', name:'Sick leave & absence policy', desc:'Self-certification, fit notes, SSP, long-term absence', status:'uploaded' },
+  { icon:'⚡', name:'Performance management policy', desc:'Informal process, PIPs, ACAS code of practice', status:'missing' },
+  { icon:'⚖️', name:'Disciplinary & grievance policy', desc:'Investigation process, hearings, appeals', status:'missing' },
+  { icon:'🏠', name:'Flexible working policy', desc:'Application process, eligibility, trial periods', status:'missing' },
+  { icon:'📋', name:'Redundancy policy', desc:'Selection criteria, consultation, notice periods', status:'missing' }
+];
+
+const processes = [
+  { icon:'👋', name:'New starter onboarding', badge:'Auto-building', steps:['Contract issued','Right to work check','IT setup','Welcome email','Day one check-in','Probation review set'] },
+  { icon:'🤱', name:'Maternity leave', badge:'Auto-building', steps:['Initial notification','MAT B1 received','Pay calculated','Manager notified','Cover planned','Return date confirmed'] },
+  { icon:'📉', name:'Performance management', badge:'Beta', steps:['Informal conversation','Follow-up email sent','Formal PIP issued','Review meetings','Outcome decision'] },
+  { icon:'🚪', name:'Offboarding', badge:'Beta', steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned'] }
+];
+
+let mTab = 'policies';
+function switchMTab(tab, el) {
+  mTab = tab;
+  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  renderManage();
+}
+
+function renderManage() {
+  const body = document.getElementById('manageBody');
+  if (mTab === 'policies') {
+    const uploaded = policies.filter(p => p.status === 'uploaded').length;
+    body.innerHTML = `
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink);">Policy library</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${uploaded} of ${policies.length} uploaded — Kono uses these to answer employee questions</div>
+        </div>
+        <button class="btn btn-primary btn-sm">+ Upload policy</button>
+      </div>
+      <div class="policy-grid">${policies.map(p => `
+        <div class="policy-card">
+          <div class="pc-icon">${p.icon}</div>
+          <div class="pc-name">${p.name}</div>
+          <div class="pc-desc">${p.desc}</div>
+          <div class="pc-foot">
+            <span class="pc-status ${p.status === 'uploaded' ? 'pcs-uploaded' : 'pcs-missing'}">${p.status === 'uploaded' ? '✓ Uploaded' : 'Not uploaded'}</span>
+            <span class="pc-action">${p.status === 'uploaded' ? 'Replace' : 'Upload'}</span>
+          </div>
+        </div>`).join('')}
+      </div>`;
+  } else {
+    body.innerHTML = `
+      <div style="margin-bottom:16px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Kono builds these automatically from patterns in your intake — the more you use it, the more accurate they become.</div>
+      </div>
+      <div class="process-grid">${processes.map(p => `
+        <div class="process-card">
+          <div class="prsc-head">
+            <div class="prsc-icon">${p.icon}</div>
+            <div class="prsc-name">${p.name}</div>
+            <span class="prsc-badge ${p.badge === 'Auto-building' ? 'prsb-auto' : 'prsb-beta'}">${p.badge}</span>
+          </div>
+          <div class="prsc-steps">${p.steps.map((s,i) => `
+            <div class="prsc-step">
+              <div class="step-num">${i+1}</div>
+              ${s}
+            </div>`).join('')}
+          </div>
+          <div class="prsc-foot">Built from ${Math.floor(Math.random()*12)+3} conversations · last updated today</div>
+        </div>`).join('')}
+      </div>`;
+  }
+}
+
+// ════════════════════════════════
+// NAVIGATION
+// ════════════════════════════════
+function showView(v, el) {
+  document.querySelectorAll('.view').forEach(x => x.classList.remove('active'));
+  document.getElementById('view-'+v).classList.add('active');
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  if (el) el.classList.add('active');
+  if (v === 'manage') renderManage();
+}
+
+// INIT
+renderMsgs();
+renderTmpls();
+openMsg(msgs[0]);
+</script>
+</body>
+</html>
