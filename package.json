@@ -1,0 +1,9 @@
+{
+  "name": "breeze-hr",
+  "version": "1.0.0",
+  "description": "Breeze HR Operations Platform",
+  "dependencies": {
+    "docxtemplater": "^3.47.0",
+    "pizzip": "^3.1.4"
+  }
+}
