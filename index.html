@@ -126,17 +126,25 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   background: var(--surface);
   flex-shrink: 0;
   overflow-y: auto;
-  max-height: 50%;
+  max-height: 45%;
 }
-.eh-meta-line { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
-.eh-av { width: 26px; height: 26px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 600; flex-shrink: 0; }
-.eh-name { font-size: 13px; font-weight: 600; color: var(--ink); }
-.eh-sep { color: var(--ink3); font-size: 11px; }
-.eh-via { font-size: 11px; color: var(--ink2); display: flex; align-items: center; gap: 3px; }
+.eh-meta-line {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+  font-size: 12px;
+  color: var(--ink3);
+}
+.eh-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.eh-name { font-size: 12px; font-weight: 500; color: var(--ink2); }
+.eh-sep { color: var(--ink3); }
 .eh-time { font-size: 11px; color: var(--ink3); }
-.eh-subject { font-size: 15px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 8px; line-height: 1.4; }
-.reply-type-select { font-size: 11px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px 7px; font-family: inherit; color: var(--ink2); background: var(--surface2); outline: none; cursor: pointer; transition: border 0.12s; }
-.reply-type-select:focus { border-color: var(--accent); }
+.eh-subject { font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.3; }
+.eh-controls { display: flex; align-items: center; gap: 5px; }
+.reply-type-select { font-size: 11px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 2px 6px; font-family: inherit; color: var(--ink3); background: var(--surface2); outline: none; cursor: pointer; }
+.reply-type-select:focus { border-color: var(--accent); color: var(--ink2); }
 
 /* Collapsible */
 .collapsible-msg { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 7px; }
@@ -160,12 +168,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .ctab.active.breeze-tab { color: var(--accent); border-bottom-color: var(--accent); }
 
 .reply-pane { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-.reply-kono-suggestion { padding: 8px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, #EBF3FF, #F0FFF4); flex-shrink: 0; }
-.rks-head { display: flex; align-items: center; gap: 6px; margin-bottom: 3px; }
-.rks-icon { width: 16px; height: 16px; border-radius: 4px; background: var(--ink); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
-.rks-title { font-size: 11px; font-weight: 600; color: var(--ink); }
-.rks-source { display: flex; align-items: center; gap: 4px; font-size: 11px; color: var(--ink2); margin-bottom: 3px; }
-.rks-source a { color: var(--accent); text-decoration: underline; cursor: pointer; }
+.reply-kono-suggestion { padding: 7px 14px; border-bottom: 1px solid var(--border); background: #F8FBFF; flex-shrink: 0; display: flex; align-items: flex-start; gap: 7px; }
+.rks-icon { width: 14px; height: 14px; border-radius: 3px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; margin-top: 1px; }
+.rks-title { font-size: 11px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
+.rks-source { font-size: 11px; color: var(--ink3); margin-bottom: 2px; }
+.rks-source a { color: var(--accent); text-decoration: none; }
 .rks-advice { font-size: 11px; color: var(--ink2); line-height: 1.5; }
 .rks-advice strong { font-weight: 600; color: var(--ink); }
 
@@ -677,12 +684,12 @@ function openMsg(m) {
 
   let replySuggestion = '';
   if (m.aiType==='answer') {
-    replySuggestion = `<div class="reply-kono-suggestion"><div class="rks-head"><div class="rks-icon">◈</div><div class="rks-title">Breeze HR drafted this from your policies</div></div>${m.policyRef?`<div class="rks-source"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/></svg> Source: <a>📄 ${m.policyRef}</a></div>`:''}<div class="rks-advice">Edit below then send to ${m.from.split(' ')[0]}.</div></div>`;
+    replySuggestion = `<div class="reply-kono-suggestion"><div class="rks-icon">◈</div><div><div class="rks-title">Breeze HR drafted this${m.policyRef?` · <span class="rks-source"><a>📄 ${m.policyRef}</a></span>`:''}</div><div class="rks-advice">Edit below then send to ${m.from.split(' ')[0]}.</div></div></div>`;
   } else if (m.clarifyQs.length) {
     const txt = m.type==='Performance'
-      ? `<strong>ACAS guidance:</strong> before escalating formally, ensure two informal conversations have taken place and been documented. Recommended next step if no improvement: formal PIP with clear measurable targets.`
-      : `<strong>Breeze HR suggests</strong> gathering more context first. Questions are pre-loaded in the reply — remove any that don't apply.`;
-    replySuggestion = `<div class="reply-kono-suggestion"><div class="rks-head"><div class="rks-icon">◈</div><div class="rks-title">Breeze HR's suggestion</div></div><div class="rks-advice">${txt}</div></div>`;
+      ? `ACAS: ensure two documented informal conversations before escalating to formal PIP.`
+      : `Questions pre-loaded in the reply — remove any that don't apply.`;
+    replySuggestion = `<div class="reply-kono-suggestion"><div class="rks-icon">◈</div><div><div class="rks-title">Breeze HR suggests asking for more context</div><div class="rks-advice">${txt}</div></div></div>`;
   }
 
   let initReply = '';
@@ -697,29 +704,21 @@ function openMsg(m) {
         <div class="eh-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
         <span class="eh-name">${m.from}</span>
         <span class="eh-sep">·</span>
-        <span class="eh-via">${srcIcon} ${srcLabel}</span>
-        <span class="eh-time">${m.time}</span>
-        <span class="eh-sep">·</span>
-        <select class="reply-type-select" onchange="updateMsgType('${m.id}',this.value)">
-          ${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}
-        </select>
-        <select class="reply-type-select" onchange="updateStatus('${m.id}',this.value)">
-          <option value="open" ${m.status==='open'?'selected':''}>Open</option>
-          <option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option>
-          <option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option>
-        </select>
-        <button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);font-size:11px;" onclick="deleteMsg('${m.id}')">Delete</button>
+        <span class="eh-time">${srcLabel} · ${m.time}</span>
+        <div style="margin-left:auto;display:flex;gap:5px;align-items:center;">
+          <select class="reply-type-select" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
+          <select class="reply-type-select" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
+          <button style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:2px 4px;" onclick="deleteMsg('${m.id}')">Delete</button>
+        </div>
       </div>
       <div class="eh-subject">${m.subject}</div>
-      <!-- Original message — open by default -->
       <div class="collapsible-msg" id="collMsg-${m.id}">
         <div class="collapsible-trigger" onclick="toggleCollapsible('collMsg-${m.id}')">
           <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
           <span style="font-size:11px;color:var(--ink3);">Message from ${m.from.split(' ')[0]}</span>
-          <span style="font-size:10px;color:var(--ink3);margin-left:auto;">${m.time}</span>
         </div>
-        <div class="collapsible-body" id="collBody-${m.id}" style="display:block;">
-          <div style="padding:8px 0 4px;font-size:12px;color:var(--ink2);line-height:1.65;white-space:pre-wrap;">${m.body}</div>
+        <div class="collapsible-body" style="display:block;">
+          <div style="padding:7px 0 3px;font-size:12px;color:var(--ink2);line-height:1.65;white-space:pre-wrap;">${m.body}</div>
         </div>
       </div>
       ${threadHtml}
@@ -730,9 +729,7 @@ function openMsg(m) {
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
           Reply to ${m.from.split(' ')[0]}
         </div>
-        <div class="ctab breeze-tab" id="ctab-breeze-${m.id}" onclick="switchCompose('breeze','${m.id}')">
-          ◈ Ask Breeze HR
-        </div>
+        <div class="ctab breeze-tab" id="ctab-breeze-${m.id}" onclick="switchCompose('breeze','${m.id}')">◈ Ask Breeze HR</div>
       </div>
       <div class="reply-pane" id="replyPane-${m.id}">
         ${replySuggestion}
@@ -741,9 +738,9 @@ function openMsg(m) {
           <span class="reply-to-val">${m.from}</span>
           <select class="reply-type-select"><option>via ${srcLabel}</option><option>via Email</option><option>via Slack</option></select>
         </div>
-        <textarea class="reply-ta" id="replyTa-${m.id}" placeholder="Write your reply to ${m.from.split(' ')[0]}...">${initReply}</textarea>
+        <textarea class="reply-ta" id="replyTa-${m.id}" placeholder="Write your reply...">${initReply}</textarea>
         <div class="reply-actions-row">
-          <div class="reply-via-info">${srcIcon} <span>Direct to ${m.from}</span></div>
+          <div class="reply-via-info"><span>→ ${m.from} via ${srcLabel}</span></div>
           <div style="display:flex;gap:5px;">
             <button class="btn btn-secondary btn-sm">Save draft</button>
             <button class="btn btn-primary btn-sm" onclick="sendReply('${m.id}')">Send</button>
@@ -753,12 +750,10 @@ function openMsg(m) {
       <div class="kono-pane" id="konoPane-${m.id}">
         <div class="kono-history" id="konoHistory-${m.id}"></div>
         <div class="kono-input-row">
-          <textarea class="kono-ta" id="konoTa-${m.id}" placeholder="Ask Breeze HR — ACAS guidance, policy, how to handle this..." rows="1"
+          <textarea class="kono-ta" id="konoTa-${m.id}" placeholder="Ask Breeze HR anything about this message..." rows="1"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendKono('${m.id}')}"
             oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
-          <button class="kono-send" onclick="sendKono('${m.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-          </button>
+          <button class="kono-send" onclick="sendKono('${m.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
         </div>
       </div>
     </div>
@@ -1088,6 +1083,7 @@ async function uploadPolicy(event) {
   const file=event.target.files[0];if(!file||!currentProfile){alert('Not logged in');return;}
   const name=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
   const content=await readFileAsText(file);
+  if(!content){alert('Could not read file. Try saving as .txt first.');return;}
   const{error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name,content:content.substring(0,50000)});
   if(error){alert('Upload failed: '+error.message);return;}
   alert(`✓ "${name}" uploaded.`); renderManage(); event.target.value='';
@@ -1096,6 +1092,7 @@ async function uploadPolicy(event) {
 async function uploadNamedPolicy(event,policyName) {
   const file=event.target.files[0];if(!file||!currentProfile)return;
   const content=await readFileAsText(file);
+  if(!content){alert('Could not read file');return;}
   const{data:existing}=await sb.from('policies').select('id').eq('company_id',currentProfile.company_id).eq('name',policyName).single();
   if(existing){await sb.from('policies').update({content:content.substring(0,50000)}).eq('id',existing.id);}
   else{await sb.from('policies').insert({company_id:currentProfile.company_id,name:policyName,content:content.substring(0,50000)});}
