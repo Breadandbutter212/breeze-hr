@@ -208,7 +208,7 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 .detail-inner { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
 /* Scrollable message body */
-.email-body { flex: 1; min-height: 0; max-height: 280px; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; }
+.email-body { flex-shrink: 0; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; max-height: 220px; }
 
 /* Original message block — email style */
 .orig-email {
@@ -233,13 +233,12 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 
 /* ── COMPOSE / ASK KONO BOTTOM PANEL ── */
 .compose-panel {
-  flex-shrink: 0;
+  flex: 1;
+  min-height: 0;
   border-top: 1px solid var(--border);
   background: var(--surface);
   display: flex;
   flex-direction: column;
-  flex: 1;
-  min-height: 320px;
   overflow: hidden;
 }
 /* Mode toggle */
@@ -271,23 +270,23 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 /* Reply pane — now contains Kono suggestion above the textarea */
 .reply-pane { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
 .reply-kono-suggestion {
-  padding: 10px 14px;
+  padding: 8px 14px;
   border-bottom: 1px solid var(--border);
   background: linear-gradient(135deg, #EBF0FA 0%, #EAF3EC 100%);
   flex-shrink: 0;
   font-size: 12px;
   color: var(--ink2);
-  line-height: 1.6;
+  line-height: 1.5;
 }
-.rks-head { display: flex; align-items: center; gap: 6px; margin-bottom: 5px; }
+.rks-head { display: flex; align-items: center; gap: 6px; margin-bottom: 4px; }
 .rks-icon { width: 18px; height: 18px; border-radius: 4px; background: var(--ink); color: white; display: flex; align-items: center; justify-content: center; font-size: 9px; flex-shrink: 0; }
 .rks-title { font-size: 11px; font-weight: 600; color: var(--ink); }
-.rks-source { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink2); margin-bottom: 5px; }
+.rks-source { display: flex; align-items: center; gap: 5px; font-size: 11px; color: var(--ink2); margin-bottom: 4px; }
 .rks-source a { color: var(--blue); text-decoration: underline; cursor: pointer; }
-.rks-advice { font-size: 12px; color: var(--ink); line-height: 1.6; }
+.rks-advice { font-size: 11px; color: var(--ink); line-height: 1.5; }
 .rks-advice strong { font-weight: 600; }
 
-.reply-to-row { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.reply-to-row { display: flex; align-items: center; gap: 6px; padding: 7px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
 .reply-to-label { font-size: 11px; color: var(--ink3); width: 22px; flex-shrink: 0; }
 .reply-to-val { font-size: 12px; color: var(--ink); font-weight: 500; flex: 1; }
 .reply-type-select {
@@ -310,18 +309,18 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
   font-size: 13px;
   font-family: inherit;
   color: var(--ink);
-  background: transparent;
+  background: var(--surface);
   resize: none;
   flex: 1;
   min-height: 0;
-  line-height: 1.6;
+  line-height: 1.65;
   overflow-y: auto;
 }
 .reply-actions-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 7px 14px;
+  padding: 8px 14px;
   border-top: 1px solid var(--border);
   flex-shrink: 0;
   background: var(--surface2);
@@ -1355,8 +1354,8 @@ function renderKonoHistory(msgId) {
   if (!el) return;
   el.innerHTML = hist.map(h => `
     <div class="kono-msg${h.role==='hr'?' kono-u':''}">
-      <div class="kono-av ${h.role==='ai'?'ai':'u'}">${h.role==='ai'?'◈':'HR'}</div>
-      <div class="kono-bubble ${h.role==='ai'?'ai':'u'}">${h.text}</div>
+      <div class="kono-av ${h.role==='hr'?'u':'ai'}">${h.role==='hr'?'HR':'◈'}</div>
+      <div class="kono-bubble ${h.role==='hr'?'u':'ai'}">${h.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div>
     </div>`).join('');
   el.scrollTop = el.scrollHeight;
 }
