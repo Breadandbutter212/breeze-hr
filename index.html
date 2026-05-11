@@ -6,6 +6,7 @@
 <title>Breeze HR — Operations</title>
 <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,400&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <style>
 :root {
   --ink: #1A1917;
@@ -669,16 +670,20 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
       <div class="docs-title">Document generator</div>
       <div class="docs-sub">Select a template — chat fills in the fields, letter builds in real time</div>
     </div>
-    <button class="btn btn-primary btn-sm">+ Upload template</button>
+    <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+      + Upload template
+      <input type="file" accept=".docx,.txt" style="display:none" onchange="uploadTemplate(event)">
+    </label>
   </div>
   <div class="docs-body">
     <div class="tmpl-lib">
       <div class="lib-search"><input placeholder="Search templates..." oninput="filterTmpls(this.value)" id="tmplSearch"></div>
       <div class="lib-scroll" id="tmplList"></div>
-      <div class="upload-zone">
+      <label class="upload-zone" style="cursor:pointer;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;margin:0 auto 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Upload your own (.docx)
-      </div>
+        Upload your own (.docx or .txt)
+        <input type="file" accept=".docx,.txt" style="display:none" onchange="uploadTemplate(event)">
+      </label>
     </div>
     <div class="gen-area">
       <div class="gen-empty" id="genEmpty">
@@ -1651,28 +1656,153 @@ async function logOffline() {
   renderMsgs();
 }
 
+// ── TEMPLATE UPLOAD ──
+async function uploadTemplate(event) {
+  const file = event.target.files[0];
+  if (!file || !currentProfile) return;
+  const name = file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
+
+  const readFile = () => new Promise((resolve) => {
+    if (file.name.endsWith('.docx')) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+          resolve(result.value);
+        } catch(err) { resolve('Could not read file — try saving as .txt'); }
+      };
+      reader.readAsArrayBuffer(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (e) => resolve(e.target.result);
+      reader.readAsText(file);
+    }
+  });
+
+  const content = await readFile();
+
+  // Save to policies table with a 'template' flag in the name
+  await sb.from('policies').insert({
+    company_id: currentProfile.company_id,
+    name: `TEMPLATE: ${name}`,
+    content: content.substring(0, 50000)
+  });
+
+  // Add to local tmpls array for immediate display
+  const newTmpl = {
+    id: 't_' + Date.now(),
+    name,
+    emoji: '📄',
+    type: 'Your templates',
+    isCustom: true,
+    content,
+    flow: detectTemplateFields(content, name)
+  };
+  tmpls.unshift(newTmpl);
+  renderTmpls();
+  alert(`✓ "${name}" uploaded successfully. It now appears in your template library.`);
+  event.target.value = '';
+}
+
+function detectTemplateFields(content, name) {
+  // Detect placeholder fields in the template — looks for [FIELD] or {{field}} patterns
+  const bracketFields = [...content.matchAll(/\[([A-Z][A-Z\s]+)\]/g)].map(m => m[1]);
+  const curlyFields = [...content.matchAll(/\{\{([^}]+)\}\}/g)].map(m => m[1].trim());
+  const allFields = [...new Set([...bracketFields, ...curlyFields])];
+
+  if (allFields.length > 0) {
+    return allFields.map(f => ({
+      q: `What is the ${f.toLowerCase()}?`,
+      f
+    }));
+  }
+
+  // If no placeholders found, ask for common fields based on template name
+  const nameLower = name.toLowerCase();
+  if (nameLower.includes('promotion') || nameLower.includes('salary')) {
+    return [
+      { q: "Employee's full name?", f: 'Employee name' },
+      { q: "Effective date?", f: 'Effective date' },
+      { q: "New salary or title?", f: 'New details' }
+    ];
+  }
+  return [
+    { q: "Employee's full name?", f: 'Employee name' },
+    { q: "Date?", f: 'Date' },
+    { q: "Any other details to include?", f: 'Details' }
+  ];
+}
+
 // ════════════════════════════════
 // DOCUMENT GENERATOR
 // ════════════════════════════════
 let selTmpl = null, genStep = 0, genVals = {};
 
-function renderTmpls(filter) {
+async function renderTmpls(filter) {
   const list = document.getElementById('tmplList');
+  if (!list) return;
+
+  // Load custom uploaded templates from Supabase
+  if (currentProfile && !filter) {
+    const { data } = await sb.from('policies')
+      .select('*')
+      .eq('company_id', currentProfile.company_id)
+      .like('name', 'TEMPLATE:%');
+    if (data && data.length) {
+      data.forEach(d => {
+        const name = d.name.replace('TEMPLATE: ','');
+        if (!tmpls.find(t => t.name === name)) {
+          tmpls.unshift({
+            id: 't_db_' + d.id,
+            name,
+            emoji: '📄',
+            type: 'Your templates',
+            isCustom: true,
+            content: d.content,
+            flow: detectTemplateFields(d.content, name)
+          });
+        }
+      });
+    }
+  }
+
   const filtered = filter ? tmpls.filter(t => t.name.toLowerCase().includes(filter.toLowerCase())) : tmpls;
   const groups = {};
   filtered.forEach(t => { if (!groups[t.type]) groups[t.type] = []; groups[t.type].push(t); });
   list.innerHTML = '';
-  Object.entries(groups).forEach(([grp, ts]) => {
+
+  // Show custom templates first
+  const orderedGroups = ['Your templates', 'Letters', 'Contracts'];
+  orderedGroups.forEach(grp => {
+    const ts = groups[grp];
+    if (!ts || !ts.length) return;
     const lbl = document.createElement('div'); lbl.className = 'lib-sec'; lbl.textContent = grp; list.appendChild(lbl);
     ts.forEach(t => {
       const div = document.createElement('div');
       div.className = 'ti' + (selTmpl && selTmpl.id === t.id ? ' active' : '');
       div.onclick = () => openTmpl(t);
-      div.innerHTML = `<div class="ti-ico" style="background:var(--sage-bg)">${t.emoji}</div><div><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields</div></div>`;
+      div.innerHTML = `
+        <div class="ti-ico" style="background:${t.isCustom ? 'var(--amber-bg)' : 'var(--sage-bg)'}">${t.emoji}</div>
+        <div style="flex:1;">
+          <div class="ti-name">${t.name}</div>
+          <div class="ti-sub">${t.flow.length} fields${t.isCustom ? ' · custom' : ''}</div>
+        </div>
+        ${t.isCustom ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 6px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>` : ''}`;
       list.appendChild(div);
     });
   });
 }
+async function deleteTemplate(tmplId) {
+  if (!confirm('Delete this template?')) return;
+  // Remove from DB
+  const dbId = tmplId.replace('t_db_','');
+  await sb.from('policies').delete().eq('id', dbId);
+  // Remove from local array
+  const idx = tmpls.findIndex(t => t.id === tmplId);
+  if (idx > -1) tmpls.splice(idx, 1);
+  renderTmpls();
+}
+
 function filterTmpls(v) { renderTmpls(v); }
 
 function openTmpl(t) {
@@ -1685,24 +1815,24 @@ function openTmpl(t) {
     <div class="gen-chat">
       <div class="gc-head">
         <div class="gc-title">${t.emoji} ${t.name}</div>
-        <div class="gc-sub">Answer each question — letter builds in real time on the right</div>
+        <div class="gc-sub">${t.isCustom ? 'Your uploaded template — answer each question to populate it' : 'Answer each question — letter builds in real time on the right'}</div>
       </div>
       <div class="gc-msgs" id="gcMsgs">
-        <div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. Answer each question and watch the letter build.</div></div>
+        <div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom ? 'I\'ve detected the fields in your template.' : 'Answer each question and watch the letter build.'}</div></div>
       </div>
       <div class="gc-field" id="gcField"></div>
     </div>
     <div class="doc-preview">
       <div class="dp-head">
-        <div class="dp-title">Letter preview</div>
+        <div class="dp-title">${t.isCustom ? '📄 ' + t.name : 'Letter preview'}</div>
         <div class="dp-btns">
           <button class="btn btn-secondary btn-sm" id="dlBtn" style="display:none" onclick="this.textContent='✓ Downloaded';setTimeout(()=>this.textContent='Download .docx',2000)">Download .docx</button>
           <button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send to employee</button>
         </div>
       </div>
       <div class="dp-body" id="dpBody">
-        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink3);font-size:12px;flex-direction:column;gap:8px;">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" opacity="0.3"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <div style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--ink3);font-size:12px;flex-direction:column;gap:8px;opacity:0.5;">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
           Answer the questions to see the letter appear
         </div>
       </div>
@@ -1751,6 +1881,34 @@ function updatePreview() {
   const body = document.getElementById('dpBody'); if (!body) return;
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const t = selTmpl;
+
+  // Custom uploaded template — substitute field values into original content
+  if (t.isCustom && t.content) {
+    let rendered = t.content;
+    // Replace [FIELD] and {{field}} placeholders with filled or placeholder spans
+    t.flow.forEach(f => {
+      const val = genVals[f.f];
+      const replacement = val
+        ? `<span class="filled">${val}</span>`
+        : `<span class="ph">[${f.f}]</span>`;
+      rendered = rendered
+        .replace(new RegExp(`\\[${f.f}\\]`, 'gi'), replacement)
+        .replace(new RegExp(`\\{\\{${f.f.toLowerCase()}\\}\\}`, 'gi'), replacement);
+    });
+    // Convert line breaks to paragraphs
+    const paragraphs = rendered.split(/\n\n+/).map(p =>
+      `<p style="margin-bottom:12px;">${p.replace(/\n/g,'<br>')}</p>`
+    ).join('');
+    body.innerHTML = `<div class="doc-page">
+      <div class="doc-co">Your Company</div>
+      <div class="doc-rule"></div>
+      <div class="doc-date">${today}</div>
+      <div class="doc-body-text">${paragraphs}</div>
+    </div>`;
+    return;
+  }
+
+  // Built-in templates
   let content = '';
   if (t.id === 't1') {
     content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div>
