@@ -696,7 +696,23 @@ function openMsg(m) {
   if (m.aiType==='answer' && m.draftAnswer) initReply = m.draftAnswer;
   else if (m.clarifyQs.length) initReply = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this.\n\nMany thanks,\nHR`;
 
-  const threadHtml = m.thread.length ? `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;"><div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg><span style="font-size:11px;color:var(--ink3);">${m.thread.length} previous message${m.thread.length>1?'s':''}</span></div><div class="collapsible-body" style="display:block;"><div style="padding:6px 0;display:flex;flex-direction:column;gap:5px;">${m.thread.map(t=>`<div class="tm ${t.dir==='in'?'tm-in':'tm-out'}"><div class="tm-sender">${t.sender}<span>${t.time}</span></div>${t.text}</div>`).join('')}</div></div></div>` : '';
+  const threadHtml = m.thread.length ? `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;">
+    <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
+      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg>
+      <span style="font-size:11px;color:var(--ink3);">${m.thread.length} previous message${m.thread.length>1?'s':''}</span>
+    </div>
+    <div class="collapsible-body" style="display:block;">
+      <div style="padding:6px 0;display:flex;flex-direction:column;gap:5px;">
+        ${m.thread.map((t,i)=>{
+          const isLast = i===m.thread.length-1;
+          return `<div class="tm ${t.dir==='in'?'tm-in':'tm-out'}">
+            <div class="tm-sender">${t.sender}<span>${t.time}</span></div>
+            ${isLast ? t.text : `<div style="cursor:pointer;color:var(--ink3);font-size:11px;" onclick="this.parentElement.querySelector('.tm-preview-full').style.display='block';this.style.display='none';">${t.text.substring(0,60)}… <span style="color:var(--accent);">Show more</span></div><div class="tm-preview-full" style="display:none;">${t.text}</div>`}
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+  </div>` : '';
 
   dc.innerHTML = `<div class="detail-inner">
     <div class="email-header">
@@ -962,13 +978,16 @@ async function renderTmpls(filter) {
 async function renameTmpl(tmplId) {
   const t=tmpls.find(x=>x.id===tmplId); if(!t)return;
   const newName=prompt('Rename template:',t.name); if(!newName||newName===t.name)return;
-  // Update existing record — do NOT create a new one
-  const dbId=tmplId.replace('t_db_','');
-  if(dbId&&tmplId.startsWith('t_db_')){
-    const {error}=await sb.from('policies').update({name:`TEMPLATE: ${newName}`}).eq('id',dbId);
+  if(tmplId.startsWith('t_db_')){
+    const dbId=tmplId.replace('t_db_','');
+    const{error}=await sb.from('policies')
+      .update({name:`TEMPLATE: ${newName}`})
+      .eq('id',dbId)
+      .eq('company_id',currentProfile.company_id);
     if(error){alert('Rename failed: '+error.message);return;}
   }
-  t.name=newName; renderTmpls();
+  t.name=newName;
+  renderTmpls();
 }
 
 async function deleteTemplate(tmplId) {
@@ -1071,12 +1090,19 @@ async function renderManage() {
 }
 
 async function renamePolicy(id) {
-  const el=document.getElementById('pname-'+id);const current=el?el.textContent:'';
-  const newName=prompt('Rename policy:',current);if(!newName||newName===current)return;
-  // Update existing record only
-  const{error}=await sb.from('policies').update({name:newName}).eq('id',id);
+  const el=document.getElementById('pname-'+id);
+  const current=el?el.textContent:'';
+  const newName=prompt('Rename policy:',current);
+  if(!newName||newName===current)return;
+  if(!currentProfile){alert('Not logged in');return;}
+  // Must include company_id match for RLS to allow the update
+  const{error}=await sb.from('policies')
+    .update({name:newName})
+    .eq('id',id)
+    .eq('company_id',currentProfile.company_id);
   if(error){alert('Rename failed: '+error.message);return;}
-  renderManage();
+  // Update the span directly so we don't need a full re-render
+  if(el) el.textContent=newName;
 }
 
 async function uploadPolicy(event) {
