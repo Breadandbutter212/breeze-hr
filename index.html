@@ -1661,46 +1661,62 @@ async function uploadTemplate(event) {
   const file = event.target.files[0];
   if (!file || !currentProfile) return;
   const name = file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
+  const isDocx = file.name.endsWith('.docx');
 
-  const readFile = () => new Promise((resolve) => {
-    if (file.name.endsWith('.docx')) {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
+  // Read as base64 for .docx (to send to server for generation)
+  // Also read as text for field detection and preview
+  const readAsBase64 = (f) => new Promise(resolve => {
+    const r = new FileReader();
+    r.onload = e => resolve(e.target.result.split(',')[1]);
+    r.readAsDataURL(f);
+  });
+
+  const readAsText = (f) => new Promise(resolve => {
+    if (isDocx) {
+      const r = new FileReader();
+      r.onload = async e => {
         try {
           const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
           resolve(result.value);
-        } catch(err) { resolve('Could not read file — try saving as .txt'); }
+        } catch(err) { resolve(''); }
       };
-      reader.readAsArrayBuffer(file);
+      r.readAsArrayBuffer(f);
     } else {
-      const reader = new FileReader();
-      reader.onload = (e) => resolve(e.target.result);
-      reader.readAsText(file);
+      const r = new FileReader();
+      r.onload = e => resolve(e.target.result);
+      r.readAsText(f);
     }
   });
 
-  const content = await readFile();
+  const [base64, textContent] = await Promise.all([readAsBase64(file), readAsText(file)]);
+  const fields = detectTemplateFields(textContent, name);
 
-  // Save to policies table with a 'template' flag in the name
+  // Save to Supabase — store both the base64 (for .docx generation) and text (for preview)
+  // We store base64 in content field prefixed with DOCX: so we know to use server generation
+  const storageContent = isDocx
+    ? `DOCX_BASE64:${base64}|||TEXT:${textContent.substring(0, 10000)}`
+    : textContent;
+
   await sb.from('policies').insert({
     company_id: currentProfile.company_id,
     name: `TEMPLATE: ${name}`,
-    content: content.substring(0, 50000)
+    content: storageContent.substring(0, 60000)
   });
 
-  // Add to local tmpls array for immediate display
   const newTmpl = {
     id: 't_' + Date.now(),
     name,
     emoji: '📄',
     type: 'Your templates',
     isCustom: true,
-    content,
-    flow: detectTemplateFields(content, name)
+    isDocx,
+    base64,
+    content: textContent,
+    flow: fields
   };
   tmpls.unshift(newTmpl);
   renderTmpls();
-  alert(`✓ "${name}" uploaded successfully. It now appears in your template library.`);
+  alert(`✓ "${name}" uploaded. ${isDocx ? 'Word template detected — formatted .docx download enabled.' : 'Text template uploaded.'}`);
   event.target.value = '';
 }
 
@@ -1752,14 +1768,23 @@ async function renderTmpls(filter) {
       data.forEach(d => {
         const name = d.name.replace('TEMPLATE: ','');
         if (!tmpls.find(t => t.name === name)) {
+          const isDocx = d.content && d.content.startsWith('DOCX_BASE64:');
+          let base64 = null, textContent = d.content;
+          if (isDocx) {
+            const parts = d.content.split('|||TEXT:');
+            base64 = parts[0].replace('DOCX_BASE64:','');
+            textContent = parts[1] || '';
+          }
           tmpls.unshift({
             id: 't_db_' + d.id,
             name,
             emoji: '📄',
             type: 'Your templates',
             isCustom: true,
-            content: d.content,
-            flow: detectTemplateFields(d.content, name)
+            isDocx,
+            base64,
+            content: textContent,
+            flow: detectTemplateFields(textContent, name)
           });
         }
       });
@@ -1950,13 +1975,76 @@ function updatePreview() {
 }
 
 function finishTmpl() {
-  addGMsg('ai', `✓ The ${selTmpl.name.toLowerCase()} is complete. Download it or send directly.`);
+  addGMsg('ai', `✓ The ${selTmpl.name.toLowerCase()} is complete. ${selTmpl.isDocx ? 'Click Download to get the formatted Word document.' : 'Download or copy the text below.'}`);
   const f = document.getElementById('gcField');
-  if (f) f.innerHTML = `<div style="padding:8px;font-size:11px;color:var(--sage);font-weight:500;text-align:center;">Complete — ready to download or send</div>`;
-  const dl = document.getElementById('dlBtn'), sb = document.getElementById('sendBtn');
-  if (dl) dl.style.display = 'inline-flex';
-  if (sb) sb.style.display = 'inline-flex';
+  if (f) f.innerHTML = `<div style="padding:8px;font-size:11px;color:var(--sage);font-weight:500;text-align:center;">Complete — ready to download</div>`;
+  const dl = document.getElementById('dlBtn');
+  const sb2 = document.getElementById('sendBtn');
+  if (dl) {
+    dl.style.display = 'inline-flex';
+    dl.textContent = selTmpl.isDocx ? '⬇ Download .docx' : '⬇ Download .txt';
+    dl.onclick = selTmpl.isDocx ? downloadDocx : downloadTxt;
+  }
+  if (sb2) sb2.style.display = 'inline-flex';
   updatePreview();
+}
+
+async function downloadDocx() {
+  const btn = document.getElementById('dlBtn');
+  btn.textContent = 'Generating...'; btn.disabled = true;
+
+  try {
+    // Convert field keys to snake_case to match docxtemplater format
+    const fields = {};
+    Object.entries(genVals).forEach(([k, v]) => {
+      // Support both {Field Name} and {field_name} formats
+      fields[k] = v;
+      fields[k.toLowerCase().replace(/\s+/g,'_')] = v;
+      fields[k.toLowerCase().replace(/\s+/g,'')] = v;
+    });
+
+    const res = await fetch('/api/generate-doc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        templateBase64: selTmpl.base64,
+        fields
+      })
+    });
+
+    if (!res.ok) {
+      const err = await res.json();
+      alert('Error generating document: ' + err.error);
+      btn.textContent = '⬇ Download .docx'; btn.disabled = false;
+      return;
+    }
+
+    // Download the file
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${selTmpl.name}.docx`;
+    a.click();
+    URL.revokeObjectURL(url);
+    btn.textContent = '✓ Downloaded'; btn.disabled = false;
+    setTimeout(() => btn.textContent = '⬇ Download .docx', 3000);
+
+  } catch(e) {
+    alert('Download failed — please try again');
+    btn.textContent = '⬇ Download .docx'; btn.disabled = false;
+  }
+}
+
+function downloadTxt() {
+  const body = document.getElementById('dpBody');
+  if (!body) return;
+  const text = body.innerText;
+  const blob = new Blob([text], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${selTmpl.name}.txt`; a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ════════════════════════════════
