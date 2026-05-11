@@ -1692,16 +1692,26 @@ async function uploadTemplate(event) {
   const fields = detectTemplateFields(textContent, name);
 
   // Save to Supabase — store both the base64 (for .docx generation) and text (for preview)
-  // We store base64 in content field prefixed with DOCX: so we know to use server generation
   const storageContent = isDocx
     ? `DOCX_BASE64:${base64}|||TEXT:${textContent.substring(0, 10000)}`
     : textContent;
 
-  await sb.from('policies').insert({
+  if (!currentProfile) {
+    alert('Not logged in properly — please refresh and try again.');
+    return;
+  }
+
+  const { data: savedPolicy, error } = await sb.from('policies').insert({
     company_id: currentProfile.company_id,
     name: `TEMPLATE: ${name}`,
     content: storageContent.substring(0, 60000)
-  });
+  }).select().single();
+
+  if (error) {
+    console.error('Upload error:', error);
+    alert('Upload failed: ' + error.message + '\n\nCheck console for details.');
+    return;
+  }
 
   const newTmpl = {
     id: 't_' + Date.now(),
@@ -2151,11 +2161,17 @@ async function renderManage() {
 
 async function uploadPolicy(event) {
   const file = event.target.files[0];
-  if (!file || !currentProfile) return;
+  if (!file || !currentProfile) { alert('Not logged in — please refresh.'); return; }
   const reader = new FileReader();
   reader.onload = async (e) => {
     const name = file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
-    await sb.from('policies').insert({ company_id: currentProfile.company_id, name, content: e.target.result.substring(0,50000) });
+    const { error } = await sb.from('policies').insert({
+      company_id: currentProfile.company_id,
+      name,
+      content: e.target.result.substring(0,50000)
+    });
+    if (error) { alert('Upload failed: ' + error.message); return; }
+    alert(`✓ "${name}" uploaded successfully.`);
     renderManage();
   };
   reader.readAsText(file);
