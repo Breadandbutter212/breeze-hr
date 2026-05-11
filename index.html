@@ -1112,9 +1112,22 @@ function openMsg(m) {
   dc.style.display = 'flex';
 
   if (!konoChatHistory[m.id]) {
-    konoChatHistory[m.id] = m.aiType === 'answer'
-      ? [{ role:'ai', text: `I've drafted a response to ${m.from.split(' ')[0]} based on your <strong>${m.policyRef || 'uploaded policies'}</strong> — it's pre-loaded in the reply box. Edit as needed and send whenever you're ready. Ask me anything if you want to think it through first.` }]
-      : [{ role:'ai', text: `Hi — I've looked at this message from ${m.from.split(' ')[0]}. The reply box has a suggested set of questions to gather the info you'd need before responding properly. You can edit or remove any of them. Ask me anything here if you'd like advice on how to handle this.` }];
+    konoChatHistory[m.id] = [{ role:'ai', text: `Hi — I'm looking at this message from ${m.from.split(' ')[0]} now. Give me a moment to analyse it...` }];
+    // Generate real AI draft in background
+    generateAIDraft(m).then(result => {
+      if (!result) return;
+      // Update message with AI result
+      m.aiType = result.type;
+      m.draftAnswer = result.draft;
+      m.clarifyQs = result.questions || [];
+      m.policyRef = result.policyRef;
+      // Update Breeze HR chat with analysis
+      konoChatHistory[m.id] = result.type === 'answer'
+        ? [{ role:'ai', text: `I've drafted a response to ${m.from.split(' ')[0]} based on ${result.policyRef ? `your <strong>${result.policyRef}</strong>` : 'UK HR best practice'}. It's loaded in the reply box. ${result.advice || ''}` }]
+        : [{ role:'ai', text: `This message needs a bit more context before you can respond properly. ${result.advice || ''} I've loaded suggested questions into the reply box — edit as needed.` }];
+      // Re-render if this message is still open
+      if (selMsg && selMsg.id === m.id) openMsg(m);
+    });
   }
 
   const srcLabel = {slack:'Slack',email:'Email',direct:'Direct'}[m.source];
@@ -1348,7 +1361,86 @@ function renderKonoHistory(msgId) {
   el.scrollTop = el.scrollHeight;
 }
 
-function sendKono(msgId) {
+async function callClaude(messages, systemPrompt) {
+  try {
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, system: systemPrompt })
+    });
+    const data = await res.json();
+    if (data.content && data.content[0]) return data.content[0].text;
+    return null;
+  } catch(e) {
+    console.error('Claude API error:', e);
+    return null;
+  }
+}
+
+async function generateAIDraft(m) {
+  // Load company policies from Supabase
+  let policyContext = '';
+  if (currentProfile) {
+    const { data: policies } = await sb.from('policies')
+      .select('name, content')
+      .eq('company_id', currentProfile.company_id);
+    if (policies && policies.length) {
+      policyContext = '\n\nCOMPANY POLICIES:\n' + policies.map(p => `${p.name}:\n${p.content}`).join('\n\n');
+    }
+  }
+
+  // Load feedback history for this message type to learn from
+  let feedbackContext = '';
+  if (currentProfile) {
+    const { data: feedback } = await sb.from('responses')
+      .select('ai_draft, hr_sent, was_edited')
+      .limit(20);
+    if (feedback && feedback.length) {
+      const edited = feedback.filter(f => f.was_edited);
+      if (edited.length) {
+        feedbackContext = `\n\nLEARNING FROM PREVIOUS RESPONSES: This HR team has sent ${feedback.length} replies. They edited ${edited.length} of your drafts. Match their tone and style.`;
+      }
+    }
+  }
+
+  const systemPrompt = `You are Breeze HR, an AI assistant for a UK HR team. You help HR professionals respond to employee messages.
+
+You have deep knowledge of UK employment law, ACAS codes of practice, and HR best practice.
+
+Your job is to either:
+1. Draft a complete, professional reply to the employee — if the message is a clear policy question you can answer from the policies provided
+2. Suggest 3-4 clarifying questions the HR team should ask the employee first — if the message needs more context before a proper response
+
+Message type: ${m.type}
+Message source: ${m.source} (match the tone to the channel — Slack is more conversational, email more formal)
+${policyContext}
+${feedbackContext}
+
+IMPORTANT RULES:
+- You are drafting for HR to review and send — never pretend to be the employee
+- Always sign off as HR
+- Keep responses warm, human and professional
+- For UK employment matters always reference ACAS guidance where relevant
+- If drafting a reply, make it complete and ready to send with minimal editing
+- If suggesting questions, list them clearly numbered
+
+Respond with JSON in this exact format:
+{"type": "answer" or "clarify", "draft": "the full draft reply or null", "questions": ["q1","q2","q3"] or [], "policyRef": "policy name used or null", "advice": "one sentence of advice for HR"}`;
+
+  const reply = await callClaude([{ role: 'user', content: `Please help me respond to this message:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}` }], systemPrompt);
+
+  if (!reply) return null;
+
+  try {
+    const clean = reply.replace(/```json|```/g, '').trim();
+    return JSON.parse(clean);
+  } catch(e) {
+    // If not valid JSON, treat as a plain draft
+    return { type: 'answer', draft: reply, questions: [], policyRef: null, advice: '' };
+  }
+}
+
+async function sendKono(msgId) {
   const m = msgs.find(x => x.id === msgId);
   const ta = document.getElementById('konoTa-' + msgId);
   if (!ta || !ta.value.trim()) return;
@@ -1356,34 +1448,48 @@ function sendKono(msgId) {
   ta.value = ''; ta.style.height = 'auto';
   if (!konoChatHistory[msgId]) konoChatHistory[msgId] = [];
   konoChatHistory[msgId].push({ role:'hr', text: q });
+  // Show typing indicator
+  konoChatHistory[msgId].push({ role:'ai', text: '...', id:'typing' });
   renderKonoHistory(msgId);
 
-  // Simulate Kono response
-  setTimeout(() => {
-    const ql = q.toLowerCase();
-    let reply = '';
-    if (ql.includes('tone') || ql.includes('formal')) {
-      reply = 'Given this is coming via ' + ({slack:'Slack',email:'email',direct:'a direct message'}[m.source] || 'message') + ', a conversational but professional tone works well. Avoid overly formal language — match the channel.';
-    } else if (ql.includes('legal') || ql.includes('law') || ql.includes('acas')) {
-      reply = 'Under ACAS guidance, the key principle here is to act reasonably and consistently. Make sure any actions are documented and proportionate. Would you like me to draft a response that reflects this?';
-    } else if (ql.includes('draft') || ql.includes('write') || ql.includes('help me')) {
-      const draft = m.aiType === 'answer' && m.draftAnswer ? m.draftAnswer : `Hi ${m.from.split(' ')[0]},\n\nThank you for reaching out. I'll look into this and come back to you shortly.\n\nBest,\nHR`;
-      konoChatHistory[msgId].push({ role:'ai', text: `Here's a suggested draft — <a onclick="useDraftFromKono('${msgId}')">click to use in reply box</a>.` });
-      m._konoDraft = draft;
-      renderKonoHistory(msgId);
-      return;
-    } else if (ql.includes('policy') || ql.includes('entitl') || ql.includes('allowance')) {
-      reply = m.policyRef
-        ? `Based on the ${m.policyRef}, the relevant details are already in the draft. If you need the full policy text, it's available under Manage → Policies.`
-        : `I don't have a specific uploaded policy for this yet. You can upload one under Manage → Policies and I'll reference it automatically next time.`;
-    } else if (ql.includes('escalate') || ql.includes('serious') || ql.includes('tribunal')) {
-      reply = `If this has the potential to escalate, make sure every interaction is documented in writing. I'd recommend acknowledging receipt now, asking any clarifying questions, then taking time to respond properly rather than rushing. Want me to draft an acknowledgement?`;
-    } else {
-      reply = `Good question. For this type of message (${m.type.toLowerCase()}), the key things to consider are: what information do you need before responding, whether there are policy implications, and what the employee is actually looking for — an answer, reassurance, or an action. Want me to help draft something?`;
-    }
-    konoChatHistory[msgId].push({ role:'ai', text: reply });
-    renderKonoHistory(msgId);
-  }, 600);
+  // Build conversation history for Claude
+  const history = konoChatHistory[msgId]
+    .filter(h => h.id !== 'typing')
+    .slice(0, -1) // exclude the question we just added above
+    .map(h => ({ role: h.role === 'hr' ? 'user' : 'assistant', content: h.text.replace(/<[^>]+>/g,'') }));
+  history.push({ role: 'user', content: q });
+
+  const systemPrompt = `You are Breeze HR, a private AI advisor for an HR professional. You are having a private conversation — the employee cannot see this.
+
+You advise on:
+- UK employment law and ACAS guidance
+- How to handle sensitive HR situations
+- What tone and approach to take
+- Whether to escalate or involve legal
+- Drafting replies
+
+Context about the message being handled:
+From: ${m.from}
+Type: ${m.type}
+Source: ${m.source}
+Subject: ${m.subject}
+Message: ${m.body}
+
+Be direct, practical and concise. This is a chat — not a formal document. Use plain English. If you draft something, offer to load it into the reply box.`;
+
+  const reply = await callClaude(history, systemPrompt);
+
+  // Remove typing indicator and add real response
+  konoChatHistory[msgId] = konoChatHistory[msgId].filter(h => h.id !== 'typing');
+  konoChatHistory[msgId].push({ role:'ai', text: reply || 'Sorry, I had trouble connecting. Please try again.' });
+
+  // Check if Claude drafted something to offer loading
+  if (reply && (reply.toLowerCase().includes('here\'s a draft') || reply.toLowerCase().includes('here is a draft') || reply.toLowerCase().includes('draft reply'))) {
+    m._konoDraft = reply;
+    konoChatHistory[msgId].push({ role:'ai', text: `<a onclick="useDraftFromKono('${msgId}')">→ Click to load this into the reply box</a>` });
+  }
+
+  renderKonoHistory(msgId);
 }
 
 function useDraftFromKono(msgId) {
