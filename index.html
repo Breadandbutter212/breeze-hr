@@ -187,6 +187,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
   border-bottom: 1px solid var(--border);
   background: var(--surface);
   flex-shrink: 0;
+  overflow-y: auto;
+  max-height: 45%;
 }
 /* Single meta line: avatar · name · via · time · type dropdown · status dropdown */
 .eh-meta-line {
@@ -207,8 +209,14 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
 /* detailContent inner wrapper */
 .detail-inner { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
-/* Scrollable message body */
-.email-body { flex-shrink: 0; overflow-y: auto; padding: 16px 18px; display: flex; flex-direction: column; gap: 14px; max-height: 220px; }
+/* Collapsible message sections inside header */
+.collapsible-msg { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 6px; }
+.collapsible-trigger {
+  display: flex; align-items: center; gap: 6px; cursor: pointer;
+  padding: 3px 0; user-select: none;
+}
+.collapsible-trigger:hover span { color: var(--ink2) !important; }
+.collapsible-body { padding: 0; }
 
 /* Original message block — email style */
 .orig-email {
@@ -1254,28 +1262,38 @@ function openMsg(m) {
           <option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option>
           <option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option>
         </select>
+        <button class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--red);font-size:11px;" onclick="deleteMsg('${m.id}')">Delete</button>
       </div>
       <div class="eh-subject">${m.subject}</div>
-    </div>
 
-    <!-- Scrollable body — just the message and thread -->
-    <div class="email-body" id="emailBody-${m.id}">
-      <div class="orig-email">
-        <div class="orig-email-head">
-          <div class="orig-email-from">
-            <div class="oe-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
-            <div>
-              <div class="oe-name">${m.from}</div>
-              <div style="font-size:10px;color:var(--ink3);">${m.time} · ${srcLabel}</div>
-            </div>
+      <!-- Collapsible original message -->
+      <div class="collapsible-msg" id="collMsg-${m.id}">
+        <div class="collapsible-trigger" onclick="toggleCollapsible('collMsg-${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="collArrow-${m.id}" style="transition:transform 0.15s;transform:rotate(0deg)"><polyline points="9 18 15 12 9 6"/></svg>
+          <span style="font-size:11px;color:var(--ink3);">Original message from ${m.from.split(' ')[0]}</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:auto;">${m.time}</span>
+        </div>
+        <div class="collapsible-body" id="collBody-${m.id}" style="display:none;">
+          <div style="padding:10px 0 4px;font-size:13px;color:var(--ink);line-height:1.65;white-space:pre-wrap;">${m.body}</div>
+        </div>
+      </div>
+
+      <!-- Thread (if exists) collapsed by default -->
+      ${m.thread.length ? `
+      <div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:4px;">
+        <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(0deg)"><polyline points="9 18 15 12 9 6"/></svg>
+          <span style="font-size:11px;color:var(--ink3);">${m.thread.length} previous message${m.thread.length>1?'s':''}</span>
+        </div>
+        <div class="collapsible-body" id="collThreadBody-${m.id}" style="display:none;">
+          <div style="padding:6px 0;display:flex;flex-direction:column;gap:6px;">
+            ${m.thread.map(t=>`<div class="tm ${t.dir==='in'?'tm-in':'tm-out'}"><div class="tm-sender">${t.sender}<span>${t.time}</span></div>${t.text}</div>`).join('')}
           </div>
         </div>
-        <div class="orig-email-body">${m.body}</div>
-      </div>
-      ${threadHtml}
+      </div>` : ''}
     </div>
 
-    <!-- Compose panel -->
+    <!-- Compose panel — dominant, fills remaining space -->
     <div class="compose-panel">
       <div class="compose-toggle">
         <div class="ctab active" id="ctab-reply-${m.id}" onclick="switchCompose('reply','${m.id}')">
@@ -1287,7 +1305,7 @@ function openMsg(m) {
         </div>
       </div>
 
-      <!-- Reply pane: suggestion strip + to row + textarea + send -->
+      <!-- Reply pane -->
       <div class="reply-pane" id="replyPane-${m.id}">
         ${replySuggestion}
         <div class="reply-to-row">
@@ -1499,7 +1517,32 @@ function useDraftFromKono(msgId) {
   if (ta) { ta.value = m._konoDraft; ta.focus(); }
 }
 
-function toggleCQ(el) { el.classList.toggle('sel'); }
+function toggleCollapsible(id) {
+  const body = document.getElementById(id.replace('coll','collBody').replace('Thread-','ThreadBody-'));
+  // find the body div inside this collapsible
+  const container = document.getElementById(id);
+  if (!container) return;
+  const bodyEl = container.querySelector('.collapsible-body');
+  const arrow = container.querySelector('svg');
+  if (!bodyEl) return;
+  const isOpen = bodyEl.style.display !== 'none';
+  bodyEl.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+}
+
+async function deleteMsg(msgId) {
+  if (!confirm('Delete this message? This cannot be undone.')) return;
+  // Remove from DB
+  await sb.from('messages').delete().eq('id', msgId);
+  // Remove from local array
+  const idx = msgs.findIndex(x => x.id === msgId);
+  if (idx > -1) msgs.splice(idx, 1);
+  // Clear detail panel
+  selMsg = null;
+  document.getElementById('detailEmpty').style.display = 'flex';
+  document.getElementById('detailContent').style.display = 'none';
+  renderMsgs();
+}
 
 function draftClarifyKono(msgId) {
   const m = msgs.find(x => x.id === msgId);
@@ -1545,16 +1588,37 @@ async function sendReply(msgId) {
     m.status = 'inprog';
     await updateMessageStatus(msgId, 'inprog');
   }
-  const eb = document.getElementById('emailBody-' + msgId);
-  if (eb) {
-    const existingThread = eb.querySelector('.thread-wrap');
-    const newMsg = `<div class="tm tm-out"><div class="tm-sender">HR<span>Just now</span></div>${text}</div>`;
-    if (existingThread) {
-      existingThread.querySelector('.thread-body').insertAdjacentHTML('beforeend', newMsg);
-    } else {
-      eb.insertAdjacentHTML('beforeend', `<div class="thread-wrap"><div class="thread-head">Thread</div><div class="thread-body">${newMsg}</div></div>`);
+  const newMsgHtml = `<div class="tm tm-out"><div class="tm-sender">HR<span>Just now</span></div>${text}</div>`;
+  // Find or create thread collapsible in header
+  const threadColl = document.getElementById('collThread-' + msgId);
+  if (threadColl) {
+    // Thread exists — open it and append
+    const tbody = threadColl.querySelector('.collapsible-body');
+    if (tbody) {
+      tbody.style.display = 'block';
+      const inner = tbody.querySelector('div');
+      if (inner) inner.insertAdjacentHTML('beforeend', newMsgHtml);
+      const arrow = threadColl.querySelector('svg');
+      if (arrow) arrow.style.transform = 'rotate(90deg)';
+      // Update count
+      const label = threadColl.querySelector('span');
+      if (label) { const c = m.thread.length; label.textContent = `${c} previous message${c>1?'s':''}`; }
     }
-    eb.scrollTop = eb.scrollHeight;
+  } else {
+    // No thread yet — create one in the header
+    const header = document.querySelector('.email-header');
+    if (header) {
+      header.insertAdjacentHTML('beforeend', `
+        <div class="collapsible-msg" id="collThread-${msgId}" style="margin-top:4px;">
+          <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${msgId}')">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg>
+            <span style="font-size:11px;color:var(--ink3);">1 previous message</span>
+          </div>
+          <div class="collapsible-body" style="display:block;">
+            <div style="padding:6px 0;display:flex;flex-direction:column;gap:6px;">${newMsgHtml}</div>
+          </div>
+        </div>`);
+    }
   }
   renderMsgs();
 }
@@ -1767,52 +1831,110 @@ function switchMTab(tab, el) {
   renderManage();
 }
 
-function renderManage() {
+async function renderManage() {
   const body = document.getElementById('manageBody');
   if (mTab === 'policies') {
-    const uploaded = policies.filter(p => p.status === 'uploaded').length;
+    let dbPolicies = [];
+    if (currentProfile) {
+      const { data } = await sb.from('policies').select('*').eq('company_id', currentProfile.company_id);
+      if (data) dbPolicies = data;
+    }
+    const allPolicies = policies.map(p => {
+      const up = dbPolicies.find(d => d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));
+      return { ...p, status: up ? 'uploaded' : p.status };
+    });
+    const uploadedCount = allPolicies.filter(p => p.status === 'uploaded').length;
     body.innerHTML = `
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
         <div>
           <div style="font-size:14px;font-weight:600;color:var(--ink);">Policy library</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${uploaded} of ${policies.length} uploaded — Kono uses these to answer employee questions</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${uploadedCount} uploaded — Breeze HR reads these to answer employee questions accurately</div>
         </div>
-        <button class="btn btn-primary btn-sm">+ Upload policy</button>
+        <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+          + Upload policy
+          <input type="file" accept=".txt" style="display:none" onchange="uploadPolicy(event)">
+        </label>
       </div>
-      <div class="policy-grid">${policies.map(p => `
+      <div class="policy-grid">${allPolicies.map(p => `
         <div class="policy-card">
           <div class="pc-icon">${p.icon}</div>
           <div class="pc-name">${p.name}</div>
           <div class="pc-desc">${p.desc}</div>
           <div class="pc-foot">
-            <span class="pc-status ${p.status === 'uploaded' ? 'pcs-uploaded' : 'pcs-missing'}">${p.status === 'uploaded' ? '✓ Uploaded' : 'Not uploaded'}</span>
-            <span class="pc-action">${p.status === 'uploaded' ? 'Replace' : 'Upload'}</span>
+            <span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span>
+            <label style="font-size:11px;color:var(--blue);cursor:pointer;">
+              ${p.status==='uploaded'?'Replace':'Upload'}
+              <input type="file" accept=".txt" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')">
+            </label>
           </div>
         </div>`).join('')}
-      </div>`;
+      </div>
+      ${dbPolicies.length ? `
+      <div style="margin-top:20px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px;">Uploaded policies</div>
+        ${dbPolicies.map(p => `
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+              <span style="font-size:12px;font-weight:500;color:var(--ink);">${p.name}</span>
+            </div>
+            <button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:11px;" onclick="deletePolicy('${p.id}')">Delete</button>
+          </div>`).join('')}
+      </div>` : ''}`;
   } else {
     body.innerHTML = `
       <div style="margin-bottom:16px;">
         <div style="font-size:14px;font-weight:600;color:var(--ink);">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div>
-        <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Kono builds these automatically from patterns in your intake — the more you use it, the more accurate they become.</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Breeze HR builds these automatically from patterns in your intake — the more you use it, the more accurate they become.</div>
       </div>
       <div class="process-grid">${processes.map(p => `
         <div class="process-card">
           <div class="prsc-head">
             <div class="prsc-icon">${p.icon}</div>
             <div class="prsc-name">${p.name}</div>
-            <span class="prsc-badge ${p.badge === 'Auto-building' ? 'prsb-auto' : 'prsb-beta'}">${p.badge}</span>
+            <span class="prsc-badge ${p.badge==='Auto-building'?'prsb-auto':'prsb-beta'}">${p.badge}</span>
           </div>
           <div class="prsc-steps">${p.steps.map((s,i) => `
-            <div class="prsc-step">
-              <div class="step-num">${i+1}</div>
-              ${s}
-            </div>`).join('')}
+            <div class="prsc-step"><div class="step-num">${i+1}</div>${s}</div>`).join('')}
           </div>
           <div class="prsc-foot">Built from ${Math.floor(Math.random()*12)+3} conversations · last updated today</div>
         </div>`).join('')}
       </div>`;
   }
+}
+
+async function uploadPolicy(event) {
+  const file = event.target.files[0];
+  if (!file || !currentProfile) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const name = file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
+    await sb.from('policies').insert({ company_id: currentProfile.company_id, name, content: e.target.result.substring(0,50000) });
+    renderManage();
+  };
+  reader.readAsText(file);
+}
+
+async function uploadNamedPolicy(event, policyName) {
+  const file = event.target.files[0];
+  if (!file || !currentProfile) return;
+  const reader = new FileReader();
+  reader.onload = async (e) => {
+    const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name', policyName).single();
+    if (existing) {
+      await sb.from('policies').update({ content: e.target.result.substring(0,50000) }).eq('id', existing.id);
+    } else {
+      await sb.from('policies').insert({ company_id: currentProfile.company_id, name: policyName, content: e.target.result.substring(0,50000) });
+    }
+    renderManage();
+  };
+  reader.readAsText(file);
+}
+
+async function deletePolicy(id) {
+  if (!confirm('Delete this policy?')) return;
+  await sb.from('policies').delete().eq('id', id);
+  renderManage();
 }
 
 // ════════════════════════════════
