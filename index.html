@@ -2192,6 +2192,7 @@ function showView(v, el) {
   document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
   if (el) el.classList.add('active');
   if (v === 'manage') renderManage();
+  if (v === 'docs') renderTmpls();
 }
 
 // INIT
