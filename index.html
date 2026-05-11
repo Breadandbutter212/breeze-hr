@@ -584,8 +584,8 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
   <div class="nav">
     <div class="nav-label">Workspace</div>
     <div class="ni active" onclick="showView('intake',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
-      Intake
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Inbox
       <span class="ni-badge" id="nbNew">3</span>
     </div>
     <div class="ni" onclick="showView('docs',this)">
@@ -594,10 +594,15 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
     </div>
     <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('manage',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
-      Policies &amp; processes
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+      Policies
     </div>
-    <div class="ni">
+    <div class="ni" onclick="showView('processmaps',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="4" height="4" rx="1"/><rect x="10" y="3" width="4" height="4" rx="1"/><rect x="17" y="3" width="4" height="4" rx="1"/><line x1="5" y1="7" x2="5" y2="12"/><line x1="5" y1="12" x2="12" y2="12"/><line x1="12" y1="7" x2="12" y2="12"/><rect x="8" y="12" width="4" height="4" rx="1"/></svg>
+      Process maps
+      <span style="font-size:9px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:8px;margin-left:2px;">Beta</span>
+    </div>
+    <div class="ni" onclick="showView('settings',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
       Settings
     </div>
@@ -695,19 +700,41 @@ body { font-family: 'DM Sans', sans-serif; background: var(--paper); color: var(
   </div>
 </div>
 
-<!-- ══ MANAGE VIEW ══ -->
+<!-- ══ MANAGE VIEW — POLICIES ONLY ══ -->
 <div class="view manage-view" id="view-manage">
   <div class="manage-topbar">
     <div>
-      <div class="manage-title">Policies &amp; processes</div>
-      <div class="manage-sub">Upload policies so Kono can answer questions accurately. Process maps build automatically over time.</div>
+      <div class="manage-title">Policies</div>
+      <div class="manage-sub">Upload your HR policies — Breeze HR reads these to answer employee questions accurately.</div>
     </div>
-    <div class="manage-tabs">
-      <button class="mtab active" onclick="switchMTab('policies',this)">Policies</button>
-      <button class="mtab" onclick="switchMTab('processes',this)">Process maps <span style="font-size:9px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:8px;margin-left:3px;">Beta</span></button>
-    </div>
+    <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+      + Upload policy
+      <input type="file" accept=".txt" style="display:none" onchange="uploadPolicy(event)">
+    </label>
   </div>
   <div class="manage-body" id="manageBody"></div>
+</div>
+
+<!-- ══ PROCESS MAPS VIEW ══ -->
+<div class="view manage-view" id="view-processmaps">
+  <div class="manage-topbar">
+    <div>
+      <div class="manage-title">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div>
+      <div class="manage-sub">Breeze HR builds these automatically from your inbox conversations. The more you use it, the more accurate they become.</div>
+    </div>
+  </div>
+  <div class="manage-body" id="processMapsBody"></div>
+</div>
+
+<!-- ══ SETTINGS VIEW ══ -->
+<div class="view manage-view" id="view-settings">
+  <div class="manage-topbar">
+    <div>
+      <div class="manage-title">Settings</div>
+      <div class="manage-sub">Manage your account, company and integrations.</div>
+    </div>
+  </div>
+  <div class="manage-body" id="settingsBody"></div>
 </div>
 
 </div><!-- /main -->
@@ -1271,15 +1298,15 @@ function openMsg(m) {
       </div>
       <div class="eh-subject">${m.subject}</div>
 
-      <!-- Collapsible original message -->
+      <!-- Collapsible original message — small, closed by default -->
       <div class="collapsible-msg" id="collMsg-${m.id}">
         <div class="collapsible-trigger" onclick="toggleCollapsible('collMsg-${m.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" id="collArrow-${m.id}" style="transition:transform 0.15s;transform:rotate(0deg)"><polyline points="9 18 15 12 9 6"/></svg>
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(0deg);flex-shrink:0;" id="collArrow-${m.id}"><polyline points="9 18 15 12 9 6"/></svg>
           <span style="font-size:11px;color:var(--ink3);">Original message from ${m.from.split(' ')[0]}</span>
-          <span style="font-size:11px;color:var(--ink3);margin-left:auto;">${m.time}</span>
+          <span style="font-size:10px;color:var(--ink3);margin-left:auto;">${m.time}</span>
         </div>
         <div class="collapsible-body" id="collBody-${m.id}" style="display:none;">
-          <div style="padding:10px 0 4px;font-size:13px;color:var(--ink);line-height:1.65;white-space:pre-wrap;">${m.body}</div>
+          <div style="padding:8px 0 2px;font-size:12px;color:var(--ink2);line-height:1.6;white-space:pre-wrap;">${m.body}</div>
         </div>
       </div>
 
@@ -1731,31 +1758,48 @@ async function uploadTemplate(event) {
 }
 
 function detectTemplateFields(content, name) {
-  // Detect placeholder fields in the template — looks for [FIELD] or {{field}} patterns
-  const bracketFields = [...content.matchAll(/\[([A-Z][A-Z\s]+)\]/g)].map(m => m[1]);
-  const curlyFields = [...content.matchAll(/\{\{([^}]+)\}\}/g)].map(m => m[1].trim());
-  const allFields = [...new Set([...bracketFields, ...curlyFields])];
+  if (!content) return getDefaultFields(name);
 
-  if (allFields.length > 0) {
-    return allFields.map(f => ({
-      q: `What is the ${f.toLowerCase()}?`,
+  // Match {field_name} or {Field Name} or [FIELD NAME] or {{field}}
+  const curly = [...content.matchAll(/\{([^}]{1,40})\}/g)].map(m => m[1].trim());
+  const square = [...content.matchAll(/\[([A-Z][A-Z0-9\s]{1,40})\]/g)].map(m => m[1].trim());
+  const allRaw = [...new Set([...curly, ...square])];
+
+  if (allRaw.length > 0) {
+    return allRaw.map(f => ({
+      q: `What is the ${f.replace(/_/g,' ').toLowerCase()}?`,
       f
     }));
   }
 
-  // If no placeholders found, ask for common fields based on template name
-  const nameLower = name.toLowerCase();
-  if (nameLower.includes('promotion') || nameLower.includes('salary')) {
+  return getDefaultFields(name);
+}
+
+function getDefaultFields(name) {
+  const n = (name || '').toLowerCase();
+  if (n.includes('promotion')) {
     return [
-      { q: "Employee's full name?", f: 'Employee name' },
-      { q: "Effective date?", f: 'Effective date' },
-      { q: "New salary or title?", f: 'New details' }
+      { q: "Employee's full name?", f: 'employee_name' },
+      { q: "New job title?", f: 'job_title' },
+      { q: "Effective date?", f: 'effective_date' },
+      { q: "New annual salary?", f: 'new_salary' },
+      { q: "Manager's name?", f: 'manager_name' },
+      { q: "Letter date?", f: 'date' }
+    ];
+  }
+  if (n.includes('offer')) {
+    return [
+      { q: "Candidate's full name?", f: 'employee_name' },
+      { q: "Job title?", f: 'job_title' },
+      { q: "Start date?", f: 'effective_date' },
+      { q: "Salary?", f: 'new_salary' },
+      { q: "Manager's name?", f: 'manager_name' }
     ];
   }
   return [
-    { q: "Employee's full name?", f: 'Employee name' },
-    { q: "Date?", f: 'Date' },
-    { q: "Any other details to include?", f: 'Details' }
+    { q: "Employee's full name?", f: 'employee_name' },
+    { q: "Date?", f: 'date' },
+    { q: "Any other details?", f: 'details' }
   ];
 }
 
@@ -1822,11 +1866,26 @@ async function renderTmpls(filter) {
           <div class="ti-name">${t.name}</div>
           <div class="ti-sub">${t.flow.length} fields${t.isCustom ? ' · custom' : ''}</div>
         </div>
-        ${t.isCustom ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 6px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>` : ''}`;
+        ${t.isCustom ? `
+          <button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 6px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>
+        ` : ''}`;
       list.appendChild(div);
     });
   });
 }
+async function renameTmpl(tmplId) {
+  const t = tmpls.find(x => x.id === tmplId);
+  if (!t) return;
+  const newName = prompt('Rename template:', t.name);
+  if (!newName || newName === t.name) return;
+  // Update in DB
+  const dbId = tmplId.replace('t_db_','');
+  await sb.from('policies').update({ name: `TEMPLATE: ${newName}` }).eq('id', dbId);
+  t.name = newName;
+  renderTmpls();
+}
+
 async function deleteTemplate(tmplId) {
   if (!confirm('Delete this template?')) return;
   // Remove from DB
@@ -1893,10 +1952,13 @@ function submitQ() {
   const inp = document.getElementById('gcInp');
   if (!inp || !inp.value.trim()) return;
   const val = inp.value.trim();
-  genVals[selTmpl.flow[genStep].f] = val;
+  const field = selTmpl.flow[genStep].f;
+  genVals[field] = val;
+  // Also update genState.values for compatibility
+  if (typeof genState !== 'undefined') genState.values = genVals;
   genStep++;
   addGMsg('u', val);
-  updatePreview();
+  updatePreview(); // live update on right panel
   setTimeout(askQ, 280);
 }
 
@@ -1916,21 +1978,21 @@ function updatePreview() {
   const body = document.getElementById('dpBody'); if (!body) return;
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const t = selTmpl;
+  const vals = genVals; // always use genVals
 
   // Custom uploaded template — substitute field values into original content
   if (t.isCustom && t.content) {
     let rendered = t.content;
-    // Replace [FIELD] and {{field}} placeholders with filled or placeholder spans
-    t.flow.forEach(f => {
-      const val = genVals[f.f];
-      const replacement = val
-        ? `<span class="filled">${val}</span>`
-        : `<span class="ph">[${f.f}]</span>`;
-      rendered = rendered
-        .replace(new RegExp(`\\[${f.f}\\]`, 'gi'), replacement)
-        .replace(new RegExp(`\\{\\{${f.f.toLowerCase()}\\}\\}`, 'gi'), replacement);
+    // Replace {field_name} placeholders with filled values or grey placeholders
+    Object.keys(vals).forEach(f => {
+      const escaped = f.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      rendered = rendered.replace(new RegExp(`\\{${escaped}\\}`, 'gi'),
+        `<span class="filled">${vals[f]}</span>`);
     });
-    // Convert line breaks to paragraphs
+    // Grey out remaining unfilled placeholders
+    rendered = rendered.replace(/\{([^}]{1,40})\}/g,
+      '<span class="ph">[$1]</span>');
+    // Convert to paragraphs
     const paragraphs = rendered.split(/\n\n+/).map(p =>
       `<p style="margin-bottom:12px;">${p.replace(/\n/g,'<br>')}</p>`
     ).join('');
@@ -1943,7 +2005,11 @@ function updatePreview() {
     return;
   }
 
-  // Built-in templates
+  // Built-in templates — use ph() helper
+  const ph = (f) => vals[f]
+    ? `<span class="filled">${vals[f]}</span>`
+    : `<span class="ph">[${f}]</span>`;
+
   let content = '';
   if (t.id === 't1') {
     content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div>
@@ -1955,7 +2021,7 @@ function updatePreview() {
       <p>Please sign and return a copy of this letter to confirm your acceptance.</p>
       <p>Yours sincerely,</p>
     </div>
-    <div class="doc-sig"><div class="doc-sig-name">${ph('Manager name')}</div><div style="font-size:12px;color:var(--ink3);margin-top:3px;">Line Manager · ${ph('Department')}</div></div>`;
+    <div class="doc-sig"><div class="doc-sig-name">${ph('Manager name')}</div></div>`;
   } else if (t.id === 't2') {
     content = `<div class="doc-co">Acme Corp</div><div class="doc-rule"></div><div class="doc-date">${today}</div>
     <div style="margin-bottom:16px;font-size:13px;"><strong>Private &amp; Confidential</strong><br>Dear ${ph('Employee name')},</div>
@@ -2080,83 +2146,153 @@ const processes = [
 ];
 
 let mTab = 'policies';
-function switchMTab(tab, el) {
-  mTab = tab;
-  document.querySelectorAll('.mtab').forEach(t => t.classList.remove('active'));
-  el.classList.add('active');
-  renderManage();
-}
 
 async function renderManage() {
   const body = document.getElementById('manageBody');
-  if (mTab === 'policies') {
-    let dbPolicies = [];
-    if (currentProfile) {
-      const { data } = await sb.from('policies').select('*').eq('company_id', currentProfile.company_id);
-      if (data) dbPolicies = data;
-    }
-    const allPolicies = policies.map(p => {
-      const up = dbPolicies.find(d => d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));
-      return { ...p, status: up ? 'uploaded' : p.status };
-    });
-    const uploadedCount = allPolicies.filter(p => p.status === 'uploaded').length;
-    body.innerHTML = `
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
-        <div>
-          <div style="font-size:14px;font-weight:600;color:var(--ink);">Policy library</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${uploadedCount} uploaded — Breeze HR reads these to answer employee questions accurately</div>
-        </div>
-        <label class="btn btn-primary btn-sm" style="cursor:pointer;">
-          + Upload policy
-          <input type="file" accept=".txt" style="display:none" onchange="uploadPolicy(event)">
-        </label>
-      </div>
-      <div class="policy-grid">${allPolicies.map(p => `
-        <div class="policy-card">
-          <div class="pc-icon">${p.icon}</div>
-          <div class="pc-name">${p.name}</div>
-          <div class="pc-desc">${p.desc}</div>
-          <div class="pc-foot">
-            <span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span>
-            <label style="font-size:11px;color:var(--blue);cursor:pointer;">
-              ${p.status==='uploaded'?'Replace':'Upload'}
-              <input type="file" accept=".txt" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')">
-            </label>
-          </div>
-        </div>`).join('')}
-      </div>
-      ${dbPolicies.length ? `
-      <div style="margin-top:20px;">
-        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:8px;">Uploaded policies</div>
-        ${dbPolicies.map(p => `
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;">
-            <div style="display:flex;align-items:center;gap:8px;">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-              <span style="font-size:12px;font-weight:500;color:var(--ink);">${p.name}</span>
-            </div>
-            <button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:11px;" onclick="deletePolicy('${p.id}')">Delete</button>
-          </div>`).join('')}
-      </div>` : ''}`;
-  } else {
-    body.innerHTML = `
-      <div style="margin-bottom:16px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div>
-        <div style="font-size:12px;color:var(--ink3);margin-top:3px;">Breeze HR builds these automatically from patterns in your intake — the more you use it, the more accurate they become.</div>
-      </div>
-      <div class="process-grid">${processes.map(p => `
-        <div class="process-card">
-          <div class="prsc-head">
-            <div class="prsc-icon">${p.icon}</div>
-            <div class="prsc-name">${p.name}</div>
-            <span class="prsc-badge ${p.badge==='Auto-building'?'prsb-auto':'prsb-beta'}">${p.badge}</span>
-          </div>
-          <div class="prsc-steps">${p.steps.map((s,i) => `
-            <div class="prsc-step"><div class="step-num">${i+1}</div>${s}</div>`).join('')}
-          </div>
-          <div class="prsc-foot">Built from ${Math.floor(Math.random()*12)+3} conversations · last updated today</div>
-        </div>`).join('')}
-      </div>`;
+  if (!body) return;
+  let dbPolicies = [];
+  if (currentProfile) {
+    const { data } = await sb.from('policies').select('*')
+      .eq('company_id', currentProfile.company_id)
+      .not('name', 'like', 'TEMPLATE:%')
+      .order('created_at', { ascending: false });
+    if (data) dbPolicies = data;
   }
+  const allPolicies = policies.map(p => {
+    const up = dbPolicies.find(d => d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));
+    return { ...p, status: up ? 'uploaded' : p.status, dbId: up?.id };
+  });
+  const uploadedCount = allPolicies.filter(p => p.status === 'uploaded').length;
+  body.innerHTML = `
+    <div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uploadedCount} of ${policies.length} standard policies uploaded</div>
+    <div class="policy-grid">${allPolicies.map(p => `
+      <div class="policy-card">
+        <div class="pc-icon">${p.icon}</div>
+        <div class="pc-name">${p.name}</div>
+        <div class="pc-desc">${p.desc}</div>
+        <div class="pc-foot">
+          <span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span>
+          <label style="font-size:11px;color:var(--blue);cursor:pointer;">
+            ${p.status==='uploaded'?'Replace':'Upload'}
+            <input type="file" accept=".txt" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')">
+          </label>
+        </div>
+      </div>`).join('')}
+    </div>
+    ${dbPolicies.length ? `
+    <div style="margin-top:24px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>
+      ${dbPolicies.map(p => `
+        <div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--sage)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span id="pname-${p.id}" style="font-size:13px;color:var(--ink);flex:1;">${p.name}</span>
+          <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button>
+          <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button>
+        </div>`).join('')}
+    </div>` : ''}`;
+}
+
+async function renamePolicy(id) {
+  const el = document.getElementById('pname-' + id);
+  const current = el ? el.textContent : '';
+  const newName = prompt('Rename policy:', current);
+  if (!newName || newName === current) return;
+  const { error } = await sb.from('policies').update({ name: newName }).eq('id', id);
+  if (error) { alert('Rename failed: ' + error.message); return; }
+  renderManage();
+}
+
+function renderProcessMaps() {
+  const body = document.getElementById('processMapsBody');
+  if (!body) return;
+  body.innerHTML = `<div class="process-grid">${processes.map(p => `
+    <div class="process-card">
+      <div class="prsc-head">
+        <div class="prsc-icon">${p.icon}</div>
+        <div class="prsc-name">${p.name}</div>
+        <span class="prsc-badge ${p.badge==='Auto-building'?'prsb-auto':'prsb-beta'}">${p.badge}</span>
+      </div>
+      <div class="prsc-steps">${p.steps.map((s,i) => `
+        <div class="prsc-step"><div class="step-num">${i+1}</div>${s}</div>`).join('')}
+      </div>
+      <div class="prsc-foot">Built from ${Math.floor(Math.random()*12)+3} inbox conversations</div>
+    </div>`).join('')}
+  </div>`;
+}
+
+function renderSettings() {
+  const body = document.getElementById('settingsBody');
+  if (!body) return;
+  const email = currentUser ? currentUser.email : '';
+  const name = currentProfile ? currentProfile.full_name : '';
+  body.innerHTML = `
+    <div style="max-width:520px;display:flex;flex-direction:column;gap:18px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Account</div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Full name</div>
+          <input class="form-input" id="set-name" value="${name}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:13px;font-family:inherit;outline:none;">
+        </div>
+        <div style="margin-bottom:16px;">
+          <div style="font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Email</div>
+          <input value="${email}" disabled style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:13px;font-family:inherit;opacity:0.6;background:var(--surface2);">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="saveAccountSettings()">Save changes</button>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Change password</div>
+        <div style="margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:500;color:var(--ink2);margin-bottom:4px;">New password</div>
+          <input type="password" id="set-pw" placeholder="Enter new password" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:13px;font-family:inherit;outline:none;">
+        </div>
+        <button class="btn btn-primary btn-sm" onclick="savePassword()">Update password</button>
+        <div id="set-pw-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Integrations</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Connect your channels so messages arrive automatically.</div>
+        <div style="display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:28px;height:28px;background:var(--blue-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/></svg></div>
+              <div><div style="font-size:12px;font-weight:500;">Slack</div><div style="font-size:11px;color:var(--ink3);">Messages from your HR channel</div></div>
+            </div>
+            <button class="btn btn-secondary btn-sm">Connect</button>
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:28px;height:28px;background:var(--amber-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg></div>
+              <div><div style="font-size:12px;font-weight:500;">Email</div><div style="font-size:11px;color:var(--ink3);">Forward your HR inbox here</div></div>
+            </div>
+            <button class="btn btn-secondary btn-sm">Connect</button>
+          </div>
+        </div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Danger zone</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">These actions cannot be undone.</div>
+        <button class="btn btn-sm" style="background:var(--red-bg);color:var(--red);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:6px 12px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="signOut()">Sign out of all devices</button>
+      </div>
+    </div>`;
+}
+
+async function saveAccountSettings() {
+  const name = document.getElementById('set-name').value.trim();
+  if (!name || !currentProfile) return;
+  const { error } = await sb.from('profiles').update({ full_name: name }).eq('id', currentUser.id);
+  if (error) { alert('Failed: ' + error.message); return; }
+  currentProfile.full_name = name;
+  alert('✓ Saved successfully');
+}
+
+async function savePassword() {
+  const pw = document.getElementById('set-pw').value;
+  const msg = document.getElementById('set-pw-msg');
+  if (!pw || pw.length < 6) { msg.style.color = 'var(--red)'; msg.textContent = 'At least 6 characters required.'; return; }
+  const { error } = await sb.auth.updateUser({ password: pw });
+  if (error) { msg.style.color = 'var(--red)'; msg.textContent = error.message; return; }
+  msg.style.color = 'var(--sage)'; msg.textContent = '✓ Password updated.';
+  document.getElementById('set-pw').value = '';
 }
 
 async function uploadPolicy(event) {
@@ -2209,6 +2345,8 @@ function showView(v, el) {
   if (el) el.classList.add('active');
   if (v === 'manage') renderManage();
   if (v === 'docs') renderTmpls();
+  if (v === 'processmaps') renderProcessMaps();
+  if (v === 'settings') renderSettings();
 }
 
 // INIT
