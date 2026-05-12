@@ -1,11 +1,11 @@
-import { createClient } from '@supabase/supabase-js';
+const { createClient } = require('@supabase/supabase-js');
 
 const sb = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY // service key for server-side inserts
+  process.env.SUPABASE_URL || 'https://uxwmlxbsqhtwexpfcemu.supabase.co',
+  process.env.SUPABASE_SERVICE_KEY
 );
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
@@ -13,30 +13,16 @@ export default async function handler(req, res) {
   try {
     const email = req.body;
 
-    // Postmark sends JSON with these fields
+    if (!process.env.SUPABASE_SERVICE_KEY) {
+      console.error('SUPABASE_SERVICE_KEY not set');
+      return res.status(500).json({ error: 'SUPABASE_SERVICE_KEY env var missing' });
+    }
+
     const fromName = email.FromName || email.From?.split('<')[0]?.trim() || 'Unknown';
     const fromEmail = email.FromFull?.Email || email.From || '';
     const subject = email.Subject || '(no subject)';
     const body = email.TextBody || stripHtml(email.HtmlBody) || '';
-    const source = 'email';
 
-    // Detect company from To address — find matching company
-    // For now default to the test company
-    // In production you'd match the To address to a company record
-    const toEmail = email.ToFull?.[0]?.Email || email.To || '';
-
-    // Look up company by their inbound email address
-    // Companies will register their email address in settings
-    const { data: company } = await sb
-      .from('companies')
-      .select('id')
-      .eq('inbound_email', toEmail)
-      .single();
-
-    // Fallback — use the test company if no match
-    const companyId = company?.id || 'a1b2c3d4-0000-0000-0000-000000000001';
-
-    // Classify message type with simple keyword matching
     const bodyLower = (subject + ' ' + body).toLowerCase();
     let type = 'General';
     if (bodyLower.match(/matern|pregnant|baby|birth|mat leave/)) type = 'Leave';
@@ -49,12 +35,11 @@ export default async function handler(req, res) {
     else if (bodyLower.match(/resign|leav(ing|e the company)|notice period/)) type = 'Offboarding';
     else if (bodyLower.match(/redundan|restructur|at risk/)) type = 'Offboarding';
 
-    // Save to messages table
     const { data: message, error } = await sb.from('messages').insert({
-      company_id: companyId,
+      company_id: 'a1b2c3d4-0000-0000-0000-000000000001',
       from_name: fromName,
       from_email: fromEmail,
-      source,
+      source: 'email',
       subject: subject.substring(0, 200),
       body: body.substring(0, 10000),
       type,
@@ -62,15 +47,15 @@ export default async function handler(req, res) {
     }).select().single();
 
     if (error) {
-      console.error('Supabase insert error:', error);
+      console.error('Supabase error:', JSON.stringify(error));
       return res.status(500).json({ error: error.message });
     }
 
-    console.log('New message saved:', message.id, 'from', fromEmail);
+    console.log('Message saved:', message.id);
     return res.status(200).json({ success: true, id: message.id });
 
   } catch (err) {
-    console.error('Inbound email error:', err);
+    console.error('Handler error:', err.message, err.stack);
     return res.status(500).json({ error: err.message });
   }
 }
