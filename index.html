@@ -154,29 +154,17 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-thread-full.out { background: var(--accent-bg); border: 1px solid var(--accent-mid); }
 .gm-thread-full.in { background: var(--surface2); border: 1px solid var(--border); }
 
-/* Scroll wrapper — no extra space, just wraps thread */
-.gm-scroll { flex-shrink: 0; }
+/* gm-scroll — THIS takes flex:1, scrolls, body+thread live inside it */
+.gm-scroll { flex: 1; overflow-y: auto; min-height: 0; }
+.gm-compose { flex-shrink: 0; background: var(--surface); display: flex; flex-direction: column; border-top: 1px solid var(--border); height: 55%; min-height: 200px; }
 
 /* Breeze HR bar */
 .gm-ai-bar { display: flex; align-items: center; gap: 8px; padding: 7px 20px; background: #F0F7FF; border-bottom: 1px solid rgba(0,102,204,0.1); flex-shrink: 0; }
 .gm-ai-icon { width: 16px; height: 16px; border-radius: 3px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
 .gm-ai-chat { margin-left: auto; font-size: 11px; color: var(--ink3); cursor: pointer; text-decoration: underline; }
 
-/* COMPOSE — flex:1 so it takes ALL remaining space */
-.gm-compose { flex: 1; min-height: 0; background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
-.gm-compose-modes { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.gm-mode-btn { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 500; color: var(--ink3); cursor: pointer; border: none; background: transparent; font-family: inherit; border-bottom: 2px solid transparent; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
-.gm-mode-btn:hover { color: var(--ink2); background: var(--surface2); }
-.gm-mode-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
-.gm-mode-btn.breeze.active { color: var(--accent); border-bottom-color: var(--accent); }
-.gm-to-fields { border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.gm-to-row { display: flex; align-items: center; gap: 8px; padding: 5px 16px; border-bottom: 1px solid var(--border); }
-.gm-to-label { font-size: 12px; color: var(--ink3); width: 28px; flex-shrink: 0; }
-.gm-to-input { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); background: transparent; }
-.gm-cc-toggle { font-size: 11px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
-
 /* THE TEXTAREA — flex:1, takes all remaining compose space */
-.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; flex: 1; min-height: 0; line-height: 1.65; background: var(--surface); overflow-y: auto; display: block; }
+.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; flex: 1; min-height: 100px; line-height: 1.65; background: var(--surface); overflow-y: auto; display: block; }
 
 /* Compose footer — single line */
 .gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--border); }
@@ -994,38 +982,39 @@ function openMsg(m) {
     'General':'background:var(--surface2);color:var(--ink2);'
   }[m.type] || 'background:var(--surface2);color:var(--ink2);';
 
-  // Thread HTML — previous messages compact, last one shown
+  // Thread — simple message bubbles inside scroll area, like Gmail
   let threadHtml = '';
   if (m.thread.length) {
-    const prev = m.thread.slice(0,-1);
-    const last = m.thread[m.thread.length-1];
-    const prevRows = prev.map((t,i) => {
+    const items = m.thread.map((t, i) => {
+      const isLast = i === m.thread.length - 1;
       const uid = `gt-${m.id}-${i}`;
-      return `<div class="gm-thread-item">
-        <div class="gm-thread-compact" onclick="
+      if (isLast) {
+        // Last message always shown in full
+        return `<div style="padding:10px 20px;border-top:1px solid var(--border);">
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:6px;font-weight:500;">${t.sender} · ${t.time}</div>
+          <div style="font-size:13px;color:var(--ink);line-height:1.7;padding:10px 14px;border-radius:var(--r);background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};border:1px solid ${t.dir==='out'?'var(--accent-mid)':'var(--border)'};">${t.text}</div>
+        </div>`;
+      }
+      // Previous messages — compact row, click to expand
+      return `<div style="border-top:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:8px;padding:7px 20px;cursor:pointer;" onclick="
           const b=document.getElementById('${uid}');
           const open=b.style.display!=='none';
           b.style.display=open?'none':'block';
           this.querySelector('svg').style.transform=open?'rotate(0deg)':'rotate(90deg)';
         ">
           <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.12s;transform:rotate(0deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-          <div class="gm-thread-av" style="background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};color:${t.dir==='out'?'var(--accent)':'var(--ink2)'};">${t.dir==='out'?'HR':m.initials.substring(0,2)}</div>
-          <div class="gm-thread-name">${t.sender.split(' ')[0]}</div>
-          <div class="gm-thread-preview">${t.text.substring(0,70)}${t.text.length>70?'…':''}</div>
-          <div class="gm-thread-time">${t.time}</div>
+          <div style="width:20px;height:20px;border-radius:50%;background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};color:${t.dir==='out'?'var(--accent)':'var(--ink2)'};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;">${t.dir==='out'?'HR':m.initials.substring(0,2)}</div>
+          <span style="font-size:12px;font-weight:500;color:var(--ink);flex-shrink:0;">${t.sender.split(' ')[0]}</span>
+          <span style="font-size:12px;color:var(--ink3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.text.substring(0,80)}${t.text.length>80?'…':''}</span>
+          <span style="font-size:11px;color:var(--ink3);flex-shrink:0;">${t.time}</span>
         </div>
-        <div id="${uid}" style="display:none;" class="gm-thread-expanded">
-          <div class="gm-thread-full ${t.dir==='in'?'in':'out'}">${t.text}</div>
+        <div id="${uid}" style="display:none;padding:0 20px 10px;">
+          <div style="font-size:13px;color:var(--ink);line-height:1.7;padding:10px 14px;border-radius:var(--r);background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};border:1px solid ${t.dir==='out'?'var(--accent-mid)':'var(--border)'};">${t.text}</div>
         </div>
       </div>`;
     }).join('');
-    const lastRow = `<div class="gm-thread-item">
-      <div class="gm-thread-expanded" style="padding:8px 0 10px;">
-        <div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px;">${last.sender} · ${last.time}</div>
-        <div class="gm-thread-full ${last.dir==='in'?'in':'out'}">${last.text}</div>
-      </div>
-    </div>`;
-    threadHtml = `<div class="gm-thread">${prevRows}${lastRow}</div>`;
+    threadHtml = items;
   }
 
   // AI bar — 2 lines
@@ -1077,7 +1066,7 @@ function openMsg(m) {
       <div class="gm-time">${m.time}</div>
     </div>
 
-    <!-- Scrollable: body + thread -->
+    <!-- Scrollable area: body + thread history -->
     <div class="gm-scroll">
       <div class="gm-body">${m.body}</div>
       ${threadHtml}
@@ -1095,13 +1084,12 @@ function openMsg(m) {
         <button class="gm-mode-btn breeze" id="gm-breeze-${m.id}" onclick="gmSwitchCompose('breeze','${m.id}')">
           ◈ Ask Breeze HR
         </button>
-        <div style="flex:1;"></div>
-        <button class="gm-mode-btn" id="gm-replyall-${m.id}" onclick="gmSwitchCompose('replyall','${m.id}')" style="flex:none;padding:8px 12px;font-size:11px;color:var(--ink3);">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>
+        <button class="gm-mode-btn" id="gm-replyall-${m.id}" onclick="gmSwitchCompose('replyall','${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>
           Reply all
         </button>
-        <button class="gm-mode-btn" id="gm-fwd-${m.id}" onclick="gmSwitchCompose('forward','${m.id}')" style="flex:none;padding:8px 12px;font-size:11px;color:var(--ink3);">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+        <button class="gm-mode-btn" id="gm-fwd-${m.id}" onclick="gmSwitchCompose('forward','${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
           Forward
         </button>
       </div>
@@ -1182,7 +1170,8 @@ function gmSwitchCompose(mode, msgId) {
     setTimeout(()=>document.getElementById(`konoTa-${msgId}`)?.focus(), 50);
   } else {
     konoPane.classList.remove('visible');
-    if (replyPane) replyPane.style.display = 'block';
+    // Must be flex not block — textarea needs flex:1 to fill the space
+    if (replyPane) { replyPane.style.display = 'flex'; replyPane.style.flexDirection = 'column'; replyPane.style.flex = '1'; replyPane.style.minHeight = '0'; replyPane.style.overflow = 'hidden'; }
     // Show To field for forward/reply all
     if (toField) toField.style.display = (mode==='forward'||mode==='replyall') ? 'block' : 'none';
     if (mode==='forward') {
