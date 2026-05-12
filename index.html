@@ -599,7 +599,7 @@ const msgs = [
 
 const tmpls = [
   { id:'t1', name:'Promotion letter', emoji:'🎉', type:'Letters',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"New job title?",f:'job_title'},{q:"Effective date of promotion?",f:'effective_date'},{q:"New annual salary?",f:'new_salary'},{q:"Line manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"New job title?",f:'job_title'},{q:"Effective date?",f:'effective_date'},{q:"New annual salary?",f:'new_salary'},{q:"Line manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t2', name:'Salary increase letter', emoji:'💰', type:'Letters',
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Current salary?",f:'current_salary'},{q:"New salary?",f:'new_salary'},{q:"Effective date?",f:'effective_date'},{q:"Line manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t3', name:'Offer letter', emoji:'✉️', type:'Letters',
@@ -607,39 +607,61 @@ const tmpls = [
   { id:'t4', name:'Probation passed letter', emoji:'✅', type:'Letters',
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Probation end date?",f:'probation_end_date'},{q:"Line manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t5', name:'Flexible working approval', emoji:'🕐', type:'Letters',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Approved arrangement? (e.g. 4 days per week)",f:'arrangement'},{q:"Start date of new arrangement?",f:'start_date'},{q:"Review date?",f:'review_date'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Approved arrangement?",f:'arrangement'},{q:"Start date?",f:'start_date'},{q:"Review date?",f:'review_date'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t13', name:'Maternity leave acknowledgement', emoji:'🤱', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Due date?",f:'due_date'},{q:"Proposed leave start date?",f:'leave_start_date'},{q:"Proposed return date?",f:'return_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t14', name:'Paternity leave confirmation', emoji:'👶', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Partner's due date?",f:'due_date'},{q:"Leave start date?",f:'leave_start_date'},{q:"Leave end date?",f:'leave_end_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t15', name:'Return to work letter', emoji:'🔁', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Return date?",f:'return_date'},{q:"Any phased return or adjusted duties?",f:'adjustments'},{q:"Line manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t16', name:'Resignation acceptance', emoji:'🚪', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Notice period?",f:'notice_period'},{q:"Last day of employment?",f:'last_day'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t17', name:'Flexible working refusal', emoji:'🕐', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Arrangement requested?",f:'arrangement_requested'},{q:"Business reason for refusal?",f:'refusal_reason'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t18', name:'Sickness absence warning', emoji:'🏥', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Total days absent in review period?",f:'days_absent'},{q:"Review period?",f:'review_period'},{q:"Improvement expected?",f:'improvement_required'},{q:"Review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t19', name:'Settlement agreement letter', emoji:'🤝', type:'Letters',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Settlement amount?",f:'settlement_amount'},{q:"Termination date?",f:'termination_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t6', name:'First written warning', emoji:'📋', type:'Disciplinary',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Brief description of the conduct or performance issue?",f:'issue_description'},{q:"What improvement is required?",f:'improvement_required'},{q:"Warning review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Description of the issue?",f:'issue_description'},{q:"Improvement required?",f:'improvement_required'},{q:"Review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t7', name:'Final written warning', emoji:'🚨', type:'Disciplinary',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Description of the issue?",f:'issue_description'},{q:"Previous warning date?",f:'previous_warning_date'},{q:"What improvement is required?",f:'improvement_required'},{q:"Review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Description of the issue?",f:'issue_description'},{q:"Previous warning date?",f:'previous_warning_date'},{q:"Improvement required?",f:'improvement_required'},{q:"Review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t8', name:'Grievance acknowledgement', emoji:'⚖️', type:'Disciplinary',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Date grievance was received?",f:'received_date'},{q:"Date of grievance meeting?",f:'meeting_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Date grievance received?",f:'received_date'},{q:"Date of grievance meeting?",f:'meeting_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t20', name:'Disciplinary hearing invite', emoji:'📩', type:'Disciplinary',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Nature of allegation?",f:'allegation'},{q:"Date of hearing?",f:'hearing_date'},{q:"Time and location?",f:'hearing_location'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t21', name:'Dismissal letter', emoji:'⛔', type:'Disciplinary',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Reason for dismissal?",f:'dismissal_reason'},{q:"Last day of employment?",f:'last_day'},{q:"Notice pay or PILON?",f:'notice_details'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t9', name:'Redundancy at-risk letter', emoji:'⚠️', type:'Redundancy',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Date of at-risk notification?",f:'notification_date'},{q:"Consultation period end date?",f:'consultation_end_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
-  { id:'t10', name:'Redundancy confirmation letter', emoji:'📄', type:'Redundancy',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Last day of employment?",f:'last_day'},{q:"Redundancy pay amount?",f:'redundancy_pay'},{q:"Notice period?",f:'notice_period'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"At-risk notification date?",f:'notification_date'},{q:"Consultation end date?",f:'consultation_end_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t10', name:'Redundancy confirmation', emoji:'📄', type:'Redundancy',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Last day of employment?",f:'last_day'},{q:"Statutory redundancy pay?",f:'redundancy_pay'},{q:"Notice period?",f:'notice_period'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t22', name:'Redundancy appeal outcome', emoji:'📋', type:'Redundancy',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Appeal outcome (upheld/not upheld)?",f:'appeal_outcome'},{q:"Reasons for decision?",f:'appeal_reasons'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t11', name:'Contract variation letter', emoji:'📝', type:'Contracts',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"What is changing? (e.g. working hours, location)",f:'change_description'},{q:"Effective date of change?",f:'effective_date'},{q:"Consultation date?",f:'consultation_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"What is changing?",f:'change_description'},{q:"Effective date?",f:'effective_date'},{q:"Consultation date?",f:'consultation_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t12', name:'TUPE transfer letter', emoji:'🔄', type:'Contracts',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Transfer date?",f:'transfer_date'},{q:"Name of new employer?",f:'new_employer'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] }
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Transfer date?",f:'transfer_date'},{q:"New employer name?",f:'new_employer'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t23', name:'Working from home agreement', emoji:'🏠', type:'Contracts',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"WFH arrangement? (e.g. 3 days home, 2 days office)",f:'arrangement'},{q:"Start date?",f:'start_date'},{q:"Review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] }
 ];
 
 const policies = [
-  {icon:'🏖️',name:'Annual leave policy',desc:'Entitlement (statutory minimum 28 days inc. bank holidays), carry-over, booking procedure, bank holidays',status:'missing',acas:'https://www.acas.org.uk/holiday-entitlement-and-pay'},
-  {icon:'🤱',name:'Maternity leave policy',desc:'52 weeks entitlement, SMP, enhanced pay (if applicable), notification requirements, KIT days, return to work',status:'missing',acas:'https://www.acas.org.uk/maternity-leave'},
-  {icon:'👶',name:'Paternity leave policy',desc:'2 weeks statutory entitlement, SPP, notification (15 weeks before due date), shared parental leave',status:'missing',acas:'https://www.acas.org.uk/paternity-leave-and-pay'},
-  {icon:'👨‍👩‍👧',name:'Shared parental leave policy',desc:'Up to 50 weeks leave between parents, ShPP, eligibility requirements, notice periods',status:'missing',acas:'https://www.acas.org.uk/shared-parental-leave-and-pay'},
-  {icon:'🏥',name:'Sickness absence policy',desc:'Self-certification (7 days), fit notes, SSP (£116.75/week 2025/26), trigger points, long-term absence',status:'missing',acas:'https://www.acas.org.uk/absence-from-work'},
-  {icon:'💰',name:'Pension policy',desc:'Auto-enrolment, employer/employee contributions, qualifying earnings, opt-out, provider details',status:'missing',acas:'https://www.acas.org.uk/pensions'},
-  {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review process, PIP — following ACAS code',status:'missing',acas:'https://www.acas.org.uk/managing-performance'},
-  {icon:'⚖️',name:'Disciplinary policy',desc:'Informal stage, investigation, disciplinary hearing, right to be accompanied, warnings, appeal — ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/disciplinary-procedure-step-by-step'},
-  {icon:'📣',name:'Grievance policy',desc:'Informal resolution first, formal grievance, investigation, hearing, right to be accompanied, appeal — ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/grievance-procedure-step-by-step'},
-  {icon:'🏠',name:'Flexible working policy',desc:'Statutory right to request (day one right from April 2024), eligibility, process, grounds for refusal, appeal',status:'missing',acas:'https://www.acas.org.uk/flexible-working'},
-  {icon:'📋',name:'Redundancy policy',desc:'Selection criteria (objective and fair), at-risk consultation, notice periods, statutory redundancy pay, appeal',status:'missing',acas:'https://www.acas.org.uk/redundancy'},
-  {icon:'🔄',name:'TUPE policy',desc:'Transfer of Undertakings, employee rights, information and consultation obligations, ETO reasons',status:'missing',acas:'https://www.acas.org.uk/tupe-transfers'},
-  {icon:'🌍',name:'Equal opportunities policy',desc:'Protected characteristics (Equality Act 2010), recruitment, training, promotion, harassment, reporting',status:'missing',acas:'https://www.acas.org.uk/discrimination-and-the-law'},
+  {icon:'🏖️',name:'Annual leave policy',desc:'Entitlement (28 days statutory inc. bank holidays), carry-over, booking procedure',status:'missing',acas:'https://www.acas.org.uk/holiday-entitlement-and-pay'},
+  {icon:'🤱',name:'Maternity leave policy',desc:'52 weeks entitlement, SMP, enhanced pay, KIT days, return to work rights',status:'missing',acas:'https://www.acas.org.uk/maternity-leave'},
+  {icon:'👶',name:'Paternity leave policy',desc:'2 weeks statutory entitlement, SPP (£184.03/week), 15 weeks notice required before due date',status:'missing',acas:'https://www.acas.org.uk/paternity-leave-and-pay'},
+  {icon:'👨‍👩‍👧',name:'Shared parental leave policy',desc:'Up to 50 weeks between parents, ShPP, eligibility and curtailment notice requirements',status:'missing',acas:'https://www.acas.org.uk/shared-parental-leave-and-pay'},
+  {icon:'🏥',name:'Sickness absence policy',desc:'Self-certification (7 days), fit notes, SSP (£116.75/week), trigger points, long-term absence',status:'missing',acas:'https://www.acas.org.uk/absence-from-work'},
+  {icon:'💰',name:'Pension policy',desc:'Auto-enrolment obligations, qualifying earnings, employer/employee contributions, opt-out',status:'missing',acas:'https://www.acas.org.uk/pensions'},
+  {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review, PIP — ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/managing-performance'},
+  {icon:'⚖️',name:'Disciplinary policy',desc:'Investigation, hearing, right to be accompanied, warnings, dismissal, appeal — ACAS Code of Practice',status:'missing',acas:'https://www.acas.org.uk/disciplinary-procedure-step-by-step'},
+  {icon:'📣',name:'Grievance policy',desc:'Informal resolution, formal grievance, investigation, hearing, right to be accompanied, appeal',status:'missing',acas:'https://www.acas.org.uk/grievance-procedure-step-by-step'},
+  {icon:'🏠',name:'Flexible working policy',desc:'Day one right to request (from April 2024), 2 requests per year, 2-month decision window',status:'missing',acas:'https://www.acas.org.uk/flexible-working'},
+  {icon:'📋',name:'Redundancy policy',desc:'Fair selection criteria, 45-day collective consultation (20+ redundancies), statutory pay',status:'missing',acas:'https://www.acas.org.uk/redundancy'},
+  {icon:'🔄',name:'TUPE policy',desc:'Transfer of Undertakings — employee rights, information and consultation, ETO reasons',status:'missing',acas:'https://www.acas.org.uk/tupe-transfers'},
+  {icon:'🌍',name:'Equal opportunities policy',desc:'Protected characteristics (Equality Act 2010), recruitment, harassment, reporting procedure',status:'missing',acas:'https://www.acas.org.uk/discrimination-and-the-law'},
   {icon:'🔒',name:'Whistleblowing policy',desc:'Protected disclosures, qualifying disclosures, reporting channels, protection from detriment',status:'missing',acas:'https://www.acas.org.uk/whistleblowing-at-work'},
-  {icon:'💻',name:'Remote & hybrid working policy',desc:'Eligibility, equipment, expenses, health & safety (DSE), data security, communication expectations',status:'missing',acas:'https://www.acas.org.uk/working-from-home'}
+  {icon:'💻',name:'Remote & hybrid working policy',desc:'Eligibility, DSE assessment, data security, expenses, communication expectations',status:'missing',acas:'https://www.acas.org.uk/working-from-home'}
 ];
 
 const processes = [
@@ -718,23 +740,33 @@ function openMsg(m) {
   if (m.aiType==='answer' && m.draftAnswer) initReply = m.draftAnswer;
   else if (m.clarifyQs.length) initReply = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this.\n\nMany thanks,\nHR`;
 
-  const threadHtml = m.thread.length ? `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;">
-    <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
-      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg>
-      <span style="font-size:11px;color:var(--ink3);">${m.thread.length} previous message${m.thread.length>1?'s':''}</span>
-    </div>
-    <div class="collapsible-body" style="display:block;">
-      <div style="padding:6px 0;display:flex;flex-direction:column;gap:5px;">
-        ${m.thread.map((t,i)=>{
-          const isLast = i===m.thread.length-1;
-          return `<div class="tm ${t.dir==='in'?'tm-in':'tm-out'}">
-            <div class="tm-sender">${t.sender}<span>${t.time}</span></div>
-            ${isLast ? t.text : `<div style="cursor:pointer;color:var(--ink3);font-size:11px;" onclick="this.parentElement.querySelector('.tm-preview-full').style.display='block';this.style.display='none';">${t.text.substring(0,60)}… <span style="color:var(--accent);">Show more</span></div><div class="tm-preview-full" style="display:none;">${t.text}</div>`}
-          </div>`;
-        }).join('')}
+  const threadHtml = m.thread.length ? (() => {
+    const prev = m.thread.slice(0, -1);
+    const last = m.thread[m.thread.length - 1];
+    const prevHtml = prev.map(t => `
+      <div style="display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;border-radius:4px;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=this.querySelector('svg').style.transform==='rotate(90deg)'?'rotate(0deg)':'rotate(90deg)'">
+        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.12s;transform:rotate(0deg);flex-shrink:0;color:var(--ink3)"><polyline points="9 18 15 12 9 6"/></svg>
+        <div style="width:16px;height:16px;border-radius:50%;background:${t.dir==='out'?'var(--accent-bg)':'var(--surface3)'};color:${t.dir==='out'?'var(--accent)':'var(--ink3)'};display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;flex-shrink:0;">${t.dir==='out'?'HR':m.initials.substring(0,1)}</div>
+        <span style="font-size:11px;color:var(--ink3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.sender} — ${t.text.substring(0,55)}${t.text.length>55?'…':''}</span>
+        <span style="font-size:10px;color:var(--ink3);flex-shrink:0;">${t.time}</span>
       </div>
-    </div>
-  </div>` : '';
+      <div style="display:none;padding:4px 0 4px 24px;"><div class="tm ${t.dir==='in'?'tm-in':'tm-out'}">${t.text}</div></div>`).join('');
+    return `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;">
+      <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg>
+        <span style="font-size:11px;color:var(--ink3);">${m.thread.length} message${m.thread.length>1?'s':''} in thread</span>
+      </div>
+      <div class="collapsible-body" style="display:block;">
+        <div style="padding:4px 0;">
+          ${prevHtml}
+          <div class="tm ${last.dir==='in'?'tm-in':'tm-out'}" style="margin-top:6px;">
+            <div class="tm-sender">${last.sender}<span>${last.time}</span></div>
+            ${last.text}
+          </div>
+        </div>
+      </div>
+    </div>`;
+  })() : '';
 
   dc.innerHTML = `<div class="detail-inner">
     <div class="email-header">
@@ -980,13 +1012,16 @@ function getDefaultFields(name) {
 async function renderTmpls(filter) {
   const list=document.getElementById('tmplList'); if(!list)return;
   if (currentProfile&&!filter) {
-    const {data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).like('name','TEMPLATE:%');
-    if(data&&data.length){data.forEach(d=>{const name=d.name.replace('TEMPLATE: ','');if(!tmpls.find(t=>t.name===name)){const isDocx=d.content&&d.content.startsWith('DOCX_BASE64:');let base64=null,textContent=d.content;if(isDocx){const parts=d.content.split('|||TEXT:');base64=parts[0].replace('DOCX_BASE64:','');textContent=parts[1]||'';}tmpls.unshift({id:'t_db_'+d.id,name,emoji:'📄',type:'Your templates',isCustom:true,isDocx,base64,content:textContent,flow:detectTemplateFields(textContent,name)});}});}
+    // Always clear and reload custom templates to prevent duplicates after rename
+    const builtIn = tmpls.filter(t=>!t.isCustom);
+    tmpls.length=0; builtIn.forEach(t=>tmpls.push(t));
+    const {data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).like('name','TEMPLATE:%').order('created_at',{ascending:false});
+    if(data&&data.length){data.forEach(d=>{const name=d.name.replace('TEMPLATE: ','');const isDocx=d.content&&d.content.startsWith('DOCX_BASE64:');let base64=null,textContent=d.content;if(isDocx){const parts=d.content.split('|||TEXT:');base64=parts[0].replace('DOCX_BASE64:','');textContent=parts[1]||'';}tmpls.unshift({id:'t_db_'+d.id,name,emoji:'📄',type:'Your templates',isCustom:true,isDocx,base64,content:textContent,flow:detectTemplateFields(textContent,name)});});}
   }
   const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
-  ['Your templates','Letters','Contracts'].forEach(grp=>{
+  ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
     const lbl=document.createElement('div');lbl.className='lib-sec';lbl.textContent=grp;list.appendChild(lbl);
     ts.forEach(t=>{
@@ -1100,6 +1135,28 @@ function updatePreview() {
 
   else if(t.id==='t12') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Transfer of employment under TUPE</strong></p><p>I am writing to inform you that, following the transfer of the business/undertaking in which you work, your employment will transfer to ${ph('new_employer')} with effect from ${ph('transfer_date')}.</p><p>Under the Transfer of Undertakings (Protection of Employment) Regulations 2006 (TUPE), your employment will transfer on your existing terms and conditions. Your continuity of employment will be preserved and you will retain all accrued employment rights.</p><p>Your new employer will write to you separately with further information about the transfer and what it means for you in practice.</p><p>If you have any questions, please do not hesitate to contact us before the transfer date.</p><p>Yours sincerely,</p></div>${sign()}`;
 
+  else if(t.id==='t13') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Maternity leave notification</strong></p><p>Thank you for notifying us of your pregnancy. I am writing to acknowledge receipt of your maternity leave notification and to confirm the details below.</p><p><strong>Expected due date:</strong> ${ph('due_date')}<br><strong>Proposed leave start date:</strong> ${ph('leave_start_date')}<br><strong>Proposed return date:</strong> ${ph('return_date')}</p><p>You are entitled to up to 52 weeks of maternity leave. Your statutory maternity pay (SMP) entitlement and any enhanced pay will be set out in a separate calculation.</p><p>You may work up to 10 Keeping in Touch (KIT) days during your leave without affecting your maternity pay entitlement. Please discuss any KIT days with your line manager.</p><p>We will keep in contact during your leave to keep you informed of any relevant workplace developments. Please do not hesitate to contact us if you have any questions.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t14') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Paternity leave confirmation</strong></p><p>I am writing to confirm your entitlement to statutory paternity leave and pay in connection with the expected birth of your child.</p><p><strong>Partner's expected due date:</strong> ${ph('due_date')}<br><strong>Leave start date:</strong> ${ph('leave_start_date')}<br><strong>Leave end date:</strong> ${ph('leave_end_date')}</p><p>You are entitled to up to 2 weeks' statutory paternity leave, to be taken within 56 days of the birth. Your statutory paternity pay (SPP) will be paid at the statutory rate (currently £184.03 per week or 90% of your average weekly earnings if lower).</p><p>Leave must be taken as a single block of either 1 or 2 weeks. You will need to provide a completed SC3 form (or equivalent) if you have not already done so.</p><p>We wish you and your family well.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t15') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Return to work confirmation</strong></p><p>I am writing to confirm the arrangements for your return to work on ${ph('return_date')} as ${ph('job_title')}.</p><p><strong>Return date:</strong> ${ph('return_date')}<br><strong>Adjusted arrangements:</strong> ${ph('adjustments')}</p><p>We look forward to welcoming you back. Please do not hesitate to contact us before your return if you have any questions or concerns about coming back to work.</p><p>If anything changes in the interim, or if you would like to discuss any support we can offer, please get in touch.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t16') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Acknowledgement of resignation</strong></p><p>I am writing to acknowledge receipt of your resignation from the position of ${ph('job_title')} at ${co()}.</p><p>In accordance with your contract, your notice period is ${ph('notice_period')}. Your last day of employment will therefore be ${ph('last_day')}.</p><p>During your notice period we ask that you continue to perform your duties to the best of your ability, complete any handover documentation, and return all company property on your last day.</p><p>We will arrange an exit interview and ensure your final pay, including any accrued holiday entitlement, is calculated and paid promptly.</p><p>We wish you well in your future career.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t17') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Flexible working request — decision</strong></p><p>Thank you for your flexible working request dated [date of request] in which you requested the following arrangement: ${ph('arrangement_requested')}.</p><p>After careful consideration, I regret to inform you that we are unable to approve your request at this time. The business reason for this decision is:</p><p>${ph('refusal_reason')}</p><p>This decision has been made in accordance with the statutory grounds for refusing a flexible working request under the Employment Relations (Flexible Working) Act 2023.</p><p>You have the right to appeal this decision. If you wish to appeal, please do so in writing within 14 days of receiving this letter, stating your grounds for appeal.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t18') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Sickness absence — formal review</strong></p><p>I am writing following our absence review meeting to confirm the outcome and next steps.</p><p>During the review period of ${ph('review_period')}, you have been absent for a total of ${ph('days_absent')} days. We recognise that illness can be beyond your control and we are committed to supporting you. However, the level of absence is having a significant impact on the business.</p><p><strong>Improvement expected:</strong> ${ph('improvement_required')}</p><p>This letter is not a disciplinary warning. However, should your attendance not improve, we may need to move to a more formal process in line with our absence management policy and ACAS guidance.</p><p>A further review will take place on ${ph('review_date')}. We will continue to offer any reasonable support during this time. Please speak to your line manager or HR if you need assistance.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t19') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Without prejudice — settlement agreement</strong></p><p>I am writing to confirm the terms of the settlement agreement reached between you and ${co()}.</p><p>This letter is written without prejudice and subject to contract until a formal settlement agreement is signed by both parties.</p><p><strong>Proposed terms:</strong></p><p><strong>Termination date:</strong> ${ph('termination_date')}<br><strong>Settlement payment:</strong> ${ph('settlement_amount')} (of which the first £30,000 may be paid tax-free)</p><p>You will need to obtain independent legal advice before signing the settlement agreement, as required by law. ${co()} will make a contribution towards your reasonable legal fees.</p><p>This offer is open for acceptance for 10 calendar days. If you have any questions, please do not hesitate to contact us.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t20') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Invitation to disciplinary hearing</strong></p><p>I am writing to invite you to a disciplinary hearing in accordance with ${co()}'s disciplinary procedure, which follows the ACAS Code of Practice on Disciplinary and Grievance Procedures.</p><p><strong>Allegation:</strong> ${ph('allegation')}</p><p><strong>Date and time:</strong> ${ph('hearing_date')}<br><strong>Location:</strong> ${ph('hearing_location')}</p><p>You have the right to be accompanied at this hearing by a work colleague or a trade union representative of your choice. Please let us know in advance if you intend to bring a companion.</p><p>You are entitled to see any evidence that will be referred to at the hearing. If you have not already received this, please contact us and we will arrange for it to be provided.</p><p>The purpose of the hearing is to consider the allegation above and give you the opportunity to respond. No decision has been made at this stage.</p><p>If you are unable to attend on the date proposed, please contact us as soon as possible to arrange an alternative.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t21') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Outcome of disciplinary hearing — dismissal</strong></p><p>I am writing to confirm the outcome of the disciplinary hearing held on [date of hearing] in accordance with ${co()}'s disciplinary procedure and the ACAS Code of Practice.</p><p><strong>Reason for dismissal:</strong> ${ph('dismissal_reason')}</p><p>After careful consideration of all the evidence and your representations at the hearing, the decision has been made to dismiss you from your employment with ${co()}. Your last day of employment will be ${ph('last_day')}.</p><p><strong>Notice:</strong> ${ph('notice_details')}</p><p>You have the right to appeal against this decision. If you wish to do so, you must appeal in writing within five working days of receiving this letter, setting out your grounds for appeal.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t22') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Outcome of redundancy appeal</strong></p><p>I am writing to confirm the outcome of your appeal against the decision to make your role redundant.</p><p><strong>Appeal outcome:</strong> ${ph('appeal_outcome')}</p><p><strong>Reasons for decision:</strong> ${ph('appeal_reasons')}</p><p>This decision is final. If your appeal has not been upheld, your original redundancy terms remain as previously communicated.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t23') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Home / hybrid working agreement</strong></p><p>Further to our discussions, I am pleased to confirm the following home working arrangement.</p><p><strong>Arrangement:</strong> ${ph('arrangement')}<br><strong>Start date:</strong> ${ph('start_date')}<br><strong>Review date:</strong> ${ph('review_date')}</p><p>By agreeing to this arrangement, you confirm that you have a safe, suitable workspace at home and that you will comply with ${co()}'s data security and IT policies at all times when working remotely.</p><p>${co()} will carry out a DSE (Display Screen Equipment) assessment for your home workspace. Please complete the self-assessment form and return it to HR.</p><p>Either party may request a review of this arrangement at any time. This agreement does not constitute a permanent change to your contract of employment.</p><p>Please sign and return a copy of this letter to confirm your agreement.</p><p>Yours sincerely,</p></div>${sign()}`;
+
   else { const rows=t.flow.map(f=>`<p><strong>${f.f.replace(/_/g,' ')}:</strong> ${ph(f.f)}</p>`).join(''); content=`${header()}${salutation()}<div class="doc-body-text">${rows}</div>${sign()}`; }
 
   body.innerHTML=`<div class="doc-page">${content}</div>`;
@@ -1184,7 +1241,88 @@ async function deletePolicy(id) {
 // ── PROCESS MAPS ──
 function renderProcessMaps() {
   const body=document.getElementById('processMapsBody');if(!body)return;
-  body.innerHTML=`<div class="process-grid">${processes.map(p=>`<div class="process-card"><div class="prsc-head"><div class="prsc-icon">${p.icon}</div><div class="prsc-name">${p.name}</div><span class="prsc-badge ${p.badge==='Auto-building'?'prsb-auto':'prsb-beta'}">${p.badge}</span></div><div class="prsc-steps">${p.steps.map((s,i)=>`<div class="prsc-step"><div class="step-num">${i+1}</div>${s}</div>`).join('')}</div><div class="prsc-foot">Built from ${Math.floor(Math.random()*12)+3} inbox conversations</div></div>`).join('')}</div>`;
+  body.style.padding='0';
+  body.innerHTML=`
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:12px;color:var(--ink3);">Built automatically from inbox conversations — updates as you handle more cases</div>
+      <div style="display:flex;gap:8px;">
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Auto-building</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);"><span style="width:10px;height:10px;background:var(--purple-bg);border:1px solid var(--purple);border-radius:2px;display:inline-block;"></span>Beta</span>
+      </div>
+    </div>
+    <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:20px;overflow-y:auto;">
+      ${processes.map(p=>renderFlowChart(p)).join('')}
+    </div>`;
+}
+
+function renderFlowChart(p) {
+  const isAuto = p.badge==='Auto-building';
+  const accentColor = isAuto ? '#0066CC' : '#4B0082';
+  const accentBg = isAuto ? '#EBF3FF' : '#F3EEFF';
+  const steps = p.steps;
+  const boxW=160, boxH=40, gapY=52, startX=20, startY=20;
+  const svgW = steps.length <= 4 ? 220 : 440;
+  const cols = steps.length <= 4 ? 1 : 2;
+  const rows = Math.ceil(steps.length / cols);
+  const svgH = rows * gapY + startY + 20;
+
+  let svgContent = '';
+  steps.forEach((s, i) => {
+    const col = cols === 2 ? i % 2 : 0;
+    const row = cols === 2 ? Math.floor(i / 2) : i;
+    const x = startX + col * (boxW + 40);
+    const y = startY + row * gapY;
+    const isLast = i === steps.length - 1;
+
+    // Box
+    svgContent += `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="6" fill="${i===0?accentColor:'white'}" stroke="${i===0?accentColor:'#E0E0E5'}" stroke-width="1.5"/>`;
+    // Step number circle
+    svgContent += `<circle cx="${x+16}" cy="${y+20}" r="9" fill="${i===0?'rgba(255,255,255,0.25)':accentBg}"/>`;
+    svgContent += `<text x="${x+16}" y="${y+24}" text-anchor="middle" font-size="9" font-weight="600" fill="${i===0?'white':accentColor}" font-family="Inter,-apple-system,sans-serif">${i+1}</text>`;
+    // Label
+    const label = s.length > 22 ? s.substring(0,20)+'…' : s;
+    svgContent += `<text x="${x+32}" y="${y+24}" font-size="11" fill="${i===0?'white':'#1D1D1F'}" font-family="Inter,-apple-system,sans-serif" font-weight="500">${label}</text>`;
+
+    // Arrow to next step
+    if (!isLast) {
+      const nextCol = cols === 2 ? (i+1) % 2 : 0;
+      const nextRow = cols === 2 ? Math.floor((i+1) / 2) : i+1;
+      const nx = startX + nextCol * (boxW + 40);
+      const ny = startY + nextRow * gapY;
+
+      if (col === nextCol) {
+        // Same column — straight down arrow
+        const ax = x + boxW/2;
+        svgContent += `<line x1="${ax}" y1="${y+boxH}" x2="${ax}" y2="${ny}" stroke="#CBD5E0" stroke-width="1.5" stroke-dasharray="${isAuto?'0':'4,3'}"/>`;
+        svgContent += `<polygon points="${ax-4},${ny} ${ax+4},${ny} ${ax},${ny+6}" fill="#CBD5E0"/>`;
+      } else {
+        // Turn — down then across (snake)
+        const midY = y + boxH + (gapY-boxH)/2;
+        const x1end = x + boxW/2;
+        const x2start = nx + boxW/2;
+        svgContent += `<polyline points="${x1end},${y+boxH} ${x1end},${midY} ${x2start},${midY} ${x2start},${ny}" fill="none" stroke="#CBD5E0" stroke-width="1.5" stroke-dasharray="${isAuto?'0':'4,3'}"/>`;
+        svgContent += `<polygon points="${x2start-4},${ny} ${x2start+4},${ny} ${x2start},${ny+6}" fill="#CBD5E0"/>`;
+      }
+    }
+  });
+
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:${accentBg};">
+      <div style="display:flex;align-items:center;gap:8px;">
+        <span style="font-size:18px;">${p.icon}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</span>
+      </div>
+      <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isAuto?'var(--accent)':'var(--purple-bg)'};color:${isAuto?'white':'var(--purple)'};">${p.badge}</span>
+    </div>
+    <div style="padding:16px;overflow-x:auto;">
+      <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg">
+        ${svgContent}
+      </svg>
+    </div>
+    <div style="padding:8px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);font-style:italic;">
+      Built from ${Math.floor(Math.random()*8)+3} inbox conversations · last updated today
+    </div>
+  </div>`;
 }
 
 // ── SETTINGS ──
