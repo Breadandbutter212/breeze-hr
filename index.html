@@ -742,21 +742,36 @@ function openMsg(m) {
   const threadHtml = m.thread.length ? (() => {
     const prev = m.thread.slice(0, -1);
     const last = m.thread[m.thread.length - 1];
-    const prevHtml = prev.map(t => `
-      <div style="display:flex;align-items:center;gap:7px;padding:3px 0;cursor:pointer;border-radius:4px;" onclick="this.nextElementSibling.style.display=this.nextElementSibling.style.display==='none'?'block':'none';this.querySelector('svg').style.transform=this.querySelector('svg').style.transform==='rotate(90deg)'?'rotate(0deg)':'rotate(90deg)'">
-        <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.12s;transform:rotate(0deg);flex-shrink:0;color:var(--ink3)"><polyline points="9 18 15 12 9 6"/></svg>
-        <div style="width:16px;height:16px;border-radius:50%;background:${t.dir==='out'?'var(--accent-bg)':'var(--surface3)'};color:${t.dir==='out'?'var(--accent)':'var(--ink3)'};display:flex;align-items:center;justify-content:center;font-size:7px;font-weight:700;flex-shrink:0;">${t.dir==='out'?'HR':m.initials.substring(0,1)}</div>
-        <span style="font-size:11px;color:var(--ink3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.sender} — ${t.text.substring(0,55)}${t.text.length>55?'…':''}</span>
-        <span style="font-size:10px;color:var(--ink3);flex-shrink:0;">${t.time}</span>
-      </div>
-      <div style="display:none;padding:4px 0 4px 24px;"><div class="tm ${t.dir==='in'?'tm-in':'tm-out'}">${t.text}</div></div>`).join('');
+    // Each previous message: closed by default, arrow to expand
+    const prevHtml = prev.map((t, i) => {
+      const uid = `prev-${m.id}-${i}`;
+      return `<div style="border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:7px;padding:5px 0;cursor:pointer;" onclick="
+          const b=document.getElementById('${uid}');
+          const s=document.getElementById('${uid}-svg');
+          const open=b.style.display!=='none';
+          b.style.display=open?'none':'block';
+          s.style.transform=open?'rotate(0deg)':'rotate(90deg)';
+        ">
+          <svg id="${uid}-svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.12s;transform:rotate(0deg);flex-shrink:0;color:var(--ink3);"><polyline points="9 18 15 12 9 6"/></svg>
+          <div style="width:18px;height:18px;border-radius:50%;background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};color:${t.dir==='out'?'var(--accent)':'var(--ink2)'};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;">${t.dir==='out'?'HR':m.initials.substring(0,2)}</div>
+          <span style="font-size:11px;font-weight:500;color:var(--ink2);">${t.sender}</span>
+          <span style="font-size:11px;color:var(--ink3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:4px;">${t.text.substring(0,60)}${t.text.length>60?'…':''}</span>
+          <span style="font-size:10px;color:var(--ink3);flex-shrink:0;margin-left:8px;">${t.time}</span>
+        </div>
+        <div id="${uid}" style="display:none;padding:2px 0 6px 26px;">
+          <div class="tm ${t.dir==='in'?'tm-in':'tm-out'}" style="font-size:12px;">${t.text}</div>
+        </div>
+      </div>`;
+    }).join('');
+
     return `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;">
       <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg>
         <span style="font-size:11px;color:var(--ink3);">${m.thread.length} message${m.thread.length>1?'s':''} in thread</span>
       </div>
       <div class="collapsible-body" style="display:block;">
-        <div style="padding:4px 0;">
+        <div style="padding:2px 0;">
           ${prevHtml}
           <div class="tm ${last.dir==='in'?'tm-in':'tm-out'}" style="margin-top:6px;">
             <div class="tm-sender">${last.sender}<span>${last.time}</span></div>
@@ -1062,13 +1077,45 @@ async function renameTmpl(tmplId) {
       .eq('id',dbId)
       .eq('company_id',currentProfile.company_id);
     if(error){alert('Rename failed: '+error.message);return;}
-    // Update local array immediately before re-render
-    t.name=newName;
-    t.id='t_db_'+dbId; // keep same id so no duplicate
-  } else {
-    t.name=newName;
   }
-  await renderTmpls();
+  // Update local name — don't do a full DB reload or it will overwrite
+  t.name=newName;
+  // Manually update just the name text in the DOM if visible
+  const nameEls = document.querySelectorAll('.ti-name');
+  nameEls.forEach(el => {
+    if(el.closest('.ti') && el.closest('.ti').onclick && el.textContent === t.name) return;
+  });
+  // Re-render without DB reload by passing a flag
+  renderTmplsLocal();
+  // Also refresh settings docs list if open
+  const settingsList = document.getElementById('settingsDocsList');
+  if(settingsList) loadSettingsDocs();
+}
+
+function renderTmplsLocal() {
+  // Render from local tmpls array only — no DB fetch
+  const list=document.getElementById('tmplList'); if(!list)return;
+  const filter = document.getElementById('tmplSearch')?.value||'';
+  const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
+  const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
+  list.innerHTML='';
+  const collapsed = window._tmplCollapsed || {};
+  ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
+    const ts=groups[grp]; if(!ts||!ts.length)return;
+    const isCollapsed = collapsed[grp] || false;
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;';
+    lbl.innerHTML=`<span>${grp}</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(${isCollapsed?'0':'90'}deg)"><polyline points="9 18 15 12 9 6"/></svg>`;
+    lbl.onclick=()=>{ window._tmplCollapsed[grp]=!window._tmplCollapsed[grp]; renderTmplsLocal(); };
+    list.appendChild(lbl);
+    if(!isCollapsed){
+      ts.forEach(t=>{
+        const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
+        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        list.appendChild(div);
+      });
+    }
+  });
 }
 
 async function deleteTemplate(tmplId) {
@@ -1311,45 +1358,57 @@ function renderProcessRow(p) {
 
 function buildTimeline(steps, accent, accentBg) {
   const n = steps.length;
-  const boxW = 110, boxH = 70, gap = 50, r = 22;
-  const totalW = n * boxW + (n-1) * gap + 40;
-  const svgH = 160;
-  const lineY = 88;
+  const r = 26;           // circle radius
+  const nodeSpacing = 140; // space between circle centres
+  const startX = 50;
+  const lineY = 90;
+  const svgH = 180;
+  const totalW = startX + (n-1) * nodeSpacing + startX;
   let svg = '';
 
   // Main horizontal line
-  svg += `<line x1="20" y1="${lineY}" x2="${totalW-20}" y2="${lineY}" stroke="${accent}" stroke-width="3" opacity="0.3"/>`;
+  svg += `<line x1="${startX}" y1="${lineY}" x2="${startX+(n-1)*nodeSpacing}" y2="${lineY}" stroke="${accent}" stroke-width="3" opacity="0.25"/>`;
+  // Arrow at end
+  const arrowX = startX+(n-1)*nodeSpacing+16;
+  svg += `<polygon points="${arrowX-10},${lineY-5} ${arrowX},${lineY} ${arrowX-10},${lineY+5}" fill="${accent}" opacity="0.4"/>`;
 
   steps.forEach((s, i) => {
-    const cx = 20 + i * (boxW + gap) + boxW/2;
+    const cx = startX + i * nodeSpacing;
     const isFirst = i === 0;
-    const label = s.length > 14 ? s.substring(0,13)+'…' : s;
+    const above = i % 2 === 0; // alternate labels above/below
+
+    // Vertical tick
+    const tickY1 = above ? lineY - r - 2 : lineY + r + 2;
+    const tickY2 = above ? lineY - r - 14 : lineY + r + 14;
+    svg += `<line x1="${cx}" y1="${tickY1}" x2="${cx}" y2="${tickY2}" stroke="${accent}" stroke-width="1.5" opacity="0.35"/>`;
+
+    // Circle
+    svg += `<circle cx="${cx}" cy="${lineY}" r="${r}" fill="${isFirst?accent:'white'}" stroke="${accent}" stroke-width="2.5"/>`;
+    svg += `<text x="${cx}" y="${lineY+5}" text-anchor="middle" font-size="14" font-weight="700" fill="${isFirst?'white':accent}" font-family="Inter,-apple-system,sans-serif">${i+1}</text>`;
+
+    // Label — wrap into max 2 lines, each max 12 chars
     const words = s.split(' ');
-    const line1 = words.slice(0, Math.ceil(words.length/2)).join(' ');
-    const line2 = words.slice(Math.ceil(words.length/2)).join(' ');
+    const lines = [];
+    let cur = '';
+    words.forEach(w => {
+      if ((cur+' '+w).trim().length > 13 && cur) { lines.push(cur.trim()); cur = w; }
+      else cur = (cur+' '+w).trim();
+    });
+    if (cur) lines.push(cur);
 
-    // Vertical connector
-    svg += `<line x1="${cx}" y1="${lineY-r}" x2="${cx}" y2="${i%2===0?lineY-r-20:lineY+r+20}" stroke="${accent}" stroke-width="2" opacity="0.4"/>`;
-
-    // Circle node on line
-    svg += `<circle cx="${cx}" cy="${lineY}" r="${r}" fill="${isFirst?accent:accentBg}" stroke="${accent}" stroke-width="2.5"/>`;
-    svg += `<text x="${cx}" y="${lineY+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${isFirst?'white':accent}" font-family="Inter,-apple-system,sans-serif">${i+1}</text>`;
-
-    // Label alternating above/below
-    const textY = i%2===0 ? lineY-r-28 : lineY+r+14;
-    const labelDir = i%2===0 ? 'end' : 'start';
-    if (line2) {
-      svg += `<text x="${cx}" y="${textY}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line1}</text>`;
-      svg += `<text x="${cx}" y="${textY+14}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line2}</text>`;
-    } else {
-      svg += `<text x="${cx}" y="${textY+7}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${s}</text>`;
-    }
+    const labelBaseY = above ? lineY - r - 16 : lineY + r + 18;
+    const lineH = 13;
+    // Shift up for above labels so bottom line is nearest to tick
+    const totalLabelH = lines.length * lineH;
+    lines.forEach((line, li) => {
+      const y = above
+        ? labelBaseY - totalLabelH + li * lineH
+        : labelBaseY + li * lineH;
+      svg += `<text x="${cx}" y="${y}" text-anchor="middle" font-size="11" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line}</text>`;
+    });
   });
 
-  // Arrow at end
-  svg += `<polygon points="${totalW-14},${lineY-5} ${totalW},${lineY} ${totalW-14},${lineY+5}" fill="${accent}" opacity="0.5"/>`;
-
-  return `<svg width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="min-width:${totalW}px;">${svg}</svg>`;
+  return `<svg width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="min-width:${totalW}px;display:block;">${svg}</svg>`;
 }
 
 function toggleProcessMap(headerEl, name) {
