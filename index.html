@@ -134,13 +134,18 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 500; }
 .gm-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; margin-left: auto; }
 
-/* Scrollable area */
+/* Scrollable area — takes all remaining space */
 .gm-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
 
 /* Message body */
 .gm-body { padding: 16px 20px 14px; font-size: 13px; color: var(--ink); line-height: 1.75; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 
-/* Thread */
+/* Fix gm-detail to use flex properly */
+.gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+/* Compose — fixed height, no auto-grow cutting off */
+.gm-compose { border-top: 1px solid var(--border); flex-shrink: 0; background: var(--surface); max-height: 55%; display: flex; flex-direction: column; overflow: hidden; }
+.gm-ta { width: 100%; border: none; outline: none; padding: 10px 20px 6px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; height: 100px; line-height: 1.65; background: var(--surface); overflow-y: auto; flex: 1; min-height: 80px; }
 .gm-thread { padding: 0 20px; flex-shrink: 0; }
 .gm-thread-item { border-bottom: 1px solid var(--border); }
 .gm-thread-compact { display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; user-select: none; }
@@ -477,11 +482,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Inbox <span class="ni-badge" id="nbNew">3</span>
     </div>
+    <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('docs',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       Documents
     </div>
-    <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('manage',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Policies
@@ -969,12 +974,18 @@ function openMsg(m) {
     threadHtml = `<div class="gm-thread">${prevRows}${lastRow}</div>`;
   }
 
-  // AI bar
+  // AI bar — 2 lines
   let aiBar = '';
-  if (m.aiType==='answer' && m.policyRef) {
-    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div class="gm-ai-text">Drafted from <span class="gm-ai-source">📄 ${m.policyRef}</span></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR instead</div></div>`;
+  if (m.aiType==='answer' && m.draftAnswer) {
+    const reason = m.policyRef
+      ? `Based on your <strong>📄 ${m.policyRef}</strong> · follows ACAS best practice`
+      : `Based on UK HR best practice and ACAS guidance`;
+    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR drafted this reply</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
   } else if (m.aiType==='clarify' || m.clarifyQs.length) {
-    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div class="gm-ai-text">Breeze HR loaded clarifying questions into the reply box</div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
+    const reason = m.type==='Performance'
+      ? `ACAS code: document 2 informal conversations before escalating formally`
+      : `More context needed before a policy-based response can be drafted`;
+    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR loaded clarifying questions</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
   }
 
   // Initial reply content
@@ -990,6 +1001,9 @@ function openMsg(m) {
       <div class="gm-action-btns">
         <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
         <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
+        <button class="gm-icon-btn" title="Pop out" onclick="popOutMsg('${m.id}')" style="color:var(--ink3);">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </button>
         <button class="gm-icon-btn danger" title="Delete" onclick="deleteMsg('${m.id}')">
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
         </button>
@@ -1226,6 +1240,22 @@ function useDraftFromKono(msgId) {
   const m = msgs.find(x=>x.id===msgId); if(!m||!m._konoDraft) return;
   switchCompose('reply',msgId);
   const ta = document.getElementById('replyTa-'+msgId); if(ta){ta.value=m._konoDraft;ta.focus();}
+}
+
+function popOutMsg(msgId) {
+  const m = msgs.find(x=>x.id===msgId); if(!m) return;
+  const w = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
+  const initReply = m.draftAnswer || (m.clarifyQs.length ? `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nMany thanks,\nHR` : '');
+  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${m.subject}</title>
+  <style>*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,-apple-system,sans-serif;}body{background:#F5F5F7;color:#1D1D1F;font-size:13px;line-height:1.5;}.header{background:white;padding:20px 28px;border-bottom:1px solid #E0E0E5;}.subject{font-size:20px;font-weight:600;letter-spacing:-0.02em;margin-bottom:8px;}.meta{font-size:12px;color:#6E6E73;}.body{background:white;padding:20px 28px;font-size:14px;line-height:1.75;white-space:pre-wrap;border-bottom:1px solid #E0E0E5;margin-top:12px;}.ai-bar{background:#F0F7FF;padding:10px 28px;border-bottom:1px solid rgba(0,102,204,0.12);font-size:12px;color:#0066CC;margin-top:0;}.compose{background:white;padding:16px 28px;margin-top:12px;}.compose-label{font-size:11px;font-weight:600;color:#6E6E73;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;}.ta{width:100%;min-height:200px;border:1px solid #E0E0E5;border-radius:8px;padding:12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.65;color:#1D1D1F;}.actions{margin-top:12px;display:flex;gap:8px;}.send{background:#0066CC;color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:500;cursor:pointer;}</style>
+  </head><body>
+  <div class="header"><div class="subject">${m.subject}</div><div class="meta">${m.from} · ${m.source} · ${m.time}</div></div>
+  <div class="body">${m.body}</div>
+  ${m.aiType==='answer'&&m.policyRef?`<div class="ai-bar">◈ Breeze HR drafted this · Based on ${m.policyRef}</div>`:''}
+  <div class="compose"><div class="compose-label">Reply to ${m.from}</div><textarea class="ta" id="replyText">${initReply}</textarea><div class="actions"><button class="send" onclick="copyReply()">Copy reply text</button></div></div>
+  <script>function copyReply(){const t=document.getElementById('replyText');navigator.clipboard.writeText(t.value).then(()=>alert('Reply copied — paste it into Breeze HR to send'));}<\/script>
+  </body></html>`);
+  w.document.close();
 }
 
 function updateMsgType(msgId,val) { const m=msgs.find(x=>x.id===msgId); if(m)m.type=val; }
@@ -1540,12 +1570,47 @@ function updatePreview() {
 }
 
 function finishTmpl() {
-  addGMsg('ai',`✓ Complete. ${selTmpl.isDocx?'Click Download for your formatted Word doc.':'Ready to download.'}`);
-  const f=document.getElementById('gcField');if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--green);font-weight:500;text-align:center;">Complete</div>`;
+  addGMsg('ai',`✓ Complete. Click Download to get your Word document.`);
+  const f=document.getElementById('gcField');if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--green);font-weight:500;text-align:center;">Complete — ready to download</div>`;
   const dl=document.getElementById('dlBtn'),sb2=document.getElementById('sendBtn');
-  if(dl){dl.style.display='inline-flex';dl.textContent=selTmpl.isDocx?'⬇ Download .docx':'⬇ Download .txt';dl.onclick=selTmpl.isDocx?downloadDocx:downloadTxt;}
+  if(dl){dl.style.display='inline-flex';dl.textContent='⬇ Download .docx';dl.onclick=selTmpl.isDocx?downloadDocx:downloadAsDocx;}
   if(sb2)sb2.style.display='inline-flex';
   updatePreview();
+}
+
+// For built-in templates — generate a simple docx from the preview text
+async function downloadAsDocx() {
+  const btn=document.getElementById('dlBtn');
+  if(btn){btn.textContent='Generating...';btn.disabled=true;}
+  try {
+    const body=document.getElementById('dpBody');
+    const text = body ? body.innerText : '';
+    const res=await fetch('/api/generate-doc',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        templateBase64: null,
+        fields: genVals,
+        plainText: text,
+        templateName: selTmpl.name
+      })
+    });
+    if(!res.ok){
+      // Fallback — download as .txt if docx fails
+      const blob=new Blob([text],{type:'text/plain'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=`${selTmpl.name}.txt`;a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      const blob=await res.blob();
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=`${selTmpl.name}.docx`;a.click();
+      URL.revokeObjectURL(url);
+    }
+    if(btn){btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Download .docx',3000);}
+  } catch(e){
+    if(btn){btn.textContent='⬇ Download .docx';btn.disabled=false;}
+  }
 }
 
 async function downloadDocx() {
