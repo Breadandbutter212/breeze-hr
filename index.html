@@ -182,10 +182,18 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
 .gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 20px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.12s; }
 .gm-send-btn:hover { opacity: 0.88; }
-.gm-fmt-btn { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-size: 11px; font-weight: 600; transition: all 0.12s; }
+/* Compose footer — everything in one line */
+.gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--border); flex-wrap: nowrap; }
+.gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: opacity 0.12s; flex-shrink: 0; white-space: nowrap; }
+.gm-send-btn:hover { opacity: 0.88; }
+.gm-fmt-btn { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-size: 11px; font-weight: 600; transition: all 0.12s; flex-shrink: 0; }
 .gm-fmt-btn:hover { background: var(--surface2); color: var(--ink2); }
-.gm-discard { color: var(--ink3); cursor: pointer; font-size: 12px; }
+.gm-fmt-divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
+.gm-discard { color: var(--ink3); cursor: pointer; font-size: 12px; margin-left: auto; flex-shrink: 0; }
 .gm-discard:hover { color: var(--red); }
+
+/* Thread — scrollable, capped height */
+.gm-thread { padding: 0 20px; flex-shrink: 0; max-height: 100px; overflow-y: auto; border-bottom: 1px solid var(--border); }
 
 /* Kono chat pane */
 .kono-pane { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
@@ -381,7 +389,15 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .step-num { width: 18px; height: 18px; border-radius: 50%; background: var(--surface2); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; color: var(--ink3); flex-shrink: 0; }
 .prsc-foot { margin-top: 10px; font-size: 11px; color: var(--ink3); font-style: italic; }
 
-/* ── SHAREPOINT PANEL ── */
+/* ── BULK MODAL ── */
+.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px); }
+.modal-overlay.open { display:flex; }
+.modal { background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);width:520px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden; }
+.modal-head { padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
+.modal-title { font-size:15px;font-weight:600;color:var(--ink);letter-spacing:-0.02em; }
+.modal-close { width:28px;height:28px;border-radius:50%;border:none;background:var(--surface2);cursor:pointer;display:flex;align-items:center;justify-content:center;color:var(--ink2);font-size:14px; }
+.modal-body { padding:20px;overflow-y:auto;flex:1; }
+.modal-foot { padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px; }
 .sp-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.15);z-index:200;display:none;backdrop-filter:blur(2px); }
 .sp-overlay.open { display:block; }
 .sp-panel {
@@ -558,7 +574,13 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <div class="view docs-view" id="view-docs">
   <div class="docs-topbar">
     <div><div class="docs-title">Documents</div><div class="docs-sub">Select a template — answer questions, letter builds live</div></div>
-    <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)"></label>
+    <div style="display:flex;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="openBulkModal()" style="display:flex;align-items:center;gap:5px;">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        Bulk generate
+      </button>
+      <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)"></label>
+    </div>
   </div>
   <div class="docs-body">
     <div class="tmpl-lib">
@@ -608,6 +630,45 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="manage-topbar"><div><div class="manage-title">Settings</div><div class="manage-sub">Account, company and integrations.</div></div></div>
   <div class="manage-body" id="settingsBody"></div>
 </div>
+<!-- BULK MAIL MERGE MODAL -->
+<div class="modal-overlay" id="bulkModal">
+  <div class="modal">
+    <div class="modal-head">
+      <div class="modal-title">Bulk letter generation</div>
+      <button class="modal-close" onclick="closeBulkModal()">✕</button>
+    </div>
+    <div class="modal-body">
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:4px;">1. Choose a template</div>
+        <select id="bulkTmplSelect" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);">
+          <option value="">Select a template...</option>
+        </select>
+      </div>
+      <div style="margin-bottom:16px;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:4px;">2. Upload a CSV with recipient data</div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">One row per person. Column headers must match template field names (e.g. employee_name, job_title, new_salary)</div>
+        <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:20px;border:1.5px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--ink3);transition:all 0.15s;" id="csvDropZone">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span id="csvFileName">Upload CSV file</span>
+          <input type="file" accept=".csv" style="display:none" onchange="handleCsvUpload(event)">
+        </label>
+      </div>
+      <div id="bulkPreview" style="display:none;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:8px;">3. Preview</div>
+        <div id="bulkPreviewTable" style="border:1px solid var(--border);border-radius:var(--r-sm);overflow:auto;max-height:180px;font-size:11px;"></div>
+        <div id="bulkCount" style="font-size:12px;color:var(--ink3);margin-top:8px;"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-secondary btn-sm" onclick="closeBulkModal()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="bulkGenerateBtn" onclick="runBulkGenerate()" disabled style="opacity:0.5;">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        Generate all letters
+      </button>
+    </div>
+  </div>
+</div>
+
 <!-- SHAREPOINT PANEL -->
 <div class="sp-overlay" id="spOverlay" onclick="toggleSharePoint()"></div>
 <div class="sp-panel" id="spPanel">
@@ -1069,15 +1130,21 @@ function openMsg(m) {
       <div id="gm-reply-pane-${m.id}">
         <textarea class="gm-ta" id="replyTa-${m.id}" placeholder="Write your reply..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px'">${initReply}</textarea>
         <div class="gm-compose-foot">
-          <div class="gm-compose-left">
-            <button class="gm-send-btn" onclick="sendReply('${m.id}')">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-              Send
-            </button>
-            <button class="gm-fmt-btn" title="Bold"><b>B</b></button>
-            <button class="gm-fmt-btn" title="Italic"><i>I</i></button>
-            <button class="gm-fmt-btn" title="List">≡</button>
-          </div>
+          <button class="gm-send-btn" onclick="sendReply('${m.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send
+          </button>
+          <div class="gm-fmt-divider"></div>
+          <button class="gm-fmt-btn" title="Bold" onclick="formatText('bold')"><b>B</b></button>
+          <button class="gm-fmt-btn" title="Italic" onclick="formatText('italic')"><i>I</i></button>
+          <button class="gm-fmt-btn" title="Underline" onclick="formatText('underline')"><u style="font-size:11px;">U</u></button>
+          <div class="gm-fmt-divider"></div>
+          <button class="gm-fmt-btn" title="Bullet list" onclick="formatText('insertUnorderedList')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
+          </button>
+          <button class="gm-fmt-btn" title="Attach file">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          </button>
           <div class="gm-discard" onclick="document.getElementById('replyTa-${m.id}').value=''">Discard</div>
         </div>
       </div>
@@ -1921,6 +1988,131 @@ function showView(v,el) {
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
   if(v==='settings')renderSettings();
+}
+
+// ── BULK MAIL MERGE ──
+let bulkCsvData = [];
+
+function openBulkModal() {
+  // Populate template select
+  const sel = document.getElementById('bulkTmplSelect');
+  sel.innerHTML = '<option value="">Select a template...</option>';
+  tmpls.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t.id; opt.textContent = t.name;
+    sel.appendChild(opt);
+  });
+  document.getElementById('bulkModal').classList.add('open');
+}
+
+function closeBulkModal() {
+  document.getElementById('bulkModal').classList.remove('open');
+  bulkCsvData = [];
+  document.getElementById('bulkPreview').style.display = 'none';
+  document.getElementById('csvFileName').textContent = 'Upload CSV file';
+  const btn = document.getElementById('bulkGenerateBtn');
+  btn.disabled = true; btn.style.opacity = '0.5';
+}
+
+function handleCsvUpload(event) {
+  const file = event.target.files[0]; if (!file) return;
+  document.getElementById('csvFileName').textContent = file.name;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    const lines = e.target.result.split('\n').filter(l => l.trim());
+    if (lines.length < 2) { alert('CSV needs at least a header row and one data row'); return; }
+    const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
+    bulkCsvData = lines.slice(1).map(line => {
+      const vals = line.split(',').map(v => v.trim().replace(/"/g,''));
+      const obj = {};
+      headers.forEach((h, i) => obj[h] = vals[i] || '');
+      return obj;
+    }).filter(row => Object.values(row).some(v => v));
+
+    // Show preview table
+    const preview = document.getElementById('bulkPreview');
+    const table = document.getElementById('bulkPreviewTable');
+    preview.style.display = 'block';
+    table.innerHTML = `<table style="width:100%;border-collapse:collapse;">
+      <thead><tr style="background:var(--surface2);">${headers.map(h=>`<th style="padding:6px 10px;text-align:left;border-bottom:1px solid var(--border);font-weight:600;white-space:nowrap;">${h}</th>`).join('')}</tr></thead>
+      <tbody>${bulkCsvData.slice(0,5).map(row=>`<tr>${headers.map(h=>`<td style="padding:5px 10px;border-bottom:1px solid var(--border);white-space:nowrap;max-width:120px;overflow:hidden;text-overflow:ellipsis;">${row[h]||''}</td>`).join('')}</tr>`).join('')}</tbody>
+    </table>`;
+    document.getElementById('bulkCount').textContent = `${bulkCsvData.length} letters will be generated${bulkCsvData.length > 5 ? ' (showing first 5 rows)' : ''}`;
+    const btn = document.getElementById('bulkGenerateBtn');
+    btn.disabled = false; btn.style.opacity = '1';
+  };
+  reader.readAsText(file);
+}
+
+async function runBulkGenerate() {
+  const tmplId = document.getElementById('bulkTmplSelect').value;
+  const t = tmpls.find(x => x.id === tmplId);
+  if (!t) { alert('Please select a template'); return; }
+  if (!bulkCsvData.length) { alert('Please upload a CSV file'); return; }
+
+  const btn = document.getElementById('bulkGenerateBtn');
+  btn.textContent = `Generating ${bulkCsvData.length} letters...`;
+  btn.disabled = true;
+
+  // Generate each letter and collect as downloads
+  let successCount = 0;
+  for (let i = 0; i < bulkCsvData.length; i++) {
+    const row = bulkCsvData[i];
+    const name = row['employee_name'] || row['Employee name'] || row['name'] || `Letter ${i+1}`;
+
+    try {
+      if (t.isDocx && t.base64) {
+        const fields = {};
+        Object.entries(row).forEach(([k,v]) => {
+          fields[k]=v; fields[k.toLowerCase().replace(/\s+/g,'_')]=v;
+        });
+        const res = await fetch('/api/generate-doc', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ templateBase64: t.base64, fields, templateName: `${t.name} - ${name}` })
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `${t.name} - ${name}.docx`; a.click();
+          URL.revokeObjectURL(url);
+          successCount++;
+          await new Promise(r => setTimeout(r, 300)); // small delay between downloads
+        }
+      } else {
+        // Built-in template — generate from preview
+        const savedTmpl = selTmpl, savedVals = {...genVals}, savedStep = genStep;
+        selTmpl = t; genVals = row; genStep = t.flow.length;
+        const body = document.createElement('div');
+        body.id = '_tmpPreview';
+        document.body.appendChild(body);
+        const prevBody = document.getElementById('dpBody');
+        const originalId = prevBody ? prevBody.id : null;
+        if (prevBody) prevBody.id = '_tmpPreview';
+        updatePreview();
+        const text = body.innerText;
+        if (originalId && prevBody) prevBody.id = originalId;
+        document.body.removeChild(body);
+        selTmpl = savedTmpl; genVals = savedVals; genStep = savedStep;
+        const res = await fetch('/api/generate-doc', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({ plainText: text, templateName: `${t.name} - ${name}` })
+        });
+        if (res.ok) {
+          const blob = await res.blob();
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href=url; a.download=`${t.name} - ${name}.docx`; a.click();
+          URL.revokeObjectURL(url);
+          successCount++;
+          await new Promise(r => setTimeout(r, 300));
+        }
+      }
+    } catch(err) { console.error('Error generating letter for', name, err); }
+  }
+
+  btn.textContent = `✓ Generated ${successCount} letters`;
+  setTimeout(() => closeBulkModal(), 2000);
 }
 
 // ── SHAREPOINT PANEL ──
