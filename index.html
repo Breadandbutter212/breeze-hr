@@ -7,6 +7,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <style>
 :root {
   --bg: #F5F5F7;
@@ -49,26 +50,26 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 /* ── SIDEBAR ── */
 .sidebar {
   width: 220px; flex-shrink: 0;
-  background: #0A2463;
+  background: #F5F0E8;
   display: flex; flex-direction: column;
-  border-right: 1px solid rgba(255,255,255,0.08);
+  border-right: 1px solid rgba(0,0,0,0.08);
 }
-.sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
-.logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,102,204,0.4); }
-.logo-name { font-size: 15px; font-weight: 600; color: white; letter-spacing: -0.03em; }
-.logo-sub { font-size: 9px; color: rgba(255,255,255,0.28); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+.sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 28px; height: 28px; background: #1D1D1F; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-name { font-size: 15px; font-weight: 600; color: #1D1D1F; letter-spacing: -0.03em; }
+.logo-sub { font-size: 9px; color: rgba(0,0,0,0.3); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
 .nav { padding: 10px 10px; flex: 1; }
-.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.22); padding: 0 8px; margin: 14px 0 5px; }
+.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.28); padding: 0 8px; margin: 14px 0 5px; }
 .nav-label:first-child { margin-top: 4px; }
-.ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.45); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
-.ni:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.8); }
-.ni.active { background: rgba(255,255,255,0.11); color: white; font-weight: 500; }
-.ni svg { flex-shrink: 0; opacity: 0.55; }
-.ni.active svg { opacity: 1; }
-.ni-badge { margin-left: auto; background: var(--accent); color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
-.sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.06); }
-.int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.04); font-size: 11px; color: rgba(255,255,255,0.35); }
-.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 6px rgba(48,209,88,0.6); }
+.ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(0,0,0,0.4); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
+.ni:hover { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.7); }
+.ni.active { background: rgba(0,0,0,0.07); color: #1D1D1F; font-weight: 500; }
+.ni svg { flex-shrink: 0; opacity: 0.45; }
+.ni.active svg { opacity: 0.9; }
+.ni-badge { margin-left: auto; background: #1D1D1F; color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.sidebar-foot { padding: 12px; border-top: 1px solid rgba(0,0,0,0.06); }
+.int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(0,0,0,0.04); font-size: 11px; color: rgba(0,0,0,0.4); }
+.live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 
 /* ── MAIN ── */
@@ -370,7 +371,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
     <div class="ni" onclick="showView('processmaps',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M5 8v6l7 6 7-6V8"/></svg>
-      Process maps <span style="font-size:9px;background:var(--purple-bg);color:var(--purple);padding:1px 5px;border-radius:8px;margin-left:2px;">Beta</span>
+      Process maps <span style="font-size:9px;background:rgba(0,0,0,0.08);color:rgba(0,0,0,0.45);padding:1px 5px;border-radius:8px;margin-left:2px;">Beta</span>
     </div>
     <div class="ni" onclick="showView('settings',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -380,8 +381,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="sidebar-foot">
     <div class="int-pill"><div class="live-dot"></div>Slack &amp; Email connected</div>
     <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:4px 8px;">
-      <span style="font-size:10px;color:rgba(255,255,255,0.35);" id="userEmail"></span>
-      <span style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="signOut()">Sign out</span>
+      <span style="font-size:10px;color:rgba(0,0,0,0.35);" id="userEmail"></span>
+      <span style="font-size:10px;color:rgba(0,0,0,0.3);cursor:pointer;" onclick="signOut()">Sign out</span>
     </div>
   </div>
 </div>
@@ -423,7 +424,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <div class="view docs-view" id="view-docs">
   <div class="docs-topbar">
     <div><div class="docs-title">Documents</div><div class="docs-sub">Select a template — answer questions, letter builds live</div></div>
-    <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload template<input type="file" accept=".docx,.txt" style="display:none" onchange="uploadTemplate(event)"></label>
+    <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)"></label>
   </div>
   <div class="docs-body">
     <div class="tmpl-lib">
@@ -432,7 +433,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <label class="upload-zone" style="cursor:pointer;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;margin:0 auto 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
         Upload template (.docx or .txt)
-        <input type="file" accept=".docx,.txt" style="display:none" onchange="uploadTemplate(event)">
+        <input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)">
       </label>
     </div>
     <div class="gen-area">
@@ -454,7 +455,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
         ACAS guidance
       </a>
-      <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload policy<input type="file" accept=".txt,.docx" style="display:none" onchange="uploadPolicy(event)"></label>
+      <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload policy<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadPolicy(event)"></label>
     </div>
   </div>
   <div class="manage-body" id="manageBody"></div>
@@ -767,10 +768,10 @@ function openMsg(m) {
 
     return `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;">
       <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg>
+        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(0deg)"><polyline points="9 18 15 12 9 6"/></svg>
         <span style="font-size:11px;color:var(--ink3);">${m.thread.length} message${m.thread.length>1?'s':''} in thread</span>
       </div>
-      <div class="collapsible-body" style="display:block;">
+      <div class="collapsible-body" style="display:none;">
         <div style="padding:2px 0;">
           ${prevHtml}
           <div class="tm ${last.dir==='in'?'tm-in':'tm-out'}" style="margin-top:6px;">
@@ -987,7 +988,21 @@ async function readFileAsText(file) {
       const r=new FileReader();
       r.onload=async e=>{try{const res=await mammoth.extractRawText({arrayBuffer:e.target.result});resolve(res.value);}catch{resolve('');}};
       r.readAsArrayBuffer(file);
-    } else { const r=new FileReader(); r.onload=e=>resolve(e.target.result); r.readAsText(file); }
+    } else if (file.name.endsWith('.pdf')) {
+      const r=new FileReader();
+      r.onload=async e=>{
+        try {
+          pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+          const pdf=await pdfjsLib.getDocument({data:e.target.result}).promise;
+          let text='';
+          for(let i=1;i<=pdf.numPages;i++){const page=await pdf.getPage(i);const c=await page.getTextContent();text+=c.items.map(x=>x.str).join(' ')+'\n';}
+          resolve(text);
+        } catch(err){resolve('');}
+      };
+      r.readAsArrayBuffer(file);
+    } else {
+      const r=new FileReader(); r.onload=e=>resolve(e.target.result); r.readAsText(file);
+    }
   });
 }
 
@@ -1267,7 +1282,7 @@ async function renderManage() {
   if(currentProfile){const{data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).not('name','like','TEMPLATE:%').order('created_at',{ascending:false});if(data)dbPolicies=data;}
   const allPolicies=policies.map(p=>{const up=dbPolicies.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};});
   const uc=allPolicies.filter(p=>p.status==='uploaded').length;
-  body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded — Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+  body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded — Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
 }
 
 async function renamePolicy(id) {
@@ -1358,53 +1373,52 @@ function renderProcessRow(p) {
 
 function buildTimeline(steps, accent, accentBg) {
   const n = steps.length;
-  const r = 26;           // circle radius
-  const nodeSpacing = 140; // space between circle centres
-  const startX = 50;
-  const lineY = 90;
-  const svgH = 180;
+  const r = 26;
+  const nodeSpacing = 150;
+  const startX = 60;
+  const lineY = 100;
+  const svgH = 220;
   const totalW = startX + (n-1) * nodeSpacing + startX;
   let svg = '';
 
-  // Main horizontal line
   svg += `<line x1="${startX}" y1="${lineY}" x2="${startX+(n-1)*nodeSpacing}" y2="${lineY}" stroke="${accent}" stroke-width="3" opacity="0.25"/>`;
-  // Arrow at end
-  const arrowX = startX+(n-1)*nodeSpacing+16;
+  const arrowX = startX+(n-1)*nodeSpacing+18;
   svg += `<polygon points="${arrowX-10},${lineY-5} ${arrowX},${lineY} ${arrowX-10},${lineY+5}" fill="${accent}" opacity="0.4"/>`;
 
   steps.forEach((s, i) => {
     const cx = startX + i * nodeSpacing;
     const isFirst = i === 0;
-    const above = i % 2 === 0; // alternate labels above/below
+    const above = i % 2 === 0;
 
-    // Vertical tick
-    const tickY1 = above ? lineY - r - 2 : lineY + r + 2;
-    const tickY2 = above ? lineY - r - 14 : lineY + r + 14;
-    svg += `<line x1="${cx}" y1="${tickY1}" x2="${cx}" y2="${tickY2}" stroke="${accent}" stroke-width="1.5" opacity="0.35"/>`;
+    // Tick line
+    const tickTop = above ? lineY - r - 2 : lineY + r + 2;
+    const tickBot = above ? lineY - r - 18 : lineY + r + 18;
+    svg += `<line x1="${cx}" y1="${tickTop}" x2="${cx}" y2="${tickBot}" stroke="${accent}" stroke-width="1.5" opacity="0.3"/>`;
 
     // Circle
     svg += `<circle cx="${cx}" cy="${lineY}" r="${r}" fill="${isFirst?accent:'white'}" stroke="${accent}" stroke-width="2.5"/>`;
     svg += `<text x="${cx}" y="${lineY+5}" text-anchor="middle" font-size="14" font-weight="700" fill="${isFirst?'white':accent}" font-family="Inter,-apple-system,sans-serif">${i+1}</text>`;
 
-    // Label — wrap into max 2 lines, each max 12 chars
+    // Wrap label into lines of max 11 chars
     const words = s.split(' ');
     const lines = [];
     let cur = '';
     words.forEach(w => {
-      if ((cur+' '+w).trim().length > 13 && cur) { lines.push(cur.trim()); cur = w; }
-      else cur = (cur+' '+w).trim();
+      if (cur && (cur+' '+w).length > 11) { lines.push(cur); cur = w; }
+      else cur = cur ? cur+' '+w : w;
     });
     if (cur) lines.push(cur);
 
-    const labelBaseY = above ? lineY - r - 16 : lineY + r + 18;
-    const lineH = 13;
-    // Shift up for above labels so bottom line is nearest to tick
-    const totalLabelH = lines.length * lineH;
+    const lineH = 14;
+    const totalH = lines.length * lineH;
+    // Above: bottom of label block sits just above the tick
+    // Below: top of label block sits just below the tick
+    const blockTop = above
+      ? tickBot - totalH - 2
+      : tickBot + 4;
+
     lines.forEach((line, li) => {
-      const y = above
-        ? labelBaseY - totalLabelH + li * lineH
-        : labelBaseY + li * lineH;
-      svg += `<text x="${cx}" y="${y}" text-anchor="middle" font-size="11" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line}</text>`;
+      svg += `<text x="${cx}" y="${blockTop + li*lineH + 11}" text-anchor="middle" font-size="11" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line}</text>`;
     });
   });
 
