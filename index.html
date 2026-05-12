@@ -134,21 +134,16 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 500; }
 .gm-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; margin-left: auto; }
 
-/* Message body — compact, not dominant */
-.gm-body { padding: 12px 20px 10px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; max-height: 120px; overflow-y: auto; }
+/* Message body — compact at top, scrollable if long */
+.gm-body { padding: 12px 20px 10px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; max-height: 100px; overflow-y: auto; }
 
-/* Fix gm-detail to use flex properly */
+/* gm-detail — full height flex column */
 .gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
-/* Scroll area — minimal, just thread */
-.gm-scroll { overflow-y: auto; display: flex; flex-direction: column; flex-shrink: 0; max-height: 120px; }
-
-/* Compose — takes all remaining space, this is the hero */
-.gm-compose { border-top: 1px solid var(--border); flex: 1; background: var(--surface); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
-.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; flex: 1; min-height: 0; line-height: 1.65; background: var(--surface); overflow-y: auto; }
-.gm-thread { padding: 0 20px; flex-shrink: 0; }
+/* Thread — scrollable, capped, does not grow */
+.gm-thread { padding: 0 20px; flex-shrink: 0; max-height: 80px; overflow-y: auto; border-bottom: 1px solid var(--border); }
 .gm-thread-item { border-bottom: 1px solid var(--border); }
-.gm-thread-compact { display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; user-select: none; }
+.gm-thread-compact { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; user-select: none; }
 .gm-thread-compact:hover { opacity: 0.75; }
 .gm-thread-av { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
 .gm-thread-name { font-size: 12px; font-weight: 500; color: var(--ink); flex-shrink: 0; width: 60px; }
@@ -159,41 +154,39 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-thread-full.out { background: var(--accent-bg); border: 1px solid var(--accent-mid); }
 .gm-thread-full.in { background: var(--surface2); border: 1px solid var(--border); }
 
+/* Scroll wrapper — no extra space, just wraps thread */
+.gm-scroll { flex-shrink: 0; }
+
 /* Breeze HR bar */
 .gm-ai-bar { display: flex; align-items: center; gap: 8px; padding: 7px 20px; background: #F0F7FF; border-bottom: 1px solid rgba(0,102,204,0.1); flex-shrink: 0; }
 .gm-ai-icon { width: 16px; height: 16px; border-radius: 3px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
-.gm-ai-text { font-size: 11px; font-weight: 500; color: var(--ink2); }
-.gm-ai-source { color: var(--accent); font-weight: 500; }
 .gm-ai-chat { margin-left: auto; font-size: 11px; color: var(--ink3); cursor: pointer; text-decoration: underline; }
 
-/* Compose — Gmail style */
-.gm-compose { border-top: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
-.gm-compose-modes { display: flex; border-bottom: 1px solid var(--border); }
+/* COMPOSE — flex:1 so it takes ALL remaining space */
+.gm-compose { flex: 1; min-height: 0; background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
+.gm-compose-modes { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .gm-mode-btn { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 500; color: var(--ink3); cursor: pointer; border: none; background: transparent; font-family: inherit; border-bottom: 2px solid transparent; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .gm-mode-btn:hover { color: var(--ink2); background: var(--surface2); }
 .gm-mode-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
 .gm-mode-btn.breeze.active { color: var(--accent); border-bottom-color: var(--accent); }
-.gm-to-fields { border-bottom: 1px solid var(--border); }
+.gm-to-fields { border-bottom: 1px solid var(--border); flex-shrink: 0; }
 .gm-to-row { display: flex; align-items: center; gap: 8px; padding: 5px 16px; border-bottom: 1px solid var(--border); }
 .gm-to-label { font-size: 12px; color: var(--ink3); width: 28px; flex-shrink: 0; }
 .gm-to-input { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); background: transparent; }
 .gm-cc-toggle { font-size: 11px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
-.gm-ta { width: 100%; border: none; outline: none; padding: 10px 20px 6px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; min-height: 80px; max-height: 200px; line-height: 1.65; background: var(--surface); }
-.gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
-.gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 20px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.12s; }
+
+/* THE TEXTAREA — flex:1, takes all remaining compose space */
+.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; flex: 1; min-height: 0; line-height: 1.65; background: var(--surface); overflow-y: auto; display: block; }
+
+/* Compose footer — single line */
+.gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--border); }
+.gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
 .gm-send-btn:hover { opacity: 0.88; }
-/* Compose footer — everything in one line */
-.gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--border); flex-wrap: nowrap; }
-.gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 5px; transition: opacity 0.12s; flex-shrink: 0; white-space: nowrap; }
-.gm-send-btn:hover { opacity: 0.88; }
-.gm-fmt-btn { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-size: 11px; font-weight: 600; transition: all 0.12s; flex-shrink: 0; }
+.gm-fmt-btn { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-size: 11px; font-weight: 600; flex-shrink: 0; }
 .gm-fmt-btn:hover { background: var(--surface2); color: var(--ink2); }
 .gm-fmt-divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
-.gm-discard { color: var(--ink3); cursor: pointer; font-size: 12px; margin-left: auto; flex-shrink: 0; }
+.gm-discard { color: var(--ink3); cursor: pointer; font-size: 12px; margin-left: auto; }
 .gm-discard:hover { color: var(--red); }
-
-/* Thread — scrollable, capped height */
-.gm-thread { padding: 0 20px; flex-shrink: 0; max-height: 100px; overflow-y: auto; border-bottom: 1px solid var(--border); }
 
 /* Kono chat pane */
 .kono-pane { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
@@ -1127,7 +1120,7 @@ function openMsg(m) {
       </div>
 
       <!-- Reply textarea -->
-      <div id="gm-reply-pane-${m.id}">
+      <div id="gm-reply-pane-${m.id}" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
         <textarea class="gm-ta" id="replyTa-${m.id}" placeholder="Write your reply..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px'">${initReply}</textarea>
         <div class="gm-compose-foot">
           <button class="gm-send-btn" onclick="sendReply('${m.id}')">
