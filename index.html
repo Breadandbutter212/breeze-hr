@@ -893,7 +893,33 @@ async function generateAIDraft(m) {
     const { data: fb } = await sb.from('responses').select('ai_draft,hr_sent,was_edited').limit(20);
     if (fb && fb.length) { const ed = fb.filter(f=>f.was_edited); if(ed.length) feedbackContext = `\n\nThis HR team has sent ${fb.length} replies and edited ${ed.length} AI drafts. Match their tone and style.`; }
   }
-  const systemPrompt = `You are Breeze HR, an AI assistant for a UK HR team. Help HR professionals respond to employee messages.\n\nEither:\n1. Draft a complete professional reply if it's a clear policy question\n2. Suggest 3-4 clarifying questions if more context is needed\n\nMessage type: ${m.type}\nSource: ${m.source}\n${policyContext}${feedbackContext}\n\nRules: Draft for HR to review. Sign off as HR. Warm and professional. Reference ACAS where relevant.\n\nRespond ONLY with JSON: {"type":"answer"|"clarify","draft":"full reply or null","questions":[],"policyRef":"policy name or null","advice":"one sentence"}`;
+  const systemPrompt = `You are Breeze HR, an AI assistant for a UK HR team. Help HR professionals respond to employee messages.
+
+CRITICAL RULE: If the answer can be found in the company policies provided, ALWAYS draft a complete answer. Never ask clarifying questions when the policy clearly answers the question. Only ask clarifying questions if the information is genuinely missing and cannot be answered from policy alone (e.g. personal details like salary, specific dates, individual circumstances).
+
+Examples of when to ANSWER directly (not ask questions):
+- "How much holiday am I entitled to?" → answer from policy
+- "What is the notice period for booking leave?" → answer from policy  
+- "How does our pension work?" → answer from policy
+- "What is the sick pay policy?" → answer from policy
+
+Examples of when to ask CLARIFYING questions:
+- "Can I take leave next week?" → need to know if cover is available, dates
+- "I want to raise a grievance" → need details of the issue
+- "I'm having a performance issue with someone" → need context
+
+When answering from policy:
+- Be specific — quote the exact entitlement, notice periods, rules
+- Reference the specific section (e.g. "Under Section 2.1 of our Annual Leave Policy...")
+- Keep it warm and helpful
+- Sign off as HR
+
+Message type: ${m.type}
+Source: ${m.source} (Slack = conversational tone, email = slightly more formal)
+${policyContext}
+${feedbackContext}
+
+Respond ONLY with JSON: {"type":"answer"|"clarify","draft":"full reply or null","questions":[],"policyRef":"exact policy name used or null","advice":"one sentence for HR"}`;
   const reply = await callClaude([{role:'user',content:`Help me respond to:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}`}], systemPrompt);
   if (!reply) return null;
   try { return JSON.parse(reply.replace(/```json|```/g,'').trim()); }
@@ -1460,13 +1486,31 @@ function renderSettings() {
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Integrations</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Connect channels so messages arrive automatically.</div>
-      <div style="display:flex;flex-direction:column;gap:8px;">
+      <div style="display:flex;flex-direction:column;gap:12px;">
+
+        <div style="border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;">
+          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);">
+            <div style="display:flex;align-items:center;gap:10px;">
+              <div style="width:28px;height:28px;background:var(--amber-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg></div>
+              <div><div style="font-size:12px;font-weight:500;">Email forwarding</div><div style="font-size:11px;color:var(--ink3);">Forward your HR inbox to Breeze HR</div></div>
+            </div>
+            <span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:20px;font-weight:500;">Active</span>
+          </div>
+          <div style="padding:12px;">
+            <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;">Your HR email address (employees email this)</div>
+            <div style="display:flex;gap:6px;">
+              <input id="set-inbound-email" placeholder="hr@yourcompany.com" style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);">
+              <button class="btn btn-primary btn-sm" onclick="saveInboundEmail()">Save</button>
+            </div>
+            <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--r-sm);font-size:11px;color:var(--ink2);line-height:1.7;">
+              <strong>Setup:</strong> In Gmail, go to Settings → Forwarding → Add forwarding address → paste your Postmark inbound address. Once confirmed, set Gmail to forward all mail to it. New emails will appear in your Breeze HR inbox automatically.
+            </div>
+            <div id="set-inbound-msg" style="font-size:11px;margin-top:6px;min-height:14px;"></div>
+          </div>
+        </div>
+
         <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);">
           <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;background:var(--accent-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/></svg></div><div><div style="font-size:12px;font-weight:500;">Slack</div><div style="font-size:11px;color:var(--ink3);">Messages from your HR channel</div></div></div>
-          <button class="btn btn-secondary btn-sm">Connect</button>
-        </div>
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);">
-          <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;background:var(--amber-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg></div><div><div style="font-size:12px;font-weight:500;">Email</div><div style="font-size:11px;color:var(--ink3);">Forward your HR inbox</div></div></div>
           <button class="btn btn-secondary btn-sm">Connect</button>
         </div>
       </div>
@@ -1512,6 +1556,18 @@ async function loadSettingsDocs() {
   el.innerHTML = html || '<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>';
 }
 
+async function saveInboundEmail() {
+  const input = document.getElementById('set-inbound-email');
+  const msg = document.getElementById('set-inbound-msg');
+  const email = input?.value?.trim();
+  if (!email || !currentProfile) return;
+  const { error } = await sb.from('companies')
+    .update({ inbound_email: email })
+    .eq('id', currentProfile.company_id);
+  if (error) { msg.style.color='var(--red)'; msg.textContent='Failed: '+error.message; return; }
+  msg.style.color='var(--green)'; msg.textContent='✓ Saved — emails forwarded to this address will appear in your inbox.';
+}
+
 async function saveAccountSettings() {
   const name=document.getElementById('set-name').value.trim();if(!name||!currentProfile)return;
   const{error}=await sb.from('profiles').update({full_name:name}).eq('id',currentUser.id);
@@ -1540,6 +1596,39 @@ function showView(v,el) {
 
 // ── INIT ──
 renderMsgs();renderTmpls();openMsg(msgs[0]);
+
+// Poll for new messages every 30 seconds
+let lastMsgCheck = new Date().toISOString();
+setInterval(async () => {
+  if (!currentProfile) return;
+  const { data } = await sb.from('messages')
+    .select('*')
+    .eq('company_id', currentProfile.company_id)
+    .eq('status', 'new')
+    .gt('created_at', lastMsgCheck)
+    .order('created_at', { ascending: false });
+  if (data && data.length > 0) {
+    lastMsgCheck = new Date().toISOString();
+    data.forEach(m => {
+      if (!msgs.find(x => x.id === m.id)) {
+        msgs.unshift({
+          id: m.id, from: m.from_name,
+          initials: m.from_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(),
+          bg: '#EBF3FF', fg: '#0066CC',
+          source: m.source || 'email', type: m.type || 'General',
+          status: 'new',
+          time: new Date(m.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
+          subject: m.subject, preview: m.body.substring(0,80), body: m.body,
+          aiType: 'clarify', policyRef: null, draftAnswer: null, clarifyQs: [], thread: []
+        });
+      }
+    });
+    renderMsgs();
+    // Flash the inbox badge
+    const badge = document.getElementById('nbNew');
+    if (badge) { badge.style.background = '#FF3B30'; setTimeout(() => badge.style.background = '', 2000); }
+  }
+}, 30000);
 </script>
 </body>
 </html>
