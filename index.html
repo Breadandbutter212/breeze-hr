@@ -156,7 +156,17 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 /* gm-scroll — THIS takes flex:1, scrolls, body+thread live inside it */
 .gm-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-.gm-compose { flex-shrink: 0; background: var(--surface); display: flex; flex-direction: column; border-top: 1px solid var(--border); height: 55%; min-height: 200px; }
+.gm-compose { flex-shrink: 0; background: var(--surface); display: flex; flex-direction: column; border-top: 1px solid var(--border); height: 55%; min-height: 220px; }
+.gm-compose-modes { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.gm-mode-btn { flex: 1; padding: 11px 4px; font-size: 13px; font-weight: 500; color: var(--ink3); cursor: pointer; border: none; background: transparent; font-family: inherit; border-bottom: 2px solid transparent; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; }
+.gm-mode-btn:hover { color: var(--ink2); background: var(--surface2); }
+.gm-mode-btn.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
+.gm-mode-btn.breeze.active { color: var(--accent); border-bottom-color: var(--accent); }
+.gm-to-fields { border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.gm-to-row { display: flex; align-items: center; gap: 8px; padding: 5px 16px; border-bottom: 1px solid var(--border); }
+.gm-to-label { font-size: 12px; color: var(--ink3); width: 28px; flex-shrink: 0; }
+.gm-to-input { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); background: transparent; }
+.gm-cc-toggle { font-size: 11px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
 
 /* Breeze HR bar */
 .gm-ai-bar { display: flex; align-items: center; gap: 8px; padding: 7px 20px; background: #F0F7FF; border-bottom: 1px solid rgba(0,102,204,0.1); flex-shrink: 0; }
@@ -962,7 +972,7 @@ function openMsg(m) {
     konoChatHistory[m.id] = [{ role:'ai', text:`Analysing message from ${m.from.split(' ')[0]}...` }];
     generateAIDraft(m).then(result => {
       if (!result) return;
-      m.aiType = result.type; m.draftAnswer = result.draft; m.clarifyQs = result.questions || []; m.policyRef = result.policyRef;
+      m.aiType = result.type; m.draftAnswer = result.employeeDraft || result.draft; m.hrActions = result.hrActions; m.clarifyQs = result.questions || []; m.policyRef = result.policyRef;
       konoChatHistory[m.id] = result.type === 'answer'
         ? [{role:'ai',text:`Drafted a response based on ${result.policyRef?`your <strong>${result.policyRef}</strong>`:'UK HR best practice'}. It's in the reply box. ${result.advice||''}`}]
         : [{role:'ai',text:`Needs more context. ${result.advice||''} Suggested questions are loaded in the reply box.`}];
@@ -1017,13 +1027,14 @@ function openMsg(m) {
     threadHtml = items;
   }
 
-  // AI bar — 2 lines
+  // AI bar — 2 lines + HR actions if present
   let aiBar = '';
   if (m.aiType==='answer' && m.draftAnswer) {
     const reason = m.policyRef
-      ? `Based on your <strong>📄 ${m.policyRef}</strong> · follows ACAS best practice`
+      ? `Based on your <strong>📄 ${m.policyRef}</strong> · ACAS best practice applied`
       : `Based on UK HR best practice and ACAS guidance`;
-    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR drafted this reply</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
+    const actionsHtml = m.hrActions ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(255,255,255,0.7);border-radius:var(--r-sm);border-left:3px solid var(--accent);font-size:11px;color:var(--ink2);line-height:1.6;"><strong style="color:var(--ink);display:block;margin-bottom:3px;">⚠ HR Actions — check before sending:</strong>${m.hrActions.replace(/\n/g,'<br>').replace(/^[•\-\*]\s?/gm,'• ')}</div>` : '';
+    aiBar = `<div class="gm-ai-bar" style="flex-direction:column;align-items:flex-start;gap:4px;"><div style="display:flex;align-items:center;gap:8px;width:100%;"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR drafted this reply</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>${actionsHtml}</div>`;
   } else if (m.aiType==='clarify' || m.clarifyQs.length) {
     const reason = m.type==='Performance'
       ? `ACAS code: document 2 informal conversations before escalating formally`
@@ -1231,37 +1242,70 @@ async function generateAIDraft(m) {
     const { data: fb } = await sb.from('responses').select('ai_draft,hr_sent,was_edited').limit(20);
     if (fb && fb.length) { const ed = fb.filter(f=>f.was_edited); if(ed.length) feedbackContext = `\n\nThis HR team has sent ${fb.length} replies and edited ${ed.length} AI drafts. Match their tone and style.`; }
   }
-  const systemPrompt = `You are Breeze HR, an AI assistant for a UK HR team. Help HR professionals respond to employee messages.
+  const systemPrompt = `You are Breeze HR, an AI assistant with the knowledge and judgement of a senior HR Director with 20+ years of UK employment law experience. You advise HR professionals on how to handle employee messages.
 
-CRITICAL RULE: If the answer can be found in the company policies provided, ALWAYS draft a complete answer. Never ask clarifying questions when the policy clearly answers the question. Only ask clarifying questions if the information is genuinely missing and cannot be answered from policy alone (e.g. personal details like salary, specific dates, individual circumstances).
+CORE PRINCIPLE: Always think beyond the immediate question. A good HR director doesn't just answer what was asked — they anticipate what else needs to be checked, flag conditions, and protect the company from risk.
 
-Examples of when to ANSWER directly (not ask questions):
-- "How much holiday am I entitled to?" → answer from policy
-- "What is the notice period for booking leave?" → answer from policy  
-- "How does our pension work?" → answer from policy
-- "What is the sick pay policy?" → answer from policy
+WHEN DRAFTING A REPLY:
+- Answer the question accurately from policy
+- BUT always add an "HR Actions" section at the bottom of the draft (NOT sent to employee) with:
+  * What to verify in the HRIS/HR system before sending (e.g. start date, contract type, salary, previous warnings)
+  * Any eligibility conditions to check
+  * Legal risks or considerations
+  * Recommended next steps for HR
 
-Examples of when to ask CLARIFYING questions:
-- "Can I take leave next week?" → need to know if cover is available, dates
-- "I want to raise a grievance" → need details of the issue
-- "I'm having a performance issue with someone" → need context
+EXAMPLES OF GOOD HR DIRECTOR BEHAVIOUR:
 
-When answering from policy:
-- Be specific — quote the exact entitlement, notice periods, rules
-- Reference the specific section (e.g. "Under Section 2.1 of our Annual Leave Policy...")
-- Keep it warm and helpful
-- Sign off as HR
+Maternity leave question:
+- Draft the entitlement explanation from policy
+- HR Actions: "Check employee's start date in HRIS — SMP requires 26 weeks continuous employment by the 15th week before due date. Verify contract type (fixed-term employees may have different rights). Check if enhanced maternity pay applies based on length of service. Request MATB1 form. Consider whether to notify line manager now or wait for employee's preference."
 
+Paternity leave question:
+- Draft entitlement
+- HR Actions: "Confirm employee has been employed for 26 continuous weeks by the 15th week before the expected week of childbirth. Check contract type. Verify SPP eligibility (average weekly earnings must exceed Lower Earnings Limit of £123/week). Employee needs to complete SC3 form. Confirm whether company offers enhanced paternity pay per policy."
+
+Performance concern:
+- Don't draft until you understand the situation
+- Ask specific questions: was feedback documented? any protected characteristics involved? is it conduct or capability?
+
+Grievance:
+- Check if informal resolution was attempted first
+- Flag potential legal risks immediately
+
+RESPONDING TO THIS SPECIFIC TYPE OF MESSAGE:
 Message type: ${m.type}
-Source: ${m.source} (Slack = conversational tone, email = slightly more formal)
+Source: ${m.source} (Slack = conversational, email = slightly more formal)
+
 ${policyContext}
 ${feedbackContext}
 
-Respond ONLY with JSON: {"type":"answer"|"clarify","draft":"full reply or null","questions":[],"policyRef":"exact policy name used or null","advice":"one sentence for HR"}`;
+FORMAT YOUR RESPONSE AS JSON:
+{
+  "type": "answer" or "clarify",
+  "draft": "The full employee-facing reply. For maternity/paternity/leave: include entitlement details, next steps, and sign off as HR. End with a separator line '---' followed by HR ACTIONS: bullet points of what HR needs to check/do before sending — these are NOT sent to the employee",
+  "questions": ["question 1", "question 2"] or [],
+  "policyRef": "exact policy name if used, or null",
+  "advice": "One sentence of the most important thing HR needs to know about this case"
+}
+
+IMPORTANT: The "draft" field contains BOTH the employee reply AND the HR actions note (separated by ---). HR will see both but only send the part above the ---. This is critical — a good HR director always flags what needs to be verified.`;
   const reply = await callClaude([{role:'user',content:`Help me respond to:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}`}], systemPrompt);
   if (!reply) return null;
-  try { return JSON.parse(reply.replace(/```json|```/g,'').trim()); }
-  catch(e) { return {type:'answer',draft:reply,questions:[],policyRef:null,advice:''}; }
+  try {
+    const parsed = JSON.parse(reply.replace(/```json|```/g,'').trim());
+    // Split draft into employee-facing part and HR actions note
+    if (parsed.draft && parsed.draft.includes('---')) {
+      const parts = parsed.draft.split(/\n---+\n/);
+      parsed.employeeDraft = parts[0].trim();
+      parsed.hrActions = parts.slice(1).join('\n').replace(/^HR ACTIONS?:?\s*/i,'').trim();
+    } else {
+      parsed.employeeDraft = parsed.draft;
+      parsed.hrActions = null;
+    }
+    return parsed;
+  } catch(e) {
+    return {type:'answer',draft:reply,employeeDraft:reply,hrActions:null,questions:[],policyRef:null,advice:''};
+  }
 }
 
 async function sendKono(msgId) {
@@ -1275,7 +1319,23 @@ async function sendKono(msgId) {
   renderKonoHistory(msgId);
   const history = konoChatHistory[msgId].filter(h=>h.id!=='typing').slice(0,-1).map(h=>({role:h.role==='hr'?'user':'assistant',content:h.text.replace(/<[^>]+>/g,'')}));
   history.push({role:'user',content:q});
-  const systemPrompt = `You are Breeze HR, a private AI advisor for an HR professional. Private conversation — employee cannot see this.\n\nMessage context:\nFrom: ${m.from}\nType: ${m.type}\nSource: ${m.source}\nSubject: ${m.subject}\nMessage: ${m.body}\n\nAdvise on UK employment law, ACAS guidance, handling sensitive situations, tone, escalation, drafting. Be direct, practical, concise. Plain English.`;
+  const systemPrompt = `You are Breeze HR, a private AI advisor with the knowledge and judgement of a senior HR Director with 20+ years UK employment law experience. Private conversation — employee cannot see this.
+
+Think like an HR director: anticipate risks, flag what needs verifying, give the full picture not just the immediate answer.
+
+Always consider:
+- Eligibility conditions (length of service, contract type, earnings thresholds)
+- What to check in HRIS before responding to the employee
+- Protected characteristics and discrimination risks
+- Whether legal advice is needed
+- Documentation requirements
+
+Message context:
+From: ${m.from} | Type: ${m.type} | Source: ${m.source}
+Subject: ${m.subject}
+Message: ${m.body}
+
+Be direct and practical. Use bullets for action lists. Label any employee-facing draft clearly as "DRAFT FOR EMPLOYEE:"`;
   const reply = await callClaude(history, systemPrompt);
   konoChatHistory[msgId] = konoChatHistory[msgId].filter(h=>h.id!=='typing');
   konoChatHistory[msgId].push({role:'ai',text:reply||'Sorry, connection issue. Please try again.'});
