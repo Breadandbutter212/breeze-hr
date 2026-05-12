@@ -49,10 +49,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 /* ── SIDEBAR ── */
 .sidebar {
   width: 220px; flex-shrink: 0;
-  background: rgba(29,29,31,0.97);
-  backdrop-filter: blur(20px);
+  background: #0A2463;
   display: flex; flex-direction: column;
-  border-right: 1px solid rgba(255,255,255,0.06);
+  border-right: 1px solid rgba(255,255,255,0.08);
 }
 .sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.06); display: flex; align-items: center; gap: 10px; }
 .logo-icon { width: 28px; height: 28px; background: var(--accent); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; box-shadow: 0 2px 8px rgba(0,102,204,0.4); }
@@ -642,8 +641,8 @@ const tmpls = [
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"What is changing?",f:'change_description'},{q:"Effective date?",f:'effective_date'},{q:"Consultation date?",f:'consultation_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t12', name:'TUPE transfer letter', emoji:'🔄', type:'Contracts',
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Transfer date?",f:'transfer_date'},{q:"New employer name?",f:'new_employer'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
-  { id:'t23', name:'Working from home agreement', emoji:'🏠', type:'Contracts',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"WFH arrangement? (e.g. 3 days home, 2 days office)",f:'arrangement'},{q:"Start date?",f:'start_date'},{q:"Review date?",f:'review_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] }
+  { id:'t24', name:'Performance improvement plan (PIP)', emoji:'📈', type:'Disciplinary',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Specific performance issues?",f:'performance_issues'},{q:"Targets required (measurable)?",f:'targets'},{q:"Support to be provided?",f:'support_provided'},{q:"PIP start date?",f:'pip_start_date'},{q:"PIP review date?",f:'pip_review_date'},{q:"PIP end date?",f:'pip_end_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
 ];
 
 const policies = [
@@ -1012,23 +1011,44 @@ function getDefaultFields(name) {
 async function renderTmpls(filter) {
   const list=document.getElementById('tmplList'); if(!list)return;
   if (currentProfile&&!filter) {
-    // Always clear and reload custom templates to prevent duplicates after rename
+    // Clear custom templates and reload fresh from DB
     const builtIn = tmpls.filter(t=>!t.isCustom);
     tmpls.length=0; builtIn.forEach(t=>tmpls.push(t));
     const {data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).like('name','TEMPLATE:%').order('created_at',{ascending:false});
-    if(data&&data.length){data.forEach(d=>{const name=d.name.replace('TEMPLATE: ','');const isDocx=d.content&&d.content.startsWith('DOCX_BASE64:');let base64=null,textContent=d.content;if(isDocx){const parts=d.content.split('|||TEXT:');base64=parts[0].replace('DOCX_BASE64:','');textContent=parts[1]||'';}tmpls.unshift({id:'t_db_'+d.id,name,emoji:'📄',type:'Your templates',isCustom:true,isDocx,base64,content:textContent,flow:detectTemplateFields(textContent,name)});});}
+    if(data&&data.length){
+      data.forEach(d=>{
+        const name=d.name.replace('TEMPLATE: ','').replace('TEMPLATE:','').trim();
+        const isDocx=d.content&&d.content.startsWith('DOCX_BASE64:');
+        let base64=null,textContent=d.content;
+        if(isDocx){const parts=d.content.split('|||TEXT:');base64=parts[0].replace('DOCX_BASE64:','');textContent=parts[1]||'';}
+        tmpls.unshift({id:'t_db_'+d.id,name,emoji:'📄',type:'Your templates',isCustom:true,isDocx,base64,content:textContent,flow:detectTemplateFields(textContent,name)});
+      });
+    }
   }
   const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
+  // Track which groups are collapsed — default built-ins open, custom open
+  const collapsed = window._tmplCollapsed || {};
+  window._tmplCollapsed = collapsed;
   ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
-    const lbl=document.createElement('div');lbl.className='lib-sec';lbl.textContent=grp;list.appendChild(lbl);
-    ts.forEach(t=>{
-      const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-      div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
-      list.appendChild(div);
-    });
+    const isCollapsed = collapsed[grp] || false;
+    const lbl=document.createElement('div');
+    lbl.style.cssText='font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;';
+    lbl.innerHTML=`<span>${grp}</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(${isCollapsed?'0':'90'}deg)"><polyline points="9 18 15 12 9 6"/></svg>`;
+    lbl.onclick=()=>{
+      window._tmplCollapsed[grp]=!window._tmplCollapsed[grp];
+      renderTmpls(document.getElementById('tmplSearch')?.value||'');
+    };
+    list.appendChild(lbl);
+    if(!isCollapsed){
+      ts.forEach(t=>{
+        const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
+        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        list.appendChild(div);
+      });
+    }
   });
 }
 
@@ -1042,9 +1062,13 @@ async function renameTmpl(tmplId) {
       .eq('id',dbId)
       .eq('company_id',currentProfile.company_id);
     if(error){alert('Rename failed: '+error.message);return;}
+    // Update local array immediately before re-render
+    t.name=newName;
+    t.id='t_db_'+dbId; // keep same id so no duplicate
+  } else {
+    t.name=newName;
   }
-  t.name=newName;
-  renderTmpls();
+  await renderTmpls();
 }
 
 async function deleteTemplate(tmplId) {
@@ -1155,7 +1179,9 @@ function updatePreview() {
 
   else if(t.id==='t22') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Outcome of redundancy appeal</strong></p><p>I am writing to confirm the outcome of your appeal against the decision to make your role redundant.</p><p><strong>Appeal outcome:</strong> ${ph('appeal_outcome')}</p><p><strong>Reasons for decision:</strong> ${ph('appeal_reasons')}</p><p>This decision is final. If your appeal has not been upheld, your original redundancy terms remain as previously communicated.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t23') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Home / hybrid working agreement</strong></p><p>Further to our discussions, I am pleased to confirm the following home working arrangement.</p><p><strong>Arrangement:</strong> ${ph('arrangement')}<br><strong>Start date:</strong> ${ph('start_date')}<br><strong>Review date:</strong> ${ph('review_date')}</p><p>By agreeing to this arrangement, you confirm that you have a safe, suitable workspace at home and that you will comply with ${co()}'s data security and IT policies at all times when working remotely.</p><p>${co()} will carry out a DSE (Display Screen Equipment) assessment for your home workspace. Please complete the self-assessment form and return it to HR.</p><p>Either party may request a review of this arrangement at any time. This agreement does not constitute a permanent change to your contract of employment.</p><p>Please sign and return a copy of this letter to confirm your agreement.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t23') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Home / hybrid working agreement</strong></p><p>Further to our discussions, I am pleased to confirm the following home working arrangement.</p><p><strong>Arrangement:</strong> ${ph('arrangement')}<br><strong>Start date:</strong> ${ph('start_date')}<br><strong>Review date:</strong> ${ph('review_date')}</p><p>By agreeing to this arrangement, you confirm that you have a safe, suitable workspace at home and that you will comply with ${co()}'s data security and IT policies at all times when working remotely. ${co()} will carry out a DSE assessment for your home workspace.</p><p>Either party may request a review at any time. This does not constitute a permanent change to your contract.</p><p>Please sign and return a copy to confirm your agreement.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t24') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Performance Improvement Plan</strong></p><p>Further to our recent discussions and in accordance with ${co()}'s performance management procedure, which follows the ACAS Code of Practice, I am writing to set out a formal Performance Improvement Plan (PIP) to support you in meeting the required standard.</p><p><strong>Performance concerns identified:</strong><br>${ph('performance_issues')}</p><p><strong>Required targets and standards:</strong><br>${ph('targets')}</p><p>These targets are specific, measurable and achievable within the timescale set out below.</p><p><strong>Support to be provided:</strong><br>${ph('support_provided')}</p><p><strong>PIP period:</strong> ${ph('pip_start_date')} to ${ph('pip_end_date')}<br><strong>Formal review date:</strong> ${ph('pip_review_date')}</p><p>Progress will be reviewed formally on the review date above, with informal check-ins throughout. If the required improvement is achieved by the end of the PIP period, no further action will be taken. If insufficient improvement is made, this may result in further disciplinary action, up to and including dismissal.</p><p>You have the right to be accompanied at any formal meetings relating to this PIP by a work colleague or trade union representative.</p><p>Please sign and return a copy of this letter to acknowledge receipt.</p><p>Yours sincerely,</p></div>${sign()}`;
 
   else { const rows=t.flow.map(f=>`<p><strong>${f.f.replace(/_/g,' ')}:</strong> ${ph(f.f)}</p>`).join(''); content=`${header()}${salutation()}<div class="doc-body-text">${rows}</div>${sign()}`; }
 
@@ -1239,97 +1265,108 @@ async function deletePolicy(id) {
 }
 
 // ── PROCESS MAPS ──
+const openProcessMaps = new Set(['New starter onboarding']); // open by default
+
 function renderProcessMaps() {
   const body=document.getElementById('processMapsBody');if(!body)return;
   body.style.padding='0';
+  body.style.overflow='auto';
   body.innerHTML=`
-    <div style="padding:16px 20px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:12px;color:var(--ink3);">Built automatically from inbox conversations — updates as you handle more cases</div>
-      <div style="display:flex;gap:8px;">
-        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);"><span style="width:10px;height:10px;background:var(--accent);border-radius:2px;display:inline-block;"></span>Auto-building</span>
-        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);"><span style="width:10px;height:10px;background:var(--purple-bg);border:1px solid var(--purple);border-radius:2px;display:inline-block;"></span>Beta</span>
+    <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:12px;color:var(--ink3);">Click any process to expand. Builds automatically from inbox conversations.</div>
+      <div style="display:flex;gap:10px;align-items:center;">
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Auto-building</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);font-weight:500;">◌ Beta</span>
       </div>
     </div>
-    <div style="padding:20px;display:grid;grid-template-columns:repeat(auto-fill,minmax(480px,1fr));gap:20px;overflow-y:auto;">
-      ${processes.map(p=>renderFlowChart(p)).join('')}
+    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
+      ${processes.map(p=>renderProcessRow(p)).join('')}
     </div>`;
 }
 
-function renderFlowChart(p) {
+function renderProcessRow(p) {
+  const isOpen = openProcessMaps.has(p.name);
   const isAuto = p.badge==='Auto-building';
-  const accentColor = isAuto ? '#0066CC' : '#4B0082';
+  const accent = isAuto ? '#0066CC' : '#4B0082';
   const accentBg = isAuto ? '#EBF3FF' : '#F3EEFF';
-  const steps = p.steps;
-  const boxW=160, boxH=40, gapY=52, startX=20, startY=20;
-  const svgW = steps.length <= 4 ? 220 : 440;
-  const cols = steps.length <= 4 ? 1 : 2;
-  const rows = Math.ceil(steps.length / cols);
-  const svgH = rows * gapY + startY + 20;
+  const count = Math.floor(Math.random()*8)+3;
 
-  let svgContent = '';
+  const timelineHtml = buildTimeline(p.steps, accent, accentBg);
+
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+    <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;" onclick="toggleProcessMap(this,'${p.name.replace(/'/g,"\\'")}')">
+      <span style="font-size:20px;">${p.icon}</span>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps · built from ${count} conversations</div>
+      </div>
+      <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isAuto?'var(--accent)':'var(--purple-bg)'};color:${isAuto?'white':'var(--purple)'};">${p.badge}</span>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+    </div>
+    <div class="pm-body" style="display:${isOpen?'block':'none'};border-top:1px solid var(--border);padding:20px 16px;background:${accentBg}08;overflow-x:auto;">
+      ${timelineHtml}
+    </div>
+  </div>`;
+}
+
+function buildTimeline(steps, accent, accentBg) {
+  const n = steps.length;
+  const boxW = 110, boxH = 70, gap = 50, r = 22;
+  const totalW = n * boxW + (n-1) * gap + 40;
+  const svgH = 160;
+  const lineY = 88;
+  let svg = '';
+
+  // Main horizontal line
+  svg += `<line x1="20" y1="${lineY}" x2="${totalW-20}" y2="${lineY}" stroke="${accent}" stroke-width="3" opacity="0.3"/>`;
+
   steps.forEach((s, i) => {
-    const col = cols === 2 ? i % 2 : 0;
-    const row = cols === 2 ? Math.floor(i / 2) : i;
-    const x = startX + col * (boxW + 40);
-    const y = startY + row * gapY;
-    const isLast = i === steps.length - 1;
+    const cx = 20 + i * (boxW + gap) + boxW/2;
+    const isFirst = i === 0;
+    const label = s.length > 14 ? s.substring(0,13)+'…' : s;
+    const words = s.split(' ');
+    const line1 = words.slice(0, Math.ceil(words.length/2)).join(' ');
+    const line2 = words.slice(Math.ceil(words.length/2)).join(' ');
 
-    // Box
-    svgContent += `<rect x="${x}" y="${y}" width="${boxW}" height="${boxH}" rx="6" fill="${i===0?accentColor:'white'}" stroke="${i===0?accentColor:'#E0E0E5'}" stroke-width="1.5"/>`;
-    // Step number circle
-    svgContent += `<circle cx="${x+16}" cy="${y+20}" r="9" fill="${i===0?'rgba(255,255,255,0.25)':accentBg}"/>`;
-    svgContent += `<text x="${x+16}" y="${y+24}" text-anchor="middle" font-size="9" font-weight="600" fill="${i===0?'white':accentColor}" font-family="Inter,-apple-system,sans-serif">${i+1}</text>`;
-    // Label
-    const label = s.length > 22 ? s.substring(0,20)+'…' : s;
-    svgContent += `<text x="${x+32}" y="${y+24}" font-size="11" fill="${i===0?'white':'#1D1D1F'}" font-family="Inter,-apple-system,sans-serif" font-weight="500">${label}</text>`;
+    // Vertical connector
+    svg += `<line x1="${cx}" y1="${lineY-r}" x2="${cx}" y2="${i%2===0?lineY-r-20:lineY+r+20}" stroke="${accent}" stroke-width="2" opacity="0.4"/>`;
 
-    // Arrow to next step
-    if (!isLast) {
-      const nextCol = cols === 2 ? (i+1) % 2 : 0;
-      const nextRow = cols === 2 ? Math.floor((i+1) / 2) : i+1;
-      const nx = startX + nextCol * (boxW + 40);
-      const ny = startY + nextRow * gapY;
+    // Circle node on line
+    svg += `<circle cx="${cx}" cy="${lineY}" r="${r}" fill="${isFirst?accent:accentBg}" stroke="${accent}" stroke-width="2.5"/>`;
+    svg += `<text x="${cx}" y="${lineY+5}" text-anchor="middle" font-size="13" font-weight="700" fill="${isFirst?'white':accent}" font-family="Inter,-apple-system,sans-serif">${i+1}</text>`;
 
-      if (col === nextCol) {
-        // Same column — straight down arrow
-        const ax = x + boxW/2;
-        svgContent += `<line x1="${ax}" y1="${y+boxH}" x2="${ax}" y2="${ny}" stroke="#CBD5E0" stroke-width="1.5" stroke-dasharray="${isAuto?'0':'4,3'}"/>`;
-        svgContent += `<polygon points="${ax-4},${ny} ${ax+4},${ny} ${ax},${ny+6}" fill="#CBD5E0"/>`;
-      } else {
-        // Turn — down then across (snake)
-        const midY = y + boxH + (gapY-boxH)/2;
-        const x1end = x + boxW/2;
-        const x2start = nx + boxW/2;
-        svgContent += `<polyline points="${x1end},${y+boxH} ${x1end},${midY} ${x2start},${midY} ${x2start},${ny}" fill="none" stroke="#CBD5E0" stroke-width="1.5" stroke-dasharray="${isAuto?'0':'4,3'}"/>`;
-        svgContent += `<polygon points="${x2start-4},${ny} ${x2start+4},${ny} ${x2start},${ny+6}" fill="#CBD5E0"/>`;
-      }
+    // Label alternating above/below
+    const textY = i%2===0 ? lineY-r-28 : lineY+r+14;
+    const labelDir = i%2===0 ? 'end' : 'start';
+    if (line2) {
+      svg += `<text x="${cx}" y="${textY}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line1}</text>`;
+      svg += `<text x="${cx}" y="${textY+14}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${line2}</text>`;
+    } else {
+      svg += `<text x="${cx}" y="${textY+7}" text-anchor="middle" font-size="10.5" font-weight="500" fill="#1D1D1F" font-family="Inter,-apple-system,sans-serif">${s}</text>`;
     }
   });
 
-  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
-    <div style="padding:12px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;background:${accentBg};">
-      <div style="display:flex;align-items:center;gap:8px;">
-        <span style="font-size:18px;">${p.icon}</span>
-        <span style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</span>
-      </div>
-      <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isAuto?'var(--accent)':'var(--purple-bg)'};color:${isAuto?'white':'var(--purple)'};">${p.badge}</span>
-    </div>
-    <div style="padding:16px;overflow-x:auto;">
-      <svg width="${svgW}" height="${svgH}" viewBox="0 0 ${svgW} ${svgH}" xmlns="http://www.w3.org/2000/svg">
-        ${svgContent}
-      </svg>
-    </div>
-    <div style="padding:8px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);font-style:italic;">
-      Built from ${Math.floor(Math.random()*8)+3} inbox conversations · last updated today
-    </div>
-  </div>`;
+  // Arrow at end
+  svg += `<polygon points="${totalW-14},${lineY-5} ${totalW},${lineY} ${totalW-14},${lineY+5}" fill="${accent}" opacity="0.5"/>`;
+
+  return `<svg width="${totalW}" height="${svgH}" viewBox="0 0 ${totalW} ${svgH}" xmlns="http://www.w3.org/2000/svg" style="min-width:${totalW}px;">${svg}</svg>`;
+}
+
+function toggleProcessMap(headerEl, name) {
+  const body = headerEl.nextElementSibling;
+  const arrow = headerEl.querySelector('svg:last-child');
+  const isOpen = body.style.display !== 'none';
+  body.style.display = isOpen ? 'none' : 'block';
+  if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
+  if (isOpen) openProcessMaps.delete(name);
+  else openProcessMaps.add(name);
 }
 
 // ── SETTINGS ──
 function renderSettings() {
   const body=document.getElementById('settingsBody');if(!body)return;
   const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';
-  body.innerHTML=`<div style="max-width:500px;display:flex;flex-direction:column;gap:16px;">
+  body.innerHTML=`<div style="max-width:560px;display:flex;flex-direction:column;gap:16px;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Account</div>
       <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Full name</div><input id="set-name" value="${name}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.background='white';this.style.borderColor='var(--accent)'" onblur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'"></div>
@@ -1341,6 +1378,11 @@ function renderSettings() {
       <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">New password</div><input type="password" id="set-pw" placeholder="Enter new password" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.background='white';this.style.borderColor='var(--accent)'" onblur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'"></div>
       <button class="btn btn-primary btn-sm" onclick="savePassword()">Update password</button>
       <div id="set-pw-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;" id="settingsDocsSection">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Uploaded documents</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">All policies and templates uploaded to your account.</div>
+      <div id="settingsDocsList"><div style="font-size:12px;color:var(--ink3);">Loading...</div></div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Integrations</div>
@@ -1362,6 +1404,39 @@ function renderSettings() {
       <button style="background:var(--red-bg);color:var(--red);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:6px 14px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="signOut()">Sign out of all devices</button>
     </div>
   </div>`;
+  // Load documents list async
+  loadSettingsDocs();
+}
+
+async function loadSettingsDocs() {
+  const el = document.getElementById('settingsDocsList'); if(!el||!currentProfile) return;
+  const {data} = await sb.from('policies').select('id,name,created_at').eq('company_id',currentProfile.company_id).order('created_at',{ascending:false});
+  if (!data||!data.length) { el.innerHTML='<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>'; return; }
+  const policies = data.filter(d=>!d.name.startsWith('TEMPLATE:'));
+  const templates = data.filter(d=>d.name.startsWith('TEMPLATE:'));
+  let html = '';
+  if (policies.length) {
+    html += `<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;">Policies (${policies.length})</div>`;
+    html += policies.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:12px;">${p.name}</span></div>
+      <button onclick="deletePolicy('${p.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;">Delete</button>
+    </div>`).join('');
+  }
+  if (templates.length) {
+    html += `<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin:12px 0 6px;">Templates (${templates.length})</div>`;
+    html += templates.map(t=>{
+      const displayName = t.name.replace('TEMPLATE: ','').replace('TEMPLATE:','').trim();
+      const tmplId = 't_db_'+t.id;
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:12px;">📄 ${displayName}</span></div>
+        <div style="display:flex;gap:8px;">
+          <button onclick="renameTmpl('${tmplId}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;">Rename</button>
+          <button onclick="deleteTemplate('${tmplId}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;">Delete</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+  el.innerHTML = html || '<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>';
 }
 
 async function saveAccountSettings() {
