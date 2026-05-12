@@ -84,40 +84,122 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 .msg-col { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
 
-.source-bar { display: flex; border-bottom: 1px solid var(--border); background: var(--surface); }
-.src-tab { flex: 1; padding: 10px 0; text-align: center; font-size: 11px; font-weight: 500; color: var(--ink3); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 4px; }
-.src-tab:hover { color: var(--ink2); }
-.src-tab.active { color: var(--ink); border-bottom-color: var(--accent); }
-
-.status-bar { display: flex; gap: 4px; padding: 8px 10px; border-bottom: 1px solid var(--border); }
-.st-chip { font-size: 11px; padding: 4px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; font-family: inherit; font-weight: 400; transition: all 0.12s; }
-.st-chip:hover { color: var(--ink2); border-color: var(--border2); }
-.st-chip.active { background: var(--ink); color: white; border-color: var(--ink); font-weight: 500; }
-
+/* ══════════════════════
+   INBOX VIEW — Gmail style
+══════════════════════ */
+.intake-view { flex-direction: row; }
+.msg-col { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
+.mc-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
+.mc-title { font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 8px; }
+.mc-filters { display: flex; gap: 3px; flex-wrap: wrap; }
+.mc-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; font-family: inherit; transition: all 0.12s; }
+.mc-chip:hover { color: var(--ink2); border-color: var(--border2); }
+.mc-chip.active { background: var(--ink); color: white; border-color: var(--ink); font-weight: 500; }
 .msg-list { flex: 1; overflow-y: auto; }
-.msg-item { padding: 12px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+.msg-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
 .msg-item:hover { background: var(--surface2); }
 .msg-item.active { background: var(--accent-bg); border-left: 3px solid var(--accent); padding-left: 11px; }
 .msg-item.active .mi-name { color: var(--accent); }
-.msg-item.unread-item .mi-name { font-weight: 600; }
-.mi-row1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 2px; }
+.msg-item.unread-item .mi-name { font-weight: 700; }
+.mi-row1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
 .mi-name { font-size: 13px; font-weight: 500; color: var(--ink); }
-.mi-time { font-size: 10px; color: var(--ink3); }
-.mi-subject { font-size: 12px; color: var(--ink2); margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; font-weight: 400; }
+.mi-time { font-size: 10px; color: var(--ink3); flex-shrink: 0; }
+.mi-subject { font-size: 12px; color: var(--ink2); margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mi-preview { font-size: 11px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mi-dot-row { margin-top: 6px; }
-.unread { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; }
-
-.log-btn { margin: 10px 12px; padding: 9px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; margin-right: 4px; }
+.log-btn { margin: 10px 12px; padding: 8px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .log-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
-/* Detail col */
-.detail-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); min-width: 0; }
+/* Detail column */
+.detail-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); min-width: 0; }
 .detail-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--ink3); text-align: center; padding: 48px; }
-.detail-empty svg { opacity: 0.2; }
+.detail-empty svg { opacity: 0.18; }
 .detail-empty p { font-size: 13px; max-width: 240px; line-height: 1.7; }
-#detailContent { flex: 1; min-height: 0; overflow: hidden; }
-.detail-inner { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+#detailContent { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
+.gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+
+/* Subject bar */
+.gm-subject-bar { padding: 14px 20px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
+.gm-subject { font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; line-height: 1.3; flex: 1; }
+.gm-action-btns { display: flex; gap: 2px; padding-top: 2px; flex-shrink: 0; }
+.gm-icon-btn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; transition: all 0.12s; }
+.gm-icon-btn:hover { background: var(--surface2); color: var(--ink); }
+.gm-icon-btn.danger:hover { background: var(--red-bg); color: var(--red); }
+
+/* Sender row */
+.gm-sender-row { padding: 8px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.gm-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
+.gm-sender-name { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.gm-sender-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+.gm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 500; }
+.gm-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; margin-left: auto; }
+
+/* Scrollable area */
+.gm-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
+
+/* Message body */
+.gm-body { padding: 16px 20px 14px; font-size: 13px; color: var(--ink); line-height: 1.75; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+
+/* Thread */
+.gm-thread { padding: 0 20px; flex-shrink: 0; }
+.gm-thread-item { border-bottom: 1px solid var(--border); }
+.gm-thread-compact { display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; user-select: none; }
+.gm-thread-compact:hover { opacity: 0.75; }
+.gm-thread-av { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
+.gm-thread-name { font-size: 12px; font-weight: 500; color: var(--ink); flex-shrink: 0; width: 60px; }
+.gm-thread-preview { font-size: 11px; color: var(--ink3); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.gm-thread-time { font-size: 10px; color: var(--ink3); flex-shrink: 0; }
+.gm-thread-expanded { padding: 6px 0 10px; }
+.gm-thread-full { font-size: 12px; color: var(--ink); line-height: 1.65; padding: 8px 10px; border-radius: var(--r-sm); }
+.gm-thread-full.out { background: var(--accent-bg); border: 1px solid var(--accent-mid); }
+.gm-thread-full.in { background: var(--surface2); border: 1px solid var(--border); }
+
+/* Breeze HR bar */
+.gm-ai-bar { display: flex; align-items: center; gap: 8px; padding: 7px 20px; background: #F0F7FF; border-bottom: 1px solid rgba(0,102,204,0.1); flex-shrink: 0; }
+.gm-ai-icon { width: 16px; height: 16px; border-radius: 3px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
+.gm-ai-text { font-size: 11px; font-weight: 500; color: var(--ink2); }
+.gm-ai-source { color: var(--accent); font-weight: 500; }
+.gm-ai-chat { margin-left: auto; font-size: 11px; color: var(--ink3); cursor: pointer; text-decoration: underline; }
+
+/* Compose — Gmail style */
+.gm-compose { border-top: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
+.gm-compose-modes { display: flex; border-bottom: 1px solid var(--border); }
+.gm-mode-btn { flex: 1; padding: 8px 0; font-size: 12px; font-weight: 500; color: var(--ink3); cursor: pointer; border: none; background: transparent; font-family: inherit; border-bottom: 2px solid transparent; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; }
+.gm-mode-btn:hover { color: var(--ink2); background: var(--surface2); }
+.gm-mode-btn.active { color: var(--ink); border-bottom-color: var(--accent); }
+.gm-mode-btn.breeze.active { color: var(--accent); border-bottom-color: var(--accent); }
+.gm-to-fields { border-bottom: 1px solid var(--border); }
+.gm-to-row { display: flex; align-items: center; gap: 8px; padding: 5px 16px; border-bottom: 1px solid var(--border); }
+.gm-to-label { font-size: 12px; color: var(--ink3); width: 28px; flex-shrink: 0; }
+.gm-to-input { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); background: transparent; }
+.gm-cc-toggle { font-size: 11px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
+.gm-ta { width: 100%; border: none; outline: none; padding: 10px 20px 6px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; min-height: 80px; max-height: 200px; line-height: 1.65; background: var(--surface); }
+.gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; justify-content: space-between; }
+.gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 20px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 6px; transition: opacity 0.12s; }
+.gm-send-btn:hover { opacity: 0.88; }
+.gm-fmt-btn { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-size: 11px; font-weight: 600; transition: all 0.12s; }
+.gm-fmt-btn:hover { background: var(--surface2); color: var(--ink2); }
+.gm-discard { color: var(--ink3); cursor: pointer; font-size: 12px; }
+.gm-discard:hover { color: var(--red); }
+
+/* Kono chat pane */
+.kono-pane { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
+.kono-pane.visible { display: flex; }
+.kono-history { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 8px; }
+.kono-msg { display: flex; gap: 7px; align-items: flex-start; }
+.kono-msg.kono-u { flex-direction: row-reverse; }
+.kono-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
+.kono-av.ai { background: var(--ink); color: white; }
+.kono-av.u { background: var(--accent-bg); color: var(--accent); }
+.kono-bubble { max-width: 88%; padding: 8px 11px; font-size: 12px; line-height: 1.55; border-radius: var(--r); color: var(--ink); }
+.kono-bubble.ai { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 3px; }
+.kono-bubble.u { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-top-right-radius: 3px; }
+.kono-bubble.ai a { color: var(--accent); cursor: pointer; text-decoration: underline; }
+.kono-input-row { display: flex; gap: 6px; align-items: flex-end; padding: 8px 14px; border-top: 1px solid var(--border); }
+.kono-ta { flex: 1; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface2); resize: none; min-height: 34px; max-height: 80px; outline: none; line-height: 1.4; }
+.kono-ta:focus { border-color: var(--accent); background: var(--surface); }
+.kono-send { background: var(--accent); color: white; border: none; border-radius: var(--r-sm); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.12s; }
+.kono-send:hover { opacity: 0.85; }
 
 /* Email header */
 .email-header {
@@ -426,10 +508,13 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
   </div>
   <div class="sidebar-foot">
-    <div class="int-pill"><div class="live-dot"></div>Slack &amp; Email connected</div>
-    <div style="margin-top:8px;display:flex;align-items:center;justify-content:space-between;padding:4px 8px;">
-      <span style="font-size:10px;color:rgba(0,0,0,0.35);" id="userEmail"></span>
-      <span style="font-size:10px;color:rgba(0,0,0,0.3);cursor:pointer;" onclick="signOut()">Sign out</span>
+    <div class="int-pill"><div class="live-dot"></div>Email connected</div>
+    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:4px 8px;">
+      <div style="width:24px;height:24px;border-radius:50%;background:#1D1D1F;color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;" id="userInitials">DG</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:11px;font-weight:500;color:rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="userDisplayName">Dougie Gordon</div>
+        <div style="font-size:10px;color:rgba(0,0,0,0.3);cursor:pointer;" onclick="signOut()">Sign out</div>
+      </div>
     </div>
   </div>
 </div>
@@ -440,17 +525,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- INBOX -->
 <div class="view intake-view active" id="view-intake">
   <div class="msg-col">
-    <div class="source-bar">
-      <div class="src-tab active" onclick="setSource('all',this)">All</div>
-      <div class="src-tab" onclick="setSource('slack',this)"><div style="width:6px;height:6px;border-radius:50%;background:#4A90D9;"></div>Slack</div>
-      <div class="src-tab" onclick="setSource('email',this)"><div style="width:6px;height:6px;border-radius:50%;background:#E8A838;"></div>Email</div>
-      <div class="src-tab" onclick="setSource('direct',this)">Direct</div>
-    </div>
-    <div class="status-bar">
-      <button class="st-chip active" onclick="setStatus('all',this)">All</button>
-      <button class="st-chip" onclick="setStatus('new',this)">New <span id="cn">3</span></button>
-      <button class="st-chip" onclick="setStatus('open',this)">Open</button>
-      <button class="st-chip" onclick="setStatus('resolved',this)">Done</button>
+    <div class="mc-head">
+      <div class="mc-title">Inbox</div>
+      <div class="mc-filters">
+        <button class="mc-chip active" onclick="setStatus('all',this)">All</button>
+        <button class="mc-chip" onclick="setStatus('new',this)">New <span id="cn">3</span></button>
+        <button class="mc-chip" onclick="setStatus('open',this)">Open</button>
+        <button class="mc-chip" onclick="setStatus('resolved',this)">Done</button>
+      </div>
     </div>
     <div class="msg-list" id="msgList"></div>
     <div class="log-btn" onclick="logOffline()">
@@ -463,7 +545,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <p>Select a message — Breeze HR drafts a response from your policies, or suggests what to ask first.</p>
     </div>
-    <div id="detailContent" style="display:none;flex-direction:column;height:100%;overflow:hidden;"></div>
+    <div id="detailContent" style="display:none;"></div>
   </div>
 </div>
 
@@ -627,9 +709,19 @@ async function onSignedIn(user) {
   currentUser = user;
   document.getElementById('loginScreen').style.display = 'none';
   document.getElementById('appShell').style.display = 'flex';
-  document.getElementById('userEmail').textContent = user.email;
+  // Set email in footer (hidden element kept for compat)
+  const emailEl = document.getElementById('userEmail');
+  if (emailEl) emailEl.textContent = user.email;
   const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
   currentProfile = profile;
+  // Update sidebar user display
+  if (profile) {
+    const initials = profile.full_name ? profile.full_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() : user.email.substring(0,2).toUpperCase();
+    const initEl = document.getElementById('userInitials');
+    const nameEl = document.getElementById('userDisplayName');
+    if (initEl) initEl.textContent = initials;
+    if (nameEl) nameEl.textContent = profile.full_name || user.email;
+  }
   await loadMessages();
 }
 
@@ -776,7 +868,6 @@ const konoChatHistory = {};
 function renderMsgs() {
   const list = document.getElementById('msgList');
   let filtered = msgs.filter(m => {
-    if (srcFilter !== 'all' && m.source !== srcFilter) return false;
     if (stFilter !== 'all' && m.status !== stFilter) return false;
     return true;
   });
@@ -786,7 +877,13 @@ function renderMsgs() {
     const isUnread = m.status === 'new';
     div.className = 'msg-item' + (selMsg && selMsg.id===m.id ? ' active':'') + (isUnread ? ' unread-item':'');
     div.onclick = () => openMsg(m);
-    div.innerHTML = `<div class="mi-row1"><div class="mi-name">${m.from}</div><div class="mi-time">${m.time}</div></div><div class="mi-subject">${m.subject}</div><div class="mi-preview">${m.preview}</div>${isUnread?'<div class="mi-dot-row"><div class="unread"></div></div>':''}`;
+    div.innerHTML = `
+      <div class="mi-row1">
+        <div class="mi-name">${isUnread?`<span class="unread-dot"></span>`:''}${m.from}</div>
+        <div class="mi-time">${m.time}</div>
+      </div>
+      <div class="mi-subject">${m.subject}</div>
+      <div class="mi-preview">${m.preview}</div>`;
     list.appendChild(div);
   });
   const n = msgs.filter(m=>m.status==='new').length;
@@ -794,8 +891,14 @@ function renderMsgs() {
   document.getElementById('cn').textContent = n;
 }
 
-function setSource(s,el) { srcFilter=s; document.querySelectorAll('.src-tab').forEach(t=>t.classList.remove('active')); el.classList.add('active'); renderMsgs(); }
-function setStatus(s,el) { stFilter=s; document.querySelectorAll('.st-chip').forEach(c=>c.classList.remove('active')); el.classList.add('active'); renderMsgs(); }
+function setStatus(s,el) {
+  stFilter=s;
+  document.querySelectorAll('.mc-chip').forEach(c=>c.classList.remove('active'));
+  el.classList.add('active');
+  renderMsgs();
+}
+
+function setSource(s,el) { srcFilter=s; renderMsgs(); }
 
 function openMsg(m) {
   selMsg = m;
@@ -804,136 +907,171 @@ function openMsg(m) {
   document.getElementById('detailEmpty').style.display = 'none';
   const dc = document.getElementById('detailContent');
   dc.style.display = 'flex';
+  dc.style.flexDirection = 'column';
+  dc.style.height = '100%';
+  dc.style.overflow = 'hidden';
 
   if (!konoChatHistory[m.id]) {
-    konoChatHistory[m.id] = [{ role:'ai', text:`Hi — analysing this message from ${m.from.split(' ')[0]} now...` }];
+    konoChatHistory[m.id] = [{ role:'ai', text:`Analysing message from ${m.from.split(' ')[0]}...` }];
     generateAIDraft(m).then(result => {
       if (!result) return;
       m.aiType = result.type; m.draftAnswer = result.draft; m.clarifyQs = result.questions || []; m.policyRef = result.policyRef;
       konoChatHistory[m.id] = result.type === 'answer'
         ? [{role:'ai',text:`Drafted a response based on ${result.policyRef?`your <strong>${result.policyRef}</strong>`:'UK HR best practice'}. It's in the reply box. ${result.advice||''}`}]
-        : [{role:'ai',text:`Needs more context before you can respond properly. ${result.advice||''} Suggested questions are loaded in the reply box.`}];
+        : [{role:'ai',text:`Needs more context. ${result.advice||''} Suggested questions are loaded in the reply box.`}];
       if (selMsg && selMsg.id===m.id) openMsg(m);
     });
   }
 
   const srcLabel = {slack:'Slack',email:'Email',direct:'Direct'}[m.source]||'Direct';
-  const srcIcon = m.source==='slack'
-    ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/></svg>`
-    : m.source==='email'
-    ? `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg>`
-    : `<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>`;
 
-  let replySuggestion = '';
-  if (m.aiType==='answer') {
-    replySuggestion = `<div class="reply-kono-suggestion"><div class="rks-icon">◈</div><div><div class="rks-title">Breeze HR drafted this${m.policyRef?` · <span class="rks-source"><a>📄 ${m.policyRef}</a></span>`:''}</div><div class="rks-advice">Edit below then send to ${m.from.split(' ')[0]}.</div></div></div>`;
-  } else if (m.clarifyQs.length) {
-    const txt = m.type==='Performance'
-      ? `ACAS: ensure two documented informal conversations before escalating to formal PIP.`
-      : `Questions pre-loaded in the reply — remove any that don't apply.`;
-    replySuggestion = `<div class="reply-kono-suggestion"><div class="rks-icon">◈</div><div><div class="rks-title">Breeze HR suggests asking for more context</div><div class="rks-advice">${txt}</div></div></div>`;
+  // Type badge colours
+  const typeBadge = {
+    'Leave':'background:#E8F5EE;color:#1A7A3C;',
+    'Onboarding':'background:#EBF3FF;color:#0066CC;',
+    'Performance':'background:#FDF3E3;color:#7A4A0A;',
+    'Pay & benefits':'background:#F3EEFF;color:#4B0082;',
+    'Offboarding':'background:#FFF0F0;color:#8B0000;',
+    'General':'background:var(--surface2);color:var(--ink2);'
+  }[m.type] || 'background:var(--surface2);color:var(--ink2);';
+
+  // Thread HTML — previous messages compact, last one shown
+  let threadHtml = '';
+  if (m.thread.length) {
+    const prev = m.thread.slice(0,-1);
+    const last = m.thread[m.thread.length-1];
+    const prevRows = prev.map((t,i) => {
+      const uid = `gt-${m.id}-${i}`;
+      return `<div class="gm-thread-item">
+        <div class="gm-thread-compact" onclick="
+          const b=document.getElementById('${uid}');
+          const open=b.style.display!=='none';
+          b.style.display=open?'none':'block';
+          this.querySelector('svg').style.transform=open?'rotate(0deg)':'rotate(90deg)';
+        ">
+          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.12s;transform:rotate(0deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+          <div class="gm-thread-av" style="background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};color:${t.dir==='out'?'var(--accent)':'var(--ink2)'};">${t.dir==='out'?'HR':m.initials.substring(0,2)}</div>
+          <div class="gm-thread-name">${t.sender.split(' ')[0]}</div>
+          <div class="gm-thread-preview">${t.text.substring(0,70)}${t.text.length>70?'…':''}</div>
+          <div class="gm-thread-time">${t.time}</div>
+        </div>
+        <div id="${uid}" style="display:none;" class="gm-thread-expanded">
+          <div class="gm-thread-full ${t.dir==='in'?'in':'out'}">${t.text}</div>
+        </div>
+      </div>`;
+    }).join('');
+    const lastRow = `<div class="gm-thread-item">
+      <div class="gm-thread-expanded" style="padding:8px 0 10px;">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);margin-bottom:4px;">${last.sender} · ${last.time}</div>
+        <div class="gm-thread-full ${last.dir==='in'?'in':'out'}">${last.text}</div>
+      </div>
+    </div>`;
+    threadHtml = `<div class="gm-thread">${prevRows}${lastRow}</div>`;
   }
 
+  // AI bar
+  let aiBar = '';
+  if (m.aiType==='answer' && m.policyRef) {
+    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div class="gm-ai-text">Drafted from <span class="gm-ai-source">📄 ${m.policyRef}</span></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR instead</div></div>`;
+  } else if (m.aiType==='clarify' || m.clarifyQs.length) {
+    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div class="gm-ai-text">Breeze HR loaded clarifying questions into the reply box</div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
+  }
+
+  // Initial reply content
   let initReply = '';
   if (m.aiType==='answer' && m.draftAnswer) initReply = m.draftAnswer;
   else if (m.clarifyQs.length) initReply = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this.\n\nMany thanks,\nHR`;
 
-  const threadHtml = m.thread.length ? (() => {
-    const prev = m.thread.slice(0, -1);
-    const last = m.thread[m.thread.length - 1];
-    // Each previous message: closed by default, arrow to expand
-    const prevHtml = prev.map((t, i) => {
-      const uid = `prev-${m.id}-${i}`;
-      return `<div style="border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:7px;padding:5px 0;cursor:pointer;" onclick="
-          const b=document.getElementById('${uid}');
-          const s=document.getElementById('${uid}-svg');
-          const open=b.style.display!=='none';
-          b.style.display=open?'none':'block';
-          s.style.transform=open?'rotate(0deg)':'rotate(90deg)';
-        ">
-          <svg id="${uid}-svg" width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="transition:transform 0.12s;transform:rotate(0deg);flex-shrink:0;color:var(--ink3);"><polyline points="9 18 15 12 9 6"/></svg>
-          <div style="width:18px;height:18px;border-radius:50%;background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};color:${t.dir==='out'?'var(--accent)':'var(--ink2)'};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;">${t.dir==='out'?'HR':m.initials.substring(0,2)}</div>
-          <span style="font-size:11px;font-weight:500;color:var(--ink2);">${t.sender}</span>
-          <span style="font-size:11px;color:var(--ink3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-left:4px;">${t.text.substring(0,60)}${t.text.length>60?'…':''}</span>
-          <span style="font-size:10px;color:var(--ink3);flex-shrink:0;margin-left:8px;">${t.time}</span>
-        </div>
-        <div id="${uid}" style="display:none;padding:2px 0 6px 26px;">
-          <div class="tm ${t.dir==='in'?'tm-in':'tm-out'}" style="font-size:12px;">${t.text}</div>
-        </div>
-      </div>`;
-    }).join('');
+  dc.innerHTML = `<div class="gm-detail">
 
-    return `<div class="collapsible-msg" id="collThread-${m.id}" style="margin-top:6px;">
-      <div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${m.id}')">
-        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(0deg)"><polyline points="9 18 15 12 9 6"/></svg>
-        <span style="font-size:11px;color:var(--ink3);">${m.thread.length} message${m.thread.length>1?'s':''} in thread</span>
+    <!-- Subject + action buttons -->
+    <div class="gm-subject-bar">
+      <div class="gm-subject">${m.subject}</div>
+      <div class="gm-action-btns">
+        <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
+        <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
+        <button class="gm-icon-btn danger" title="Delete" onclick="deleteMsg('${m.id}')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
+        </button>
       </div>
-      <div class="collapsible-body" style="display:none;">
-        <div style="padding:2px 0;">
-          ${prevHtml}
-          <div class="tm ${last.dir==='in'?'tm-in':'tm-out'}" style="margin-top:6px;">
-            <div class="tm-sender">${last.sender}<span>${last.time}</span></div>
-            ${last.text}
-          </div>
-        </div>
-      </div>
-    </div>`;
-  })() : '';
+    </div>
 
-  dc.innerHTML = `<div class="detail-inner">
-    <div class="email-header">
-      <div class="eh-meta-line">
-        <div class="eh-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
-        <span class="eh-name">${m.from}</span>
-        <span class="eh-sep">·</span>
-        <span class="eh-time">${srcLabel} · ${m.time}</span>
-        <div style="margin-left:auto;display:flex;gap:5px;align-items:center;">
-          <select class="reply-type-select" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
-          <select class="reply-type-select" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
-          <button style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:2px 4px;" onclick="deleteMsg('${m.id}')">Delete</button>
+    <!-- Sender row -->
+    <div class="gm-sender-row">
+      <div class="gm-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
+      <div style="flex:1;min-width:0;">
+        <div class="gm-sender-name">
+          ${m.from}
+          <span class="gm-type-badge" style="${typeBadge}">${m.type}</span>
         </div>
+        <div class="gm-sender-meta">via ${srcLabel}</div>
       </div>
-      <div class="eh-subject">${m.subject}</div>
-      <div class="collapsible-msg" id="collMsg-${m.id}">
-        <div class="collapsible-trigger" onclick="toggleCollapsible('collMsg-${m.id}')">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-          <span style="font-size:11px;color:var(--ink3);">Message from ${m.from.split(' ')[0]}</span>
-        </div>
-        <div class="collapsible-body" style="display:block;">
-          <div style="padding:7px 0 3px;font-size:12px;color:var(--ink2);line-height:1.65;white-space:pre-wrap;">${m.body}</div>
-        </div>
-      </div>
+      <div class="gm-time">${m.time}</div>
+    </div>
+
+    <!-- Scrollable: body + thread -->
+    <div class="gm-scroll">
+      <div class="gm-body">${m.body}</div>
       ${threadHtml}
     </div>
-    <div class="compose-panel">
-      <div class="compose-toggle">
-        <div class="ctab active" id="ctab-reply-${m.id}" onclick="switchCompose('reply','${m.id}')">
+
+    ${aiBar}
+
+    <!-- Compose area — Reply / Reply All / Forward / Ask Breeze HR -->
+    <div class="gm-compose">
+      <div class="gm-compose-modes">
+        <button class="gm-mode-btn active" id="gm-reply-${m.id}" onclick="gmSwitchCompose('reply','${m.id}')">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-          Reply to ${m.from.split(' ')[0]}
-        </div>
-        <div class="ctab breeze-tab" id="ctab-breeze-${m.id}" onclick="switchCompose('breeze','${m.id}')">◈ Ask Breeze HR</div>
+          Reply
+        </button>
+        <button class="gm-mode-btn" id="gm-replyall-${m.id}" onclick="gmSwitchCompose('replyall','${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>
+          Reply all
+        </button>
+        <button class="gm-mode-btn" id="gm-fwd-${m.id}" onclick="gmSwitchCompose('forward','${m.id}')">
+          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+          Forward
+        </button>
+        <button class="gm-mode-btn breeze" id="gm-breeze-${m.id}" onclick="gmSwitchCompose('breeze','${m.id}')">
+          ◈ Ask Breeze HR
+        </button>
       </div>
-      <div class="reply-pane" id="replyPane-${m.id}">
-        ${replySuggestion}
-        <div class="reply-to-row">
-          <span class="reply-to-label">To</span>
-          <span class="reply-to-val">${m.from}</span>
-          <select class="reply-type-select"><option>via ${srcLabel}</option><option>via Email</option><option>via Slack</option></select>
+
+      <!-- To field — shown for reply all / forward -->
+      <div class="gm-to-fields" id="gm-to-${m.id}" style="display:none;">
+        <div class="gm-to-row">
+          <span class="gm-to-label">To</span>
+          <input class="gm-to-input" id="gm-to-input-${m.id}" placeholder="Add recipients...">
+          <span class="gm-cc-toggle" onclick="gmToggleCC('${m.id}')">Cc Bcc</span>
         </div>
-        <textarea class="reply-ta" id="replyTa-${m.id}" placeholder="Write your reply...">${initReply}</textarea>
-        <div class="reply-actions-row">
-          <div class="reply-via-info"><span>→ ${m.from} via ${srcLabel}</span></div>
-          <div style="display:flex;gap:5px;">
-            <button class="btn btn-secondary btn-sm">Save draft</button>
-            <button class="btn btn-primary btn-sm" onclick="sendReply('${m.id}')">Send</button>
+        <div id="gm-cc-${m.id}" style="display:none;">
+          <div class="gm-to-row"><span class="gm-to-label">Cc</span><input class="gm-to-input" placeholder="Cc..."></div>
+          <div class="gm-to-row"><span class="gm-to-label">Bcc</span><input class="gm-to-input" placeholder="Bcc..."></div>
+        </div>
+      </div>
+
+      <!-- Reply textarea -->
+      <div id="gm-reply-pane-${m.id}">
+        <textarea class="gm-ta" id="replyTa-${m.id}" placeholder="Write your reply..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px'">${initReply}</textarea>
+        <div class="gm-compose-foot">
+          <div class="gm-compose-left">
+            <button class="gm-send-btn" onclick="sendReply('${m.id}')">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+              Send
+            </button>
+            <button class="gm-fmt-btn" title="Bold"><b>B</b></button>
+            <button class="gm-fmt-btn" title="Italic"><i>I</i></button>
+            <button class="gm-fmt-btn" title="List">≡</button>
           </div>
+          <div class="gm-discard" onclick="document.getElementById('replyTa-${m.id}').value=''">Discard</div>
         </div>
       </div>
+
+      <!-- Kono pane -->
       <div class="kono-pane" id="konoPane-${m.id}">
         <div class="kono-history" id="konoHistory-${m.id}"></div>
         <div class="kono-input-row">
-          <textarea class="kono-ta" id="konoTa-${m.id}" placeholder="Ask Breeze HR anything about this message..." rows="1"
+          <textarea class="kono-ta" id="konoTa-${m.id}" placeholder="Ask Breeze HR — ACAS guidance, policy, how to handle this..." rows="1"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendKono('${m.id}')}"
             oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
           <button class="kono-send" onclick="sendKono('${m.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
@@ -941,17 +1079,55 @@ function openMsg(m) {
       </div>
     </div>
   </div>`;
+
   renderKonoHistory(m.id);
 }
 
-function switchCompose(mode, msgId) {
-  const rp = document.getElementById('replyPane-'+msgId);
-  const kp = document.getElementById('konoPane-'+msgId);
-  const rt = document.getElementById('ctab-reply-'+msgId);
-  const bt = document.getElementById('ctab-breeze-'+msgId);
-  if (mode==='reply') { rp.style.display='flex'; kp.classList.remove('visible'); rt.classList.add('active'); if(bt)bt.classList.remove('active'); setTimeout(()=>{const ta=document.getElementById('replyTa-'+msgId);if(ta)ta.focus();},30); }
-  else { rp.style.display='none'; kp.classList.add('visible'); if(bt)bt.classList.add('active'); rt.classList.remove('active'); renderKonoHistory(msgId); setTimeout(()=>{const ta=document.getElementById('konoTa-'+msgId);if(ta)ta.focus();},50); }
+function gmSwitchCompose(mode, msgId) {
+  const m = msgs.find(x=>x.id===msgId);
+  // Update mode button states
+  ['reply','replyall','fwd','breeze'].forEach(k => {
+    const btn = document.getElementById(`gm-${k}-${msgId}`);
+    if (btn) btn.classList.remove('active');
+  });
+  const activeBtn = document.getElementById(`gm-${mode==='forward'?'fwd':mode}-${msgId}`);
+  if (activeBtn) activeBtn.classList.add('active');
+
+  const toField = document.getElementById(`gm-to-${msgId}`);
+  const toInput = document.getElementById(`gm-to-input-${msgId}`);
+  const replyPane = document.getElementById(`gm-reply-pane-${msgId}`);
+  const konoPane = document.getElementById(`konoPane-${msgId}`);
+
+  // Show/hide panes
+  if (mode === 'breeze') {
+    if (replyPane) replyPane.style.display = 'none';
+    if (toField) toField.style.display = 'none';
+    konoPane.classList.add('visible');
+    renderKonoHistory(msgId);
+    setTimeout(()=>document.getElementById(`konoTa-${msgId}`)?.focus(), 50);
+  } else {
+    konoPane.classList.remove('visible');
+    if (replyPane) replyPane.style.display = 'block';
+    // Show To field for forward/reply all
+    if (toField) toField.style.display = (mode==='forward'||mode==='replyall') ? 'block' : 'none';
+    if (mode==='forward') {
+      const ta = document.getElementById(`replyTa-${msgId}`);
+      if (ta && m) ta.value = `\n\n---------- Forwarded message ----------\nFrom: ${m.from}\nSubject: ${m.subject}\n\n${m.body}`;
+      setTimeout(()=>toInput?.focus(), 30);
+    } else if (mode==='replyall') {
+      setTimeout(()=>toInput?.focus(), 30);
+    } else {
+      setTimeout(()=>document.getElementById(`replyTa-${msgId}`)?.focus(), 30);
+    }
+  }
 }
+
+function gmToggleCC(msgId) {
+  const cc = document.getElementById(`gm-cc-${msgId}`);
+  if (cc) cc.style.display = cc.style.display==='none' ? 'block' : 'none';
+}
+
+function switchCompose(mode, msgId) { gmSwitchCompose(mode, msgId); }
 
 function renderKonoHistory(msgId) {
   const hist = konoChatHistory[msgId]||[];
@@ -1061,22 +1237,11 @@ async function sendReply(msgId) {
   if (!ta||!ta.value.trim()) return;
   const text = ta.value.trim();
   await saveResponse(msgId, m.draftAnswer||'', text);
-  if (m.aiType==='clarify'&&m.clarifyQs.length) {
-    const used = [...document.querySelectorAll(`[id^="cq-${msgId}"].sel .cq-text`)].map(el=>el.textContent);
-    await saveFeedback(m.type, m.clarifyQs, used);
-  }
   m.thread.push({dir:'out',sender:'HR',time:'Just now',text});
   ta.value = '';
   if (m.status!=='resolved') { m.status='inprog'; await updateMessageStatus(msgId,'inprog'); }
-  const newMsgHtml = `<div class="tm tm-out"><div class="tm-sender">HR<span>Just now</span></div>${text}</div>`;
-  const threadColl = document.getElementById('collThread-'+msgId);
-  if (threadColl) {
-    const tbody = threadColl.querySelector('.collapsible-body');
-    if (tbody) { tbody.style.display='block'; const inner=tbody.querySelector('div'); if(inner)inner.insertAdjacentHTML('beforeend',newMsgHtml); const arrow=threadColl.querySelector('svg'); if(arrow)arrow.style.transform='rotate(90deg)'; const label=threadColl.querySelector('span'); if(label){const c=m.thread.length;label.textContent=`${c} previous message${c>1?'s':''}`;} }
-  } else {
-    const header = document.querySelector('.email-header');
-    if (header) header.insertAdjacentHTML('beforeend',`<div class="collapsible-msg" id="collThread-${msgId}" style="margin-top:6px;"><div class="collapsible-trigger" onclick="toggleCollapsible('collThread-${msgId}')"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(90deg)"><polyline points="9 18 15 12 9 6"/></svg><span style="font-size:11px;color:var(--ink3);">1 previous message</span></div><div class="collapsible-body" style="display:block;"><div style="padding:6px 0;display:flex;flex-direction:column;gap:5px;">${newMsgHtml}</div></div></div>`);
-  }
+  // Refresh the message view to show the new thread item
+  openMsg(m);
   renderMsgs();
 }
 
@@ -1272,7 +1437,7 @@ function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template — answer each question to populate it':'Answer each question — letter builds live on the right'}</div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" style="display:none">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template — answer each question to populate it':'Answer each question — letter builds live on the right'}</div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show skeleton with placeholders immediately
   askQ();
 }
