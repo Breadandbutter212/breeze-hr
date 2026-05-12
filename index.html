@@ -823,7 +823,14 @@ async function saveMessage(m) {
 
 async function saveResponse(messageId, aiDraft, hrSent) {
   if (!currentProfile) return;
-  await sb.from('responses').insert({ message_id: messageId, ai_draft: aiDraft, hr_sent: hrSent, was_edited: aiDraft !== hrSent });
+  const edited = aiDraft !== hrSent && hrSent.trim().length > 0;
+  await sb.from('responses').insert({
+    message_id: messageId,
+    company_id: currentProfile.company_id,
+    ai_draft: aiDraft,
+    hr_sent: hrSent,
+    was_edited: edited
+  });
 }
 
 async function saveFeedback(type, shown, used) {
@@ -1232,68 +1239,158 @@ async function callClaude(messages, systemPrompt) {
 }
 
 async function generateAIDraft(m) {
+  // 1. Load company policies — first point of call
   let policyContext = '';
   if (currentProfile) {
-    const { data: pols } = await sb.from('policies').select('name,content').eq('company_id', currentProfile.company_id).not('name','like','TEMPLATE:%');
-    if (pols && pols.length) policyContext = '\n\nCOMPANY POLICIES:\n' + pols.map(p=>`${p.name}:\n${p.content}`).join('\n\n');
+    const { data: pols } = await sb.from('policies').select('name,content')
+      .eq('company_id', currentProfile.company_id)
+      .not('name','like','TEMPLATE:%');
+    if (pols && pols.length) {
+      policyContext = `\n\nCOMPANY POLICIES (use these first — they override generic advice):\n` +
+        pols.map(p=>`\n--- ${p.name} ---\n${p.content.substring(0,3000)}`).join('\n');
+    } else {
+      policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET — use ACAS guidance and UK employment law as the basis. Recommend HR uploads their policies for more accurate responses.`;
+    }
   }
-  let feedbackContext = '';
+
+  // 2. Build learning signal from past edits — proper diff analysis
+  let learningContext = '';
   if (currentProfile) {
-    const { data: fb } = await sb.from('responses').select('ai_draft,hr_sent,was_edited').limit(20);
-    if (fb && fb.length) { const ed = fb.filter(f=>f.was_edited); if(ed.length) feedbackContext = `\n\nThis HR team has sent ${fb.length} replies and edited ${ed.length} AI drafts. Match their tone and style.`; }
+    const { data: responses } = await sb.from('responses')
+      .select('ai_draft,hr_sent,was_edited,created_at')
+      .eq('company_id', currentProfile.company_id)
+      .order('created_at', { ascending: false })
+      .limit(30);
+
+    if (responses && responses.length) {
+      const total = responses.length;
+      const edited = responses.filter(r => r.was_edited);
+      const editRate = Math.round((edited.length / total) * 100);
+
+      // Analyse what patterns exist in the edits
+      const editPatterns = [];
+
+      if (edited.length >= 3) {
+        // Check if HR consistently shortens replies
+        const aiAvgLen = edited.reduce((s,r) => s + (r.ai_draft?.length||0), 0) / edited.length;
+        const hrAvgLen = edited.reduce((s,r) => s + (r.hr_sent?.length||0), 0) / edited.length;
+        if (hrAvgLen < aiAvgLen * 0.7) editPatterns.push('This team consistently shortens AI drafts — be more concise');
+        if (hrAvgLen > aiAvgLen * 1.3) editPatterns.push('This team tends to add more detail — be more thorough');
+
+        // Check for common removals
+        const removedAcas = edited.filter(r => r.ai_draft?.includes('ACAS') && !r.hr_sent?.includes('ACAS')).length;
+        if (removedAcas > edited.length * 0.4) editPatterns.push('This team removes ACAS references — do not mention ACAS in employee-facing replies');
+
+        // Check tone — formal vs informal
+        const informalSignals = ['Hi ', 'Thanks', 'Cheers', 'Hope'];
+        const hrInformal = edited.filter(r => informalSignals.some(s => r.hr_sent?.includes(s))).length;
+        const aiInformal = edited.filter(r => informalSignals.some(s => r.ai_draft?.includes(s))).length;
+        if (hrInformal > aiInformal) editPatterns.push('This team uses a more informal/friendly tone than the AI defaults');
+        if (hrInformal < aiInformal * 0.5) editPatterns.push('This team prefers a formal tone — avoid overly casual language');
+
+        // Check sign-off style
+        const sincerelyCount = edited.filter(r => r.hr_sent?.includes('Yours sincerely')).length;
+        const bestCount = edited.filter(r => r.hr_sent?.includes('Best')).length;
+        const thanksCount = edited.filter(r => r.hr_sent?.includes('Thanks')).length;
+        if (sincerelyCount > bestCount && sincerelyCount > thanksCount) editPatterns.push('This team signs off with "Yours sincerely"');
+        else if (bestCount > thanksCount) editPatterns.push('This team signs off with "Best regards" or "Best"');
+        else if (thanksCount > 0) editPatterns.push('This team signs off with "Thanks" or "Many thanks"');
+      }
+
+      learningContext = `\n\nLEARNING FROM ${total} PREVIOUS REPLIES (edit rate: ${editRate}%):`;
+      if (editPatterns.length) {
+        learningContext += `\nStyle patterns detected from HR's edits:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
+      } else if (editRate < 20) {
+        learningContext += `\nHR edits very few drafts (${editRate}%) — current style and length is working well. Maintain it.`;
+      } else {
+        learningContext += `\nHR edits ${editRate}% of drafts. Insufficient data yet to identify specific patterns — use standard best practice.`;
+      }
+    }
   }
-  const systemPrompt = `You are Breeze HR, an AI assistant with the knowledge and judgement of a senior HR Director with 20+ years of UK employment law experience. You advise HR professionals on how to handle employee messages.
 
-CORE PRINCIPLE: Always think beyond the immediate question. A good HR director doesn't just answer what was asked — they anticipate what else needs to be checked, flag conditions, and protect the company from risk.
+  const systemPrompt = `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience across employment law, reward, benefits, payroll, and people operations.
 
-WHEN DRAFTING A REPLY:
-- Answer the question accurately from policy
-- BUT always add an "HR Actions" section at the bottom of the draft (NOT sent to employee) with:
-  * What to verify in the HRIS/HR system before sending (e.g. start date, contract type, salary, previous warnings)
-  * Any eligibility conditions to check
-  * Legal risks or considerations
-  * Recommended next steps for HR
+PRIORITY ORDER FOR EVERY RESPONSE:
+1. COMPANY'S OWN UPLOADED POLICIES — always check these first. If the answer is in the policy, use it exactly.
+2. ACAS CODES OF PRACTICE — statutory guidance that tribunals use to judge employer behaviour
+3. UK EMPLOYMENT LAW — ERA 1996, Equality Act 2010, Working Time Regulations, etc.
+4. GENERAL HR BEST PRACTICE — only if nothing above applies
 
-EXAMPLES OF GOOD HR DIRECTOR BEHAVIOUR:
+YOU HANDLE THE FULL SPECTRUM OF HR ENQUIRIES:
 
-Maternity leave question:
-- Draft the entitlement explanation from policy
-- HR Actions: "Check employee's start date in HRIS — SMP requires 26 weeks continuous employment by the 15th week before due date. Verify contract type (fixed-term employees may have different rights). Check if enhanced maternity pay applies based on length of service. Request MATB1 form. Consider whether to notify line manager now or wait for employee's preference."
+TRANSACTIONAL / POLICY QUESTIONS ("how much holiday", "when is payday", "how do I book leave")
+→ Answer directly from policy. Be friendly and specific. Short is fine. Nobody wants an essay.
 
-Paternity leave question:
-- Draft entitlement
-- HR Actions: "Confirm employee has been employed for 26 continuous weeks by the 15th week before the expected week of childbirth. Check contract type. Verify SPP eligibility (average weekly earnings must exceed Lower Earnings Limit of £123/week). Employee needs to complete SC3 form. Confirm whether company offers enhanced paternity pay per policy."
+BENEFITS & REWARD ("how does the pension work", "what's the dental cover", "cycle to work scheme")
+→ Explain clearly with the practical step. Flag if provider details are needed. Include action: "log into Nest at nest.co.uk", "contact Bupa on..."
 
-Performance concern:
-- Don't draft until you understand the situation
-- Ask specific questions: was feedback documented? any protected characteristics involved? is it conduct or capability?
+PAYROLL & PAY ("my payslip looks wrong", "when's my last pay", "is my bonus taxable")
+→ Be precise. Flag that payroll must verify individual calculations. Know current statutory rates.
 
-Grievance:
-- Check if informal resolution was attempted first
-- Flag potential legal risks immediately
+LEAVERS ("I'm resigning", "can I leave during probation", "do I get paid for unused holiday", "what about my share options")
+→ Cover: notice period, holiday accrual/payout, final payslip timing, equipment return, reference policy, restrictive covenants. Flag equity/share options as complex — refer to scheme rules.
 
-RESPONDING TO THIS SPECIFIC TYPE OF MESSAGE:
-Message type: ${m.type}
-Source: ${m.source} (Slack = conversational, email = slightly more formal)
+FLEXIBLE & REMOTE WORKING ("can I work from abroad", "can I go part time", "change my hours")
+→ Statutory right to request flexible working = day one right since April 2024, 2 requests per year.
+→ CRITICAL: Working from abroad = tax and employment law risk in the host country. Always flag this — it is NOT a standard flexible working request.
 
+FAMILY LEAVE (maternity, paternity, shared parental, adoption)
+→ ALWAYS check eligibility conditions before confirming entitlement:
+   - SMP/SPP: 26 weeks continuous employment by 15th week before EWC
+   - SPP: average weekly earnings above Lower Earnings Limit (£125/week)
+   - Request MATB1 for maternity, SC3 for paternity
+→ Know: leave entitlement ≠ pay entitlement. Fixed-term employees retain rights.
+
+EMPLOYEE RELATIONS (performance, disciplinary, grievance)
+→ ALWAYS distinguish conduct (what they did) from capability (what they can do) — different correct processes
+→ Flag protected characteristics immediately — performance issues may be disability issues
+→ Follow ACAS Codes strictly — tribunal compensation increases 25% for non-compliance
+→ Know when to say: "this needs employment legal advice"
+
+ABSENCE & WELLBEING ("I'm stressed", "how much sick pay", "I've been off 6 months")
+→ Handle with care. Know SSP (£116.75/week, 4 waiting days), fit note process, OH referral triggers
+→ Long-term absence (4+ weeks): consider Equality Act disability — reasonable adjustments required
+
+STATUTORY RATES 2025/26:
+- National Living Wage (21+): £12.21/hr | NMW (18-20): £10.00/hr | NMW (16-17): £7.55/hr
+- SSP: £116.75/week | SMP/SPP: £184.03/week or 90% AWE if lower
+- Lower Earnings Limit: £125/week
+- Statutory notice: 1 week per year of service, minimum 1 week, maximum 12 weeks
+- Statutory redundancy pay: 0.5-1.5 weeks per year depending on age
+- Annual leave: 28 days statutory minimum (inc. bank holidays)
+
+ALWAYS DO:
+- Use company policy first — if it's uploaded, reference it by name
+- Flag what HR needs to verify in HRIS before sending the reply
+- Give the practical next step, not just the rule
+- Calibrate length to complexity — simple questions get short answers
+
+NEVER DO:
+- Give immigration advice — always refer to specialist
+- Confirm individual pay/bonus/equity figures without flagging payroll must verify
+- Assume an eligibility condition is met without checking
+- Mention ACAS in the employee-facing reply (it's for HR guidance, not employee comms)
+
+MESSAGE CONTEXT:
+Type: ${m.type} | Source: ${m.source} (Slack = conversational, email = slightly more formal)
 ${policyContext}
-${feedbackContext}
+${learningContext}
 
-FORMAT YOUR RESPONSE AS JSON:
+RESPONSE FORMAT — JSON only:
 {
   "type": "answer" or "clarify",
-  "draft": "The full employee-facing reply. For maternity/paternity/leave: include entitlement details, next steps, and sign off as HR. End with a separator line '---' followed by HR ACTIONS: bullet points of what HR needs to check/do before sending — these are NOT sent to the employee",
-  "questions": ["question 1", "question 2"] or [],
-  "policyRef": "exact policy name if used, or null",
-  "advice": "One sentence of the most important thing HR needs to know about this case"
+  "draft": "Employee-facing reply (warm, accurate, signed off as HR).\\n\\n---\\n\\nHR ACTIONS:\\n• What to verify in HRIS before sending\\n• Eligibility conditions to confirm\\n• Any risk flags or legal considerations\\n• Recommended next steps",
+  "questions": ["specific question 1", "specific question 2"] or [],
+  "policyRef": "exact name of company policy used, or null",
+  "advice": "Single most important thing HR needs to know about this specific case"
 }
 
-IMPORTANT: The "draft" field contains BOTH the employee reply AND the HR actions note (separated by ---). HR will see both but only send the part above the ---. This is critical — a good HR director always flags what needs to be verified.`;
-  const reply = await callClaude([{role:'user',content:`Help me respond to:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}`}], systemPrompt);
+The --- separator is critical. Everything above it goes to the employee. Everything below stays with HR.`;
+
+  const reply = await callClaude([{role:'user',content:`Help me respond to this HR message:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}`}], systemPrompt);
   if (!reply) return null;
   try {
     const parsed = JSON.parse(reply.replace(/```json|```/g,'').trim());
-    // Split draft into employee-facing part and HR actions note
     if (parsed.draft && parsed.draft.includes('---')) {
       const parts = parsed.draft.split(/\n---+\n/);
       parsed.employeeDraft = parts[0].trim();
