@@ -134,18 +134,18 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 500; }
 .gm-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; margin-left: auto; }
 
-/* Scrollable area — takes all remaining space */
-.gm-scroll { flex: 1; overflow-y: auto; display: flex; flex-direction: column; min-height: 0; }
-
-/* Message body */
-.gm-body { padding: 16px 20px 14px; font-size: 13px; color: var(--ink); line-height: 1.75; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+/* Message body — compact, not dominant */
+.gm-body { padding: 12px 20px 10px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; max-height: 120px; overflow-y: auto; }
 
 /* Fix gm-detail to use flex properly */
 .gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
 
-/* Compose — fixed height, no auto-grow cutting off */
-.gm-compose { border-top: 1px solid var(--border); flex-shrink: 0; background: var(--surface); max-height: 55%; display: flex; flex-direction: column; overflow: hidden; }
-.gm-ta { width: 100%; border: none; outline: none; padding: 10px 20px 6px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; height: 100px; line-height: 1.65; background: var(--surface); overflow-y: auto; flex: 1; min-height: 80px; }
+/* Scroll area — minimal, just thread */
+.gm-scroll { overflow-y: auto; display: flex; flex-direction: column; flex-shrink: 0; max-height: 120px; }
+
+/* Compose — takes all remaining space, this is the hero */
+.gm-compose { border-top: 1px solid var(--border); flex: 1; background: var(--surface); display: flex; flex-direction: column; overflow: hidden; min-height: 0; }
+.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; flex: 1; min-height: 0; line-height: 1.65; background: var(--surface); overflow-y: auto; }
 .gm-thread { padding: 0 20px; flex-shrink: 0; }
 .gm-thread-item { border-bottom: 1px solid var(--border); }
 .gm-thread-compact { display: flex; align-items: center; gap: 8px; padding: 7px 0; cursor: pointer; user-select: none; }
@@ -1031,23 +1031,24 @@ function openMsg(m) {
 
     ${aiBar}
 
-    <!-- Compose area — Reply / Reply All / Forward / Ask Breeze HR -->
+    <!-- Compose area -->
     <div class="gm-compose">
       <div class="gm-compose-modes">
         <button class="gm-mode-btn active" id="gm-reply-${m.id}" onclick="gmSwitchCompose('reply','${m.id}')">
           <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
           Reply
         </button>
-        <button class="gm-mode-btn" id="gm-replyall-${m.id}" onclick="gmSwitchCompose('replyall','${m.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>
-          Reply all
-        </button>
-        <button class="gm-mode-btn" id="gm-fwd-${m.id}" onclick="gmSwitchCompose('forward','${m.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
-          Forward
-        </button>
         <button class="gm-mode-btn breeze" id="gm-breeze-${m.id}" onclick="gmSwitchCompose('breeze','${m.id}')">
           ◈ Ask Breeze HR
+        </button>
+        <div style="flex:1;"></div>
+        <button class="gm-mode-btn" id="gm-replyall-${m.id}" onclick="gmSwitchCompose('replyall','${m.id}')" style="flex:none;padding:8px 12px;font-size:11px;color:var(--ink3);">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>
+          Reply all
+        </button>
+        <button class="gm-mode-btn" id="gm-fwd-${m.id}" onclick="gmSwitchCompose('forward','${m.id}')" style="flex:none;padding:8px 12px;font-size:11px;color:var(--ink3);">
+          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
+          Forward
         </button>
       </div>
 
