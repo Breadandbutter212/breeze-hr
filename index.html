@@ -549,9 +549,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
     <div class="folders-toggle" onclick="toggleFolders()">
       Folders
-      <em class="folders-arrow" id="foldersArrow" style="margin-left:auto;transform:rotate(90deg)">▶</em>
+      <em class="folders-arrow" id="foldersArrow" style="margin-left:auto;transform:rotate(0deg)">▶</em>
     </div>
-    <div id="foldersList"></div>
+    <div id="foldersList" style="display:none;"></div>
 
     <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('docs',this)">
@@ -1076,7 +1076,7 @@ const processes = [
 
 // ── INBOX ──
 let selMsg=null, srcFilter='all', stFilter='all';
-let folders=[], activeFolderId=null, foldersOpen=true, ctxFolderId=null;
+let folders=[], activeFolderId=null, foldersOpen=false, ctxFolderId=null;
 let autoSort = localStorage.getItem('breeze_autosort') !== 'false';
 const konoChatHistory = {};
 
@@ -1213,13 +1213,10 @@ function openMsg(m) {
     const reason = m.policyRef
       ? `Based on your <strong>📄 ${m.policyRef}</strong> · ACAS best practice applied`
       : `Based on UK HR best practice and ACAS guidance`;
-    const actionsHtml = m.hrActions
-      ? `<div id="hrActions-${m.id}" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(255,255,255,0.8);border-radius:var(--r-sm);border-left:3px solid var(--accent);font-size:11px;color:var(--ink2);line-height:1.7;">${m.hrActions.split('\n').filter(l=>l.trim()).map(l=>`<div>• ${l.replace(/^[•\-\*]\s?/,'')}</div>`).join('')}</div>`
+    const actionsBtn = m.hrActions
+      ? `<button onclick="showAdvisory('${m.id}','actions')" style="font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:6px;">HR Actions ↑</button>`
       : '';
-    const actionsToggle = m.hrActions
-      ? `<span onclick="document.getElementById('hrActions-${m.id}').style.display=document.getElementById('hrActions-${m.id}').style.display==='none'?'block':'none'" style="font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline;margin-left:8px;">⚠ HR Actions</span>`
-      : '';
-    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);">Breeze HR drafted this reply ${actionsToggle}</div><div style="font-size:11px;color:var(--ink2);">${reason}</div>${actionsHtml}</div><div class="ai-rating-wrap"><button class="ai-rating-btn" id="rate-up-${m.id}" title="Good draft" onclick="rateAIDraft('${m.id}',1)">👍</button><button class="ai-rating-btn" id="rate-down-${m.id}" title="Needs work" onclick="rateAIDraft('${m.id}',-1)">👎</button></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
+    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);">Breeze HR drafted this reply</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div>${actionsBtn}<div class="ai-rating-wrap" style="margin-left:6px;"><button class="ai-rating-btn" id="rate-up-${m.id}" title="Good draft" onclick="rateAIDraft('${m.id}',1)">👍</button><button class="ai-rating-btn" id="rate-down-${m.id}" title="Needs work" onclick="rateAIDraft('${m.id}',-1)">👎</button></div><div class="gm-ai-chat" style="margin-left:8px;" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
   } else if (m.aiType==='clarify' || m.clarifyQs.length) {
     const reason = m.type==='Performance'
       ? `ACAS code: document 2 informal conversations before escalating formally`
@@ -1591,8 +1588,19 @@ EMPLOYEE-FACING DRAFT:
 - If eligibility is unconfirmed, use warm conditional language: "You should be entitled to..." or "Once we've confirmed your details, we'll set out exactly what you'll receive."
 - DO NOT write out "26 weeks by the 15th week before EWC" or "£184.03 per week" in the employee email - HR needs to verify these first and the employee does not need to see the HR working.
 - Short and warm for Tier 1. Reassuring and clear for Tier 2. Acknowledgement only for Tier 3/4.
-- CRITICAL: Never write "I'll need to check...", "I'll look into this and get back to you", "your contract may contain...", or "you may be entitled to..." in the employee draft. If HR hasn't verified it yet, it goes in HR Actions - not in the reply. The draft reflects what HR has confirmed, not what HR still needs to do.
-- Never promise a second email to cover something HR could check first. If a detail is unknown (e.g. the company pension matching limit), put it in HR Actions ("check pension scheme rules for employer match limit") and write a single complete reply once HR has looked it up. One email with all the facts beats two emails.
+- CRITICAL — BANNED phrases in the employee draft:
+  "I'll check and get back to you", "I'll look into this", "I'll confirm shortly", "I'll find out",
+  "I'll need to review your contract", "your contract may contain", "you may be entitled to",
+  "I'll get back to you on that", "I'll come back to you on the matching limit" — and any variation.
+  These phrases mean the draft is unfinished. An unfinished draft stays in HR Actions, not in the reply box.
+
+- FOR UNKNOWN SPECIFICS — use a [PLACEHOLDER] in square brackets that HR fills in before sending:
+  If the company pension match limit is unknown → draft says "The company matches contributions up to [X%]"
+  If notice pay calculation needs verifying → draft says "Your notice pay will be £[AMOUNT] per week"
+  If contract terms need checking → draft says "Your notice period is [X weeks] as per your contract"
+  HR sees the bracket, looks it up, fills it in, then sends. One email. No follow-up needed.
+
+- RULE: The draft = what goes out the door today, with placeholders filled in. HR Actions = what HR checks before sending. Never blur the two. A draft that says "I'll check" is not a draft — it's a placeholder for a draft.
 
 HR ACTIONS (never seen by the employee):
 - ALL the eligibility checks: length of service, earnings thresholds, contract type.
@@ -2739,9 +2747,13 @@ function handleReplyKey(e, msgId) {
 const FOLDER_COLOURS = ['#0066CC','#1A7A3C','#7A4A0A','#4B0082','#8B0000','#6E6E73'];
 
 async function loadFolders() {
-  if (!currentProfile) return;
-  const { data } = await sb.from('folders').select('*').eq('company_id', currentProfile.company_id).order('created_at');
-  if (data) { folders = data; renderFolders(); }
+  if (currentProfile) {
+    try {
+      const { data } = await sb.from('folders').select('*').eq('company_id', currentProfile.company_id).order('created_at');
+      if (data) folders = data;
+    } catch(e) {}
+  }
+  renderFolders();
 }
 
 function renderFolders() {
@@ -2899,14 +2911,16 @@ async function renameFolder() {
 }
 
 async function deleteFolder() {
+  const fid = ctxFolderId;
   closeFolderCtx();
-  const f = folders.find(x=>x.id===ctxFolderId); if (!f) return;
+  const f = folders.find(x=>x.id===fid); if (!f) return;
   if (!confirm(`Delete "${f.name}"? Messages will move back to inbox.`)) return;
-  await sb.from('folders').delete().eq('id', f.id);
-  msgs.forEach(m => { if (m.folder_id===f.id) m.folder_id=null; });
-  folders = folders.filter(x=>x.id!==ctxFolderId);
-  if (activeFolderId===ctxFolderId) activeFolderId=null;
+  try { await sb.from('folders').delete().eq('id', fid); } catch(e) {}
+  msgs.forEach(m => { if (m.folder_id===fid) m.folder_id=null; });
+  folders = folders.filter(x=>x.id!==fid);
+  if (activeFolderId===fid) activeFolderId=null;
   renderFolders(); renderMsgs();
+  showToast(`"${f.name}" deleted`);
 }
 
 async function moveToFolder(msgId, folderId) {
@@ -2916,13 +2930,23 @@ async function moveToFolder(msgId, folderId) {
   renderFolders(); renderMsgs();
 }
 
-function showAdvisory(msgId) {
+function showAdvisory(msgId, sheetType) {
   const m = msgs.find(x=>x.id===msgId);
   if (!m || !m.hrActions) return;
+  const isEscalate = sheetType !== 'actions';
+  const colour = isEscalate ? 'var(--red)' : 'var(--accent)';
+  const bgColour = isEscalate ? 'var(--red-bg)' : 'var(--accent-bg)';
+  document.getElementById('advisoryIcon').textContent = isEscalate ? '⚠' : '◈';
+  document.getElementById('advisoryIcon').style.background = bgColour;
+  document.getElementById('advisoryIcon').style.color = colour;
+  document.getElementById('advisoryTitle').textContent = isEscalate ? 'HR Advisory - do not respond yet' : 'HR Actions';
+  document.getElementById('advisoryTitle').style.color = colour;
+  document.getElementById('advisoryAck').textContent = isEscalate ? 'Acknowledged - close' : 'Got it - close';
+  document.getElementById('advisoryAck').style.background = colour;
   const actions = m.hrActions.split('\n').filter(l=>l.trim()).map(l=>l.replace(/^[•\-\*]\s?/,'').trim()).filter(Boolean);
   document.getElementById('advisoryBody').innerHTML = actions.map(a => {
-    const isEscalate = a.toUpperCase().includes('ESCALATE') || a.toUpperCase().includes('LEGAL') || a.toUpperCase().includes('SENIOR HR');
-    return `<div class="advisory-action"><div class="advisory-bullet" style="${isEscalate?'background:var(--red)':''}"></div><div class="advisory-action-text">${isEscalate?`<strong>${a}</strong>`:a}</div></div>`;
+    const isUrgent = isEscalate && (a.toUpperCase().includes('ESCALATE') || a.toUpperCase().includes('LEGAL') || a.toUpperCase().includes('SENIOR HR'));
+    return `<div class="advisory-action"><div class="advisory-bullet" style="background:${isUrgent?'var(--red)':colour}"></div><div class="advisory-action-text">${isUrgent?`<strong>${a}</strong>`:a}</div></div>`;
   }).join('');
   document.getElementById('advisoryBackdrop').classList.add('visible');
   document.getElementById('advisorySheet').classList.add('visible');
@@ -2937,7 +2961,7 @@ function closeAdvisory() {
 <div id="breezeToast"></div>
 <div id="msgCtxMenu" class="ctx-menu" style="display:none;"></div>
 
-<div id="folderCtxMenu" class="ctx-menu" style="display:none;" onmouseleave="closeFolderCtx()">
+<div id="folderCtxMenu" class="ctx-menu" style="display:none;">
   <div class="ctx-item" onclick="renameFolder()">Rename</div>
   <div class="ctx-sep"></div>
   <div class="ctx-item danger" onclick="deleteFolder()">Delete</div>
@@ -2946,14 +2970,14 @@ function closeAdvisory() {
 <div class="advisory-backdrop" id="advisoryBackdrop" onclick="closeAdvisory()"></div>
 <div class="advisory-sheet" id="advisorySheet">
   <div class="advisory-drag"></div>
-  <div class="advisory-head">
-    <div class="advisory-icon">⚠</div>
-    <div class="advisory-title">HR Advisory - do not respond yet</div>
+  <div class="advisory-head" id="advisoryHead">
+    <div class="advisory-icon" id="advisoryIcon">⚠</div>
+    <div class="advisory-title" id="advisoryTitle">HR Advisory - do not respond yet</div>
     <button class="advisory-close" onclick="closeAdvisory()">✕</button>
   </div>
   <div class="advisory-body" id="advisoryBody"></div>
   <div class="advisory-foot">
-    <button class="advisory-ack" onclick="closeAdvisory()">Acknowledged - close</button>
+    <button class="advisory-ack" id="advisoryAck" onclick="closeAdvisory()">Acknowledged - close</button>
   </div>
 </div>
 </body>
