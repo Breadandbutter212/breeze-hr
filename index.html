@@ -844,12 +844,75 @@ async function updateMessageStatus(id, status) {
 
 // ── DATA ──
 const msgs = [
-  { id:'m1', from:'Tom Bradley', initials:'TB', bg:'#EBF3FF', fg:'#0066CC', source:'slack', type:'Onboarding', status:'new', time:'9:14am', subject:'New starter joining Monday', preview:'Jamie Walsh is joining the backend team on 19 May...', body:'Hey — just wanted to flag that Jamie Walsh is joining our backend team this coming Monday 19 May. She\'ll need a MacBook Pro, GitHub access, Slack invite, and AWS read access sorted. Can you also get her contract over to her? Thanks', aiType:'clarify', policyRef:null, draftAnswer:null, clarifyQs:['What is Jamie\'s exact job title and is this a permanent or fixed-term contract?','What salary has been agreed — needed to issue the contract?','Has a right to work check been completed, or is that still outstanding?','Who is her line manager and what team will she report into?'], thread:[] },
-  { id:'m2', from:'Priya Sharma', initials:'PS', bg:'#F3EEFF', fg:'#4B0082', source:'email', type:'Leave', status:'new', time:'10:32am', subject:'Maternity leave — planning ahead', preview:'I\'m 24 weeks pregnant and wanted to start planning my leave...', body:'Hi, I\'m 24 weeks pregnant with a due date of 14 August. I wanted to start planning ahead and understand what I\'m entitled to and what I need to do. I\'m thinking of starting leave around 4 August.', aiType:'answer', policyRef:'Maternity Leave Policy (uploaded)', draftAnswer:`Hi Priya,\n\nCongratulations! Thank you for letting us know — happy to help you plan ahead.\n\nYou're entitled to up to 52 weeks maternity leave. The first 16 weeks will be at full pay (company top-up combined with statutory maternity pay), followed by 23 weeks at statutory maternity pay, and the remaining 13 weeks unpaid.\n\nYour proposed start date of 4 August is well within the legal requirement of giving at least 15 weeks' notice — so you're all good.\n\nNext steps:\n1. I'll send you our maternity leave policy and the MAT B1 form request\n2. Let me know if you'd like me to notify your manager, or if you'd prefer to do that yourself\n3. We'll arrange a brief call to go through everything\n\nBest,\nHR`, clarifyQs:[], thread:[] },
-  { id:'m3', from:'Sarah Chen', initials:'SC', bg:'#FDF3E3', fg:'#7A4A0A', source:'direct', type:'Performance', status:'new', time:'Yesterday', subject:'Performance concern — team member', preview:'Had a second informal conversation, no improvement...', body:'Hi, I\'ve had a second informal conversation with someone in my team about repeatedly missing deadlines. The first was about 3 weeks ago and there\'s been no real improvement. They\'ve been with us about 14 months. I\'m not sure what the right next step is.', aiType:'clarify', policyRef:null, draftAnswer:null, clarifyQs:['Were the expectations set in both conversations specific and measurable, or more general feedback?','Was anything confirmed in writing to the employee after either conversation?','Are there any personal or health circumstances HR should be aware of before escalating?','Is this a performance issue (output/quality) or a conduct issue (attitude/behaviour) — the correct process differs?'], thread:[] },
-  { id:'m4', from:'Marcus Webb', initials:'MW', bg:'#E8F5EE', fg:'#1A7A3C', source:'slack', type:'Leave', status:'open', time:'2 days ago', subject:'Paternity leave — partner due in 3 weeks', preview:'My partner is due to give birth in about 3 weeks...', body:'Hi, my partner is due to give birth in about 3 weeks. I\'d like to take paternity leave — can you let me know how much I\'m entitled to and how I request it officially?', aiType:'answer', policyRef:'Paternity Leave Policy (uploaded)', draftAnswer:`Hi Marcus,\n\nCongratulations — exciting news!\n\nYou're entitled to 2 weeks paid paternity leave at full pay, available from day one of employment. You've given well over the required 15 weeks' notice, so you're fine.\n\nA couple of quick things to confirm:\n- What's your preferred start date?\n- Would you like both weeks consecutively, or split them?\n\nOnce confirmed I'll get this formally logged for payroll.\n\nBest,\nHR`, clarifyQs:[], thread:[{dir:'in',sender:'Marcus Webb',time:'2 days ago',text:'Hi, my partner is due to give birth in about 3 weeks. I\'d like to take paternity leave — can you let me know how much I\'m entitled to and how I request it officially?'},{dir:'out',sender:'HR',time:'2 days ago',text:'Hi Marcus — congratulations! 2 weeks paid at full pay from day one. Can you confirm your preferred start date?'}] },
-  { id:'m5', from:'Aisha Okonkwo', initials:'AO', bg:'#FDF3E3', fg:'#7A4A0A', source:'email', type:'Pay & benefits', status:'resolved', time:'3 days ago', subject:'How does the pension work?', preview:'Could you explain how our pension scheme works...', body:'Could you explain how our pension scheme works and how I go about increasing my contributions? I\'ve been here 6 months and want to make sure I\'m making the most of it.', aiType:'answer', policyRef:'Pension Policy (uploaded)', draftAnswer:`Hi Aisha,\n\nGreat question!\n\nWe use Nest for our workplace pension. The company contributes 5% of your qualifying earnings, and the minimum employee contribution is 3%. You can increase above 3% at any time.\n\nLog into nest.co.uk with your work email → My Contributions → update your percentage. Changes take effect from the next payroll run.\n\nLet me know if you have any trouble logging in.\n\nBest,\nHR`, clarifyQs:[], thread:[{dir:'in',sender:'Aisha Okonkwo',time:'3 days ago',text:'Could you explain how our pension scheme works and how I go about increasing my contributions?'},{dir:'out',sender:'HR',time:'3 days ago',text:'Hi Aisha — we use Nest. Employer 5%, minimum employee 3%. Login at nest.co.uk to increase. Let me know if you need a reset!'}] }
+  {
+    id:'m1', from:'James Okafor', initials:'JO', bg:'#EBF3FF', fg:'#0066CC',
+    source:'email', type:'Leave', status:'new', time:'8:47am',
+    subject:'Maternity leave — due in August',
+    preview:'Hi, I\'m 24 weeks pregnant with a due date of 14 August...',
+    body:'Hi,\n\nI\'m 24 weeks pregnant with a due date of 14 August. I wanted to start planning ahead and understand what I\'m entitled to and what I need to do. I\'m thinking of starting leave around 4 August.\n\nCould you let me know the process and what pay I\'ll receive?\n\nThanks,\nPriya',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m2', from:'Daniel Wright', initials:'DW', bg:'#F3EEFF', fg:'#4B0082',
+    source:'email', type:'Pay & benefits', status:'new', time:'9:12am',
+    subject:'Resigning — what happens to my holiday and final pay?',
+    preview:'Hi, I\'m planning to hand in my notice next week...',
+    body:'Hi,\n\nI\'m planning to hand in my notice next week. My contract says 3 months notice. I have about 12 days of annual leave remaining.\n\nCan you let me know:\n1. Do I get paid for the unused holiday?\n2. When will I receive my final paycheck?\n3. Are there any restrictions on what I can do after I leave — I\'m thinking of joining a competitor?\n\nThanks,\nDaniel',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m3', from:'Rachel Kim', initials:'RK', bg:'#FFF0F0', fg:'#8B0000',
+    source:'email', type:'General', status:'new', time:'9:58am',
+    subject:'Urgent — I need to speak to someone today',
+    preview:'I\'m really struggling and I don\'t know what to do...',
+    body:'Hi,\n\nI\'m really struggling at the moment and I don\'t know what to do. My manager has been making comments about my work in front of the whole team and yesterday told me in front of everyone that I\'d "never make it to senior level." I\'ve been here 3 years and have never had a formal complaint against me.\n\nI\'m not sure if this is a grievance or what. I just know I can\'t keep going like this. I haven\'t been sleeping and I\'m starting to dread coming in.\n\nIs there someone I can speak to today?\n\nRachel',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m4', from:'Ben Hussain', initials:'BH', bg:'#E8F5EE', fg:'#1A7A3C',
+    source:'slack', type:'Pay & benefits', status:'new', time:'10:23am',
+    subject:'Pension contributions — how do I increase?',
+    preview:'Hey, quick one — how do I up my pension contributions?',
+    body:'Hey,\n\nQuick one — how do I increase my pension contributions? I\'m currently on the minimum 3% and want to put in more. Do I just do it through the Nest portal or do I need to tell you first?\n\nAlso is there a max the company will match?\n\nThanks\nBen',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m5', from:'Sophie Andersson', initials:'SA', bg:'#FDF3E3', fg:'#7A4A0A',
+    source:'email', type:'General', status:'new', time:'11:05am',
+    subject:'Working from Barcelona for 6 weeks — is this okay?',
+    preview:'Hi, my partner is based in Barcelona and I\'d like to work from there...',
+    body:'Hi,\n\nMy partner is based in Barcelona and I\'d like to work remotely from there for 6 weeks over the summer (July–August). My role is fully remote anyway so it wouldn\'t affect my output at all.\n\nIs this something the company would allow? I\'d still be working UK hours.\n\nThanks,\nSophie',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m6', from:'Tom Bradley', initials:'TB', bg:'#EBF3FF', fg:'#0066CC',
+    source:'slack', type:'Onboarding', status:'open', time:'Yesterday',
+    subject:'New starter joining Monday — Jamie Walsh',
+    preview:'Hey, just flagging Jamie Walsh joins Monday and needs everything set up...',
+    body:'Hey — just wanted to flag that Jamie Walsh is joining our backend team this coming Monday. She\'ll need a MacBook Pro, GitHub access, Slack invite, and AWS read-only access sorted before she arrives. Can you also get her contract over to her ASAP? She hasn\'t signed yet.\n\nShe\'s on £72k, permanent, starting probation on Monday.\n\nThanks\nTom',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m7', from:'Claire Obi', initials:'CO', bg:'#F3EEFF', fg:'#4B0082',
+    source:'email', type:'Performance', status:'open', time:'Yesterday',
+    subject:'Concerns about team member — third time missing deadlines',
+    preview:'Hi, I\'ve now had three conversations with Marcus about missed deadlines...',
+    body:'Hi,\n\nI\'ve now had three conversations with Marcus about repeatedly missing project deadlines. The first was informal in January, the second in March. Neither was documented at the time. We\'re now in May and nothing has improved — he missed two client deliverables last week.\n\nI want to escalate but I\'m not sure what the right process is. He\'s been here 2 years. Should I be starting a formal process?\n\nClaire',
+    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
+  },
+  {
+    id:'m8', from:'Aisha Okonkwo', initials:'AO', bg:'#FDF3E3', fg:'#7A4A0A',
+    source:'email', type:'Pay & benefits', status:'resolved', time:'2 days ago',
+    subject:'How does the pension work?',
+    preview:'Could you explain how our pension scheme works...',
+    body:'Could you explain how our pension scheme works and how I go about increasing my contributions? I\'ve been here 6 months and want to make sure I\'m making the most of it.',
+    aiType:'answer', policyRef:'Pension Policy', draftAnswer:`Hi Aisha,\n\nGreat that you're thinking about this!\n\nWe use Nest for our workplace pension. The company contributes 5% of your qualifying earnings, and you're currently on the minimum 3% employee contribution. You can increase this at any time by logging into nest.co.uk with your work email — go to My Contributions and update the percentage. Changes take effect from the next payroll run.\n\nLet me know if you have any trouble logging in.\n\nBest,\nHR`, hrActions:'• Confirm Aisha is enrolled in Nest (check payroll system)\n• Verify her qualifying earnings band is correct\n• No action needed before sending — straightforward query', clarifyQs:[], thread:[
+      {dir:'in',sender:'Aisha Okonkwo',time:'2 days ago',text:'Could you explain how our pension scheme works and how I go about increasing my contributions?'},
+      {dir:'out',sender:'HR',time:'2 days ago',text:'Hi Aisha — we use Nest. Employer 5%, you\'re on minimum 3%. Log into nest.co.uk to increase anytime. Let me know if you need a login reset!'}
+    ]
+  }
 ];
+
 
 const tmpls = [
   { id:'t1', name:'Promotion letter', emoji:'🎉', type:'Letters',
@@ -1034,17 +1097,24 @@ function openMsg(m) {
     threadHtml = items;
   }
 
-  // AI bar — 2 lines + HR actions if present
+  // AI bar — collapsible HR Actions so it doesn't push compose area
   let aiBar = '';
   if (m.aiType==='answer' && m.draftAnswer) {
     const reason = m.policyRef
       ? `Based on your <strong>📄 ${m.policyRef}</strong> · ACAS best practice applied`
       : `Based on UK HR best practice and ACAS guidance`;
-    const actionsHtml = m.hrActions ? `<div style="margin-top:6px;padding:8px 10px;background:rgba(255,255,255,0.7);border-radius:var(--r-sm);border-left:3px solid var(--accent);font-size:11px;color:var(--ink2);line-height:1.6;"><strong style="color:var(--ink);display:block;margin-bottom:3px;">⚠ HR Actions — check before sending:</strong>${m.hrActions.replace(/\n/g,'<br>').replace(/^[•\-\*]\s?/gm,'• ')}</div>` : '';
-    aiBar = `<div class="gm-ai-bar" style="flex-direction:column;align-items:flex-start;gap:4px;"><div style="display:flex;align-items:center;gap:8px;width:100%;"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR drafted this reply</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>${actionsHtml}</div>`;
+    const actionsHtml = m.hrActions
+      ? `<div id="hrActions-${m.id}" style="display:none;margin-top:6px;padding:8px 10px;background:rgba(255,255,255,0.8);border-radius:var(--r-sm);border-left:3px solid var(--accent);font-size:11px;color:var(--ink2);line-height:1.7;">${m.hrActions.split('\n').filter(l=>l.trim()).map(l=>`<div>• ${l.replace(/^[•\-\*]\s?/,'')}</div>`).join('')}</div>`
+      : '';
+    const actionsToggle = m.hrActions
+      ? `<span onclick="document.getElementById('hrActions-${m.id}').style.display=document.getElementById('hrActions-${m.id}').style.display==='none'?'block':'none'" style="font-size:11px;color:var(--accent);cursor:pointer;text-decoration:underline;margin-left:8px;">⚠ HR Actions</span>`
+      : '';
+    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);">Breeze HR drafted this reply ${actionsToggle}</div><div style="font-size:11px;color:var(--ink2);">${reason}</div>${actionsHtml}</div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
   } else if (m.aiType==='clarify' || m.clarifyQs.length) {
     const reason = m.type==='Performance'
       ? `ACAS code: document 2 informal conversations before escalating formally`
+      : m.type==='General' && m.body?.toLowerCase().includes('struggling')
+      ? `Employee appears distressed — prioritise human response over process`
       : `More context needed before a policy-based response can be drafted`;
     aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR loaded clarifying questions</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
   }
@@ -1308,84 +1378,163 @@ async function generateAIDraft(m) {
     }
   }
 
-  const systemPrompt = `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience across employment law, reward, benefits, payroll, and people operations.
+  const systemPrompt = `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You advise HR teams at mid-market companies.
 
-PRIORITY ORDER FOR EVERY RESPONSE:
-1. COMPANY'S OWN UPLOADED POLICIES — always check these first. If the answer is in the policy, use it exactly.
-2. ACAS CODES OF PRACTICE — statutory guidance that tribunals use to judge employer behaviour
-3. UK EMPLOYMENT LAW — ERA 1996, Equality Act 2010, Working Time Regulations, etc.
-4. GENERAL HR BEST PRACTICE — only if nothing above applies
+━━━ STEP 1: TRIAGE ━━━
+Before anything else, classify this message:
 
-YOU HANDLE THE FULL SPECTRUM OF HR ENQUIRIES:
+TIER 1 — TRANSACTIONAL
+Signs: factual policy question, no emotional language, no conflict, no protected characteristics.
+Examples: holiday balance, payday date, how to book leave, pension contributions, cycle to work, notice period.
+Action: Answer directly. 2-4 sentences max. Practical next step. No HR Actions needed.
 
-TRANSACTIONAL / POLICY QUESTIONS ("how much holiday", "when is payday", "how do I book leave")
-→ Answer directly from policy. Be friendly and specific. Short is fine. Nobody wants an essay.
+TIER 2 — STANDARD PROCESS
+Signs: family leave, flexible working request, resignation, standard absence, benefits query.
+Predictable process. Eligibility conditions need checking.
+Action: Draft reply + collapsible HR Actions checklist.
 
-BENEFITS & REWARD ("how does the pension work", "what's the dental cover", "cycle to work scheme")
-→ Explain clearly with the practical step. Flag if provider details are needed. Include action: "log into Nest at nest.co.uk", "contact Bupa on..."
+TIER 3 — SENSITIVE / RISK
+Signs: performance concerns, grievance, disciplinary, any mention of "struggling", "not sleeping", 
+"dreading coming in", "it's not fair", "being treated differently", mental health language,
+protected characteristics (pregnancy, disability, race, age, religion, sex, sexual orientation).
+Action: Acknowledge warmly. Do NOT draft a full reply yet. Give HR a brief advisory note.
+Flag: what to investigate, who to involve, what NOT to do in writing.
+Escalation: flag to senior HR before any formal response is sent.
 
-PAYROLL & PAY ("my payslip looks wrong", "when's my last pay", "is my bonus taxable")
-→ Be precise. Flag that payroll must verify individual calculations. Know current statutory rates.
+TIER 4 — LEGAL RISK — STOP AND FLAG
+Signs: "tribunal", "solicitor", "ACAS early conciliation", "discrimination claim", 
+"I'm recording this", "without prejudice", "whistleblowing", threat of legal action,
+settlement discussion, "I've taken advice".
+Action: DO NOT draft any reply. Tell HR this needs employment legal advice before responding.
+Escalation: this must go to senior HR and/or employment solicitor immediately.
 
-LEAVERS ("I'm resigning", "can I leave during probation", "do I get paid for unused holiday", "what about my share options")
-→ Cover: notice period, holiday accrual/payout, final payslip timing, equipment return, reference policy, restrictive covenants. Flag equity/share options as complex — refer to scheme rules.
+━━━ STEP 2: READ THE EMOTIONAL STATE ━━━
 
-FLEXIBLE & REMOTE WORKING ("can I work from abroad", "can I go part time", "change my hours")
-→ Statutory right to request flexible working = day one right since April 2024, 2 requests per year.
-→ CRITICAL: Working from abroad = tax and employment law risk in the host country. Always flag this — it is NOT a standard flexible working request.
+DISTRESSED ("I'm really struggling", "I don't know what to do", "I haven't been sleeping", "I'm at breaking point")
+→ Lead with a human acknowledgement, not information. First line is always empathy.
+→ Offer a call or in-person conversation before putting things in writing.
+→ Check if EAP (Employee Assistance Programme) applies.
+→ HR Actions: consider whether this needs a welfare check or OH referral.
 
-FAMILY LEAVE (maternity, paternity, shared parental, adoption)
-→ ALWAYS check eligibility conditions before confirming entitlement:
-   - SMP/SPP: 26 weeks continuous employment by 15th week before EWC
-   - SPP: average weekly earnings above Lower Earnings Limit (£125/week)
-   - Request MATB1 for maternity, SC3 for paternity
-→ Know: leave entitlement ≠ pay entitlement. Fixed-term employees retain rights.
+ANGRY ("this is unacceptable", "I'm furious", "nobody has helped me")
+→ Do not get defensive or justify company position in writing.
+→ Acknowledge. Confirm you take it seriously. Do not make commitments.
+→ HR Actions: escalate to senior HR before responding further.
 
-EMPLOYEE RELATIONS (performance, disciplinary, grievance)
-→ ALWAYS distinguish conduct (what they did) from capability (what they can do) — different correct processes
-→ Flag protected characteristics immediately — performance issues may be disability issues
-→ Follow ACAS Codes strictly — tribunal compensation increases 25% for non-compliance
-→ Know when to say: "this needs employment legal advice"
+ANXIOUS / UNCERTAIN ("I hope this is okay to ask", "I don't want to cause trouble")
+→ Immediately reassuring. Confirm it was right to reach out.
+→ Explain what happens next clearly and simply.
 
-ABSENCE & WELLBEING ("I'm stressed", "how much sick pay", "I've been off 6 months")
-→ Handle with care. Know SSP (£116.75/week, 4 waiting days), fit note process, OH referral triggers
-→ Long-term absence (4+ weeks): consider Equality Act disability — reasonable adjustments required
+FORMAL / LEGAL TONE ("I wish to formally notify", "for the avoidance of doubt", "I am writing to formally")
+→ This person has taken advice. Match formality. Be precise.
+→ HR Actions: senior HR must review before any response is sent.
 
-STATUTORY RATES 2025/26:
-- National Living Wage (21+): £12.21/hr | NMW (18-20): £10.00/hr | NMW (16-17): £7.55/hr
-- SSP: £116.75/week | SMP/SPP: £184.03/week or 90% AWE if lower
-- Lower Earnings Limit: £125/week
-- Statutory notice: 1 week per year of service, minimum 1 week, maximum 12 weeks
-- Statutory redundancy pay: 0.5-1.5 weeks per year depending on age
-- Annual leave: 28 days statutory minimum (inc. bank holidays)
+━━━ STEP 3: ESCALATION ━━━
+Some situations should never be handled by junior HR alone. Flag clearly:
+- ESCALATE TO SENIOR HR: grievance, disciplinary, performance issues with protected characteristics, 
+  any situation where the employee sounds distressed about their manager.
+- ESCALATE TO LEGAL: any legal language, discrimination allegations, settlement discussions, 
+  tribunal mentions, whistleblowing.
+- REFER TO EAP: mental health concerns, stress, personal crisis language.
+- REFER TO OCCUPATIONAL HEALTH: long-term absence (4+ weeks), disability-related adjustments.
 
-ALWAYS DO:
-- Use company policy first — if it's uploaded, reference it by name
-- Flag what HR needs to verify in HRIS before sending the reply
-- Give the practical next step, not just the rule
-- Calibrate length to complexity — simple questions get short answers
+━━━ STEP 4: PRIORITY ORDER FOR EVERY RESPONSE ━━━
+1. COMPANY'S OWN UPLOADED POLICIES — check these first, always
+2. ACAS CODES OF PRACTICE — statutory codes tribunals use to judge employer behaviour  
+3. UK EMPLOYMENT LAW — ERA 1996, Equality Act 2010, Working Time Regs, etc.
+4. GENERAL BEST PRACTICE — only if nothing above applies
 
-NEVER DO:
-- Give immigration advice — always refer to specialist
-- Confirm individual pay/bonus/equity figures without flagging payroll must verify
-- Assume an eligibility condition is met without checking
-- Mention ACAS in the employee-facing reply (it's for HR guidance, not employee comms)
+━━━ WHAT YOU KNOW ━━━
 
-MESSAGE CONTEXT:
+TRANSACTIONAL:
+- Answer directly from policy. Short is fine. Practical next step.
+
+BENEFITS & REWARD:
+- Explain clearly. Include the actual action ("log into Nest at nest.co.uk").
+- Flag if provider details are needed for a complete answer.
+
+PAYROLL & PAY:
+- Know current rates. Flag that payroll must verify individual calculations.
+- Statutory rates 2025/26: NLW (21+) £12.21/hr | SSP £116.75/wk | SMP/SPP £184.03/wk or 90% AWE
+- Lower Earnings Limit: £125/week | Statutory notice: 1 week per year, max 12 weeks
+- Redundancy pay: 0.5–1.5 weeks per year of service depending on age
+
+LEAVERS:
+- Cover: notice period, holiday accrual on termination (calculate to last day), final payslip timing,
+  equipment return, reference policy, restrictive covenants (flag — do not advise on enforceability),
+  share options/equity (flag as complex — refer to scheme rules or legal).
+
+FLEXIBLE & REMOTE WORKING:
+- Statutory right to request = day one right since April 2024, max 2 requests per year.
+- CRITICAL — WORKING ABROAD: this is NOT a flexible working request. Creates tax residency risk,
+  employment law jurisdiction issues, and potential social security liability in the host country.
+  Always flag. Never approve without legal/tax sign-off.
+
+FAMILY LEAVE:
+- SMP/SPP eligibility: 26 weeks continuous employment by 15th week before EWC.
+- SPP: AWE must exceed Lower Earnings Limit (£125/week).
+- Always request MATB1 (maternity), SC3 (paternity).
+- KIT days (maternity): up to 10 days work without losing SMP.
+- Shared parental leave: complex — refer to policy or specialist.
+
+EMPLOYEE RELATIONS:
+- ALWAYS distinguish conduct (what they did) from capability (what they can't do) — different processes.
+- Protected characteristics: flag immediately. Performance issues may be disability issues.
+- ACAS disciplinary code: investigate → invite to hearing → right to be accompanied → decision → appeal.
+- Tribunal uplift: up to 25% increase in compensation for failing to follow ACAS code.
+
+ABSENCE:
+- SSP: 4 waiting days, then £116.75/week up to 28 weeks.
+- Long-term absence (4+ weeks): consider Equality Act disability, OH referral, reasonable adjustments.
+- Persistent short-term absence: Bradford Factor, return-to-work interviews, trigger points.
+
+━━━ WORKED EXAMPLES ━━━
+
+EXAMPLE 1 — TIER 1 (pension query):
+Employee: "How do I increase my pension contributions?"
+CORRECT — short, practical, friendly:
+"Hi [name], you can increase your contributions at any time by logging into your Nest account at nest.co.uk — go to My Contributions and update your percentage. Changes apply from the next payroll run. Let me know if you need help with your login. Best, HR"
+HR Actions: None required.
+WRONG: a 400-word essay about pension legislation.
+
+EXAMPLE 2 — TIER 2 (maternity leave):
+Employee: "I'm 24 weeks pregnant, due 14 August, thinking of starting leave 4 August."
+CORRECT — answer the question, then flag what to check:
+Draft covers: 52 weeks entitlement, SMP overview, notice requirement met, next steps (MATB1, policy doc, manager notification).
+HR Actions: Check start date (SMP needs 26 weeks by 15th week before EWC = week of 28 April — verify she meets this). Confirm contract type. Check if enhanced maternity pay applies. Send MATB1 form request. Log in HR system.
+
+EXAMPLE 3 — TIER 3 (distressed employee / potential grievance):
+Employee: "My manager makes comments in front of the team and I haven't been sleeping."
+CORRECT:
+Do NOT draft a formal reply. Give HR:
+1. Acknowledge the employee immediately and warmly — offer a call today.
+2. This has potential grievance indicators. Do not put any substantive response in writing yet.
+3. Escalate to senior HR before proceeding.
+4. Check if the behaviour described could constitute harassment (protected characteristic?).
+5. EAP referral may be appropriate given the sleep/wellbeing mention.
+Draft for employee: acknowledgement + offer of call only. Nothing about process yet.
+
+EXAMPLE 4 — TIER 3 (working abroad):
+Employee: "Can I work from Barcelona for 6 weeks?"
+CORRECT:
+Flag immediately — this is not a standard remote working request.
+Working in Spain for 6 weeks creates: potential Spanish tax liability, risk of becoming subject to Spanish employment law, possible social security complications.
+HR cannot approve this without tax/legal sign-off. Reply to employee should be warm but non-committal: "Thanks for asking — we need to check a few things on our end before confirming. We'll come back to you within a few days."
+HR Actions: Refer to tax advisor or employment solicitor before any approval. Do not approve informally.
+
+━━━ MESSAGE CONTEXT ━━━
 Type: ${m.type} | Source: ${m.source} (Slack = conversational, email = slightly more formal)
 ${policyContext}
 ${learningContext}
 
-RESPONSE FORMAT — JSON only:
+━━━ RESPONSE FORMAT — JSON only ━━━
 {
-  "type": "answer" or "clarify",
-  "draft": "Employee-facing reply (warm, accurate, signed off as HR).\\n\\n---\\n\\nHR ACTIONS:\\n• What to verify in HRIS before sending\\n• Eligibility conditions to confirm\\n• Any risk flags or legal considerations\\n• Recommended next steps",
-  "questions": ["specific question 1", "specific question 2"] or [],
+  "type": "answer" or "clarify" or "escalate",
+  "draft": "Employee-facing reply. Keep proportionate to the question — short for Tier 1, fuller for Tier 2. For Tier 3/4, acknowledgement only.\\n\\n---\\n\\nHR ACTIONS:\\n• Bullet points of what HR must check/do/escalate before or after sending\\n• Include ESCALATE TO SENIOR HR or ESCALATE TO LEGAL if applicable",
+  "questions": ["only if genuinely needed — not for Tier 1"] or [],
   "policyRef": "exact name of company policy used, or null",
-  "advice": "Single most important thing HR needs to know about this specific case"
-}
-
-The --- separator is critical. Everything above it goes to the employee. Everything below stays with HR.`;
+  "advice": "Single most important thing HR needs to know — flag triage tier and any escalation needed"
+}`;
 
   const reply = await callClaude([{role:'user',content:`Help me respond to this HR message:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}`}], systemPrompt);
   if (!reply) return null;
