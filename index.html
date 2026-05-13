@@ -1064,6 +1064,7 @@ const processes = [
 
 // ── INBOX ──
 let selMsg=null, srcFilter='all', stFilter='all';
+let folders=[], activeFolderId=null, foldersOpen=false, ctxFolderId=null;
 const konoChatHistory = {};
 
 function renderMsgs() {
@@ -2683,7 +2684,6 @@ function handleReplyKey(e, msgId) {
 }
 
 // ── FOLDERS ──
-let folders = [], activeFolderId = null, foldersOpen = false, ctxFolderId = null;
 const FOLDER_COLOURS = ['#0066CC','#1A7A3C','#7A4A0A','#4B0082','#8B0000','#6E6E73'];
 
 async function loadFolders() {
