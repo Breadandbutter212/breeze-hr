@@ -107,6 +107,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .mi-subject { font-size: 12px; color: var(--ink2); margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .mi-preview { font-size: 11px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; margin-right: 4px; }
+.msg-item { position: relative; }
+.msg-hover-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 2px; box-shadow: var(--shadow-sm); }
+.msg-item:hover .msg-hover-actions { display: flex; }
+.mha-btn { width: 22px; height: 22px; border: none; background: transparent; cursor: pointer; border-radius: 3px; display: flex; align-items: center; justify-content: center; color: var(--ink3); }
+.mha-btn:hover { background: var(--surface2); color: var(--ink); }
 .log-btn { margin: 10px 12px; padding: 8px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
 .log-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 
@@ -544,8 +549,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
     <div class="folders-toggle" onclick="toggleFolders()">
       Folders
-      <button onclick="event.stopPropagation();startNewFolder()" title="New folder" style="margin-left:auto;margin-right:4px;background:none;border:none;cursor:pointer;color:rgba(0,0,0,0.3);font-size:16px;line-height:1;padding:0 2px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='rgba(0,0,0,0.3)'">+</button>
-      <em class="folders-arrow" id="foldersArrow" style="transform:rotate(90deg)">▶</em>
+      <em class="folders-arrow" id="foldersArrow" style="margin-left:auto;transform:rotate(90deg)">▶</em>
     </div>
     <div id="foldersList"></div>
 
@@ -1098,7 +1102,13 @@ function renderMsgs() {
         <div class="mi-time">${m.time}</div>
       </div>
       <div class="mi-subject">${m.subject}</div>
-      <div class="mi-preview">${m.preview}</div>`;
+      <div class="mi-preview">${m.preview}</div>
+      <div class="msg-hover-actions" onclick="event.stopPropagation()">
+        <button class="mha-btn" title="Reply" onclick="openMsg(msgs.find(x=>x.id==='${m.id}'));setTimeout(()=>gmSwitchCompose('reply','${m.id}'),100)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>
+        <button class="mha-btn" title="${isUnread?'Mark read':'Mark unread'}" onclick="quickMarkRead('${m.id}',${isUnread})">${isUnread?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>':'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>'}</button>
+        <button class="mha-btn" title="Move to folder" onclick="showMsgCtxMenu({clientX:this.getBoundingClientRect().left,clientY:this.getBoundingClientRect().bottom,preventDefault:()=>{}},'${m.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
+        <button class="mha-btn" title="Delete" onclick="deleteMsg('${m.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
+      </div>`;
     list.appendChild(div);
   });
   const n = msgs.filter(m=>m.status==='new').length;
@@ -1721,8 +1731,11 @@ async function sendKono(msgId) {
   konoChatHistory[msgId].push({role:'hr',text:q});
   konoChatHistory[msgId].push({role:'ai',text:'...',id:'typing'});
   renderKonoHistory(msgId);
+  const replyBox = document.getElementById('replyTa-'+msgId);
+  const currentDraft = replyBox ? replyBox.innerText.trim() : '';
   const history = konoChatHistory[msgId].filter(h=>h.id!=='typing').slice(0,-1).map(h=>({role:h.role==='hr'?'user':'assistant',content:h.text.replace(/<[^>]+>/g,'')}));
   history.push({role:'user',content:q});
+  const draftSection = currentDraft ? `\n\nCURRENT DRAFT IN REPLY BOX:\n${currentDraft}\n\nIf the HR user asks you to edit, rewrite, improve, shorten, or change the tone of this draft, return ONLY the revised email text starting with REPLACE_DRAFT: and nothing else before it. Do not explain what you changed.` : '';
   const systemPrompt = `You are Breeze HR, a private AI advisor with the knowledge and judgement of a senior HR Director with 20+ years UK employment law experience. Private conversation - employee cannot see this.
 
 Use UK English throughout: payslip (not paycheck), holiday (not vacation), CV (not resume), post code (not zip code), redundancy (not layoff), authorise/organise/recognise (not -ize spellings). Use a single dash (-) in text, never double dash (--).
@@ -1740,14 +1753,23 @@ Message context:
 From: ${m.from} | Type: ${m.type} | Source: ${m.source}
 Subject: ${m.subject}
 Message: ${m.body}
+${draftSection}
 
-Be direct and practical. Use bullets for action lists. Label any employee-facing draft clearly as "DRAFT FOR EMPLOYEE:"`;
+Be direct and practical. Use bullets for action lists. Label any new employee-facing draft clearly as "DRAFT FOR EMPLOYEE:"`;
   const reply = await callClaude(history, systemPrompt);
   konoChatHistory[msgId] = konoChatHistory[msgId].filter(h=>h.id!=='typing');
-  konoChatHistory[msgId].push({role:'ai',text:reply||'Sorry, connection issue. Please try again.'});
-  if (reply && (reply.toLowerCase().includes("here's a draft")||reply.toLowerCase().includes('draft reply'))) {
-    m._konoDraft = reply;
-    konoChatHistory[msgId].push({role:'ai',text:`<a onclick="useDraftFromKono('${msgId}')">→ Load into reply box</a>`});
+  if (!reply) { konoChatHistory[msgId].push({role:'ai',text:'Sorry, connection issue. Please try again.'}); renderKonoHistory(msgId); return; }
+  if (reply.startsWith('REPLACE_DRAFT:')) {
+    const newDraft = reply.replace(/^REPLACE_DRAFT:\s*/,'').trim();
+    m._konoDraft = newDraft;
+    if (replyBox) { replyBox.innerHTML = newDraft.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+    konoChatHistory[msgId].push({role:'ai',text:'Done - I\'ve updated the draft in the reply box.'});
+  } else {
+    konoChatHistory[msgId].push({role:'ai',text:reply});
+    if (reply.toLowerCase().includes("here's a draft")||reply.toLowerCase().includes('draft reply')||reply.toLowerCase().includes('draft for employee')) {
+      m._konoDraft = reply;
+      konoChatHistory[msgId].push({role:'ai',text:`<a onclick="useDraftFromKono('${msgId}')">→ Load into reply box</a>`});
+    }
   }
   renderKonoHistory(msgId);
 }
@@ -2766,24 +2788,34 @@ function filterByFolder(id) {
 
 function startNewFolder() {
   const el = document.getElementById('foldersList'); if (!el) return;
+  if (el.querySelector('.folder-name-input')) return;
   const inp = document.createElement('div');
   inp.className = 'folder-ni';
   inp.style.padding = '4px 8px';
-  inp.innerHTML = `<div class="folder-dot" style="background:#6E6E73"></div><input class="folder-name-input" placeholder="Folder name" autofocus>`;
+  inp.innerHTML = `<div class="folder-dot" style="background:#6E6E73"></div><input class="folder-name-input" placeholder="Folder name">`;
   const newBtn = el.querySelector('.folder-new');
   el.insertBefore(inp, newBtn);
   const input = inp.querySelector('input');
   input.focus();
+  let saving = false;
   input.addEventListener('keydown', async e => {
-    if (e.key === 'Enter' && input.value.trim()) {
-      const name = input.value.trim();
-      const color = FOLDER_COLOURS[folders.length % FOLDER_COLOURS.length];
-      const { data } = await sb.from('folders').insert({ company_id: currentProfile.company_id, name, color }).select().single();
-      if (data) folders.push(data);
-      renderFolders();
-    } else if (e.key === 'Escape') { renderFolders(); }
+    if (e.key === 'Escape') { renderFolders(); return; }
+    if (e.key !== 'Enter' || !input.value.trim() || saving) return;
+    saving = true;
+    const name = input.value.trim();
+    const color = FOLDER_COLOURS[folders.length % FOLDER_COLOURS.length];
+    try {
+      if (currentProfile) {
+        const { data } = await sb.from('folders').insert({ company_id: currentProfile.company_id, name, color }).select().single();
+        folders.push(data || { id: 'local-' + Date.now(), name, color, company_id: currentProfile?.company_id });
+      } else {
+        folders.push({ id: 'local-' + Date.now(), name, color });
+      }
+    } catch { folders.push({ id: 'local-' + Date.now(), name, color }); }
+    renderFolders();
+    showToast(`"${name}" folder created`);
   });
-  input.addEventListener('blur', () => { setTimeout(renderFolders, 150); });
+  input.addEventListener('blur', () => { if (!saving) setTimeout(() => { if (!saving) renderFolders(); }, 200); });
 }
 
 function toggleFolderPicker(msgId, e) {
@@ -2802,17 +2834,49 @@ function showToast(msg) {
   setTimeout(() => t.classList.remove('visible'), 2800);
 }
 
+function quickMarkRead(msgId, wasUnread) {
+  const m = msgs.find(x=>x.id===msgId); if (!m) return;
+  m.status = wasUnread ? 'open' : 'new';
+  updateMessageStatus(msgId, m.status);
+  renderMsgs();
+}
+
 function showMsgCtxMenu(e, msgId) {
+  e.preventDefault && e.preventDefault();
   const menu = document.getElementById('msgCtxMenu');
-  const folderItems = folders.length
-    ? folders.map(f=>`<div class="ctx-item" onclick="moveToFolder('${msgId}','${f.id}');closeMsgCtx()"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${f.color};margin-right:6px;"></span>${f.name}</div>`).join('')
-    : `<div class="ctx-item" style="color:var(--ink3);cursor:default;">No folders yet - create one in the sidebar</div>`;
-  const m = msgs.find(x=>x.id===msgId);
-  const unfiled = m?.folder_id ? `<div class="ctx-item" onclick="moveToFolder('${msgId}',null);closeMsgCtx()">Remove from folder</div><div class="ctx-sep"></div>` : '';
-  menu.innerHTML = `<div style="font-size:10px;font-weight:600;color:var(--ink3);padding:4px 12px 2px;letter-spacing:0.06em;text-transform:uppercase;">Move to folder</div>${folderItems}${unfiled ? '<div class="ctx-sep"></div>'+unfiled : ''}`;
+  const m = msgs.find(x=>x.id===msgId); if (!m) return;
+  const isUnread = m.status === 'new';
+  const folderSection = folders.length
+    ? `<div style="font-size:10px;font-weight:600;color:var(--ink3);padding:4px 12px 2px;letter-spacing:0.06em;text-transform:uppercase;">Move to folder</div>`
+      + folders.map(f=>`<div class="ctx-item" onclick="moveToFolder('${msgId}','${f.id}');closeMsgCtx();renderMsgs()"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${f.color};margin-right:7px;"></span>${f.name}${m.folder_id===f.id?' ✓':''}</div>`).join('')
+      + (m.folder_id ? `<div class="ctx-item" style="color:var(--ink3)" onclick="moveToFolder('${msgId}',null);closeMsgCtx();renderMsgs()">Remove from folder</div>` : '')
+    : `<div class="ctx-item" onclick="startNewFolder();closeMsgCtx()">Create a folder...</div>`;
+  menu.innerHTML = `
+    <div class="ctx-item" onclick="openMsg(m=msgs.find(x=>x.id==='${msgId}'));setTimeout(()=>gmSwitchCompose('reply','${msgId}'),80);closeMsgCtx()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>Reply
+    </div>
+    <div class="ctx-item" onclick="openMsg(m=msgs.find(x=>x.id==='${msgId}'));setTimeout(()=>gmSwitchCompose('replyall','${msgId}'),80);closeMsgCtx()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>Reply All
+    </div>
+    <div class="ctx-item" onclick="openMsg(m=msgs.find(x=>x.id==='${msgId}'));setTimeout(()=>gmSwitchCompose('forward','${msgId}'),80);closeMsgCtx()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>Forward
+    </div>
+    <div class="ctx-sep"></div>
+    <div class="ctx-item" onclick="quickMarkRead('${msgId}',${!isUnread});closeMsgCtx()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><circle cx="12" cy="12" r="3" fill="${isUnread?'none':'currentColor'}"/></svg>${isUnread ? 'Mark as read' : 'Mark as unread'}
+    </div>
+    <div class="ctx-item" onclick="updateStatus('${msgId}','resolved');closeMsgCtx()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="20 6 9 17 4 12"/></svg>Mark resolved
+    </div>
+    <div class="ctx-sep"></div>
+    ${folderSection}
+    <div class="ctx-sep"></div>
+    <div class="ctx-item danger" onclick="deleteMsg('${msgId}');closeMsgCtx()">
+      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>Delete
+    </div>`;
   menu.style.display = 'block';
-  menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
-  menu.style.top = Math.min(e.clientY, window.innerHeight - 160) + 'px';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 210) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 260) + 'px';
 }
 function closeMsgCtx() { document.getElementById('msgCtxMenu').style.display = 'none'; }
 
