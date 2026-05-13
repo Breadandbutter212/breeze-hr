@@ -178,8 +178,31 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .ai-rating-btn.rated-down { color: var(--red); background: var(--red-bg); }
 .ai-rating-wrap { display: flex; align-items: center; gap: 2px; margin-left: auto; margin-right: 10px; }
 
-/* THE TEXTAREA — flex:1, takes all remaining compose space */
-.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; flex: 1; min-height: 100px; line-height: 1.65; background: var(--surface); overflow-y: auto; display: block; }
+/* COMPOSE AREA — contenteditable rich text */
+.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); flex: 1; min-height: 100px; line-height: 1.65; background: var(--surface); overflow-y: auto; display: block; cursor: text; white-space: pre-wrap; word-wrap: break-word; }
+.gm-ta[contenteditable]:empty:before { content: attr(data-placeholder); color: var(--ink3); pointer-events: none; display: block; }
+.gm-ta[contenteditable] ul, .gm-ta[contenteditable] ol { padding-left: 22px; margin: 2px 0; }
+.gm-ta[contenteditable] p { margin: 0; }
+
+/* FOLDERS */
+.folders-toggle { display: flex; align-items: center; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.28); padding: 0 8px; margin: 14px 0 5px; cursor: pointer; user-select: none; }
+.folders-toggle:hover { color: rgba(0,0,0,0.5); }
+.folders-arrow { margin-left: auto; transition: transform 0.15s; font-style: normal; font-size: 8px; }
+.folder-ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(0,0,0,0.4); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
+.folder-ni:hover { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.7); }
+.folder-ni.active { background: rgba(0,0,0,0.07); color: #1D1D1F; font-weight: 500; }
+.folder-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+.folder-new { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: var(--r-sm); color: rgba(0,0,0,0.28); cursor: pointer; font-size: 11px; transition: all 0.12s; }
+.folder-new:hover { color: var(--accent); }
+.folder-name-input { border: none; outline: none; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface); flex: 1; padding: 0; }
+
+/* CONTEXT MENU */
+.ctx-menu { position: fixed; z-index: 1000; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 4px; min-width: 150px; }
+.ctx-item { padding: 6px 12px; font-size: 12px; color: var(--ink); border-radius: var(--r-sm); cursor: pointer; }
+.ctx-item:hover { background: var(--surface2); }
+.ctx-item.danger { color: var(--red); }
+.ctx-item.danger:hover { background: var(--red-bg); }
+.ctx-sep { height: 1px; background: var(--border); margin: 3px 4px; }
 
 /* Compose footer — single line */
 .gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--border); }
@@ -291,6 +314,27 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .kono-ta:focus { border-color: var(--accent); background: var(--surface); }
 .kono-send { background: var(--accent); color: white; border: none; border-radius: var(--r-sm); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.12s; }
 .kono-send:hover { opacity: 0.85; }
+
+/* ── ADVISORY SLIDE-UP SHEET ── */
+.advisory-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.28); z-index: 900; opacity: 0; transition: opacity 0.22s; pointer-events: none; }
+.advisory-backdrop.visible { opacity: 1; pointer-events: all; }
+.advisory-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; background: var(--surface); border-radius: 14px 14px 0 0; box-shadow: 0 -8px 40px rgba(0,0,0,0.16); transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.32,0.72,0,1); max-height: 72vh; display: flex; flex-direction: column; overflow: hidden; }
+.advisory-sheet.visible { transform: translateY(0); }
+.advisory-drag { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
+.advisory-head { padding: 12px 20px 10px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
+.advisory-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--red-bg); color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
+.advisory-title { font-size: 14px; font-weight: 600; color: var(--red); flex: 1; }
+.advisory-close { width: 26px; height: 26px; border-radius: 50%; background: var(--surface2); border: none; cursor: pointer; color: var(--ink2); font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.advisory-close:hover { background: var(--border2); }
+.advisory-body { padding: 14px 20px 24px; overflow-y: auto; flex: 1; }
+.advisory-action { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
+.advisory-action:last-child { border-bottom: none; }
+.advisory-bullet { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 5px; flex-shrink: 0; }
+.advisory-action-text { font-size: 12px; color: var(--ink); line-height: 1.6; }
+.advisory-action-text strong { color: var(--red); }
+.advisory-foot { padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
+.advisory-ack { width: 100%; background: var(--red); color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; }
+.advisory-ack:hover { opacity: 0.88; }
 
 /* ══════════════════════
    DOCUMENTS VIEW
@@ -494,6 +538,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Inbox <span class="ni-badge" id="nbNew">3</span>
     </div>
+    <div class="folders-toggle" onclick="toggleFolders()">Folders <em class="folders-arrow" id="foldersArrow">▶</em></div>
+    <div id="foldersList" style="display:none;"></div>
+
     <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('docs',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
@@ -784,7 +831,7 @@ async function onSignedIn(user) {
     if (initEl) initEl.textContent = initials;
     if (nameEl) nameEl.textContent = profile.full_name || user.email;
   }
-  await loadMessages();
+  await Promise.all([loadMessages(), loadFolders()]);
 }
 
 async function signOut() {
@@ -799,6 +846,11 @@ async function signOut() {
 window.addEventListener('load', async () => {
   const { data: { session } } = await sb.auth.getSession();
   if (session) await onSignedIn(session.user);
+});
+
+document.addEventListener('click', () => {
+  const m = document.getElementById('folderCtxMenu');
+  if (m) m.style.display = 'none';
 });
 
 // ── DB OPS ──
@@ -1018,6 +1070,8 @@ function renderMsgs() {
   const list = document.getElementById('msgList');
   let filtered = msgs.filter(m => {
     if (stFilter !== 'all' && m.status !== stFilter) return false;
+    if (activeFolderId && m.folder_id !== activeFolderId) return false;
+    if (!activeFolderId && m.folder_id && folders.length) return false;
     return true;
   });
   list.innerHTML = '';
@@ -1128,10 +1182,7 @@ function openMsg(m) {
   // AI bar — collapsible HR Actions so it doesn't push compose area
   let aiBar = '';
   if (m.aiType==='escalate' && m.draftAnswer) {
-    const actionsHtml = m.hrActions
-      ? `<div id="hrActions-${m.id}" style="display:block;margin-top:6px;padding:8px 10px;background:rgba(255,255,255,0.8);border-radius:var(--r-sm);border-left:3px solid var(--red);font-size:11px;color:var(--ink2);line-height:1.7;">${m.hrActions.split('\n').filter(l=>l.trim()).map(l=>`<div>• ${l.replace(/^[•\-\*]\s?/,'')}</div>`).join('')}</div>`
-      : '';
-    aiBar = `<div class="gm-ai-bar" style="background:#FFF0F0;border-bottom-color:rgba(139,0,0,0.12);"><div class="gm-ai-icon" style="background:var(--red);">⚠</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--red);">Sensitive - read HR advisory before responding</div><div style="font-size:11px;color:var(--ink2);">Acknowledgement draft loaded. Do not send anything further without senior HR review.</div>${actionsHtml}</div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
+    aiBar = `<div class="gm-ai-bar" style="background:#FFF0F0;border-bottom-color:rgba(139,0,0,0.12);"><div class="gm-ai-icon" style="background:var(--red);font-size:11px;">⚠</div><div style="flex:1;"><span style="font-size:11px;font-weight:600;color:var(--red);">Sensitive</span><span style="font-size:11px;color:var(--ink2);margin-left:6px;">Acknowledgement loaded - senior HR must review before anything further is sent</span></div>${m.hrActions?`<button onclick="showAdvisory('${m.id}')" style="font-size:11px;font-weight:500;color:var(--red);background:var(--red-bg);border:1px solid rgba(139,0,0,0.2);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;">View advisory ↑</button>`:''}<div class="gm-ai-chat" style="margin-left:8px;" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
   } else if (m.aiType==='answer' && m.draftAnswer) {
     const reason = m.policyRef
       ? `Based on your <strong>📄 ${m.policyRef}</strong> · ACAS best practice applied`
@@ -1230,24 +1281,24 @@ function openMsg(m) {
 
       <!-- Reply textarea -->
       <div id="gm-reply-pane-${m.id}" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
-        <textarea class="gm-ta" id="replyTa-${m.id}" placeholder="Write your reply..." oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,200)+'px'">${initReply}</textarea>
+        <div class="gm-ta" id="replyTa-${m.id}" contenteditable="true" data-placeholder="Write your reply..." onkeydown="handleReplyKey(event,'${m.id}')">${initReply ? initReply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : ''}</div>
         <div class="gm-compose-foot">
           <button class="gm-send-btn" onclick="sendReply('${m.id}')">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
             Send
           </button>
           <div class="gm-fmt-divider"></div>
-          <button class="gm-fmt-btn" title="Bold" onclick="formatText('bold')"><b>B</b></button>
-          <button class="gm-fmt-btn" title="Italic" onclick="formatText('italic')"><i>I</i></button>
-          <button class="gm-fmt-btn" title="Underline" onclick="formatText('underline')"><u style="font-size:11px;">U</u></button>
+          <button class="gm-fmt-btn" title="Bold (Ctrl+B)" onclick="formatText('bold','${m.id}')"><b>B</b></button>
+          <button class="gm-fmt-btn" title="Italic (Ctrl+I)" onclick="formatText('italic','${m.id}')"><i>I</i></button>
+          <button class="gm-fmt-btn" title="Underline (Ctrl+U)" onclick="formatText('underline','${m.id}')"><u style="font-size:11px;">U</u></button>
           <div class="gm-fmt-divider"></div>
-          <button class="gm-fmt-btn" title="Bullet list" onclick="formatText('insertUnorderedList')">
+          <button class="gm-fmt-btn" title="Bullet list" onclick="formatText('insertUnorderedList','${m.id}')">
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
           </button>
-          <button class="gm-fmt-btn" title="Attach file">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+          <button class="gm-fmt-btn" title="Numbered list" onclick="formatText('insertOrderedList','${m.id}')">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
           </button>
-          <div class="gm-discard" onclick="document.getElementById('replyTa-${m.id}').value=''">Discard</div>
+          <div class="gm-discard" onclick="document.getElementById('replyTa-${m.id}').innerHTML=''">Discard</div>
         </div>
       </div>
 
@@ -1297,7 +1348,7 @@ function gmSwitchCompose(mode, msgId) {
     if (toField) toField.style.display = (mode==='forward'||mode==='replyall') ? 'block' : 'none';
     if (mode==='forward') {
       const ta = document.getElementById(`replyTa-${msgId}`);
-      if (ta && m) ta.value = `\n\n---------- Forwarded message ----------\nFrom: ${m.from}\nSubject: ${m.subject}\n\n${m.body}`;
+      if (ta && m) ta.innerHTML = `<br><br><span style="color:var(--ink3)">---------- Forwarded message ----------<br>From: ${m.from}<br>Subject: ${m.subject}</span><br><br>${m.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}`;
       setTimeout(()=>toInput?.focus(), 30);
     } else if (mode==='replyall') {
       setTimeout(()=>toInput?.focus(), 30);
@@ -1673,7 +1724,8 @@ Be direct and practical. Use bullets for action lists. Label any employee-facing
 function useDraftFromKono(msgId) {
   const m = msgs.find(x=>x.id===msgId); if(!m||!m._konoDraft) return;
   switchCompose('reply',msgId);
-  const ta = document.getElementById('replyTa-'+msgId); if(ta){ta.value=m._konoDraft;ta.focus();}
+  const ta = document.getElementById('replyTa-'+msgId);
+  if(ta){ ta.innerHTML = m._konoDraft.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); ta.focus(); }
 }
 
 function popOutMsg(msgId) {
@@ -1698,11 +1750,11 @@ function updateStatus(msgId,val) { const m=msgs.find(x=>x.id===msgId); if(!m)ret
 async function sendReply(msgId) {
   const m = msgs.find(x=>x.id===msgId);
   const ta = document.getElementById('replyTa-'+msgId);
-  if (!ta||!ta.value.trim()) return;
-  const text = ta.value.trim();
-  await saveResponse(msgId, m.draftAnswer||'', text);
+  if (!ta||!ta.innerText.trim()) return;
+  const text = ta.innerHTML.trim();
+  await saveResponse(msgId, m.draftAnswer||'', ta.innerText.trim());
   m.thread.push({dir:'out',sender:'HR',time:'Just now',text});
-  ta.value = '';
+  ta.innerHTML = '';
   if (m.status!=='resolved') { m.status='inprog'; await updateMessageStatus(msgId,'inprog'); }
   // Refresh the message view to show the new thread item
   openMsg(m);
@@ -2569,12 +2621,10 @@ function spCopyLink(url) {
 }
 
 function spInsertToReply(title, url) {
-  // Insert the document reference into the active reply textarea
   const ta = selMsg ? document.getElementById('replyTa-' + selMsg.id) : null;
   if (ta) {
-    const ref = `\n\nYou can find the relevant document here: ${title}\n${url}`;
-    ta.value += ref;
     ta.focus();
+    document.execCommand('insertHTML', false, `<br><br>You can find the relevant document here: ${title}<br>${url}`);
     toggleSharePoint();
   } else {
     alert('Open a message first, then use Insert into reply');
@@ -2616,6 +2666,154 @@ setInterval(async () => {
     if (badge) { badge.style.background = '#FF3B30'; setTimeout(() => badge.style.background = '', 2000); }
   }
 }, 30000);
+
+// ── RICH TEXT FORMATTING ──
+function formatText(cmd, msgId) {
+  const ta = msgId ? document.getElementById('replyTa-'+msgId) : document.querySelector('.gm-ta[contenteditable]');
+  if (ta) ta.focus();
+  document.execCommand(cmd, false, null);
+}
+
+function handleReplyKey(e, msgId) {
+  if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
+    if (e.key === 'b') { e.preventDefault(); formatText('bold', msgId); }
+    if (e.key === 'i') { e.preventDefault(); formatText('italic', msgId); }
+    if (e.key === 'u') { e.preventDefault(); formatText('underline', msgId); }
+  }
+}
+
+// ── FOLDERS ──
+let folders = [], activeFolderId = null, foldersOpen = false, ctxFolderId = null;
+const FOLDER_COLOURS = ['#0066CC','#1A7A3C','#7A4A0A','#4B0082','#8B0000','#6E6E73'];
+
+async function loadFolders() {
+  if (!currentProfile) return;
+  const { data } = await sb.from('folders').select('*').eq('company_id', currentProfile.company_id).order('created_at');
+  if (data) { folders = data; renderFolders(); }
+}
+
+function renderFolders() {
+  const el = document.getElementById('foldersList'); if (!el) return;
+  const items = folders.map(f => {
+    const count = msgs.filter(m => m.folder_id === f.id).length;
+    return `<div class="folder-ni${activeFolderId===f.id?' active':''}" data-fid="${f.id}" onclick="filterByFolder('${f.id}')" oncontextmenu="folderCtxMenu(event,'${f.id}');return false;">
+      <div class="folder-dot" style="background:${f.color||'#6E6E73'}"></div>
+      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
+      ${count ? `<span class="ni-badge" style="background:rgba(0,0,0,0.14);color:var(--ink2);">${count}</span>` : ''}
+    </div>`;
+  }).join('');
+  el.innerHTML = items + `<div class="folder-new" onclick="startNewFolder()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New folder</div>`;
+}
+
+function toggleFolders() {
+  foldersOpen = !foldersOpen;
+  const el = document.getElementById('foldersList');
+  const arrow = document.getElementById('foldersArrow');
+  if (el) el.style.display = foldersOpen ? 'block' : 'none';
+  if (arrow) arrow.style.transform = foldersOpen ? 'rotate(90deg)' : 'rotate(0deg)';
+}
+
+function filterByFolder(id) {
+  activeFolderId = activeFolderId === id ? null : id;
+  renderFolders(); renderMsgs();
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  if (!activeFolderId) document.querySelector('.ni[onclick*="intake"]')?.classList.add('active');
+}
+
+function startNewFolder() {
+  const el = document.getElementById('foldersList'); if (!el) return;
+  const inp = document.createElement('div');
+  inp.className = 'folder-ni';
+  inp.style.padding = '4px 8px';
+  inp.innerHTML = `<div class="folder-dot" style="background:#6E6E73"></div><input class="folder-name-input" placeholder="Folder name" autofocus>`;
+  const newBtn = el.querySelector('.folder-new');
+  el.insertBefore(inp, newBtn);
+  const input = inp.querySelector('input');
+  input.focus();
+  input.addEventListener('keydown', async e => {
+    if (e.key === 'Enter' && input.value.trim()) {
+      const name = input.value.trim();
+      const color = FOLDER_COLOURS[folders.length % FOLDER_COLOURS.length];
+      const { data } = await sb.from('folders').insert({ company_id: currentProfile.company_id, name, color }).select().single();
+      if (data) folders.push(data);
+      renderFolders();
+    } else if (e.key === 'Escape') { renderFolders(); }
+  });
+  input.addEventListener('blur', () => { setTimeout(renderFolders, 150); });
+}
+
+function folderCtxMenu(e, fid) {
+  ctxFolderId = fid;
+  const menu = document.getElementById('folderCtxMenu');
+  menu.style.display = 'block';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 100) + 'px';
+}
+
+function closeFolderCtx() { document.getElementById('folderCtxMenu').style.display = 'none'; }
+
+async function renameFolder() {
+  closeFolderCtx();
+  const f = folders.find(x=>x.id===ctxFolderId); if (!f) return;
+  const name = prompt('Rename folder:', f.name); if (!name || !name.trim() || name===f.name) return;
+  await sb.from('folders').update({ name: name.trim() }).eq('id', f.id);
+  f.name = name.trim(); renderFolders();
+}
+
+async function deleteFolder() {
+  closeFolderCtx();
+  const f = folders.find(x=>x.id===ctxFolderId); if (!f) return;
+  if (!confirm(`Delete "${f.name}"? Messages will move back to inbox.`)) return;
+  await sb.from('folders').delete().eq('id', f.id);
+  msgs.forEach(m => { if (m.folder_id===f.id) m.folder_id=null; });
+  folders = folders.filter(x=>x.id!==ctxFolderId);
+  if (activeFolderId===ctxFolderId) activeFolderId=null;
+  renderFolders(); renderMsgs();
+}
+
+async function moveToFolder(msgId, folderId) {
+  const m = msgs.find(x=>x.id===msgId); if (!m) return;
+  m.folder_id = folderId || null;
+  if (m._dbId) await sb.from('messages').update({ folder_id: folderId||null }).eq('id', m._dbId);
+  renderFolders(); renderMsgs();
+}
+
+function showAdvisory(msgId) {
+  const m = msgs.find(x=>x.id===msgId);
+  if (!m || !m.hrActions) return;
+  const actions = m.hrActions.split('\n').filter(l=>l.trim()).map(l=>l.replace(/^[•\-\*]\s?/,'').trim()).filter(Boolean);
+  document.getElementById('advisoryBody').innerHTML = actions.map(a => {
+    const isEscalate = a.toUpperCase().includes('ESCALATE') || a.toUpperCase().includes('LEGAL') || a.toUpperCase().includes('SENIOR HR');
+    return `<div class="advisory-action"><div class="advisory-bullet" style="${isEscalate?'background:var(--red)':''}"></div><div class="advisory-action-text">${isEscalate?`<strong>${a}</strong>`:a}</div></div>`;
+  }).join('');
+  document.getElementById('advisoryBackdrop').classList.add('visible');
+  document.getElementById('advisorySheet').classList.add('visible');
+}
+
+function closeAdvisory() {
+  document.getElementById('advisoryBackdrop').classList.remove('visible');
+  document.getElementById('advisorySheet').classList.remove('visible');
+}
 </script>
+
+<div id="folderCtxMenu" class="ctx-menu" style="display:none;" onmouseleave="closeFolderCtx()">
+  <div class="ctx-item" onclick="renameFolder()">Rename</div>
+  <div class="ctx-sep"></div>
+  <div class="ctx-item danger" onclick="deleteFolder()">Delete</div>
+</div>
+
+<div class="advisory-backdrop" id="advisoryBackdrop" onclick="closeAdvisory()"></div>
+<div class="advisory-sheet" id="advisorySheet">
+  <div class="advisory-drag"></div>
+  <div class="advisory-head">
+    <div class="advisory-icon">⚠</div>
+    <div class="advisory-title">HR Advisory - do not respond yet</div>
+    <button class="advisory-close" onclick="closeAdvisory()">✕</button>
+  </div>
+  <div class="advisory-body" id="advisoryBody"></div>
+  <div class="advisory-foot">
+    <button class="advisory-ack" onclick="closeAdvisory()">Acknowledged - close</button>
+  </div>
+</div>
 </body>
 </html>
