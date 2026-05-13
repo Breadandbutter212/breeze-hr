@@ -849,8 +849,7 @@ window.addEventListener('load', async () => {
 });
 
 document.addEventListener('click', () => {
-  const m = document.getElementById('folderCtxMenu');
-  if (m) m.style.display = 'none';
+  ['folderCtxMenu','msgCtxMenu'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
 });
 
 // ── DB OPS ──
@@ -1081,9 +1080,11 @@ function renderMsgs() {
     const isUnread = m.status === 'new';
     div.className = 'msg-item' + (selMsg && selMsg.id===m.id ? ' active':'') + (isUnread ? ' unread-item':'');
     div.onclick = () => openMsg(m);
+    div.oncontextmenu = (e) => { e.preventDefault(); showMsgCtxMenu(e, m.id); };
+    const folderDot = m.folder_id ? (() => { const f=folders.find(x=>x.id===m.folder_id); return f?`<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${f.color};margin-right:3px;vertical-align:middle;"></span>`:'' })() : '';
     div.innerHTML = `
       <div class="mi-row1">
-        <div class="mi-name">${isUnread?`<span class="unread-dot"></span>`:''}${m.from}</div>
+        <div class="mi-name">${isUnread?`<span class="unread-dot"></span>`:''}${folderDot}${m.from}</div>
         <div class="mi-time">${m.time}</div>
       </div>
       <div class="mi-subject">${m.subject}</div>
@@ -1217,6 +1218,7 @@ function openMsg(m) {
       <div class="gm-action-btns">
         <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
         <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
+        <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="moveToFolder('${m.id}',this.value||null)"><option value="">📁 No folder</option>${folders.map(f=>`<option value="${f.id}" ${m.folder_id===f.id?'selected':''}>${f.name}</option>`).join('')}</select>
         <button class="gm-icon-btn" title="Pop out" onclick="popOutMsg('${m.id}')" style="color:var(--ink3);">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </button>
@@ -2742,6 +2744,20 @@ function startNewFolder() {
   input.addEventListener('blur', () => { setTimeout(renderFolders, 150); });
 }
 
+function showMsgCtxMenu(e, msgId) {
+  const menu = document.getElementById('msgCtxMenu');
+  const folderItems = folders.length
+    ? folders.map(f=>`<div class="ctx-item" onclick="moveToFolder('${msgId}','${f.id}');closeMsgCtx()"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${f.color};margin-right:6px;"></span>${f.name}</div>`).join('')
+    : `<div class="ctx-item" style="color:var(--ink3);cursor:default;">No folders yet - create one in the sidebar</div>`;
+  const m = msgs.find(x=>x.id===msgId);
+  const unfiled = m?.folder_id ? `<div class="ctx-item" onclick="moveToFolder('${msgId}',null);closeMsgCtx()">Remove from folder</div><div class="ctx-sep"></div>` : '';
+  menu.innerHTML = `<div style="font-size:10px;font-weight:600;color:var(--ink3);padding:4px 12px 2px;letter-spacing:0.06em;text-transform:uppercase;">Move to folder</div>${folderItems}${unfiled ? '<div class="ctx-sep"></div>'+unfiled : ''}`;
+  menu.style.display = 'block';
+  menu.style.left = Math.min(e.clientX, window.innerWidth - 200) + 'px';
+  menu.style.top = Math.min(e.clientY, window.innerHeight - 160) + 'px';
+}
+function closeMsgCtx() { document.getElementById('msgCtxMenu').style.display = 'none'; }
+
 function folderCtxMenu(e, fid) {
   ctxFolderId = fid;
   const menu = document.getElementById('folderCtxMenu');
@@ -2795,6 +2811,8 @@ function closeAdvisory() {
   document.getElementById('advisorySheet').classList.remove('visible');
 }
 </script>
+
+<div id="msgCtxMenu" class="ctx-menu" style="display:none;"></div>
 
 <div id="folderCtxMenu" class="ctx-menu" style="display:none;" onmouseleave="closeFolderCtx()">
   <div class="ctx-item" onclick="renameFolder()">Rename</div>
