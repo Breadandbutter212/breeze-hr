@@ -543,9 +543,17 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   </div>
   <div class="nav">
     <div class="nav-label">Workspace</div>
-    <div class="ni active" onclick="showView('intake',this)">
+    <div class="ni active" id="nav-inbox" onclick="setInboxView('inbox',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Inbox <span class="ni-badge" id="nbNew">3</span>
+    </div>
+    <div class="ni" id="nav-sent" onclick="setInboxView('sent',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+      Sent Items
+    </div>
+    <div class="ni" id="nav-drafts" onclick="setInboxView('drafts',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
+      Drafts <span class="ni-badge" id="nbDrafts" style="display:none"></span>
     </div>
     <div class="folders-toggle" onclick="toggleFolders()">
       Folders
@@ -607,7 +615,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <button class="mc-chip active" onclick="setStatus('all',this)">All</button>
         <button class="mc-chip" onclick="setStatus('new',this)">New <span id="cn">3</span></button>
         <button class="mc-chip" onclick="setStatus('open',this)">Open</button>
-        <button class="mc-chip" onclick="setStatus('inprog',this)">Sent</button>
+        <button class="mc-chip" onclick="setStatus('inprog',this)">In progress</button>
         <button class="mc-chip" onclick="setStatus('resolved',this)">Done</button>
       </div>
     </div>
@@ -1089,19 +1097,27 @@ const processes = [
 ];
 
 // ── INBOX ──
-let selMsg=null, srcFilter='all', stFilter='all';
+let selMsg=null, srcFilter='all', stFilter='all', inboxView='inbox';
 let folders=[], activeFolderId=null, foldersOpen=false, ctxFolderId=null;
 let autoSort = localStorage.getItem('breeze_autosort') !== 'false';
 const konoChatHistory = {};
 
 function renderMsgs() {
   const list = document.getElementById('msgList');
+  const hasSent = m => m.thread && m.thread.some(t => t.dir === 'out');
   let filtered = msgs.filter(m => {
+    if (inboxView === 'sent') return hasSent(m);
+    if (inboxView === 'drafts') return !hasSent(m) && (m.status === 'new' || m.status === 'open');
+    // inbox view
     if (stFilter !== 'all' && m.status !== stFilter) return false;
     if (activeFolderId && m.folder_id !== activeFolderId) return false;
     if (!activeFolderId && m.folder_id && folders.length) return false;
     return true;
   });
+  // Update drafts badge
+  const draftCount = msgs.filter(m => !hasSent(m) && (m.status==='new'||m.status==='open')).length;
+  const draftBadge = document.getElementById('nbDrafts');
+  if (draftBadge) { draftBadge.textContent = draftCount; draftBadge.style.display = draftCount ? '' : 'none'; }
   list.innerHTML = '';
   filtered.forEach(m => {
     const div = document.createElement('div');
@@ -1128,6 +1144,18 @@ function renderMsgs() {
   const n = msgs.filter(m=>m.status==='new').length;
   document.getElementById('nbNew').textContent = n;
   document.getElementById('cn').textContent = n;
+}
+
+function setInboxView(view, el) {
+  inboxView = view;
+  stFilter = 'all';
+  activeFolderId = null;
+  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
+  el.classList.add('active');
+  document.querySelectorAll('.mc-chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('.mc-chip')?.classList.add('active');
+  showView('intake', el);
+  renderMsgs();
 }
 
 function setStatus(s,el) {
@@ -1184,39 +1212,25 @@ function openMsg(m) {
     'General':'background:var(--surface2);color:var(--ink2);'
   }[m.type] || 'background:var(--surface2);color:var(--ink2);';
 
-  // Thread — simple message bubbles inside scroll area, like Gmail
+  // Thread — Outlook-style flat conversation, all messages full-width
   let threadHtml = '';
   if (m.thread.length) {
-    const items = m.thread.map((t, i) => {
-      const isLast = i === m.thread.length - 1;
-      const uid = `gt-${m.id}-${i}`;
-      if (isLast) {
-        // Last message always shown in full
-        return `<div style="padding:10px 20px;border-top:1px solid var(--border);">
-          <div style="font-size:11px;color:var(--ink3);margin-bottom:6px;font-weight:500;">${t.sender} · ${t.time}</div>
-          <div style="font-size:13px;color:var(--ink);line-height:1.7;padding:10px 14px;border-radius:var(--r);background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};border:1px solid ${t.dir==='out'?'var(--accent-mid)':'var(--border)'};">${t.text}</div>
-        </div>`;
-      }
-      // Previous messages — compact row, click to expand
-      return `<div style="border-top:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:8px;padding:7px 20px;cursor:pointer;" onclick="
-          const b=document.getElementById('${uid}');
-          const open=b.style.display!=='none';
-          b.style.display=open?'none':'block';
-          this.querySelector('svg').style.transform=open?'rotate(0deg)':'rotate(90deg)';
-        ">
-          <svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.12s;transform:rotate(0deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
-          <div style="width:20px;height:20px;border-radius:50%;background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};color:${t.dir==='out'?'var(--accent)':'var(--ink2)'};display:flex;align-items:center;justify-content:center;font-size:8px;font-weight:700;flex-shrink:0;">${t.dir==='out'?'HR':m.initials.substring(0,2)}</div>
-          <span style="font-size:12px;font-weight:500;color:var(--ink);flex-shrink:0;">${t.sender.split(' ')[0]}</span>
-          <span style="font-size:12px;color:var(--ink3);flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.text.substring(0,80)}${t.text.length>80?'…':''}</span>
-          <span style="font-size:11px;color:var(--ink3);flex-shrink:0;">${t.time}</span>
+    threadHtml = m.thread.map(t => {
+      const isOut = t.dir === 'out';
+      return `<div style="border-top:1px solid var(--border);padding:14px 20px;">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+          <div style="width:28px;height:28px;border-radius:50%;background:${isOut?'var(--accent)':'#E0E0E5'};color:${isOut?'white':'var(--ink2)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${isOut?'HR':m.initials.substring(0,2)}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px;">
+              ${t.sender}
+              ${isOut?'<span style="font-size:10px;font-weight:500;color:var(--accent);background:var(--accent-bg);padding:1px 7px;border-radius:20px;">Sent</span>':''}
+            </div>
+            <div style="font-size:11px;color:var(--ink3);">${t.time}</div>
+          </div>
         </div>
-        <div id="${uid}" style="display:none;padding:0 20px 10px;">
-          <div style="font-size:13px;color:var(--ink);line-height:1.7;padding:10px 14px;border-radius:var(--r);background:${t.dir==='out'?'var(--accent-bg)':'var(--surface2)'};border:1px solid ${t.dir==='out'?'var(--accent-mid)':'var(--border)'};">${t.text}</div>
-        </div>
+        <div style="font-size:13px;color:var(--ink);line-height:1.75;white-space:pre-wrap;padding-left:38px;">${t.text}</div>
       </div>`;
     }).join('');
-    threadHtml = items;
   }
 
   // AI bar — collapsible HR Actions so it doesn't push compose area
@@ -1331,14 +1345,7 @@ function openMsg(m) {
         </div>
       </div>
 
-      <!-- Reply textarea / sent state -->
-      ${m._sentAt && (Date.now()-m._sentAt)<10000 ? `
-      <div id="gm-reply-pane-${m.id}" style="flex:1;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;background:var(--surface);">
-        <div style="display:flex;align-items:center;gap:8px;color:var(--green);font-size:13px;font-weight:500;">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Reply sent
-        </div>
-        <button onclick="m._sentAt=0;openMsg(msgs.find(x=>x.id==='${m.id}'))" style="font-size:12px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:5px 14px;cursor:pointer;font-family:inherit;">Reply again</button>
-      </div>` : `
+      <!-- Reply textarea -->
       <div id="gm-reply-pane-${m.id}" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
         <div class="gm-ta" id="replyTa-${m.id}" contenteditable="true" data-placeholder="Write your reply..." onkeydown="handleReplyKey(event,'${m.id}')">${initReply ? initReply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : ''}</div>
         <div class="gm-compose-foot">
@@ -1359,7 +1366,7 @@ function openMsg(m) {
           </button>
           <div class="gm-discard" onclick="document.getElementById('replyTa-${m.id}').innerHTML=''">Discard</div>
         </div>
-      </div>`}
+      </div>
 
       <!-- Kono pane -->
       <div class="kono-pane" id="konoPane-${m.id}">
@@ -1841,12 +1848,13 @@ async function sendReply(msgId) {
   const text = ta.innerHTML.trim();
   await saveResponse(msgId, m.draftAnswer||'', ta.innerText.trim());
   m.thread.push({dir:'out',sender:'HR',time:'Just now',text});
-  m._sentAt = Date.now();
   ta.innerHTML = '';
   if (m.status!=='resolved') { m.status='inprog'; await updateMessageStatus(msgId,'inprog'); }
   openMsg(m);
   renderMsgs();
   showToast('Reply sent');
+  // Scroll thread to bottom after render
+  setTimeout(()=>{ const s=document.querySelector('.gm-scroll'); if(s) s.scrollTop=s.scrollHeight; },50);
 }
 
 async function resolveM(msgId) {
