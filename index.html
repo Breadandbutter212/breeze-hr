@@ -140,7 +140,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; margin-left: auto; }
 
 /* Message body — compact at top, scrollable if long */
-.gm-body { padding: 12px 20px 10px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; max-height: 100px; overflow-y: auto; }
+.gm-body { padding: 12px 20px 10px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
 
 /* gm-detail — full height flex column */
 .gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
@@ -2895,6 +2895,8 @@ function closeMsgCtx() { document.getElementById('msgCtxMenu').style.display = '
 function folderCtxMenu(e, fid) {
   ctxFolderId = fid;
   const menu = document.getElementById('folderCtxMenu');
+  menu.querySelector('#fctxRename').onclick = (ev) => { ev.stopPropagation(); closeFolderCtx(); renameFolder(fid); };
+  menu.querySelector('#fctxDelete').onclick = (ev) => { ev.stopPropagation(); closeFolderCtx(); deleteFolder(fid); };
   menu.style.display = 'block';
   menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
   menu.style.top = Math.min(e.clientY, window.innerHeight - 100) + 'px';
@@ -2902,17 +2904,14 @@ function folderCtxMenu(e, fid) {
 
 function closeFolderCtx() { document.getElementById('folderCtxMenu').style.display = 'none'; }
 
-async function renameFolder() {
-  closeFolderCtx();
-  const f = folders.find(x=>x.id===ctxFolderId); if (!f) return;
+async function renameFolder(fid) {
+  const f = folders.find(x=>x.id===fid); if (!f) return;
   const name = prompt('Rename folder:', f.name); if (!name || !name.trim() || name===f.name) return;
-  await sb.from('folders').update({ name: name.trim() }).eq('id', f.id);
+  try { await sb.from('folders').update({ name: name.trim() }).eq('id', f.id); } catch(e) {}
   f.name = name.trim(); renderFolders();
 }
 
-async function deleteFolder() {
-  const fid = ctxFolderId;
-  closeFolderCtx();
+async function deleteFolder(fid) {
   const f = folders.find(x=>x.id===fid); if (!f) return;
   if (!confirm(`Delete "${f.name}"? Messages will move back to inbox.`)) return;
   try { await sb.from('folders').delete().eq('id', fid); } catch(e) {}
@@ -2926,7 +2925,12 @@ async function deleteFolder() {
 async function moveToFolder(msgId, folderId) {
   const m = msgs.find(x=>x.id===msgId); if (!m) return;
   m.folder_id = folderId || null;
-  if (m._dbId) await sb.from('messages').update({ folder_id: folderId||null }).eq('id', m._dbId);
+  try { if (m._dbId) await sb.from('messages').update({ folder_id: folderId||null }).eq('id', m._dbId); } catch(e) {}
+  if (folderId) {
+    activeFolderId = folderId;
+    const f = folders.find(x=>x.id===folderId);
+    if (f) showToast(`Moved to ${f.name}`);
+  }
   renderFolders(); renderMsgs();
 }
 
@@ -2962,9 +2966,9 @@ function closeAdvisory() {
 <div id="msgCtxMenu" class="ctx-menu" style="display:none;"></div>
 
 <div id="folderCtxMenu" class="ctx-menu" style="display:none;">
-  <div class="ctx-item" onclick="renameFolder()">Rename</div>
+  <div id="fctxRename" class="ctx-item">Rename</div>
   <div class="ctx-sep"></div>
-  <div class="ctx-item danger" onclick="deleteFolder()">Delete</div>
+  <div id="fctxDelete" class="ctx-item danger">Delete</div>
 </div>
 
 <div class="advisory-backdrop" id="advisoryBackdrop" onclick="closeAdvisory()"></div>
