@@ -50,25 +50,25 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 /* ── SIDEBAR ── */
 .sidebar {
   width: 220px; flex-shrink: 0;
-  background: #F5F0E8;
+  background: #1B2D50;
   display: flex; flex-direction: column;
-  border-right: 1px solid rgba(0,0,0,0.08);
+  border-right: none;
 }
-.sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(0,0,0,0.06); display: flex; align-items: center; gap: 10px; }
-.logo-icon { width: 28px; height: 28px; background: #1D1D1F; border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.logo-name { font-size: 15px; font-weight: 600; color: #1D1D1F; letter-spacing: -0.03em; }
-.logo-sub { font-size: 9px; color: rgba(0,0,0,0.3); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
+.sidebar-logo { padding: 20px 16px 16px; border-bottom: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 28px; height: 28px; background: rgba(255,255,255,0.15); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.logo-name { font-size: 15px; font-weight: 600; color: white; letter-spacing: -0.03em; }
+.logo-sub { font-size: 9px; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
 .nav { padding: 10px 10px; flex: 1; }
-.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.28); padding: 0 8px; margin: 14px 0 5px; }
+.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.28); padding: 0 8px; margin: 14px 0 5px; }
 .nav-label:first-child { margin-top: 4px; }
-.ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(0,0,0,0.4); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
-.ni:hover { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.7); }
-.ni.active { background: rgba(0,0,0,0.07); color: #1D1D1F; font-weight: 500; }
-.ni svg { flex-shrink: 0; opacity: 0.45; }
-.ni.active svg { opacity: 0.9; }
-.ni-badge { margin-left: auto; background: #1D1D1F; color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
-.sidebar-foot { padding: 12px; border-top: 1px solid rgba(0,0,0,0.06); }
-.int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(0,0,0,0.04); font-size: 11px; color: rgba(0,0,0,0.4); }
+.ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.45); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
+.ni:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+.ni.active { background: rgba(255,255,255,0.12); color: white; font-weight: 500; }
+.ni svg { flex-shrink: 0; opacity: 0.5; }
+.ni.active svg { opacity: 1; }
+.ni-badge { margin-left: auto; background: #4D8EE8; color: white; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.07); }
+.int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.06); font-size: 11px; color: rgba(255,255,255,0.4); }
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 
@@ -190,16 +190,16 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .gm-ta[contenteditable] p { margin: 0; }
 
 /* FOLDERS */
-.folders-toggle { display: flex; align-items: center; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(0,0,0,0.28); padding: 0 8px; margin: 14px 0 5px; cursor: pointer; user-select: none; }
-.folders-toggle:hover { color: rgba(0,0,0,0.5); }
+.folders-toggle { display: flex; align-items: center; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.28); padding: 0 8px; margin: 14px 0 5px; cursor: pointer; user-select: none; }
+.folders-toggle:hover { color: rgba(255,255,255,0.5); }
 .folders-arrow { margin-left: auto; transition: transform 0.15s; font-style: normal; font-size: 8px; }
-.folder-ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(0,0,0,0.4); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
-.folder-ni:hover { background: rgba(0,0,0,0.05); color: rgba(0,0,0,0.7); }
-.folder-ni.active { background: rgba(0,0,0,0.07); color: #1D1D1F; font-weight: 500; }
+.folder-ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.45); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
+.folder-ni:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
+.folder-ni.active { background: rgba(255,255,255,0.12); color: white; font-weight: 500; }
 .folder-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.folder-new { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: var(--r-sm); color: rgba(0,0,0,0.28); cursor: pointer; font-size: 11px; transition: all 0.12s; }
-.folder-new:hover { color: var(--accent); }
-.folder-name-input { border: none; outline: none; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface); flex: 1; padding: 0; }
+.folder-new { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.3); cursor: pointer; font-size: 11px; transition: all 0.12s; }
+.folder-new:hover { color: #7EB8FF; }
+.folder-name-input { border: none; outline: none; font-size: 12px; font-family: inherit; color: white; background: transparent; flex: 1; padding: 0; }
 
 /* CONTEXT MENU */
 .ctx-menu { position: fixed; z-index: 1000; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 4px; min-width: 150px; }
@@ -586,10 +586,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="sidebar-foot">
     <div class="int-pill"><div class="live-dot"></div>Email connected</div>
     <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:4px 8px;">
-      <div style="width:24px;height:24px;border-radius:50%;background:#1D1D1F;color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;" id="userInitials">DG</div>
+      <div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;" id="userInitials">DG</div>
       <div style="flex:1;min-width:0;">
-        <div style="font-size:11px;font-weight:500;color:rgba(0,0,0,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="userDisplayName">Dougie Gordon</div>
-        <div style="font-size:10px;color:rgba(0,0,0,0.3);cursor:pointer;" onclick="signOut()">Sign out</div>
+        <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="userDisplayName">Dougie Gordon</div>
+        <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="signOut()">Sign out</div>
       </div>
     </div>
   </div>
@@ -643,9 +643,13 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div class="lib-scroll" id="tmplList"></div>
       <label class="upload-zone" style="cursor:pointer;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;margin:0 auto 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        Upload template (.docx or .txt)
+        Upload template (.docx, .txt or .pdf)
         <input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)">
       </label>
+      <div style="margin:8px 4px 0;padding:8px 10px;background:var(--accent-bg);border-radius:var(--r-sm);border-left:3px solid var(--accent);">
+        <div style="font-size:10px;font-weight:600;color:var(--accent);margin-bottom:3px;">Placeholder format</div>
+        <div style="font-size:10px;color:var(--ink2);line-height:1.6;">Use <code style="background:white;padding:1px 4px;border-radius:3px;font-size:10px;">{field_name}</code> or <code style="background:white;padding:1px 4px;border-radius:3px;font-size:10px;">[FIELD NAME]</code> in your document for each field Breeze HR should ask for.<br>e.g. <em>Dear {employee_name}, your new salary is {new_salary}.</em></div>
+      </div>
     </div>
     <div class="gen-area">
       <div class="gen-empty" id="genEmpty">
@@ -1595,10 +1599,15 @@ EMPLOYEE-FACING DRAFT:
   These phrases mean the draft is unfinished. An unfinished draft stays in HR Actions, not in the reply box.
 
 - FOR UNKNOWN SPECIFICS — use a [PLACEHOLDER] in square brackets that HR fills in before sending:
-  If the company pension match limit is unknown → draft says "The company matches contributions up to [X%]"
-  If notice pay calculation needs verifying → draft says "Your notice pay will be £[AMOUNT] per week"
+  If the company pension match limit is unknown → draft says "The company matches up to [X%]" — nothing else about it.
+  If notice pay needs verifying → draft says "Your notice pay will be £[AMOUNT] per week"
   If contract terms need checking → draft says "Your notice period is [X weeks] as per your contract"
   HR sees the bracket, looks it up, fills it in, then sends. One email. No follow-up needed.
+
+- CRITICAL RULE ON PLACEHOLDERS: When you use a [placeholder], do NOT also write any follow-up promise about it.
+  WRONG: "The company matches up to [X%] — I'll confirm the exact figure and get back to you."
+  RIGHT: "The company matches up to [X%]." — stop there. HR fills in X% before sending.
+  The placeholder IS the resolution. Never combine it with "I'll check", "I'll confirm", or "I'll get back to you".
 
 - RULE: The draft = what goes out the door today, with placeholders filled in. HR Actions = what HR checks before sending. Never blur the two. A draft that says "I'll check" is not a draft — it's a placeholder for a draft.
 
@@ -2895,8 +2904,7 @@ function closeMsgCtx() { document.getElementById('msgCtxMenu').style.display = '
 function folderCtxMenu(e, fid) {
   ctxFolderId = fid;
   const menu = document.getElementById('folderCtxMenu');
-  menu.querySelector('#fctxRename').onclick = (ev) => { ev.stopPropagation(); closeFolderCtx(); renameFolder(fid); };
-  menu.querySelector('#fctxDelete').onclick = (ev) => { ev.stopPropagation(); closeFolderCtx(); deleteFolder(fid); };
+  menu.dataset.fid = fid;
   menu.style.display = 'block';
   menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
   menu.style.top = Math.min(e.clientY, window.innerHeight - 100) + 'px';
@@ -2966,9 +2974,9 @@ function closeAdvisory() {
 <div id="msgCtxMenu" class="ctx-menu" style="display:none;"></div>
 
 <div id="folderCtxMenu" class="ctx-menu" style="display:none;">
-  <div id="fctxRename" class="ctx-item">Rename</div>
+  <div class="ctx-item" onclick="(function(){const fid=document.getElementById('folderCtxMenu').dataset.fid;closeFolderCtx();renameFolder(fid);})()">Rename</div>
   <div class="ctx-sep"></div>
-  <div id="fctxDelete" class="ctx-item danger">Delete</div>
+  <div class="ctx-item danger" onclick="(function(){const fid=document.getElementById('folderCtxMenu').dataset.fid;closeFolderCtx();deleteFolder(fid);})()">Delete</div>
 </div>
 
 <div class="advisory-backdrop" id="advisoryBackdrop" onclick="closeAdvisory()"></div>
