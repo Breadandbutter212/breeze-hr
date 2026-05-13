@@ -336,6 +336,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .advisory-ack { width: 100%; background: var(--red); color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; }
 .advisory-ack:hover { opacity: 0.88; }
 
+/* TOAST */
+#breezeToast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(10px); background:#1D1D1F; color:white; font-size:12px; font-weight:500; padding:8px 18px; border-radius:20px; opacity:0; pointer-events:none; transition:all 0.22s; z-index:950; white-space:nowrap; }
+#breezeToast.visible { opacity:1; transform:translateX(-50%) translateY(0); }
+
 /* ══════════════════════
    DOCUMENTS VIEW
 ══════════════════════ */
@@ -538,8 +542,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
       Inbox <span class="ni-badge" id="nbNew">3</span>
     </div>
-    <div class="folders-toggle" onclick="toggleFolders()">Folders <em class="folders-arrow" id="foldersArrow">▶</em></div>
-    <div id="foldersList" style="display:none;"></div>
+    <div class="folders-toggle" onclick="toggleFolders()">
+      Folders
+      <button onclick="event.stopPropagation();startNewFolder()" title="New folder" style="margin-left:auto;margin-right:4px;background:none;border:none;cursor:pointer;color:rgba(0,0,0,0.3);font-size:16px;line-height:1;padding:0 2px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='rgba(0,0,0,0.3)'">+</button>
+      <em class="folders-arrow" id="foldersArrow" style="transform:rotate(90deg)">▶</em>
+    </div>
+    <div id="foldersList"></div>
 
     <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('docs',this)">
@@ -850,6 +858,7 @@ window.addEventListener('load', async () => {
 
 document.addEventListener('click', () => {
   ['folderCtxMenu','msgCtxMenu'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+  document.querySelectorAll('[id^="folderPicker-"]').forEach(x => x.style.display='none');
 });
 
 // ── DB OPS ──
@@ -1063,7 +1072,8 @@ const processes = [
 
 // ── INBOX ──
 let selMsg=null, srcFilter='all', stFilter='all';
-let folders=[], activeFolderId=null, foldersOpen=false, ctxFolderId=null;
+let folders=[], activeFolderId=null, foldersOpen=true, ctxFolderId=null;
+let autoSort = localStorage.getItem('breeze_autosort') !== 'false';
 const konoChatHistory = {};
 
 function renderMsgs() {
@@ -1125,6 +1135,10 @@ function openMsg(m) {
         return;
       }
       m.aiType = result.type; m.draftAnswer = result.employeeDraft || result.draft; m.hrActions = result.hrActions; m.clarifyQs = result.questions || []; m.policyRef = result.policyRef;
+      if (autoSort && !m.folder_id) {
+        const match = folders.find(f => f.name.toLowerCase() === m.type.toLowerCase());
+        if (match) { moveToFolder(m.id, match.id); showToast(`Auto-sorted to ${match.name}`); }
+      }
       konoChatHistory[m.id] = result.type === 'answer'
         ? [{role:'ai',text:`Drafted a response based on ${result.policyRef?`your <strong>${result.policyRef}</strong>`:'UK HR best practice'}. It's in the reply box. ${result.advice||''}`}]
         : result.type === 'escalate'
@@ -1218,7 +1232,21 @@ function openMsg(m) {
       <div class="gm-action-btns">
         <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
         <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
-        <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="moveToFolder('${m.id}',this.value||null)"><option value="">📁 No folder</option>${folders.map(f=>`<option value="${f.id}" ${m.folder_id===f.id?'selected':''}>${f.name}</option>`).join('')}</select>
+        <div style="position:relative;">
+          ${(() => { const cf=folders.find(f=>f.id===m.folder_id); return `<button class="gm-icon-btn" title="Move to folder" onclick="toggleFolderPicker('${m.id}',event)" style="${cf?`color:${cf.color}`:''}">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
+            ${cf ? `<span style="font-size:9px;font-weight:600;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cf.name}</span>` : ''}
+          </button>`; })()}
+          <div id="folderPicker-${m.id}" style="display:none;position:absolute;right:0;top:34px;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px;min-width:170px;">
+            ${folders.length ? `
+              <div style="font-size:10px;font-weight:600;color:var(--ink3);padding:4px 10px 2px;letter-spacing:0.06em;text-transform:uppercase;">Move to</div>
+              ${folders.map(f=>`<div class="ctx-item" onclick="moveToFolder('${m.id}','${f.id}');document.getElementById('folderPicker-${m.id}').style.display='none';openMsg(msgs.find(x=>x.id==='${m.id}'))"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${f.color};margin-right:7px;"></span>${f.name}${m.folder_id===f.id?' ✓':''}</div>`).join('')}
+              ${m.folder_id ? `<div class="ctx-sep"></div><div class="ctx-item" style="color:var(--ink3)" onclick="moveToFolder('${m.id}',null);document.getElementById('folderPicker-${m.id}').style.display='none';openMsg(msgs.find(x=>x.id==='${m.id}'))">Remove from folder</div>` : ''}
+            ` : `<div style="padding:8px 12px;font-size:11px;color:var(--ink3);">No folders yet.<br>Create one in the sidebar.</div>`}
+            <div class="ctx-sep"></div>
+            <div class="ctx-item" style="color:var(--accent)" onclick="document.getElementById('folderPicker-${m.id}').style.display='none';startNewFolder()">+ New folder</div>
+          </div>
+        </div>
         <button class="gm-icon-btn" title="Pop out" onclick="popOutMsg('${m.id}')" style="color:var(--ink3);">
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
         </button>
@@ -2704,7 +2732,21 @@ function renderFolders() {
       ${count ? `<span class="ni-badge" style="background:rgba(0,0,0,0.14);color:var(--ink2);">${count}</span>` : ''}
     </div>`;
   }).join('');
-  el.innerHTML = items + `<div class="folder-new" onclick="startNewFolder()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New folder</div>`;
+  el.innerHTML = items
+    + `<div class="folder-new" onclick="startNewFolder()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New folder</div>`
+    + `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;margin-top:4px;border-top:1px solid var(--border);">
+        <span style="font-size:10px;color:rgba(0,0,0,0.35);flex:1;">Auto-sort by type</span>
+        <div onclick="toggleAutoSort()" style="width:28px;height:16px;border-radius:8px;background:${autoSort?'var(--accent)':'var(--border2)'};cursor:pointer;position:relative;transition:background 0.15s;">
+          <div style="position:absolute;top:2px;left:${autoSort?'14':'2'}px;width:12px;height:12px;border-radius:50%;background:white;transition:left 0.15s;"></div>
+        </div>
+      </div>`;
+}
+
+function toggleAutoSort() {
+  autoSort = !autoSort;
+  localStorage.setItem('breeze_autosort', autoSort);
+  renderFolders();
+  showToast(autoSort ? 'Auto-sort on' : 'Auto-sort off');
 }
 
 function toggleFolders() {
@@ -2742,6 +2784,22 @@ function startNewFolder() {
     } else if (e.key === 'Escape') { renderFolders(); }
   });
   input.addEventListener('blur', () => { setTimeout(renderFolders, 150); });
+}
+
+function toggleFolderPicker(msgId, e) {
+  e.stopPropagation();
+  const el = document.getElementById('folderPicker-'+msgId);
+  if (!el) return;
+  const wasHidden = el.style.display === 'none';
+  document.querySelectorAll('[id^="folderPicker-"]').forEach(x => x.style.display='none');
+  el.style.display = wasHidden ? 'block' : 'none';
+}
+
+function showToast(msg) {
+  const t = document.getElementById('breezeToast');
+  if (!t) return;
+  t.textContent = msg; t.classList.add('visible');
+  setTimeout(() => t.classList.remove('visible'), 2800);
 }
 
 function showMsgCtxMenu(e, msgId) {
@@ -2812,6 +2870,7 @@ function closeAdvisory() {
 }
 </script>
 
+<div id="breezeToast"></div>
 <div id="msgCtxMenu" class="ctx-menu" style="display:none;"></div>
 
 <div id="folderCtxMenu" class="ctx-menu" style="display:none;" onmouseleave="closeFolderCtx()">
