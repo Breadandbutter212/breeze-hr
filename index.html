@@ -1063,10 +1063,16 @@ function openMsg(m) {
   if (!konoChatHistory[m.id]) {
     konoChatHistory[m.id] = [{ role:'ai', text:`Analysing message from ${m.from.split(' ')[0]}...` }];
     generateAIDraft(m).then(result => {
-      if (!result) return;
+      if (!result) {
+        konoChatHistory[m.id] = [{role:'ai',text:'Could not generate a draft - connection issue. Please try again.'}];
+        if (selMsg && selMsg.id===m.id) openMsg(m);
+        return;
+      }
       m.aiType = result.type; m.draftAnswer = result.employeeDraft || result.draft; m.hrActions = result.hrActions; m.clarifyQs = result.questions || []; m.policyRef = result.policyRef;
       konoChatHistory[m.id] = result.type === 'answer'
         ? [{role:'ai',text:`Drafted a response based on ${result.policyRef?`your <strong>${result.policyRef}</strong>`:'UK HR best practice'}. It's in the reply box. ${result.advice||''}`}]
+        : result.type === 'escalate'
+        ? [{role:'ai',text:`⚠ ${result.advice||'Sensitive situation - see HR advisory note above before responding.'}`}]
         : [{role:'ai',text:`Needs more context. ${result.advice||''} Suggested questions are loaded in the reply box.`}];
       if (selMsg && selMsg.id===m.id) openMsg(m);
     });
@@ -1121,7 +1127,12 @@ function openMsg(m) {
 
   // AI bar — collapsible HR Actions so it doesn't push compose area
   let aiBar = '';
-  if (m.aiType==='answer' && m.draftAnswer) {
+  if (m.aiType==='escalate' && m.draftAnswer) {
+    const actionsHtml = m.hrActions
+      ? `<div id="hrActions-${m.id}" style="display:block;margin-top:6px;padding:8px 10px;background:rgba(255,255,255,0.8);border-radius:var(--r-sm);border-left:3px solid var(--red);font-size:11px;color:var(--ink2);line-height:1.7;">${m.hrActions.split('\n').filter(l=>l.trim()).map(l=>`<div>• ${l.replace(/^[•\-\*]\s?/,'')}</div>`).join('')}</div>`
+      : '';
+    aiBar = `<div class="gm-ai-bar" style="background:#FFF0F0;border-bottom-color:rgba(139,0,0,0.12);"><div class="gm-ai-icon" style="background:var(--red);">⚠</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--red);">Sensitive - read HR advisory before responding</div><div style="font-size:11px;color:var(--ink2);">Acknowledgement draft loaded. Do not send anything further without senior HR review.</div>${actionsHtml}</div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
+  } else if (m.aiType==='answer' && m.draftAnswer) {
     const reason = m.policyRef
       ? `Based on your <strong>📄 ${m.policyRef}</strong> · ACAS best practice applied`
       : `Based on UK HR best practice and ACAS guidance`;
@@ -1143,7 +1154,7 @@ function openMsg(m) {
 
   // Initial reply content
   let initReply = '';
-  if (m.aiType==='answer' && m.draftAnswer) initReply = m.draftAnswer;
+  if ((m.aiType==='answer' || m.aiType==='escalate') && m.draftAnswer) initReply = m.draftAnswer;
   else if (m.clarifyQs.length) initReply = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this.\n\nMany thanks,\nHR`;
 
   dc.innerHTML = `<div class="gm-detail">
@@ -1331,69 +1342,58 @@ async function callClaude(messages, systemPrompt) {
 }
 
 async function generateAIDraft(m) {
-  // 1. Load and rank company policies by relevance to this message
-  let policyContext = '';
+  // Run all Supabase queries in parallel for speed
+  let policyContext = '', learningContext = '', ratingContext = '';
+
   if (currentProfile) {
-    const { data: pols } = await sb.from('policies').select('name,content')
-      .eq('company_id', currentProfile.company_id)
-      .not('name','like','TEMPLATE:%');
+    const cid = currentProfile.company_id;
+    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes] = await Promise.all([
+      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%'),
+      sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at', { ascending: false }).limit(30),
+      sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating', 1).eq('message_type', m.type).order('created_at', { ascending: false }).limit(2),
+      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating', -1).eq('message_type', m.type).order('created_at', { ascending: false }).limit(1)
+    ]);
+
+    // 1. Rank policies by keyword relevance to this message
+    const pols = polsRes.data;
     if (pols && pols.length) {
       const msgText = (m.subject + ' ' + m.body + ' ' + m.type).toLowerCase();
       const msgWords = new Set((msgText.match(/\b[a-z]{4,}\b/g) || []));
+      const typeWords = { 'Leave':'leave maternity paternity holiday absence', 'Pay & benefits':'pay salary payslip pension bonus', 'Performance':'performance capability conduct disciplinary', 'Offboarding':'notice resignation redundancy termination leaver', 'Onboarding':'onboarding induction probation starter' };
+      const typeHint = (typeWords[m.type] || '').split(' ');
       const scored = pols.map(p => {
         const pText = (p.name + ' ' + p.content.substring(0, 2000)).toLowerCase();
         let score = 0;
         msgWords.forEach(w => { if (pText.includes(w)) score++; });
-        const typeWords = { 'Leave':'leave maternity paternity holiday absence', 'Pay & benefits':'pay salary payslip pension bonus', 'Performance':'performance capability conduct disciplinary', 'Offboarding':'notice resignation redundancy termination leaver', 'Onboarding':'onboarding induction probation starter' };
-        const typeHint = typeWords[m.type] || '';
-        typeHint.split(' ').forEach(w => { if (pText.includes(w)) score += 2; });
+        typeHint.forEach(w => { if (pText.includes(w)) score += 2; });
         return { ...p, score };
       }).sort((a,b) => b.score - a.score);
-      const relevant = scored.filter(p => p.score > 0).slice(0, 3);
-      const toUse = relevant.length ? relevant : scored.slice(0, 2);
+      const toUse = scored.filter(p => p.score > 0).slice(0, 3) || scored.slice(0, 2);
       policyContext = `\n\nCOMPANY POLICIES (use these first - they override generic advice):\n` +
         toUse.map(p=>`\n--- ${p.name} ---\n${p.content.substring(0,4000)}`).join('\n');
     } else {
       policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET - use ACAS guidance and UK employment law as the basis. Recommend HR uploads their policies for more accurate responses.`;
     }
-  }
 
-  // 2. Build learning signal from past edits — proper diff analysis
-  let learningContext = '';
-  if (currentProfile) {
-    const { data: responses } = await sb.from('responses')
-      .select('ai_draft,hr_sent,was_edited,created_at')
-      .eq('company_id', currentProfile.company_id)
-      .order('created_at', { ascending: false })
-      .limit(30);
-
+    // 2. Build learning signal from past edits
+    const responses = responsesRes.data;
     if (responses && responses.length) {
       const total = responses.length;
       const edited = responses.filter(r => r.was_edited);
       const editRate = Math.round((edited.length / total) * 100);
-
-      // Analyse what patterns exist in the edits
       const editPatterns = [];
-
       if (edited.length >= 3) {
-        // Check if HR consistently shortens replies
         const aiAvgLen = edited.reduce((s,r) => s + (r.ai_draft?.length||0), 0) / edited.length;
         const hrAvgLen = edited.reduce((s,r) => s + (r.hr_sent?.length||0), 0) / edited.length;
-        if (hrAvgLen < aiAvgLen * 0.7) editPatterns.push('This team consistently shortens AI drafts — be more concise');
-        if (hrAvgLen > aiAvgLen * 1.3) editPatterns.push('This team tends to add more detail — be more thorough');
-
-        // Check for common removals
+        if (hrAvgLen < aiAvgLen * 0.7) editPatterns.push('This team consistently shortens AI drafts - be more concise');
+        if (hrAvgLen > aiAvgLen * 1.3) editPatterns.push('This team tends to add more detail - be more thorough');
         const removedAcas = edited.filter(r => r.ai_draft?.includes('ACAS') && !r.hr_sent?.includes('ACAS')).length;
-        if (removedAcas > edited.length * 0.4) editPatterns.push('This team removes ACAS references — do not mention ACAS in employee-facing replies');
-
-        // Check tone — formal vs informal
+        if (removedAcas > edited.length * 0.4) editPatterns.push('This team removes ACAS references - do not mention ACAS in employee-facing replies');
         const informalSignals = ['Hi ', 'Thanks', 'Cheers', 'Hope'];
         const hrInformal = edited.filter(r => informalSignals.some(s => r.hr_sent?.includes(s))).length;
         const aiInformal = edited.filter(r => informalSignals.some(s => r.ai_draft?.includes(s))).length;
         if (hrInformal > aiInformal) editPatterns.push('This team uses a more informal/friendly tone than the AI defaults');
-        if (hrInformal < aiInformal * 0.5) editPatterns.push('This team prefers a formal tone — avoid overly casual language');
-
-        // Check sign-off style
+        if (hrInformal < aiInformal * 0.5) editPatterns.push('This team prefers a formal tone - avoid overly casual language');
         const sincerelyCount = edited.filter(r => r.hr_sent?.includes('Yours sincerely')).length;
         const bestCount = edited.filter(r => r.hr_sent?.includes('Best')).length;
         const thanksCount = edited.filter(r => r.hr_sent?.includes('Thanks')).length;
@@ -1401,40 +1401,20 @@ async function generateAIDraft(m) {
         else if (bestCount > thanksCount) editPatterns.push('This team signs off with "Best regards" or "Best"');
         else if (thanksCount > 0) editPatterns.push('This team signs off with "Thanks" or "Many thanks"');
       }
-
       learningContext = `\n\nLEARNING FROM ${total} PREVIOUS REPLIES (edit rate: ${editRate}%):`;
-      if (editPatterns.length) {
-        learningContext += `\nStyle patterns detected from HR's edits:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
-      } else if (editRate < 20) {
-        learningContext += `\nHR edits very few drafts (${editRate}%) — current style and length is working well. Maintain it.`;
-      } else {
-        learningContext += `\nHR edits ${editRate}% of drafts. Insufficient data yet to identify specific patterns - use standard best practice.`;
-      }
+      if (editPatterns.length) learningContext += `\nStyle patterns detected from HR edits:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
+      else if (editRate < 20) learningContext += `\nHR edits very few drafts (${editRate}%) - current style and length is working well. Maintain it.`;
+      else learningContext += `\nHR edits ${editRate}% of drafts. Insufficient data yet - use standard best practice.`;
     }
-  }
 
-  // 3. Fetch highly-rated past responses for this message type to use as examples
-  let ratingContext = '';
-  if (currentProfile) {
-    const { data: goodRatings } = await sb.from('ratings')
-      .select('ai_draft,message_type')
-      .eq('company_id', currentProfile.company_id)
-      .eq('rating', 1)
-      .eq('message_type', m.type)
-      .order('created_at', { ascending: false })
-      .limit(2);
+    // 3. Inject approved/rejected examples from ratings
+    const goodRatings = goodRatingsRes.data;
+    const badRatings = badRatingsRes.data;
     if (goodRatings && goodRatings.length) {
-      ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES FOR ${m.type.toUpperCase()} QUERIES:\nYour HR team has explicitly approved these - match this style and approach:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,1000)}`).join('\n')}`;
+      ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES FOR ${m.type.toUpperCase()} QUERIES:\nYour HR team has explicitly approved these - match this style:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,1000)}`).join('\n')}`;
     }
-    const { data: badRatings } = await sb.from('ratings')
-      .select('ai_draft')
-      .eq('company_id', currentProfile.company_id)
-      .eq('rating', -1)
-      .eq('message_type', m.type)
-      .order('created_at', { ascending: false })
-      .limit(1);
     if (badRatings && badRatings.length) {
-      ratingContext += `\n\nREJECTED DRAFT STYLE (do NOT repeat this approach):\n${badRatings[0].ai_draft.substring(0,500)}`;
+      ratingContext += `\n\nREJECTED DRAFT STYLE (do NOT repeat this):\n${badRatings[0].ai_draft.substring(0,500)}`;
     }
   }
 
@@ -1506,9 +1486,28 @@ Some situations should never be handled by junior HR alone. Flag clearly:
 
 ━━━ STEP 4: PRIORITY ORDER FOR EVERY RESPONSE ━━━
 1. COMPANY'S OWN UPLOADED POLICIES — check these first, always
-2. ACAS CODES OF PRACTICE — statutory codes tribunals use to judge employer behaviour  
+2. ACAS CODES OF PRACTICE — statutory codes tribunals use to judge employer behaviour
 3. UK EMPLOYMENT LAW — ERA 1996, Equality Act 2010, Working Time Regs, etc.
 4. GENERAL BEST PRACTICE — only if nothing above applies
+
+━━━ STEP 5: DRAFT vs HR ACTIONS — THE MOST IMPORTANT RULE ━━━
+The employee-facing draft and the HR Actions list are completely separate things.
+
+EMPLOYEE-FACING DRAFT:
+- What HR will actually send to the employee AFTER they have verified the facts.
+- NEVER include eligibility thresholds, statutory rate calculations, or payroll figures the employee hasn't been told yet.
+- If eligibility is unconfirmed, use warm conditional language: "You should be entitled to..." or "Once we've confirmed your details, we'll set out exactly what you'll receive."
+- DO NOT write out "26 weeks by the 15th week before EWC" or "£184.03 per week" in the employee email - HR needs to verify these first and the employee does not need to see the HR working.
+- Short and warm for Tier 1. Reassuring and clear for Tier 2. Acknowledgement only for Tier 3/4.
+- CRITICAL: Never write "I'll need to check...", "I'll look into this and get back to you", "your contract may contain...", or "you may be entitled to..." in the employee draft. If HR hasn't verified it yet, it goes in HR Actions - not in the reply. The draft reflects what HR has confirmed, not what HR still needs to do.
+- Never promise a second email to cover something HR could check first. If a detail is unknown (e.g. the company pension matching limit), put it in HR Actions ("check pension scheme rules for employer match limit") and write a single complete reply once HR has looked it up. One email with all the facts beats two emails.
+
+HR ACTIONS (never seen by the employee):
+- ALL the eligibility checks: length of service, earnings thresholds, contract type.
+- The statutory rate calculations and which ones apply.
+- What HR must verify in the HRIS before sending anything.
+- Who to escalate to, what forms to request, what to log.
+- The specific numbers (26 weeks, £184.03, etc.) belong HERE so HR can confirm them.
 
 ━━━ WHAT YOU KNOW ━━━
 
@@ -1526,9 +1525,10 @@ PAYROLL & PAY:
 - Redundancy pay: 0.5–1.5 weeks per year of service depending on age
 
 LEAVERS:
-- Cover: notice period, holiday accrual on termination (calculate to last day), final payslip timing,
-  equipment return, reference policy, restrictive covenants (flag — do not advise on enforceability),
-  share options/equity (flag as complex — refer to scheme rules or legal).
+- Cover in draft: notice period confirmation, accrued holiday (say "we'll calculate your remaining holiday and include it in your final payslip"), final payslip timing, equipment return process, reference policy.
+- Restrictive covenants: put in HR Actions only ("check contract for non-compete/non-solicitation clauses before responding further"). Do NOT mention covenants in the employee draft unless HR has already read the contract and confirmed what restrictions apply. Never write "your contract may contain..." in an employee email - that tells the employee HR hasn't checked yet.
+- Share options/equity: HR Actions only - flag as complex, refer to scheme rules or legal team. Do not mention in draft.
+- Holiday accrual calculation: HR Actions ("calculate days accrued to last day of notice, confirm with payroll") - not in the employee draft.
 
 FLEXIBLE & REMOTE WORKING:
 - Statutory right to request = day one right since April 2024, max 2 requests per year.
@@ -1565,9 +1565,18 @@ WRONG: a 400-word essay about pension legislation.
 
 EXAMPLE 2 — TIER 2 (maternity leave):
 Employee: "I'm 24 weeks pregnant, due 14 August, thinking of starting leave 4 August."
-CORRECT — answer the question, then flag what to check:
-Draft covers: 52 weeks entitlement, SMP overview, notice requirement met, next steps (MATB1, policy doc, manager notification).
-HR Actions: Check start date (SMP needs 26 weeks by 15th week before EWC = week of 28 April — verify she meets this). Confirm contract type. Check if enhanced maternity pay applies. Send MATB1 form request. Log in HR system.
+
+CORRECT employee-facing draft (warm, no eligibility maths, no statutory rates):
+"Hi Priya, congratulations! Happy to help you get everything sorted. You're entitled to up to 52 weeks' maternity leave, and based on what you've told us your proposed start date of 4 August looks fine. We'll confirm your maternity pay entitlement once we've checked a couple of details on our end - we'll have that back to you shortly. In the meantime, we'll need your MATB1 form (the certificate from your midwife or GP) once you have it. We'll also send you our maternity policy so you have everything in writing. Any questions in the meantime, just ask. Many thanks, HR"
+
+HR Actions (never sent to employee - for HR to check first):
+- Verify SMP eligibility: needs 26 weeks' continuous employment by 15th week before EWC (week of 28 April) - confirm in HRIS.
+- Check average weekly earnings exceed Lower Earnings Limit (£125/week) - confirm via payroll.
+- Check if company offers enhanced maternity pay above SMP - refer to policy.
+- SMP rates if eligible: 90% AWE for first 6 weeks, then £184.03/wk (or 90% AWE if lower) for 33 weeks.
+- Request MATB1 form. Notify payroll. Log leave dates in HR system. Notify manager.
+
+WRONG (do not do this): spelling out the 26-week threshold, SMP rates, or EWC calculations in the employee email - that is internal HR verification, not what goes in the reply.
 
 EXAMPLE 3 — TIER 3 (distressed employee / potential grievance):
 Employee: "My manager makes comments in front of the team and I haven't been sleeping."
