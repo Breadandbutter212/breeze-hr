@@ -753,31 +753,36 @@ const processes = [
 ];
 
 // ── MERGE HRIS ──
+let mergeEmployeeCache = null;
 let mergeSearchTimeout = null;
+
+async function loadMergeEmployees() {
+  if (mergeEmployeeCache) return mergeEmployeeCache;
+  try {
+    const res = await fetch('/api/merge-search');
+    const data = await res.json();
+    mergeEmployeeCache = data.results || [];
+  } catch(e) { mergeEmployeeCache = []; }
+  return mergeEmployeeCache;
+}
 
 function debounceSearchMerge(query) {
   clearTimeout(mergeSearchTimeout);
   const dd = document.getElementById('mergeDropdown');
-  if (!query || query.length < 1) { if (dd) dd.style.display = 'none'; return; }
-  mergeSearchTimeout = setTimeout(() => searchMergeEmployees(query), 300);
+  if (!query) { if (dd) dd.style.display = 'none'; return; }
+  mergeSearchTimeout = setTimeout(() => searchMergeEmployees(query), 150);
 }
 
 async function searchMergeEmployees(query) {
   const dd = document.getElementById('mergeDropdown'); if (!dd) return;
-  dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">Searching HRIS...</div>';
+  dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">Searching...</div>';
   dd.style.display = 'block';
-  try {
-    const res = await fetch(`/api/merge-search?search=${encodeURIComponent(query)}`);
-    const data = await res.json();
-    if (!res.ok) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.error || data.detail || res.status}</div>`; return; }
-    const q = query.toLowerCase();
-    const emps = (data.results || []).filter(e => (e.display_full_name||'').toLowerCase().includes(q));
-    if (!emps.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
-    dd.innerHTML = emps.slice(0,8).map(emp => renderMergeRow(emp)).join('');
-  } catch(e) {
-    console.error('Merge fetch error:', e);
-    dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--red);">Could not connect to HRIS</div>';
-  }
+  const all = await loadMergeEmployees();
+  if (!all.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--red);">Could not connect to HRIS</div>'; return; }
+  const q = query.toLowerCase();
+  const matches = all.filter(e => (e.display_full_name||'').toLowerCase().includes(q));
+  if (!matches.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
+  dd.innerHTML = matches.slice(0,8).map(emp => renderMergeRow(emp)).join('');
 }
 
 function renderMergeRow(emp) {
@@ -805,12 +810,19 @@ function selectMergeEmployee(empJson) {
   const dd = document.getElementById('mergeDropdown'); if (dd) dd.style.display = 'none';
   const inp = document.getElementById('gcInp'); if (inp) inp.value = name;
 
+  // Salary from employment record
+  const payRate = employment?.pay_rate;
+  const payCurrency = employment?.pay_currency || 'GBP';
+  const payPeriod = employment?.pay_period || '';
+  const salaryStr = payRate ? `${payCurrency === 'GBP' ? '£' : payCurrency}${Number(payRate).toLocaleString('en-GB')}${payPeriod === 'ANNUAL' || payPeriod === 'YEAR' ? ' per annum' : payPeriod === 'HOURLY' ? ' per hour' : ''}` : '';
+
   // Map to all matching template fields
   if (name)      { genVals['employee_name'] = name; genVals['candidate_name'] = name; }
   if (title)     { genVals['job_title'] = title; }
   if (co)        { genVals['company_name'] = co; }
   if (startDate) { genVals['start_date'] = startDate; }
   if (email)     { genVals['email'] = email; }
+  if (salaryStr) { genVals['salary'] = salaryStr; genVals['new_salary'] = salaryStr; genVals['current_salary'] = salaryStr; }
 
   const filled = Object.keys(genVals).length;
   addGMsg('ai', `Found **${name}**${title ? ` — ${title}` : ''}. Auto-filled ${filled} field${filled>1?'s':''} from your HRIS.`);

@@ -17,7 +17,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const response = await fetch(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(search)}&expand=employments,company`, {
+    const response = await fetch(`https://api.merge.dev/api/hris/v1/employees?page_size=100&expand=employments,company`, {
       headers: {
         'Authorization': `Bearer ${apiKey}`,
         'X-Account-Token': accountToken
