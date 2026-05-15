@@ -764,17 +764,6 @@ function debounceSearchMerge(query) {
   mergeSearchTimeout = setTimeout(() => searchMergeEmployees(query), 300);
 }
 
-const MERGE_TEST_EMPLOYEES = [
-  {display_full_name:'Sarah Johnson',employments:[{job_title:'Head of Marketing'}],company:'Acme Corp'},
-  {display_full_name:'James Okafor',employments:[{job_title:'Software Engineer'}],company:'Acme Corp'},
-  {display_full_name:'Priya Sharma',employments:[{job_title:'Product Manager'}],company:'Acme Corp'},
-  {display_full_name:'Daniel Wright',employments:[{job_title:'Sales Director'}],company:'Acme Corp'},
-  {display_full_name:'Claire Obi',employments:[{job_title:'Finance Manager'}],company:'Acme Corp'},
-  {display_full_name:'Tom Bradley',employments:[{job_title:'Engineering Lead'}],company:'Acme Corp'},
-  {display_full_name:'Rachel Kim',employments:[{job_title:'Customer Success'}],company:'Acme Corp'},
-  {display_full_name:'Ben Hussain',employments:[{job_title:'DevOps Engineer'}],company:'Acme Corp'},
-];
-
 async function searchMergeEmployees(query) {
   const dd = document.getElementById('mergeDropdown'); if (!dd) return;
   dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">Searching HRIS...</div>';
@@ -784,24 +773,13 @@ async function searchMergeEmployees(query) {
       headers: { 'Authorization': `Bearer ${MERGE_API_KEY}`, 'X-Account-Token': MERGE_ACCOUNT_TOKEN }
     });
     const data = await res.json();
+    if (data.detail) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.detail}</div>`; return; }
     const emps = data.results || [];
     if (!emps.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
-    renderMergeDropdown(emps, dd);
+    dd.innerHTML = emps.slice(0,8).map(emp => renderMergeRow(emp)).join('');
   } catch(e) {
-    // API failed — fall back to test data
-    const q = query.toLowerCase();
-    const matches = MERGE_TEST_EMPLOYEES.filter(e => e.display_full_name.toLowerCase().includes(q));
-    if (!matches.length) {
-      dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>';
-      return;
-    }
-    dd.innerHTML = `<div style="padding:4px 12px;font-size:10px;color:var(--amber);background:var(--amber-bg);border-bottom:1px solid var(--border);">Demo data — connect your HRIS in Settings</div>`;
-    dd.innerHTML += matches.slice(0,8).map(emp => renderMergeRow(emp)).join('');
+    dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--red);">Could not connect to HRIS</div>';
   }
-}
-
-function renderMergeDropdown(emps, dd) {
-  dd.innerHTML = emps.slice(0,8).map(emp => renderMergeRow(emp)).join('');
 }
 
 function renderMergeRow(emp) {
