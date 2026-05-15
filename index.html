@@ -77,270 +77,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .view { display: none; flex: 1; overflow: hidden; }
 .view.active { display: flex; }
 
-/* ══════════════════════
-   INBOX VIEW
-══════════════════════ */
-.intake-view { flex-direction: row; }
-
-.msg-col { width: 300px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
-
-/* ══════════════════════
-   INBOX VIEW — Gmail style
-══════════════════════ */
-.intake-view { flex-direction: row; }
-.msg-col { width: 280px; flex-shrink: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
-.mc-head { padding: 12px 14px 10px; border-bottom: 1px solid var(--border); }
-.mc-title { font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 8px; }
-.mc-filters { display: flex; gap: 3px; flex-wrap: wrap; }
-.mc-chip { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); background: transparent; color: var(--ink3); cursor: pointer; font-family: inherit; transition: all 0.12s; }
-.mc-chip:hover { color: var(--ink2); border-color: var(--border2); }
-.mc-chip.active { background: var(--ink); color: white; border-color: var(--ink); font-weight: 500; }
-.msg-list { flex: 1; overflow-y: auto; }
-.msg-item { padding: 10px 14px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
-.msg-item:hover { background: var(--surface2); }
-.msg-item.active { background: var(--accent-bg); border-left: 3px solid var(--accent); padding-left: 11px; }
-.msg-item.active .mi-name { color: var(--accent); }
-.msg-item.unread-item .mi-name { font-weight: 700; }
-.mi-row1 { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 1px; }
-.mi-name { font-size: 13px; font-weight: 500; color: var(--ink); }
-.mi-time { font-size: 10px; color: var(--ink3); flex-shrink: 0; }
-.mi-subject { font-size: 12px; color: var(--ink2); margin-bottom: 1px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.mi-preview { font-size: 11px; color: var(--ink3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.unread-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--accent); display: inline-block; margin-right: 4px; }
-.msg-item { position: relative; }
-.msg-hover-actions { display: none; position: absolute; right: 8px; top: 50%; transform: translateY(-50%); gap: 2px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 2px; box-shadow: var(--shadow-sm); }
-.msg-item:hover .msg-hover-actions { display: flex; }
-.mha-btn { width: 22px; height: 22px; border: none; background: transparent; cursor: pointer; border-radius: 3px; display: flex; align-items: center; justify-content: center; color: var(--ink3); }
-.mha-btn:hover { background: var(--surface2); color: var(--ink); }
-.log-btn { margin: 10px 12px; padding: 8px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; font-size: 11px; color: var(--ink3); cursor: pointer; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; }
-.log-btn:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-
-/* Detail column */
-.detail-col { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--surface); min-width: 0; }
-.detail-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; color: var(--ink3); text-align: center; padding: 48px; }
-.detail-empty svg { opacity: 0.18; }
-.detail-empty p { font-size: 13px; max-width: 240px; line-height: 1.7; }
-#detailContent { flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; }
-.gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-
-/* Subject bar */
-.gm-subject-bar { padding: 14px 20px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; }
-.gm-subject { font-size: 18px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; line-height: 1.3; flex: 1; }
-.gm-action-btns { display: flex; gap: 2px; padding-top: 2px; flex-shrink: 0; }
-.gm-icon-btn { width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; transition: all 0.12s; }
-.gm-icon-btn:hover { background: var(--surface2); color: var(--ink); }
-.gm-icon-btn.danger:hover { background: var(--red-bg); color: var(--red); }
-
-/* Sender row */
-.gm-sender-row { padding: 8px 20px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.gm-av { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; flex-shrink: 0; }
-.gm-sender-name { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
-.gm-sender-meta { font-size: 11px; color: var(--ink3); margin-top: 1px; }
-.gm-type-badge { font-size: 10px; padding: 1px 7px; border-radius: 20px; font-weight: 500; }
-.gm-time { font-size: 11px; color: var(--ink3); flex-shrink: 0; margin-left: auto; }
-
-/* Message body — compact at top, scrollable if long */
-.gm-body { padding: 12px 20px 10px; font-size: 13px; color: var(--ink); line-height: 1.7; white-space: pre-wrap; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-
-/* gm-detail — full height flex column */
-.gm-detail { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
-
-/* Thread — scrollable, capped, does not grow */
-.gm-thread { padding: 0 20px; flex-shrink: 0; max-height: 80px; overflow-y: auto; border-bottom: 1px solid var(--border); }
-.gm-thread-item { border-bottom: 1px solid var(--border); }
-.gm-thread-compact { display: flex; align-items: center; gap: 8px; padding: 6px 0; cursor: pointer; user-select: none; }
-.gm-thread-compact:hover { opacity: 0.75; }
-.gm-thread-av { width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 8px; font-weight: 700; flex-shrink: 0; }
-.gm-thread-name { font-size: 12px; font-weight: 500; color: var(--ink); flex-shrink: 0; width: 60px; }
-.gm-thread-preview { font-size: 11px; color: var(--ink3); flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.gm-thread-time { font-size: 10px; color: var(--ink3); flex-shrink: 0; }
-.gm-thread-expanded { padding: 6px 0 10px; }
-.gm-thread-full { font-size: 12px; color: var(--ink); line-height: 1.65; padding: 8px 10px; border-radius: var(--r-sm); }
-.gm-thread-full.out { background: var(--accent-bg); border: 1px solid var(--accent-mid); }
-.gm-thread-full.in { background: var(--surface2); border: 1px solid var(--border); }
-
-/* gm-scroll — THIS takes flex:1, scrolls, body+thread live inside it */
-.gm-scroll { flex: 1; overflow-y: auto; min-height: 0; }
-.gm-compose { flex-shrink: 0; background: var(--surface); display: flex; flex-direction: column; border-top: 1px solid var(--border); height: 55%; min-height: 220px; }
-.gm-compose-modes { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.gm-mode-btn { flex: 1; padding: 11px 4px; font-size: 13px; font-weight: 500; color: var(--ink3); cursor: pointer; border: none; background: transparent; font-family: inherit; border-bottom: 2px solid transparent; transition: all 0.12s; display: flex; align-items: center; justify-content: center; gap: 5px; white-space: nowrap; }
-.gm-mode-btn:hover { color: var(--ink2); background: var(--surface2); }
-.gm-mode-btn.active { color: var(--ink); border-bottom-color: var(--accent); font-weight: 600; }
-.gm-mode-btn.breeze.active { color: var(--accent); border-bottom-color: var(--accent); }
-.gm-to-fields { border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.gm-to-row { display: flex; align-items: center; gap: 8px; padding: 5px 16px; border-bottom: 1px solid var(--border); }
-.gm-to-label { font-size: 12px; color: var(--ink3); width: 28px; flex-shrink: 0; }
-.gm-to-input { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); background: transparent; }
-.gm-cc-toggle { font-size: 11px; color: var(--accent); cursor: pointer; flex-shrink: 0; }
-
-/* Breeze HR bar */
-.gm-ai-bar { display: flex; align-items: center; gap: 8px; padding: 7px 20px; background: #F0F7FF; border-bottom: 1px solid rgba(0,102,204,0.1); flex-shrink: 0; }
-.gm-ai-icon { width: 16px; height: 16px; border-radius: 3px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; }
-.gm-ai-chat { font-size: 11px; color: var(--ink3); cursor: pointer; text-decoration: underline; }
-.ai-rating-btn { background: transparent; border: none; cursor: pointer; padding: 3px 5px; border-radius: 4px; color: var(--ink3); font-size: 14px; line-height: 1; transition: all 0.12s; }
-.ai-rating-btn:hover { background: rgba(0,0,0,0.06); color: var(--ink); }
-.ai-rating-btn.rated-up { color: var(--green); background: var(--green-bg); }
-.ai-rating-btn.rated-down { color: var(--red); background: var(--red-bg); }
-.ai-rating-wrap { display: flex; align-items: center; gap: 2px; margin-left: auto; margin-right: 10px; }
-
-/* COMPOSE AREA — contenteditable rich text */
-.gm-ta { width: 100%; border: none; outline: none; padding: 12px 20px 8px; font-size: 13px; font-family: inherit; color: var(--ink); flex: 1; min-height: 100px; line-height: 1.65; background: var(--surface); overflow-y: auto; display: block; cursor: text; white-space: pre-wrap; word-wrap: break-word; }
-.gm-ta[contenteditable]:empty:before { content: attr(data-placeholder); color: var(--ink3); pointer-events: none; display: block; }
-.gm-ta[contenteditable] ul, .gm-ta[contenteditable] ol { padding-left: 22px; margin: 2px 0; }
-.gm-ta[contenteditable] p { margin: 0; }
-
-/* FOLDERS */
-.folders-toggle { display: flex; align-items: center; font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.28); padding: 0 8px; margin: 14px 0 5px; cursor: pointer; user-select: none; }
-.folders-toggle:hover { color: rgba(255,255,255,0.5); }
-.folders-arrow { margin-left: auto; transition: transform 0.15s; font-style: normal; font-size: 8px; }
-.folder-ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.45); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
-.folder-ni:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
-.folder-ni.active { background: rgba(255,255,255,0.12); color: white; font-weight: 500; }
-.folder-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
-.folder-new { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.3); cursor: pointer; font-size: 11px; transition: all 0.12s; }
-.folder-new:hover { color: #7EB8FF; }
-.folder-name-input { border: none; outline: none; font-size: 12px; font-family: inherit; color: white; background: transparent; flex: 1; padding: 0; }
-
-/* CONTEXT MENU */
-.ctx-menu { position: fixed; z-index: 1000; background: var(--surface); border: 1px solid var(--border2); border-radius: var(--r); box-shadow: var(--shadow-lg); padding: 4px; min-width: 150px; }
-.ctx-item { padding: 6px 12px; font-size: 12px; color: var(--ink); border-radius: var(--r-sm); cursor: pointer; }
-.ctx-item:hover { background: var(--surface2); }
-.ctx-item.danger { color: var(--red); }
-.ctx-item.danger:hover { background: var(--red-bg); }
-.ctx-sep { height: 1px; background: var(--border); margin: 3px 4px; }
-
-/* Compose footer — single line */
-.gm-compose-foot { padding: 8px 16px 10px; display: flex; align-items: center; gap: 6px; flex-shrink: 0; border-top: 1px solid var(--border); }
-.gm-send-btn { background: var(--accent); color: white; border: none; border-radius: 20px; padding: 7px 18px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; display: flex; align-items: center; gap: 5px; flex-shrink: 0; }
-.gm-send-btn:hover { opacity: 0.88; }
-.gm-fmt-btn { width: 26px; height: 26px; border-radius: 4px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--ink3); border: none; background: transparent; font-size: 11px; font-weight: 600; flex-shrink: 0; }
-.gm-fmt-btn:hover { background: var(--surface2); color: var(--ink2); }
-.gm-fmt-divider { width: 1px; height: 16px; background: var(--border); flex-shrink: 0; }
-.gm-discard { color: var(--ink3); cursor: pointer; font-size: 12px; margin-left: auto; }
-.gm-discard:hover { color: var(--red); }
-
-/* Kono chat pane */
-.kono-pane { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-.kono-pane.visible { display: flex; }
-.kono-history { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 8px; }
-.kono-msg { display: flex; gap: 7px; align-items: flex-start; }
-.kono-msg.kono-u { flex-direction: row-reverse; }
-.kono-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
-.kono-av.ai { background: var(--ink); color: white; }
-.kono-av.u { background: var(--accent-bg); color: var(--accent); }
-.kono-bubble { max-width: 88%; padding: 8px 11px; font-size: 12px; line-height: 1.55; border-radius: var(--r); color: var(--ink); }
-.kono-bubble.ai { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 3px; }
-.kono-bubble.u { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-top-right-radius: 3px; }
-.kono-bubble.ai a { color: var(--accent); cursor: pointer; text-decoration: underline; }
-.kono-input-row { display: flex; gap: 6px; align-items: flex-end; padding: 8px 14px; border-top: 1px solid var(--border); }
-.kono-ta { flex: 1; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface2); resize: none; min-height: 34px; max-height: 80px; outline: none; line-height: 1.4; }
-.kono-ta:focus { border-color: var(--accent); background: var(--surface); }
-.kono-send { background: var(--accent); color: white; border: none; border-radius: var(--r-sm); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.12s; }
-.kono-send:hover { opacity: 0.85; }
-
-/* Email header */
-.email-header {
-  padding: 14px 18px 10px;
-  border-bottom: 1px solid var(--border);
-  background: var(--surface);
-  flex-shrink: 0;
-  overflow-y: auto;
-  max-height: 45%;
-}
-.eh-meta-line {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-bottom: 6px;
-  font-size: 12px;
-  color: var(--ink3);
-}
-.eh-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
-.eh-name { font-size: 12px; font-weight: 500; color: var(--ink2); }
-.eh-sep { color: var(--ink3); }
-.eh-time { font-size: 11px; color: var(--ink3); }
-.eh-subject { font-size: 16px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; margin-bottom: 6px; line-height: 1.3; }
-.eh-controls { display: flex; align-items: center; gap: 5px; }
-.reply-type-select { font-size: 11px; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 2px 6px; font-family: inherit; color: var(--ink3); background: var(--surface2); outline: none; cursor: pointer; }
-.reply-type-select:focus { border-color: var(--accent); color: var(--ink2); }
-
-/* Collapsible */
-.collapsible-msg { border-top: 1px solid var(--border); margin-top: 8px; padding-top: 7px; }
-.collapsible-trigger { display: flex; align-items: center; gap: 6px; cursor: pointer; padding: 2px 0; user-select: none; }
-.collapsible-trigger:hover span { color: var(--ink2) !important; }
-.collapsible-body { overflow: hidden; }
-
-/* Thread */
-.tm { padding: 8px 10px; border-radius: var(--r-sm); font-size: 12px; line-height: 1.6; border: 1px solid transparent; margin-bottom: 5px; }
-.tm-in { background: var(--surface2); border-color: var(--border); }
-.tm-out { background: var(--accent-bg); border-color: var(--accent-mid); }
-.tm-sender { font-size: 10px; font-weight: 600; color: var(--ink2); margin-bottom: 3px; display: flex; justify-content: space-between; }
-.tm-sender span { font-weight: 400; color: var(--ink3); }
-
-/* Compose panel */
-.compose-panel { flex: 1; min-height: 0; border-top: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; overflow: hidden; }
-.compose-toggle { display: flex; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
-.ctab { flex: 1; padding: 9px 0; text-align: center; font-size: 12px; font-weight: 500; cursor: pointer; color: var(--ink3); border-bottom: 2px solid transparent; transition: all 0.15s; display: flex; align-items: center; justify-content: center; gap: 5px; user-select: none; }
-.ctab:hover { color: var(--ink2); background: var(--surface2); }
-.ctab.active { color: var(--ink); border-bottom-color: var(--accent); }
-.ctab.active.breeze-tab { color: var(--accent); border-bottom-color: var(--accent); }
-
-.reply-pane { display: flex; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-.reply-kono-suggestion { padding: 7px 14px; border-bottom: 1px solid var(--border); background: #F8FBFF; flex-shrink: 0; display: flex; align-items: flex-start; gap: 7px; }
-.rks-icon { width: 14px; height: 14px; border-radius: 3px; background: var(--accent); color: white; display: flex; align-items: center; justify-content: center; font-size: 8px; flex-shrink: 0; margin-top: 1px; }
-.rks-title { font-size: 11px; font-weight: 600; color: var(--ink2); margin-bottom: 2px; }
-.rks-source { font-size: 11px; color: var(--ink3); margin-bottom: 2px; }
-.rks-source a { color: var(--accent); text-decoration: none; }
-.rks-advice { font-size: 11px; color: var(--ink2); line-height: 1.5; }
-.rks-advice strong { font-weight: 600; color: var(--ink); }
-
-.reply-to-row { display: flex; align-items: center; gap: 8px; padding: 7px 14px; border-bottom: 1px solid var(--border); flex-shrink: 0; background: var(--surface); }
-.reply-to-label { font-size: 11px; color: var(--ink3); width: 22px; flex-shrink: 0; }
-.reply-to-val { font-size: 12px; color: var(--ink); font-weight: 500; flex: 1; }
-.reply-ta { width: 100%; border: none; outline: none; padding: 10px 14px; font-size: 13px; font-family: inherit; color: var(--ink); background: var(--surface); resize: none; flex: 1; min-height: 0; line-height: 1.65; overflow-y: auto; }
-.reply-actions-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 14px; border-top: 1px solid var(--border); flex-shrink: 0; background: var(--surface2); }
-.reply-via-info { font-size: 11px; color: var(--ink3); display: flex; align-items: center; gap: 4px; }
-
-.kono-pane { display: none; flex-direction: column; flex: 1; min-height: 0; overflow: hidden; }
-.kono-pane.visible { display: flex; }
-.kono-history { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 14px 8px; display: flex; flex-direction: column; gap: 8px; }
-.kono-msg { display: flex; gap: 7px; align-items: flex-start; }
-.kono-msg.kono-u { flex-direction: row-reverse; }
-.kono-av { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 9px; font-weight: 600; flex-shrink: 0; }
-.kono-av.ai { background: var(--ink); color: white; }
-.kono-av.u { background: var(--accent-bg); color: var(--accent); }
-.kono-bubble { max-width: 88%; padding: 8px 11px; font-size: 12px; line-height: 1.55; border-radius: var(--r); color: var(--ink); }
-.kono-bubble.ai { background: var(--surface2); border: 1px solid var(--border); border-top-left-radius: 3px; }
-.kono-bubble.u { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-top-right-radius: 3px; }
-.kono-bubble.ai a { color: var(--accent); cursor: pointer; text-decoration: underline; }
-.kono-input-row { display: flex; gap: 6px; align-items: flex-end; padding: 8px 14px; border-top: 1px solid var(--border); }
-.kono-ta { flex: 1; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface2); resize: none; min-height: 34px; max-height: 80px; outline: none; line-height: 1.4; }
-.kono-ta:focus { border-color: var(--accent); background: var(--surface); }
-.kono-send { background: var(--accent); color: white; border: none; border-radius: var(--r-sm); width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; cursor: pointer; flex-shrink: 0; transition: opacity 0.12s; }
-.kono-send:hover { opacity: 0.85; }
-
-/* ── ADVISORY SLIDE-UP SHEET ── */
-.advisory-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.28); z-index: 900; opacity: 0; transition: opacity 0.22s; pointer-events: none; }
-.advisory-backdrop.visible { opacity: 1; pointer-events: all; }
-.advisory-sheet { position: fixed; left: 0; right: 0; bottom: 0; z-index: 901; background: var(--surface); border-radius: 14px 14px 0 0; box-shadow: 0 -8px 40px rgba(0,0,0,0.16); transform: translateY(100%); transition: transform 0.28s cubic-bezier(0.32,0.72,0,1); max-height: 72vh; display: flex; flex-direction: column; overflow: hidden; }
-.advisory-sheet.visible { transform: translateY(0); }
-.advisory-drag { width: 36px; height: 4px; background: var(--border2); border-radius: 2px; margin: 10px auto 0; flex-shrink: 0; }
-.advisory-head { padding: 12px 20px 10px; display: flex; align-items: center; gap: 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; }
-.advisory-icon { width: 28px; height: 28px; border-radius: 7px; background: var(--red-bg); color: var(--red); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
-.advisory-title { font-size: 14px; font-weight: 600; color: var(--red); flex: 1; }
-.advisory-close { width: 26px; height: 26px; border-radius: 50%; background: var(--surface2); border: none; cursor: pointer; color: var(--ink2); font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
-.advisory-close:hover { background: var(--border2); }
-.advisory-body { padding: 14px 20px 24px; overflow-y: auto; flex: 1; }
-.advisory-action { display: flex; gap: 10px; align-items: flex-start; padding: 8px 0; border-bottom: 1px solid var(--border); }
-.advisory-action:last-child { border-bottom: none; }
-.advisory-bullet { width: 6px; height: 6px; border-radius: 50%; background: var(--red); margin-top: 5px; flex-shrink: 0; }
-.advisory-action-text { font-size: 12px; color: var(--ink); line-height: 1.6; }
-.advisory-action-text strong { color: var(--red); }
-.advisory-foot { padding: 12px 20px; border-top: 1px solid var(--border); flex-shrink: 0; }
-.advisory-ack { width: 100%; background: var(--red); color: white; border: none; border-radius: 20px; padding: 10px 20px; font-size: 13px; font-weight: 500; font-family: inherit; cursor: pointer; }
-.advisory-ack:hover { opacity: 0.88; }
-
 /* TOAST */
 #breezeToast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(10px); background:#1D1D1F; color:white; font-size:12px; font-weight:500; padding:8px 18px; border-radius:20px; opacity:0; pointer-events:none; transition:all 0.22s; z-index:950; white-space:nowrap; }
 #breezeToast.visible { opacity:1; transform:translateX(-50%) translateY(0); }
@@ -492,6 +228,44 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .btn-ghost { background: transparent; color: var(--ink2); border-color: transparent; }
 .btn-ghost:hover { background: var(--surface2); }
 
+/* ── CHAT VIEW ── */
+.chat-view { flex-direction: column; background: var(--surface); }
+.chat-main { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.chat-history { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
+.chat-msg { display: flex; gap: 12px; max-width: 820px; width: 100%; margin: 0 auto; }
+.chat-msg.user-msg { flex-direction: row-reverse; }
+.chat-av { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
+.chat-av.ai-av { background: var(--ink); color: white; font-size: 14px; }
+.chat-av.user-av { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-mid); }
+.chat-bubble { padding: 13px 17px; border-radius: 14px; font-size: 13px; line-height: 1.75; max-width: 88%; }
+.chat-bubble.ai-bubble { background: white; border: 1px solid var(--border); border-top-left-radius: 4px; color: var(--ink); }
+.chat-bubble.user-bubble { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-top-right-radius: 4px; color: var(--ink); }
+.chat-actions { display: flex; align-items: center; gap: 5px; margin-top: 7px; margin-left: 44px; }
+.chat-action-btn { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--ink3); cursor: pointer; font-family: inherit; transition: all 0.12s; line-height: 1.4; }
+.chat-action-btn:hover { border-color: var(--border2); color: var(--ink); }
+.chat-action-btn.rated-up { color: var(--green); background: var(--green-bg); border-color: transparent; }
+.chat-action-btn.rated-down { color: var(--red); background: var(--red-bg); border-color: transparent; }
+.chat-input-area { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--surface); padding: 10px 24px 18px; }
+.chat-chips { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
+.chat-chip { font-size: 12px; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--ink2); cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
+.chat-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
+.chat-input-wrap { display: flex; gap: 10px; align-items: flex-end; border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; background: white; transition: border 0.15s; }
+.chat-input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,102,204,0.08); }
+.chat-ta { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; line-height: 1.6; max-height: 160px; overflow-y: auto; background: transparent; }
+.chat-ta::placeholder { color: var(--ink3); }
+.chat-send-btn { width: 34px; height: 34px; border-radius: 50%; background: var(--accent); color: white; border: none; cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: opacity 0.12s; }
+.chat-send-btn:hover:not(:disabled) { opacity: 0.88; }
+.chat-send-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+.typing-dots { display: inline-flex; gap: 4px; align-items: center; padding: 4px 0; }
+.typing-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink3); animation: typingBounce 1.2s infinite ease-in-out; }
+.typing-dot:nth-child(2) { animation-delay: 0.2s; }
+.typing-dot:nth-child(3) { animation-delay: 0.4s; }
+@keyframes typingBounce { 0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-6px);opacity:1} }
+.chat-welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 60px 24px; gap: 10px; }
+.chat-welcome-icon { width: 52px; height: 52px; border-radius: 12px; background: var(--accent-bg); border: 1px solid var(--accent-mid); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 4px; }
+.chat-welcome-title { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
+.chat-welcome-sub { font-size: 13px; color: var(--ink3); max-width: 380px; line-height: 1.65; }
+
 /* ── LOGIN ── */
 .login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; }
 .login-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 44px 40px; width: 400px; box-shadow: var(--shadow-lg); }
@@ -543,23 +317,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   </div>
   <div class="nav">
     <div class="nav-label">Workspace</div>
-    <div class="ni active" id="nav-inbox" onclick="setInboxView('inbox',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
-      Inbox <span class="ni-badge" id="nbNew">3</span>
+    <div class="ni active" id="nav-chat" onclick="showView('chat',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      Chat with Breeze HR
     </div>
-    <div class="ni" id="nav-sent" onclick="setInboxView('sent',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-      Sent Items
-    </div>
-    <div class="ni" id="nav-drafts" onclick="setInboxView('drafts',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-      Drafts <span class="ni-badge" id="nbDrafts" style="display:none"></span>
-    </div>
-    <div class="folders-toggle" onclick="toggleFolders()">
-      Folders
-      <em class="folders-arrow" id="foldersArrow" style="margin-left:auto;transform:rotate(0deg)">▶</em>
-    </div>
-    <div id="foldersList" style="display:none;"></div>
 
     <div class="nav-label">Manage</div>
     <div class="ni" onclick="showView('docs',this)">
@@ -578,6 +339,13 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
       Settings
     </div>
+    <div style="margin-top:16px;padding:0 8px;">
+      <div style="display:flex;align-items:center;gap:9px;padding:7px 8px;border-radius:var(--r-sm);color:rgba(255,255,255,0.2);font-size:12px;cursor:not-allowed;border:1px dashed rgba(255,255,255,0.1);">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+        Connect email / Slack
+        <span style="margin-left:auto;font-size:9px;background:rgba(255,255,255,0.08);padding:1px 6px;border-radius:4px;color:rgba(255,255,255,0.3);">Soon</span>
+      </div>
+    </div>
   </div>
   <div style="padding:10px;">
     <div onclick="toggleSharePoint()" style="display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:var(--r-sm);cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.07);transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
@@ -592,8 +360,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
   </div>
   <div class="sidebar-foot">
-    <div class="int-pill"><div class="live-dot"></div>Email connected</div>
-    <div style="margin-top:8px;display:flex;align-items:center;gap:8px;padding:4px 8px;">
+    <div style="margin-top:0;display:flex;align-items:center;gap:8px;padding:4px 8px;">
       <div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;" id="userInitials">DG</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="userDisplayName">Dougie Gordon</div>
@@ -606,31 +373,27 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- MAIN -->
 <div class="main">
 
-<!-- INBOX -->
-<div class="view intake-view active" id="view-intake">
-  <div class="msg-col">
-    <div class="mc-head">
-      <div class="mc-title">Inbox</div>
-      <div class="mc-filters">
-        <button class="mc-chip active" onclick="setStatus('all',this)">All</button>
-        <button class="mc-chip" onclick="setStatus('new',this)">New <span id="cn">3</span></button>
-        <button class="mc-chip" onclick="setStatus('open',this)">Open</button>
-        <button class="mc-chip" onclick="setStatus('inprog',this)">In progress</button>
-        <button class="mc-chip" onclick="setStatus('resolved',this)">Done</button>
+
+<!-- CHAT -->
+<div class="view chat-view active" id="view-chat">
+  <div class="chat-main">
+    <div class="chat-history" id="chatHistory"></div>
+    <div class="chat-input-area">
+      <div class="chat-chips">
+        <button class="chat-chip" onclick="useChip('Draft a letter for me')">Draft a letter</button>
+        <button class="chat-chip" onclick="useChip('What does ACAS guidance say about ')">ACAS guidance</button>
+        <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
+        <button class="chat-chip" onclick="useChip('What do I need to know about maternity leave?')">Maternity leave</button>
+      </div>
+      <div class="chat-input-wrap">
+        <textarea class="chat-ta" id="chatInput" placeholder="Paste an email, ask a policy question, or request a letter..." rows="1"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
+        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </button>
       </div>
     </div>
-    <div class="msg-list" id="msgList"></div>
-    <div class="log-btn" onclick="logOffline()">
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-      Log offline conversation
-    </div>
-  </div>
-  <div class="detail-col">
-    <div class="detail-empty" id="detailEmpty">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      <p>Select a message — Breeze HR drafts a response from your policies, or suggests what to ask first.</p>
-    </div>
-    <div id="detailContent" style="display:none;"></div>
   </div>
 </div>
 
@@ -865,7 +628,9 @@ async function onSignedIn(user) {
     if (initEl) initEl.textContent = initials;
     if (nameEl) nameEl.textContent = profile.full_name || user.email;
   }
-  await Promise.all([loadMessages(), loadFolders()]);
+  chatSystemPrompt = null;
+  buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
+  renderChatHistory();
 }
 
 async function signOut() {
@@ -882,35 +647,7 @@ window.addEventListener('load', async () => {
   if (session) await onSignedIn(session.user);
 });
 
-document.addEventListener('click', () => {
-  ['folderCtxMenu','msgCtxMenu'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
-  document.querySelectorAll('[id^="folderPicker-"]').forEach(x => x.style.display='none');
-});
-
 // ── DB OPS ──
-async function loadMessages() {
-  if (!currentProfile) return;
-  const { data } = await sb.from('messages').select('*').eq('company_id', currentProfile.company_id).order('created_at', { ascending: false });
-  if (data && data.length > 0) {
-    const dbMsgs = data.map(m => ({
-      id: m.id, from: m.from_name,
-      initials: m.from_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(),
-      bg: '#EBF3FF', fg: '#0066CC', source: m.source || 'direct', type: m.type || 'General',
-      status: m.status || 'new',
-      time: new Date(m.created_at).toLocaleTimeString('en-GB', {hour:'2-digit',minute:'2-digit'}),
-      subject: m.subject, preview: m.body.substring(0, 80), body: m.body,
-      aiType: 'clarify', policyRef: null, draftAnswer: null, clarifyQs: [], thread: []
-    }));
-    msgs.unshift(...dbMsgs);
-  }
-  renderMsgs();
-}
-
-async function saveMessage(m) {
-  if (!currentProfile) return;
-  const { data } = await sb.from('messages').insert({ company_id: currentProfile.company_id, from_name: m.from, from_email: '', source: m.source, subject: m.subject, body: m.body, type: m.type, status: m.status }).select().single();
-  return data;
-}
 
 async function saveResponse(messageId, aiDraft, hrSent) {
   if (!currentProfile) return;
@@ -924,102 +661,21 @@ async function saveResponse(messageId, aiDraft, hrSent) {
   });
 }
 
-async function rateAIDraft(msgId, rating) {
-  const m = msgs.find(x=>x.id===msgId); if(!m) return;
-  const upBtn = document.getElementById(`rate-up-${msgId}`);
-  const downBtn = document.getElementById(`rate-down-${msgId}`);
-  if (upBtn) { upBtn.classList.toggle('rated-up', rating===1); upBtn.classList.toggle('rated-down', false); }
-  if (downBtn) { downBtn.classList.toggle('rated-down', rating===-1); downBtn.classList.toggle('rated-up', false); }
-  if (currentProfile) {
-    await sb.from('ratings').insert({
-      company_id: currentProfile.company_id,
-      message_id: msgId,
-      message_type: m.type,
-      ai_draft: m.draftAnswer || '',
-      rating
-    });
-  }
+async function rateAIDraft(msgId, rating, draftText, msgType) {
+  if (!currentProfile) return;
+  await sb.from('ratings').insert({
+    company_id: currentProfile.company_id,
+    message_id: msgId || null,
+    message_type: msgType || 'general',
+    ai_draft: draftText || '',
+    rating
+  });
 }
 
 async function saveFeedback(type, shown, used) {
   if (!currentProfile) return;
   await sb.from('feedback').insert({ company_id: currentProfile.company_id, message_type: type, questions_suggested: shown, questions_used: used });
 }
-
-async function updateMessageStatus(id, status) {
-  await sb.from('messages').update({ status }).eq('id', id);
-}
-
-// ── DATA ──
-const msgs = [
-  {
-    id:'m1', from:'James Okafor', initials:'JO', bg:'#EBF3FF', fg:'#0066CC',
-    source:'email', type:'Leave', status:'new', time:'8:47am',
-    subject:'Maternity leave — due in August',
-    preview:'Hi, I\'m 24 weeks pregnant with a due date of 14 August...',
-    body:'Hi,\n\nI\'m 24 weeks pregnant with a due date of 14 August. I wanted to start planning ahead and understand what I\'m entitled to and what I need to do. I\'m thinking of starting leave around 4 August.\n\nCould you let me know the process and what pay I\'ll receive?\n\nThanks,\nPriya',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m2', from:'Daniel Wright', initials:'DW', bg:'#F3EEFF', fg:'#4B0082',
-    source:'email', type:'Pay & benefits', status:'new', time:'9:12am',
-    subject:'Resigning — what happens to my holiday and final pay?',
-    preview:'Hi, I\'m planning to hand in my notice next week...',
-    body:'Hi,\n\nI\'m planning to hand in my notice next week. My contract says 3 months notice. I have about 12 days of annual leave remaining.\n\nCan you let me know:\n1. Do I get paid for the unused holiday?\n2. When will I receive my final payslip?\n3. Are there any restrictions on what I can do after I leave — I\'m thinking of joining a competitor?\n\nThanks,\nDaniel',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m3', from:'Rachel Kim', initials:'RK', bg:'#FFF0F0', fg:'#8B0000',
-    source:'email', type:'General', status:'new', time:'9:58am',
-    subject:'Urgent — I need to speak to someone today',
-    preview:'I\'m really struggling and I don\'t know what to do...',
-    body:'Hi,\n\nI\'m really struggling at the moment and I don\'t know what to do. My manager has been making comments about my work in front of the whole team and yesterday told me in front of everyone that I\'d "never make it to senior level." I\'ve been here 3 years and have never had a formal complaint against me.\n\nI\'m not sure if this is a grievance or what. I just know I can\'t keep going like this. I haven\'t been sleeping and I\'m starting to dread coming in.\n\nIs there someone I can speak to today?\n\nRachel',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m4', from:'Ben Hussain', initials:'BH', bg:'#E8F5EE', fg:'#1A7A3C',
-    source:'slack', type:'Pay & benefits', status:'new', time:'10:23am',
-    subject:'Pension contributions — how do I increase?',
-    preview:'Hey, quick one — how do I up my pension contributions?',
-    body:'Hey,\n\nQuick one — how do I increase my pension contributions? I\'m currently on the minimum 3% and want to put in more. Do I just do it through the Nest portal or do I need to tell you first?\n\nAlso is there a max the company will match?\n\nThanks\nBen',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m5', from:'Sophie Andersson', initials:'SA', bg:'#FDF3E3', fg:'#7A4A0A',
-    source:'email', type:'General', status:'new', time:'11:05am',
-    subject:'Working from Barcelona for 6 weeks — is this okay?',
-    preview:'Hi, my partner is based in Barcelona and I\'d like to work from there...',
-    body:'Hi,\n\nMy partner is based in Barcelona and I\'d like to work remotely from there for 6 weeks over the summer (July–August). My role is fully remote anyway so it wouldn\'t affect my output at all.\n\nIs this something the company would allow? I\'d still be working UK hours.\n\nThanks,\nSophie',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m6', from:'Tom Bradley', initials:'TB', bg:'#EBF3FF', fg:'#0066CC',
-    source:'slack', type:'Onboarding', status:'open', time:'Yesterday',
-    subject:'New starter joining Monday — Jamie Walsh',
-    preview:'Hey, just flagging Jamie Walsh joins Monday and needs everything set up...',
-    body:'Hey — just wanted to flag that Jamie Walsh is joining our backend team this coming Monday. She\'ll need a MacBook Pro, GitHub access, Slack invite, and AWS read-only access sorted before she arrives. Can you also get her contract over to her ASAP? She hasn\'t signed yet.\n\nShe\'s on £72k, permanent, starting probation on Monday.\n\nThanks\nTom',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m7', from:'Claire Obi', initials:'CO', bg:'#F3EEFF', fg:'#4B0082',
-    source:'email', type:'Performance', status:'open', time:'Yesterday',
-    subject:'Concerns about team member — third time missing deadlines',
-    preview:'Hi, I\'ve now had three conversations with Marcus about missed deadlines...',
-    body:'Hi,\n\nI\'ve now had three conversations with Marcus about repeatedly missing project deadlines. The first was informal in January, the second in March. Neither was documented at the time. We\'re now in May and nothing has improved — he missed two client deliverables last week.\n\nI want to escalate but I\'m not sure what the right process is. He\'s been here 2 years. Should I be starting a formal process?\n\nClaire',
-    aiType:'clarify', policyRef:null, draftAnswer:null, hrActions:null, clarifyQs:[], thread:[]
-  },
-  {
-    id:'m8', from:'Aisha Okonkwo', initials:'AO', bg:'#FDF3E3', fg:'#7A4A0A',
-    source:'email', type:'Pay & benefits', status:'resolved', time:'2 days ago',
-    subject:'How does the pension work?',
-    preview:'Could you explain how our pension scheme works...',
-    body:'Could you explain how our pension scheme works and how I go about increasing my contributions? I\'ve been here 6 months and want to make sure I\'m making the most of it.',
-    aiType:'answer', policyRef:'Pension Policy', draftAnswer:`Hi Aisha,\n\nGreat that you're thinking about this!\n\nWe use Nest for our workplace pension. The company contributes 5% of your qualifying earnings, and you're currently on the minimum 3% employee contribution. You can increase this at any time by logging into nest.co.uk with your work email — go to My Contributions and update the percentage. Changes take effect from the next payroll run.\n\nLet me know if you have any trouble logging in.\n\nBest,\nHR`, hrActions:'• Confirm Aisha is enrolled in Nest (check payroll system)\n• Verify her qualifying earnings band is correct\n• No action needed before sending — straightforward query', clarifyQs:[], thread:[
-      {dir:'in',sender:'Aisha Okonkwo',time:'2 days ago',text:'Could you explain how our pension scheme works and how I go about increasing my contributions?'},
-      {dir:'out',sender:'HR',time:'2 days ago',text:'Hi Aisha — we use Nest. Employer 5%, you\'re on minimum 3%. Log into nest.co.uk to increase anytime. Let me know if you need a login reset!'}
-    ]
-  }
-];
 
 
 const tmpls = [
@@ -1095,790 +751,6 @@ const processes = [
   {icon:'📉',name:'Performance management',badge:'Beta',steps:['Informal conversation','Follow-up email sent','Formal PIP issued','Review meetings','Outcome decision']},
   {icon:'🚪',name:'Offboarding',badge:'Beta',steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned']}
 ];
-
-// ── INBOX ──
-let selMsg=null, srcFilter='all', stFilter='all', inboxView='inbox';
-let folders=[], activeFolderId=null, foldersOpen=false, ctxFolderId=null;
-let autoSort = localStorage.getItem('breeze_autosort') !== 'false';
-const konoChatHistory = {};
-
-function renderMsgs() {
-  const list = document.getElementById('msgList');
-  const hasSent = m => m.thread && m.thread.some(t => t.dir === 'out');
-  let filtered = msgs.filter(m => {
-    if (inboxView === 'sent') return hasSent(m);
-    if (inboxView === 'drafts') return !hasSent(m) && (m.status === 'new' || m.status === 'open');
-    // inbox view
-    if (stFilter !== 'all' && m.status !== stFilter) return false;
-    if (activeFolderId && m.folder_id !== activeFolderId) return false;
-    if (!activeFolderId && m.folder_id && folders.length) return false;
-    return true;
-  });
-  // Update drafts badge
-  const draftCount = msgs.filter(m => !hasSent(m) && (m.status==='new'||m.status==='open')).length;
-  const draftBadge = document.getElementById('nbDrafts');
-  if (draftBadge) { draftBadge.textContent = draftCount; draftBadge.style.display = draftCount ? '' : 'none'; }
-  list.innerHTML = '';
-  filtered.forEach(m => {
-    const div = document.createElement('div');
-    const isUnread = m.status === 'new';
-    div.className = 'msg-item' + (selMsg && selMsg.id===m.id ? ' active':'') + (isUnread ? ' unread-item':'');
-    div.onclick = () => openMsg(m);
-    div.oncontextmenu = (e) => { e.preventDefault(); showMsgCtxMenu(e, m.id); };
-    const folderDot = m.folder_id ? (() => { const f=folders.find(x=>x.id===m.folder_id); return f?`<span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:${f.color};margin-right:3px;vertical-align:middle;"></span>`:'' })() : '';
-    div.innerHTML = `
-      <div class="mi-row1">
-        <div class="mi-name">${isUnread?`<span class="unread-dot"></span>`:''}${folderDot}${m.from}</div>
-        <div class="mi-time">${m.time}</div>
-      </div>
-      <div class="mi-subject">${m.subject}</div>
-      <div class="mi-preview">${m.preview}</div>
-      <div class="msg-hover-actions" onclick="event.stopPropagation()">
-        <button class="mha-btn" title="Reply" onclick="openMsg(msgs.find(x=>x.id==='${m.id}'));setTimeout(()=>gmSwitchCompose('reply','${m.id}'),100)"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg></button>
-        <button class="mha-btn" title="${isUnread?'Mark read':'Mark unread'}" onclick="quickMarkRead('${m.id}',${isUnread})">${isUnread?'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>':'<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3" fill="currentColor"/></svg>'}</button>
-        <button class="mha-btn" title="Move to folder" onclick="showMsgCtxMenu({clientX:this.getBoundingClientRect().left,clientY:this.getBoundingClientRect().bottom,preventDefault:()=>{}},'${m.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg></button>
-        <button class="mha-btn" title="Delete" onclick="deleteMsg('${m.id}')"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg></button>
-      </div>`;
-    list.appendChild(div);
-  });
-  const n = msgs.filter(m=>m.status==='new').length;
-  document.getElementById('nbNew').textContent = n;
-  document.getElementById('cn').textContent = n;
-}
-
-function setInboxView(view, el) {
-  inboxView = view;
-  stFilter = 'all';
-  activeFolderId = null;
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-  el.classList.add('active');
-  document.querySelectorAll('.mc-chip').forEach(c => c.classList.remove('active'));
-  document.querySelector('.mc-chip')?.classList.add('active');
-  showView('intake', el);
-  renderMsgs();
-}
-
-function setStatus(s,el) {
-  stFilter=s;
-  document.querySelectorAll('.mc-chip').forEach(c=>c.classList.remove('active'));
-  el.classList.add('active');
-  renderMsgs();
-}
-
-function setSource(s,el) { srcFilter=s; renderMsgs(); }
-
-function openMsg(m) {
-  selMsg = m;
-  if (m.status === 'new') m.status = 'open';
-  renderMsgs();
-  document.getElementById('detailEmpty').style.display = 'none';
-  const dc = document.getElementById('detailContent');
-  dc.style.display = 'flex';
-  dc.style.flexDirection = 'column';
-  dc.style.height = '100%';
-  dc.style.overflow = 'hidden';
-
-  if (!konoChatHistory[m.id]) {
-    konoChatHistory[m.id] = [{ role:'ai', text:`Analysing message from ${m.from.split(' ')[0]}...` }];
-    generateAIDraft(m).then(result => {
-      if (!result) {
-        konoChatHistory[m.id] = [{role:'ai',text:'Could not generate a draft - connection issue. Please try again.'}];
-        if (selMsg && selMsg.id===m.id) openMsg(m);
-        return;
-      }
-      m.aiType = result.type; m.draftAnswer = result.employeeDraft || result.draft; m.hrActions = result.hrActions; m.clarifyQs = result.questions || []; m.policyRef = result.policyRef;
-      if (autoSort && !m.folder_id) {
-        const match = folders.find(f => f.name.toLowerCase() === m.type.toLowerCase());
-        if (match) { moveToFolder(m.id, match.id); showToast(`Auto-sorted to ${match.name}`); }
-      }
-      konoChatHistory[m.id] = result.type === 'answer'
-        ? [{role:'ai',text:`Drafted a response based on ${result.policyRef?`your <strong>${result.policyRef}</strong>`:'UK HR best practice'}. It's in the reply box. ${result.advice||''}`}]
-        : result.type === 'escalate'
-        ? [{role:'ai',text:`⚠ ${result.advice||'Sensitive situation - see HR advisory note above before responding.'}`}]
-        : [{role:'ai',text:`Needs more context. ${result.advice||''} Suggested questions are loaded in the reply box.`}];
-      if (selMsg && selMsg.id===m.id) openMsg(m);
-    });
-  }
-
-  const srcLabel = {slack:'Slack',email:'Email',direct:'Direct'}[m.source]||'Direct';
-
-  // Type badge colours
-  const typeBadge = {
-    'Leave':'background:#E8F5EE;color:#1A7A3C;',
-    'Onboarding':'background:#EBF3FF;color:#0066CC;',
-    'Performance':'background:#FDF3E3;color:#7A4A0A;',
-    'Pay & benefits':'background:#F3EEFF;color:#4B0082;',
-    'Offboarding':'background:#FFF0F0;color:#8B0000;',
-    'General':'background:var(--surface2);color:var(--ink2);'
-  }[m.type] || 'background:var(--surface2);color:var(--ink2);';
-
-  // Thread — Outlook-style flat conversation, all messages full-width
-  let threadHtml = '';
-  if (m.thread.length) {
-    threadHtml = m.thread.map(t => {
-      const isOut = t.dir === 'out';
-      return `<div style="border-top:1px solid var(--border);padding:14px 20px;">
-        <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-          <div style="width:28px;height:28px;border-radius:50%;background:${isOut?'var(--accent)':'#E0E0E5'};color:${isOut?'white':'var(--ink2)'};display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;flex-shrink:0;">${isOut?'HR':m.initials.substring(0,2)}</div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:12px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:8px;">
-              ${t.sender}
-              ${isOut?'<span style="font-size:10px;font-weight:500;color:var(--accent);background:var(--accent-bg);padding:1px 7px;border-radius:20px;">Sent</span>':''}
-            </div>
-            <div style="font-size:11px;color:var(--ink3);">${t.time}</div>
-          </div>
-        </div>
-        <div style="font-size:13px;color:var(--ink);line-height:1.75;white-space:pre-wrap;padding-left:38px;">${t.text}</div>
-      </div>`;
-    }).join('');
-  }
-
-  // AI bar — collapsible HR Actions so it doesn't push compose area
-  let aiBar = '';
-  if (m.aiType==='escalate' && m.draftAnswer) {
-    aiBar = `<div class="gm-ai-bar" style="background:#FFF0F0;border-bottom-color:rgba(139,0,0,0.12);"><div class="gm-ai-icon" style="background:var(--red);font-size:11px;">⚠</div><div style="flex:1;"><span style="font-size:11px;font-weight:600;color:var(--red);">Sensitive</span><span style="font-size:11px;color:var(--ink2);margin-left:6px;">Acknowledgement loaded - senior HR must review before anything further is sent</span></div>${m.hrActions?`<button onclick="showAdvisory('${m.id}')" style="font-size:11px;font-weight:500;color:var(--red);background:var(--red-bg);border:1px solid rgba(139,0,0,0.2);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;">View advisory ↑</button>`:''}<div class="gm-ai-chat" style="margin-left:8px;" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
-  } else if (m.aiType==='answer' && m.draftAnswer) {
-    const reason = m.policyRef
-      ? `Based on your <strong>📄 ${m.policyRef}</strong> · ACAS best practice applied`
-      : `Based on UK HR best practice and ACAS guidance`;
-    const actionsBtn = m.hrActions
-      ? `<button onclick="showAdvisory('${m.id}','actions')" style="font-size:11px;font-weight:500;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;margin-left:6px;">HR Actions ↑</button>`
-      : '';
-    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);">Breeze HR drafted this reply</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div>${actionsBtn}<div class="ai-rating-wrap" style="margin-left:6px;"><button class="ai-rating-btn" id="rate-up-${m.id}" title="Good draft" onclick="rateAIDraft('${m.id}',1)">👍</button><button class="ai-rating-btn" id="rate-down-${m.id}" title="Needs work" onclick="rateAIDraft('${m.id}',-1)">👎</button></div><div class="gm-ai-chat" style="margin-left:8px;" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
-  } else if (m.aiType==='clarify' || m.clarifyQs.length) {
-    const reason = m.type==='Performance'
-      ? `ACAS code: document 2 informal conversations before escalating formally`
-      : m.type==='General' && m.body?.toLowerCase().includes('struggling')
-      ? `Employee appears distressed — prioritise human response over process`
-      : `More context needed before a policy-based response can be drafted`;
-    aiBar = `<div class="gm-ai-bar"><div class="gm-ai-icon">◈</div><div style="flex:1;"><div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:1px;">Breeze HR loaded clarifying questions</div><div style="font-size:11px;color:var(--ink2);">${reason}</div></div><div class="gm-ai-chat" onclick="gmSwitchCompose('breeze','${m.id}')">Ask Breeze HR</div></div>`;
-  }
-
-  // Initial reply content
-  let initReply = '';
-  if ((m.aiType==='answer' || m.aiType==='escalate') && m.draftAnswer) initReply = m.draftAnswer;
-  else if (m.clarifyQs.length) initReply = `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nI'll come back to you as soon as I have this.\n\nMany thanks,\nHR`;
-
-  dc.innerHTML = `<div class="gm-detail">
-
-    <!-- Subject + action buttons -->
-    <div class="gm-subject-bar">
-      <div class="gm-subject">${m.subject}</div>
-      <div class="gm-action-btns">
-        <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateMsgType('${m.id}',this.value)">${['Onboarding','Leave','Performance','Pay & benefits','General','Offboarding'].map(t=>`<option ${m.type===t?'selected':''}>${t}</option>`).join('')}</select>
-        <select style="font-size:11px;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 7px;font-family:inherit;color:var(--ink2);background:var(--surface2);outline:none;cursor:pointer;" onchange="updateStatus('${m.id}',this.value)"><option value="open" ${m.status==='open'?'selected':''}>Open</option><option value="inprog" ${m.status==='inprog'?'selected':''}>In progress</option><option value="resolved" ${m.status==='resolved'?'selected':''}>Resolved</option></select>
-        <div style="position:relative;">
-          ${(() => { const cf=folders.find(f=>f.id===m.folder_id); return `<button class="gm-icon-btn" title="Move to folder" onclick="toggleFolderPicker('${m.id}',event)" style="${cf?`color:${cf.color}`:''}">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg>
-            ${cf ? `<span style="font-size:9px;font-weight:600;max-width:50px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cf.name}</span>` : ''}
-          </button>`; })()}
-          <div id="folderPicker-${m.id}" style="display:none;position:absolute;right:0;top:34px;z-index:200;background:var(--surface);border:1px solid var(--border2);border-radius:var(--r);box-shadow:var(--shadow-lg);padding:4px;min-width:170px;">
-            ${folders.length ? `
-              <div style="font-size:10px;font-weight:600;color:var(--ink3);padding:4px 10px 2px;letter-spacing:0.06em;text-transform:uppercase;">Move to</div>
-              ${folders.map(f=>`<div class="ctx-item" onclick="moveToFolder('${m.id}','${f.id}');document.getElementById('folderPicker-${m.id}').style.display='none';openMsg(msgs.find(x=>x.id==='${m.id}'))"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${f.color};margin-right:7px;"></span>${f.name}${m.folder_id===f.id?' ✓':''}</div>`).join('')}
-              ${m.folder_id ? `<div class="ctx-sep"></div><div class="ctx-item" style="color:var(--ink3)" onclick="moveToFolder('${m.id}',null);document.getElementById('folderPicker-${m.id}').style.display='none';openMsg(msgs.find(x=>x.id==='${m.id}'))">Remove from folder</div>` : ''}
-            ` : `<div style="padding:8px 12px;font-size:11px;color:var(--ink3);">No folders yet.<br>Create one in the sidebar.</div>`}
-            <div class="ctx-sep"></div>
-            <div class="ctx-item" style="color:var(--accent)" onclick="document.getElementById('folderPicker-${m.id}').style.display='none';startNewFolder()">+ New folder</div>
-          </div>
-        </div>
-        <button class="gm-icon-btn" title="Pop out" onclick="popOutMsg('${m.id}')" style="color:var(--ink3);">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        </button>
-        <button class="gm-icon-btn danger" title="Delete" onclick="deleteMsg('${m.id}')">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        </button>
-      </div>
-    </div>
-
-    <!-- Sender row -->
-    <div class="gm-sender-row">
-      <div class="gm-av" style="background:${m.bg};color:${m.fg}">${m.initials}</div>
-      <div style="flex:1;min-width:0;">
-        <div class="gm-sender-name">
-          ${m.from}
-          <span class="gm-type-badge" style="${typeBadge}">${m.type}</span>
-        </div>
-        <div class="gm-sender-meta">via ${srcLabel}</div>
-      </div>
-      <div class="gm-time">${m.time}</div>
-    </div>
-
-    <!-- Scrollable area: body + thread history -->
-    <div class="gm-scroll">
-      <div class="gm-body">${m.body}</div>
-      ${threadHtml}
-    </div>
-
-    ${aiBar}
-
-    <!-- Compose area -->
-    <div class="gm-compose">
-      <div class="gm-compose-modes">
-        <button class="gm-mode-btn active" id="gm-reply-${m.id}" onclick="gmSwitchCompose('reply','${m.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>
-          Reply
-        </button>
-        <button class="gm-mode-btn breeze" id="gm-breeze-${m.id}" onclick="gmSwitchCompose('breeze','${m.id}')">
-          ◈ Ask Breeze HR
-        </button>
-        <button class="gm-mode-btn" id="gm-replyall-${m.id}" onclick="gmSwitchCompose('replyall','${m.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>
-          Reply all
-        </button>
-        <button class="gm-mode-btn" id="gm-fwd-${m.id}" onclick="gmSwitchCompose('forward','${m.id}')">
-          <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>
-          Forward
-        </button>
-      </div>
-
-      <!-- To field — shown for reply all / forward -->
-      <div class="gm-to-fields" id="gm-to-${m.id}" style="display:none;">
-        <div class="gm-to-row">
-          <span class="gm-to-label">To</span>
-          <input class="gm-to-input" id="gm-to-input-${m.id}" placeholder="Add recipients...">
-          <span class="gm-cc-toggle" onclick="gmToggleCC('${m.id}')">Cc Bcc</span>
-        </div>
-        <div id="gm-cc-${m.id}" style="display:none;">
-          <div class="gm-to-row"><span class="gm-to-label">Cc</span><input class="gm-to-input" placeholder="Cc..."></div>
-          <div class="gm-to-row"><span class="gm-to-label">Bcc</span><input class="gm-to-input" placeholder="Bcc..."></div>
-        </div>
-      </div>
-
-      <!-- Reply textarea -->
-      <div id="gm-reply-pane-${m.id}" style="flex:1;min-height:0;display:flex;flex-direction:column;overflow:hidden;">
-        <div class="gm-ta" id="replyTa-${m.id}" contenteditable="true" data-placeholder="Write your reply..." onkeydown="handleReplyKey(event,'${m.id}')">${initReply ? initReply.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>') : ''}</div>
-        <div class="gm-compose-foot">
-          <button class="gm-send-btn" onclick="sendReply('${m.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-            Send
-          </button>
-          <div class="gm-fmt-divider"></div>
-          <button class="gm-fmt-btn" title="Bold (Ctrl+B)" onclick="formatText('bold','${m.id}')"><b>B</b></button>
-          <button class="gm-fmt-btn" title="Italic (Ctrl+I)" onclick="formatText('italic','${m.id}')"><i>I</i></button>
-          <button class="gm-fmt-btn" title="Underline (Ctrl+U)" onclick="formatText('underline','${m.id}')"><u style="font-size:11px;">U</u></button>
-          <div class="gm-fmt-divider"></div>
-          <button class="gm-fmt-btn" title="Bullet list" onclick="formatText('insertUnorderedList','${m.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="9" y1="6" x2="20" y2="6"/><line x1="9" y1="12" x2="20" y2="12"/><line x1="9" y1="18" x2="20" y2="18"/><circle cx="4" cy="6" r="1" fill="currentColor"/><circle cx="4" cy="12" r="1" fill="currentColor"/><circle cx="4" cy="18" r="1" fill="currentColor"/></svg>
-          </button>
-          <button class="gm-fmt-btn" title="Numbered list" onclick="formatText('insertOrderedList','${m.id}')">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="10" y1="6" x2="21" y2="6"/><line x1="10" y1="12" x2="21" y2="12"/><line x1="10" y1="18" x2="21" y2="18"/><path d="M4 6h1v4"/><path d="M4 10h2"/><path d="M6 18H4c0-1 2-2 2-3s-1-1.5-2-1"/></svg>
-          </button>
-          <div class="gm-discard" onclick="document.getElementById('replyTa-${m.id}').innerHTML=''">Discard</div>
-        </div>
-      </div>
-
-      <!-- Kono pane -->
-      <div class="kono-pane" id="konoPane-${m.id}">
-        <div class="kono-history" id="konoHistory-${m.id}"></div>
-        <div class="kono-input-row">
-          <textarea class="kono-ta" id="konoTa-${m.id}" placeholder="Ask Breeze HR — ACAS guidance, policy, how to handle this..." rows="1"
-            onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendKono('${m.id}')}"
-            oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,80)+'px'"></textarea>
-          <button class="kono-send" onclick="sendKono('${m.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg></button>
-        </div>
-      </div>
-    </div>
-  </div>`;
-
-  renderKonoHistory(m.id);
-}
-
-function gmSwitchCompose(mode, msgId) {
-  const m = msgs.find(x=>x.id===msgId);
-  // Update mode button states
-  ['reply','replyall','fwd','breeze'].forEach(k => {
-    const btn = document.getElementById(`gm-${k}-${msgId}`);
-    if (btn) btn.classList.remove('active');
-  });
-  const activeBtn = document.getElementById(`gm-${mode==='forward'?'fwd':mode}-${msgId}`);
-  if (activeBtn) activeBtn.classList.add('active');
-
-  const toField = document.getElementById(`gm-to-${msgId}`);
-  const toInput = document.getElementById(`gm-to-input-${msgId}`);
-  const replyPane = document.getElementById(`gm-reply-pane-${msgId}`);
-  const konoPane = document.getElementById(`konoPane-${msgId}`);
-
-  // Show/hide panes
-  if (mode === 'breeze') {
-    if (replyPane) replyPane.style.display = 'none';
-    if (toField) toField.style.display = 'none';
-    konoPane.classList.add('visible');
-    renderKonoHistory(msgId);
-    setTimeout(()=>document.getElementById(`konoTa-${msgId}`)?.focus(), 50);
-  } else {
-    konoPane.classList.remove('visible');
-    // Must be flex not block — textarea needs flex:1 to fill the space
-    if (replyPane) { replyPane.style.display = 'flex'; replyPane.style.flexDirection = 'column'; replyPane.style.flex = '1'; replyPane.style.minHeight = '0'; replyPane.style.overflow = 'hidden'; }
-    // Show To field for forward/reply all
-    if (toField) toField.style.display = (mode==='forward'||mode==='replyall') ? 'block' : 'none';
-    if (mode==='forward') {
-      const ta = document.getElementById(`replyTa-${msgId}`);
-      if (ta && m) ta.innerHTML = `<br><br><span style="color:var(--ink3)">---------- Forwarded message ----------<br>From: ${m.from}<br>Subject: ${m.subject}</span><br><br>${m.body.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}`;
-      setTimeout(()=>toInput?.focus(), 30);
-    } else if (mode==='replyall') {
-      setTimeout(()=>toInput?.focus(), 30);
-    } else {
-      setTimeout(()=>document.getElementById(`replyTa-${msgId}`)?.focus(), 30);
-    }
-  }
-}
-
-function gmToggleCC(msgId) {
-  const cc = document.getElementById(`gm-cc-${msgId}`);
-  if (cc) cc.style.display = cc.style.display==='none' ? 'block' : 'none';
-}
-
-function switchCompose(mode, msgId) { gmSwitchCompose(mode, msgId); }
-
-function renderKonoHistory(msgId) {
-  const hist = konoChatHistory[msgId]||[];
-  const el = document.getElementById('konoHistory-'+msgId);
-  if (!el) return;
-  el.innerHTML = hist.map(h=>`<div class="kono-msg${h.role==='hr'?' kono-u':''}"><div class="kono-av ${h.role==='hr'?'u':'ai'}">${h.role==='hr'?'HR':'◈'}</div><div class="kono-bubble ${h.role==='hr'?'u':'ai'}">${h.text.replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>').replace(/\n/g,'<br>')}</div></div>`).join('');
-  el.scrollTop = el.scrollHeight;
-}
-
-function toggleCollapsible(id) {
-  const container = document.getElementById(id); if (!container) return;
-  const bodyEl = container.querySelector('.collapsible-body');
-  const arrow = container.querySelector('svg');
-  if (!bodyEl) return;
-  const isOpen = bodyEl.style.display !== 'none';
-  bodyEl.style.display = isOpen ? 'none' : 'block';
-  if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
-}
-
-async function callClaude(messages, systemPrompt) {
-  try {
-    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({messages, system: systemPrompt}) });
-    const data = await res.json();
-    if (data.content && data.content[0]) return data.content[0].text;
-    return null;
-  } catch(e) { return null; }
-}
-
-async function generateAIDraft(m) {
-  // Run all Supabase queries in parallel for speed
-  let policyContext = '', learningContext = '', ratingContext = '';
-
-  if (currentProfile) {
-    const cid = currentProfile.company_id;
-    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes] = await Promise.all([
-      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%'),
-      sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at', { ascending: false }).limit(30),
-      sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating', 1).eq('message_type', m.type).order('created_at', { ascending: false }).limit(2),
-      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating', -1).eq('message_type', m.type).order('created_at', { ascending: false }).limit(1)
-    ]);
-
-    // 1. Rank policies by keyword relevance to this message
-    const pols = polsRes.data;
-    if (pols && pols.length) {
-      const msgText = (m.subject + ' ' + m.body + ' ' + m.type).toLowerCase();
-      const msgWords = new Set((msgText.match(/\b[a-z]{4,}\b/g) || []));
-      const typeWords = { 'Leave':'leave maternity paternity holiday absence', 'Pay & benefits':'pay salary payslip pension bonus', 'Performance':'performance capability conduct disciplinary', 'Offboarding':'notice resignation redundancy termination leaver', 'Onboarding':'onboarding induction probation starter' };
-      const typeHint = (typeWords[m.type] || '').split(' ');
-      const scored = pols.map(p => {
-        const pText = (p.name + ' ' + p.content.substring(0, 2000)).toLowerCase();
-        let score = 0;
-        msgWords.forEach(w => { if (pText.includes(w)) score++; });
-        typeHint.forEach(w => { if (pText.includes(w)) score += 2; });
-        return { ...p, score };
-      }).sort((a,b) => b.score - a.score);
-      const toUse = scored.filter(p => p.score > 0).slice(0, 3) || scored.slice(0, 2);
-      policyContext = `\n\nCOMPANY POLICIES (use these first - they override generic advice):\n` +
-        toUse.map(p=>`\n--- ${p.name} ---\n${p.content.substring(0,4000)}`).join('\n');
-    } else {
-      policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET - use ACAS guidance and UK employment law as the basis. Recommend HR uploads their policies for more accurate responses.`;
-    }
-
-    // 2. Build learning signal from past edits
-    const responses = responsesRes.data;
-    if (responses && responses.length) {
-      const total = responses.length;
-      const edited = responses.filter(r => r.was_edited);
-      const editRate = Math.round((edited.length / total) * 100);
-      const editPatterns = [];
-      if (edited.length >= 3) {
-        const aiAvgLen = edited.reduce((s,r) => s + (r.ai_draft?.length||0), 0) / edited.length;
-        const hrAvgLen = edited.reduce((s,r) => s + (r.hr_sent?.length||0), 0) / edited.length;
-        if (hrAvgLen < aiAvgLen * 0.7) editPatterns.push('This team consistently shortens AI drafts - be more concise');
-        if (hrAvgLen > aiAvgLen * 1.3) editPatterns.push('This team tends to add more detail - be more thorough');
-        const removedAcas = edited.filter(r => r.ai_draft?.includes('ACAS') && !r.hr_sent?.includes('ACAS')).length;
-        if (removedAcas > edited.length * 0.4) editPatterns.push('This team removes ACAS references - do not mention ACAS in employee-facing replies');
-        const informalSignals = ['Hi ', 'Thanks', 'Cheers', 'Hope'];
-        const hrInformal = edited.filter(r => informalSignals.some(s => r.hr_sent?.includes(s))).length;
-        const aiInformal = edited.filter(r => informalSignals.some(s => r.ai_draft?.includes(s))).length;
-        if (hrInformal > aiInformal) editPatterns.push('This team uses a more informal/friendly tone than the AI defaults');
-        if (hrInformal < aiInformal * 0.5) editPatterns.push('This team prefers a formal tone - avoid overly casual language');
-        const sincerelyCount = edited.filter(r => r.hr_sent?.includes('Yours sincerely')).length;
-        const bestCount = edited.filter(r => r.hr_sent?.includes('Best')).length;
-        const thanksCount = edited.filter(r => r.hr_sent?.includes('Thanks')).length;
-        if (sincerelyCount > bestCount && sincerelyCount > thanksCount) editPatterns.push('This team signs off with "Yours sincerely"');
-        else if (bestCount > thanksCount) editPatterns.push('This team signs off with "Best regards" or "Best"');
-        else if (thanksCount > 0) editPatterns.push('This team signs off with "Thanks" or "Many thanks"');
-      }
-      learningContext = `\n\nLEARNING FROM ${total} PREVIOUS REPLIES (edit rate: ${editRate}%):`;
-      if (editPatterns.length) learningContext += `\nStyle patterns detected from HR edits:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
-      else if (editRate < 20) learningContext += `\nHR edits very few drafts (${editRate}%) - current style and length is working well. Maintain it.`;
-      else learningContext += `\nHR edits ${editRate}% of drafts. Insufficient data yet - use standard best practice.`;
-    }
-
-    // 3. Inject approved/rejected examples from ratings
-    const goodRatings = goodRatingsRes.data;
-    const badRatings = badRatingsRes.data;
-    if (goodRatings && goodRatings.length) {
-      ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES FOR ${m.type.toUpperCase()} QUERIES:\nYour HR team has explicitly approved these - match this style:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,1000)}`).join('\n')}`;
-    }
-    if (badRatings && badRatings.length) {
-      ratingContext += `\n\nREJECTED DRAFT STYLE (do NOT repeat this):\n${badRatings[0].ai_draft.substring(0,500)}`;
-    }
-  }
-
-  const systemPrompt = `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You advise HR teams at mid-market companies.
-
-━━━ LANGUAGE & FORMATTING ━━━
-Use UK English throughout — no exceptions.
-- payslip (not paycheck), holiday (not vacation), CV (not resume), post code (not zip code), redundancy (not layoff), trade union (not labor union), maths (not math), authorise/organise/recognise (not -ize spellings)
-- Use a single dash (-) in text, never double dash (--)
-- Bullet points use •, not --
-
-━━━ STEP 1: TRIAGE ━━━
-Before anything else, classify this message:
-
-TIER 1 — TRANSACTIONAL
-Signs: factual policy question, no emotional language, no conflict, no protected characteristics.
-Examples: holiday balance, payday date, how to book leave, pension contributions, cycle to work, notice period.
-Action: Answer directly. 2-4 sentences max. Practical next step. No HR Actions needed.
-
-TIER 2 — STANDARD PROCESS
-Signs: family leave, flexible working request, resignation, standard absence, benefits query.
-Predictable process. Eligibility conditions need checking.
-Action: Draft reply + collapsible HR Actions checklist.
-
-TIER 3 — SENSITIVE / RISK
-Signs: performance concerns, grievance, disciplinary, any mention of "struggling", "not sleeping", 
-"dreading coming in", "it's not fair", "being treated differently", mental health language,
-protected characteristics (pregnancy, disability, race, age, religion, sex, sexual orientation).
-Action: Acknowledge warmly. Do NOT draft a full reply yet. Give HR a brief advisory note.
-Flag: what to investigate, who to involve, what NOT to do in writing.
-Escalation: flag to senior HR before any formal response is sent.
-
-TIER 4 — LEGAL RISK — STOP AND FLAG
-Signs: "tribunal", "solicitor", "ACAS early conciliation", "discrimination claim", 
-"I'm recording this", "without prejudice", "whistleblowing", threat of legal action,
-settlement discussion, "I've taken advice".
-Action: DO NOT draft any reply. Tell HR this needs employment legal advice before responding.
-Escalation: this must go to senior HR and/or employment solicitor immediately.
-
-━━━ STEP 2: READ THE EMOTIONAL STATE ━━━
-
-DISTRESSED ("I'm really struggling", "I don't know what to do", "I haven't been sleeping", "I'm at breaking point")
-→ Lead with a human acknowledgement, not information. First line is always empathy.
-→ Offer a call or in-person conversation before putting things in writing.
-→ Check if EAP (Employee Assistance Programme) applies.
-→ HR Actions: consider whether this needs a welfare check or OH referral.
-
-ANGRY ("this is unacceptable", "I'm furious", "nobody has helped me")
-→ Do not get defensive or justify company position in writing.
-→ Acknowledge. Confirm you take it seriously. Do not make commitments.
-→ HR Actions: escalate to senior HR before responding further.
-
-ANXIOUS / UNCERTAIN ("I hope this is okay to ask", "I don't want to cause trouble")
-→ Immediately reassuring. Confirm it was right to reach out.
-→ Explain what happens next clearly and simply.
-
-FORMAL / LEGAL TONE ("I wish to formally notify", "for the avoidance of doubt", "I am writing to formally")
-→ This person has taken advice. Match formality. Be precise.
-→ HR Actions: senior HR must review before any response is sent.
-
-━━━ STEP 3: ESCALATION ━━━
-Some situations should never be handled by junior HR alone. Flag clearly:
-- ESCALATE TO SENIOR HR: grievance, disciplinary, performance issues with protected characteristics, 
-  any situation where the employee sounds distressed about their manager.
-- ESCALATE TO LEGAL: any legal language, discrimination allegations, settlement discussions, 
-  tribunal mentions, whistleblowing.
-- REFER TO EAP: mental health concerns, stress, personal crisis language.
-- REFER TO OCCUPATIONAL HEALTH: long-term absence (4+ weeks), disability-related adjustments.
-
-━━━ STEP 4: PRIORITY ORDER FOR EVERY RESPONSE ━━━
-1. COMPANY'S OWN UPLOADED POLICIES — check these first, always
-2. ACAS CODES OF PRACTICE — statutory codes tribunals use to judge employer behaviour
-3. UK EMPLOYMENT LAW — ERA 1996, Equality Act 2010, Working Time Regs, etc.
-4. GENERAL BEST PRACTICE — only if nothing above applies
-
-━━━ STEP 5: DRAFT vs HR ACTIONS — THE MOST IMPORTANT RULE ━━━
-The employee-facing draft and the HR Actions list are completely separate things.
-
-EMPLOYEE-FACING DRAFT:
-- What HR will actually send to the employee AFTER they have verified the facts.
-- NEVER include eligibility thresholds, statutory rate calculations, or payroll figures the employee hasn't been told yet.
-- If eligibility is unconfirmed, use warm conditional language: "You should be entitled to..." or "Once we've confirmed your details, we'll set out exactly what you'll receive."
-- DO NOT write out "26 weeks by the 15th week before EWC" or "£184.03 per week" in the employee email - HR needs to verify these first and the employee does not need to see the HR working.
-- Short and warm for Tier 1. Reassuring and clear for Tier 2. Acknowledgement only for Tier 3/4.
-- CRITICAL — BANNED phrases in the employee draft:
-  "I'll check and get back to you", "I'll look into this", "I'll confirm shortly", "I'll find out",
-  "I'll need to review your contract", "your contract may contain", "you may be entitled to",
-  "I'll get back to you on that", "I'll come back to you on the matching limit" — and any variation.
-  These phrases mean the draft is unfinished. An unfinished draft stays in HR Actions, not in the reply box.
-
-- FOR UNKNOWN SPECIFICS — use a [PLACEHOLDER] in square brackets that HR fills in before sending:
-  If the company pension match limit is unknown → draft says "The company matches up to [X%]" — nothing else about it.
-  If notice pay needs verifying → draft says "Your notice pay will be £[AMOUNT] per week"
-  If contract terms need checking → draft says "Your notice period is [X weeks] as per your contract"
-  HR sees the bracket, looks it up, fills it in, then sends. One email. No follow-up needed.
-
-- CRITICAL RULE ON PLACEHOLDERS: When you use a [placeholder], do NOT also write any follow-up promise about it.
-  WRONG: "The company matches up to [X%] — I'll confirm the exact figure and get back to you."
-  RIGHT: "The company matches up to [X%]." — stop there. HR fills in X% before sending.
-  The placeholder IS the resolution. Never combine it with "I'll check", "I'll confirm", or "I'll get back to you".
-
-- RULE: The draft = what goes out the door today, with placeholders filled in. HR Actions = what HR checks before sending. Never blur the two. A draft that says "I'll check" is not a draft — it's a placeholder for a draft.
-
-HR ACTIONS (never seen by the employee):
-- ALL the eligibility checks: length of service, earnings thresholds, contract type.
-- The statutory rate calculations and which ones apply.
-- What HR must verify in the HRIS before sending anything.
-- Who to escalate to, what forms to request, what to log.
-- The specific numbers (26 weeks, £184.03, etc.) belong HERE so HR can confirm them.
-
-━━━ WHAT YOU KNOW ━━━
-
-TRANSACTIONAL:
-- Answer directly from policy. Short is fine. Practical next step.
-
-BENEFITS & REWARD:
-- Explain clearly. Include the actual action ("log into Nest at nest.co.uk").
-- Flag if provider details are needed for a complete answer.
-
-PAYROLL & PAY:
-- Know current rates. Flag that payroll must verify individual calculations.
-- Statutory rates 2025/26: NLW (21+) £12.21/hr | SSP £116.75/wk | SMP/SPP £184.03/wk or 90% AWE
-- Lower Earnings Limit: £125/week | Statutory notice: 1 week per year, max 12 weeks
-- Redundancy pay: 0.5–1.5 weeks per year of service depending on age
-
-LEAVERS:
-- Cover in draft: notice period confirmation, accrued holiday (say "we'll calculate your remaining holiday and include it in your final payslip"), final payslip timing, equipment return process, reference policy.
-- Restrictive covenants: put in HR Actions only ("check contract for non-compete/non-solicitation clauses before responding further"). Do NOT mention covenants in the employee draft unless HR has already read the contract and confirmed what restrictions apply. Never write "your contract may contain..." in an employee email - that tells the employee HR hasn't checked yet.
-- Share options/equity: HR Actions only - flag as complex, refer to scheme rules or legal team. Do not mention in draft.
-- Holiday accrual calculation: HR Actions ("calculate days accrued to last day of notice, confirm with payroll") - not in the employee draft.
-
-FLEXIBLE & REMOTE WORKING:
-- Statutory right to request = day one right since April 2024, max 2 requests per year.
-- CRITICAL — WORKING ABROAD: this is NOT a flexible working request. Creates tax residency risk,
-  employment law jurisdiction issues, and potential social security liability in the host country.
-  Always flag. Never approve without legal/tax sign-off.
-
-FAMILY LEAVE:
-- SMP/SPP eligibility: 26 weeks continuous employment by 15th week before EWC.
-- SPP: AWE must exceed Lower Earnings Limit (£125/week).
-- Always request MATB1 (maternity), SC3 (paternity).
-- KIT days (maternity): up to 10 days work without losing SMP.
-- Shared parental leave: complex — refer to policy or specialist.
-
-EMPLOYEE RELATIONS:
-- ALWAYS distinguish conduct (what they did) from capability (what they can't do) — different processes.
-- Protected characteristics: flag immediately. Performance issues may be disability issues.
-- ACAS disciplinary code: investigate → invite to hearing → right to be accompanied → decision → appeal.
-- Tribunal uplift: up to 25% increase in compensation for failing to follow ACAS code.
-
-ABSENCE:
-- SSP: 4 waiting days, then £116.75/week up to 28 weeks.
-- Long-term absence (4+ weeks): consider Equality Act disability, OH referral, reasonable adjustments.
-- Persistent short-term absence: Bradford Factor, return-to-work interviews, trigger points.
-
-━━━ WORKED EXAMPLES ━━━
-
-EXAMPLE 1 — TIER 1 (pension query):
-Employee: "How do I increase my pension contributions?"
-CORRECT — short, practical, friendly:
-"Hi [name], you can increase your contributions at any time by logging into your Nest account at nest.co.uk — go to My Contributions and update your percentage. Changes apply from the next payroll run. Let me know if you need help with your login. Best, HR"
-HR Actions: None required.
-WRONG: a 400-word essay about pension legislation.
-
-EXAMPLE 2 — TIER 2 (maternity leave):
-Employee: "I'm 24 weeks pregnant, due 14 August, thinking of starting leave 4 August."
-
-CORRECT employee-facing draft (warm, no eligibility maths, no statutory rates):
-"Hi Priya, congratulations! Happy to help you get everything sorted. You're entitled to up to 52 weeks' maternity leave, and based on what you've told us your proposed start date of 4 August looks fine. We'll confirm your maternity pay entitlement once we've checked a couple of details on our end - we'll have that back to you shortly. In the meantime, we'll need your MATB1 form (the certificate from your midwife or GP) once you have it. We'll also send you our maternity policy so you have everything in writing. Any questions in the meantime, just ask. Many thanks, HR"
-
-HR Actions (never sent to employee - for HR to check first):
-- Verify SMP eligibility: needs 26 weeks' continuous employment by 15th week before EWC (week of 28 April) - confirm in HRIS.
-- Check average weekly earnings exceed Lower Earnings Limit (£125/week) - confirm via payroll.
-- Check if company offers enhanced maternity pay above SMP - refer to policy.
-- SMP rates if eligible: 90% AWE for first 6 weeks, then £184.03/wk (or 90% AWE if lower) for 33 weeks.
-- Request MATB1 form. Notify payroll. Log leave dates in HR system. Notify manager.
-
-WRONG (do not do this): spelling out the 26-week threshold, SMP rates, or EWC calculations in the employee email - that is internal HR verification, not what goes in the reply.
-
-EXAMPLE 3 — TIER 3 (distressed employee / potential grievance):
-Employee: "My manager makes comments in front of the team and I haven't been sleeping."
-CORRECT:
-Do NOT draft a formal reply. Give HR:
-1. Acknowledge the employee immediately and warmly — offer a call today.
-2. This has potential grievance indicators. Do not put any substantive response in writing yet.
-3. Escalate to senior HR before proceeding.
-4. Check if the behaviour described could constitute harassment (protected characteristic?).
-5. EAP referral may be appropriate given the sleep/wellbeing mention.
-Draft for employee: acknowledgement + offer of call only. Nothing about process yet.
-
-EXAMPLE 4 — TIER 3 (working abroad):
-Employee: "Can I work from Barcelona for 6 weeks?"
-CORRECT:
-Flag immediately — this is not a standard remote working request.
-Working in Spain for 6 weeks creates: potential Spanish tax liability, risk of becoming subject to Spanish employment law, possible social security complications.
-HR cannot approve this without tax/legal sign-off. Reply to employee should be warm but non-committal: "Thanks for asking — we need to check a few things on our end before confirming. We'll come back to you within a few days."
-HR Actions: Refer to tax advisor or employment solicitor before any approval. Do not approve informally.
-
-━━━ MESSAGE CONTEXT ━━━
-Type: ${m.type} | Source: ${m.source} (Slack = conversational, email = slightly more formal)
-${policyContext}
-${learningContext}
-${ratingContext}
-
-━━━ RESPONSE FORMAT — JSON only ━━━
-{
-  "type": "answer" or "clarify" or "escalate",
-  "draft": "Employee-facing reply. Keep proportionate to the question — short for Tier 1, fuller for Tier 2. For Tier 3/4, acknowledgement only.\\n\\n---\\n\\nHR ACTIONS:\\n• Bullet points of what HR must check/do/escalate before or after sending\\n• Include ESCALATE TO SENIOR HR or ESCALATE TO LEGAL if applicable",
-  "questions": ["only if genuinely needed — not for Tier 1"] or [],
-  "policyRef": "exact name of company policy used, or null",
-  "advice": "Single most important thing HR needs to know — flag triage tier and any escalation needed"
-}`;
-
-  const reply = await callClaude([{role:'user',content:`Help me respond to this HR message:\n\nFrom: ${m.from}\nSubject: ${m.subject}\nMessage: ${m.body}`}], systemPrompt);
-  if (!reply) return null;
-  try {
-    const parsed = JSON.parse(reply.replace(/```json|```/g,'').trim());
-    if (parsed.draft && parsed.draft.includes('---')) {
-      const parts = parsed.draft.split(/\n---+\n/);
-      parsed.employeeDraft = parts[0].trim();
-      parsed.hrActions = parts.slice(1).join('\n').replace(/^HR ACTIONS?:?\s*/i,'').trim();
-    } else {
-      parsed.employeeDraft = parsed.draft;
-      parsed.hrActions = null;
-    }
-    return parsed;
-  } catch(e) {
-    return {type:'answer',draft:reply,employeeDraft:reply,hrActions:null,questions:[],policyRef:null,advice:''};
-  }
-}
-
-async function sendKono(msgId) {
-  const m = msgs.find(x=>x.id===msgId);
-  const ta = document.getElementById('konoTa-'+msgId);
-  if (!ta||!ta.value.trim()) return;
-  const q = ta.value.trim(); ta.value=''; ta.style.height='auto';
-  if (!konoChatHistory[msgId]) konoChatHistory[msgId]=[];
-  konoChatHistory[msgId].push({role:'hr',text:q});
-  konoChatHistory[msgId].push({role:'ai',text:'...',id:'typing'});
-  renderKonoHistory(msgId);
-  const replyBox = document.getElementById('replyTa-'+msgId);
-  const currentDraft = replyBox ? replyBox.innerText.trim() : '';
-  const history = konoChatHistory[msgId].filter(h=>h.id!=='typing').slice(0,-1).map(h=>({role:h.role==='hr'?'user':'assistant',content:h.text.replace(/<[^>]+>/g,'')}));
-  history.push({role:'user',content:q});
-  const draftSection = currentDraft ? `\n\nCURRENT DRAFT IN REPLY BOX:\n${currentDraft}\n\nIf the HR user asks you to edit, rewrite, improve, shorten, or change the tone of this draft, return ONLY the revised email text starting with REPLACE_DRAFT: and nothing else before it. Do not explain what you changed.` : '';
-  const systemPrompt = `You are Breeze HR, a private AI advisor with the knowledge and judgement of a senior HR Director with 20+ years UK employment law experience. Private conversation - employee cannot see this.
-
-Use UK English throughout: payslip (not paycheck), holiday (not vacation), CV (not resume), post code (not zip code), redundancy (not layoff), authorise/organise/recognise (not -ize spellings). Use a single dash (-) in text, never double dash (--).
-
-Think like an HR director: anticipate risks, flag what needs verifying, give the full picture not just the immediate answer.
-
-Always consider:
-- Eligibility conditions (length of service, contract type, earnings thresholds)
-- What to check in HRIS before responding to the employee
-- Protected characteristics and discrimination risks
-- Whether legal advice is needed
-- Documentation requirements
-
-Message context:
-From: ${m.from} | Type: ${m.type} | Source: ${m.source}
-Subject: ${m.subject}
-Message: ${m.body}
-${draftSection}
-
-Be direct and practical. Use bullets for action lists. Label any new employee-facing draft clearly as "DRAFT FOR EMPLOYEE:"`;
-  const reply = await callClaude(history, systemPrompt);
-  konoChatHistory[msgId] = konoChatHistory[msgId].filter(h=>h.id!=='typing');
-  if (!reply) { konoChatHistory[msgId].push({role:'ai',text:'Sorry, connection issue. Please try again.'}); renderKonoHistory(msgId); return; }
-  if (reply.startsWith('REPLACE_DRAFT:')) {
-    const newDraft = reply.replace(/^REPLACE_DRAFT:\s*/,'').trim();
-    m._konoDraft = newDraft;
-    if (replyBox) { replyBox.innerHTML = newDraft.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
-    konoChatHistory[msgId].push({role:'ai',text:'Done - I\'ve updated the draft in the reply box.'});
-  } else {
-    konoChatHistory[msgId].push({role:'ai',text:reply});
-    if (reply.toLowerCase().includes("here's a draft")||reply.toLowerCase().includes('draft reply')||reply.toLowerCase().includes('draft for employee')) {
-      m._konoDraft = reply;
-      konoChatHistory[msgId].push({role:'ai',text:`<a onclick="useDraftFromKono('${msgId}')">→ Load into reply box</a>`});
-    }
-  }
-  renderKonoHistory(msgId);
-}
-
-function useDraftFromKono(msgId) {
-  const m = msgs.find(x=>x.id===msgId); if(!m||!m._konoDraft) return;
-  switchCompose('reply',msgId);
-  const ta = document.getElementById('replyTa-'+msgId);
-  if(ta){ ta.innerHTML = m._konoDraft.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); ta.focus(); }
-}
-
-function popOutMsg(msgId) {
-  const m = msgs.find(x=>x.id===msgId); if(!m) return;
-  const w = window.open('', '_blank', 'width=900,height=700,scrollbars=yes,resizable=yes');
-  const initReply = m.draftAnswer || (m.clarifyQs.length ? `Hi ${m.from.split(' ')[0]},\n\nThank you for getting in touch. Before I can advise, could you help with a few quick questions:\n\n${m.clarifyQs.map((q,i)=>`${i+1}. ${q}`).join('\n')}\n\nMany thanks,\nHR` : '');
-  w.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>${m.subject}</title>
-  <style>*{box-sizing:border-box;margin:0;padding:0;font-family:Inter,-apple-system,sans-serif;}body{background:#F5F5F7;color:#1D1D1F;font-size:13px;line-height:1.5;}.header{background:white;padding:20px 28px;border-bottom:1px solid #E0E0E5;}.subject{font-size:20px;font-weight:600;letter-spacing:-0.02em;margin-bottom:8px;}.meta{font-size:12px;color:#6E6E73;}.body{background:white;padding:20px 28px;font-size:14px;line-height:1.75;white-space:pre-wrap;border-bottom:1px solid #E0E0E5;margin-top:12px;}.ai-bar{background:#F0F7FF;padding:10px 28px;border-bottom:1px solid rgba(0,102,204,0.12);font-size:12px;color:#0066CC;margin-top:0;}.compose{background:white;padding:16px 28px;margin-top:12px;}.compose-label{font-size:11px;font-weight:600;color:#6E6E73;margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;}.ta{width:100%;min-height:200px;border:1px solid #E0E0E5;border-radius:8px;padding:12px;font-size:13px;font-family:inherit;outline:none;resize:vertical;line-height:1.65;color:#1D1D1F;}.actions{margin-top:12px;display:flex;gap:8px;}.send{background:#0066CC;color:white;border:none;border-radius:20px;padding:8px 20px;font-size:13px;font-weight:500;cursor:pointer;}</style>
-  </head><body>
-  <div class="header"><div class="subject">${m.subject}</div><div class="meta">${m.from} · ${m.source} · ${m.time}</div></div>
-  <div class="body">${m.body}</div>
-  ${m.aiType==='answer'&&m.policyRef?`<div class="ai-bar">◈ Breeze HR drafted this · Based on ${m.policyRef}</div>`:''}
-  <div class="compose"><div class="compose-label">Reply to ${m.from}</div><textarea class="ta" id="replyText">${initReply}</textarea><div class="actions"><button class="send" onclick="copyReply()">Copy reply text</button></div></div>
-  <script>function copyReply(){const t=document.getElementById('replyText');navigator.clipboard.writeText(t.value).then(()=>alert('Reply copied — paste it into Breeze HR to send'));}<\/script>
-  </body></html>`);
-  w.document.close();
-}
-
-function updateMsgType(msgId,val) { const m=msgs.find(x=>x.id===msgId); if(m)m.type=val; }
-function updateStatus(msgId,val) { const m=msgs.find(x=>x.id===msgId); if(!m)return; m.status=val; renderMsgs(); }
-
-async function sendReply(msgId) {
-  const m = msgs.find(x=>x.id===msgId);
-  const ta = document.getElementById('replyTa-'+msgId);
-  if (!ta||!ta.innerText.trim()) return;
-  const text = ta.innerHTML.trim();
-  await saveResponse(msgId, m.draftAnswer||'', ta.innerText.trim());
-  m.thread.push({dir:'out',sender:'HR',time:'Just now',text});
-  ta.innerHTML = '';
-  if (m.status!=='resolved') { m.status='inprog'; await updateMessageStatus(msgId,'inprog'); }
-  openMsg(m);
-  renderMsgs();
-  showToast('Reply sent');
-  // Scroll thread to bottom after render
-  setTimeout(()=>{ const s=document.querySelector('.gm-scroll'); if(s) s.scrollTop=s.scrollHeight; },50);
-}
-
-async function resolveM(msgId) {
-  const m=msgs.find(x=>x.id===msgId); if(m){m.status='resolved';await updateMessageStatus(msgId,'resolved');openMsg(m);renderMsgs();}
-}
-
-async function deleteMsg(msgId) {
-  if (!confirm('Delete this message?')) return;
-  await sb.from('messages').delete().eq('id',msgId);
-  const idx=msgs.findIndex(x=>x.id===msgId); if(idx>-1)msgs.splice(idx,1);
-  selMsg=null;
-  document.getElementById('detailEmpty').style.display='flex';
-  document.getElementById('detailContent').style.display='none';
-  renderMsgs();
-}
-
-async function logOffline() {
-  const from=prompt('Who is this about?'); if(!from)return;
-  const subj=prompt('Subject:'); if(!subj)return;
-  const body=prompt('What was discussed?')||subj;
-  const newMsg={id:'m'+Date.now(),from,initials:from.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(),bg:'#E8F5EE',fg:'#1A7A3C',source:'direct',type:'General',status:'new',time:'Just now',subject:subj,preview:body,body,aiType:'clarify',policyRef:null,draftAnswer:null,clarifyQs:['What outcome is HR looking to achieve?','Has anything been put in writing so far?'],thread:[]};
-  const saved=await saveMessage(newMsg); if(saved)newMsg.id=saved.id;
-  msgs.unshift(newMsg); renderMsgs();
-}
 
 // ── DOCUMENT GENERATOR ──
 let selTmpl=null, genStep=0, genVals={};
@@ -2502,6 +1374,7 @@ function showView(v,el) {
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
   if(v==='settings')renderSettings();
+  if(v==='chat')renderChatHistory();
 }
 
 // ── BULK MAIL MERGE ──
@@ -2717,306 +1590,225 @@ function spCopyLink(url) {
 }
 
 function spInsertToReply(title, url) {
-  const ta = selMsg ? document.getElementById('replyTa-' + selMsg.id) : null;
+  const ta = document.getElementById('chatInput');
   if (ta) {
+    ta.value += (ta.value ? '\n\n' : '') + `Relevant document: ${title}\n${url}`;
     ta.focus();
-    document.execCommand('insertHTML', false, `<br><br>You can find the relevant document here: ${title}<br>${url}`);
+    ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight,160)+'px';
     toggleSharePoint();
-  } else {
-    alert('Open a message first, then use Insert into reply');
   }
+}
+
+// ── CHAT ──
+let chatMessages = [], chatSystemPrompt = null, chatLoading = false;
+
+async function buildChatSystemPrompt() {
+  let policyContext = '', learningContext = '', ratingContext = '';
+  if (currentProfile) {
+    const cid = currentProfile.company_id;
+    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes] = await Promise.all([
+      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%'),
+      sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at',{ascending:false}).limit(30),
+      sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating',1).order('created_at',{ascending:false}).limit(3),
+      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(1)
+    ]);
+    const pols = polsRes.data;
+    if (pols && pols.length) {
+      policyContext = `\n\nCOMPANY POLICIES (use these first — they override generic advice):\n` +
+        pols.map(p=>`\n--- ${p.name} ---\n${p.content.substring(0,2000)}`).join('\n');
+    } else {
+      policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET — use ACAS guidance and UK employment law. Recommend HR uploads their policies.`;
+    }
+    const responses = responsesRes.data;
+    if (responses && responses.length) {
+      const total = responses.length, edited = responses.filter(r=>r.was_edited);
+      const editRate = Math.round((edited.length/total)*100), editPatterns = [];
+      if (edited.length >= 3) {
+        const aiAvgLen = edited.reduce((s,r)=>s+(r.ai_draft?.length||0),0)/edited.length;
+        const hrAvgLen = edited.reduce((s,r)=>s+(r.hr_sent?.length||0),0)/edited.length;
+        if (hrAvgLen < aiAvgLen*0.7) editPatterns.push('This team consistently shortens AI drafts — be more concise');
+        if (hrAvgLen > aiAvgLen*1.3) editPatterns.push('This team tends to add more detail — be more thorough');
+        const removedAcas = edited.filter(r=>r.ai_draft?.includes('ACAS')&&!r.hr_sent?.includes('ACAS')).length;
+        if (removedAcas > edited.length*0.4) editPatterns.push('This team removes ACAS references from employee drafts');
+        const infSigs = ['Hi ','Thanks','Cheers'];
+        const hrInf = edited.filter(r=>infSigs.some(s=>r.hr_sent?.includes(s))).length;
+        const aiInf = edited.filter(r=>infSigs.some(s=>r.ai_draft?.includes(s))).length;
+        if (hrInf > aiInf) editPatterns.push('This team uses a more informal/friendly tone');
+        if (hrInf < aiInf*0.5) editPatterns.push('This team prefers a formal tone');
+        const sinc = edited.filter(r=>r.hr_sent?.includes('Yours sincerely')).length;
+        const best = edited.filter(r=>r.hr_sent?.includes('Best')).length;
+        const thanks = edited.filter(r=>r.hr_sent?.includes('Thanks')).length;
+        if (sinc > best && sinc > thanks) editPatterns.push('This team signs off with "Yours sincerely"');
+        else if (best > thanks) editPatterns.push('This team signs off with "Best regards" or "Best"');
+        else if (thanks > 0) editPatterns.push('This team signs off with "Thanks" or "Many thanks"');
+      }
+      learningContext = `\n\nLEARNING FROM ${total} PREVIOUS RESPONSES (edit rate: ${editRate}%):`;
+      if (editPatterns.length) learningContext += `\nStyle patterns detected:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
+      else if (editRate < 20) learningContext += `\nHR edits very few drafts (${editRate}%) — current style is working well.`;
+      else learningContext += `\nHR edits ${editRate}% of drafts. Use standard best practice.`;
+    }
+    const goodRatings = goodRatingsRes.data, badRatings = badRatingsRes.data;
+    if (goodRatings && goodRatings.length) {
+      ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES — match this style:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,800)}`).join('\n')}`;
+    }
+    if (badRatings && badRatings.length) {
+      ratingContext += `\n\nREJECTED DRAFT STYLE (do NOT repeat this):\n${badRatings[0].ai_draft.substring(0,400)}`;
+    }
+  }
+  return `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You are chatting with an HR professional.
+
+━━━ LANGUAGE & FORMATTING ━━━
+Use UK English throughout. payslip (not paycheck), holiday (not vacation), CV (not resume), redundancy (not layoff), authorise/organise/recognise (not -ize). Single dash (-) never double (--). Bullet points use •. Use **bold** for headings.
+
+━━━ TRIAGE ━━━
+TIER 1 — TRANSACTIONAL: factual policy question, no emotional language. Answer in 2-4 sentences. No draft needed.
+TIER 2 — STANDARD PROCESS: family leave, flexible working, resignation, standard absence. Draft + HR checklist.
+TIER 3 — SENSITIVE/RISK: performance, grievance, disciplinary, distress signals ("struggling", "not sleeping", "dreading coming in"), protected characteristics. Acknowledgement draft only + advisory note.
+TIER 4 — LEGAL RISK: "tribunal", "solicitor", "ACAS early conciliation", "discrimination claim", "without prejudice", "whistleblowing". DO NOT draft a reply. Tell HR to get legal advice immediately.
+
+━━━ EMOTIONAL STATE ━━━
+DISTRESSED → Lead with human acknowledgement. Offer a call. Check EAP. Consider OH referral.
+ANGRY → Don't get defensive. Acknowledge, confirm you take it seriously. Escalate to senior HR.
+ANXIOUS → Immediately reassuring. Explain next steps simply.
+FORMAL/LEGAL TONE → Match formality. Senior HR must review before responding.
+
+━━━ ESCALATION ━━━
+SENIOR HR: grievance, disciplinary, performance with protected characteristics, distressed employee.
+LEGAL: legal language, discrimination allegations, settlement, tribunal, whistleblowing.
+EAP: mental health, stress, personal crisis.
+OCCUPATIONAL HEALTH: long-term absence 4+ weeks, disability adjustments.
+
+━━━ PRIORITY ORDER ━━━
+1. Company's own uploaded policies  2. ACAS Codes of Practice  3. UK employment law (ERA 1996, Equality Act 2010)  4. General best practice
+
+━━━ DRAFT vs HR ACTIONS ━━━
+EMPLOYEE-FACING DRAFT: What HR sends to the employee after verifying facts.
+- NEVER include eligibility thresholds, statutory rate calculations, or payroll figures not yet confirmed.
+- Use [PLACEHOLDER] in square brackets for unknown specifics — HR fills them in before sending.
+- BANNED phrases: "I'll check and get back to you", "I'll look into this", "I'll confirm shortly", "I'll find out", "I'll need to review your contract", "your contract may contain". If you need a placeholder, use [PLACEHOLDER] and stop there — do NOT also promise to follow up.
+
+HR ACTIONS (not seen by employee): eligibility checks, statutory calculations, what to verify in HRIS, who to escalate to.
+
+━━━ KNOWLEDGE ━━━
+Statutory rates 2025/26: NLW (21+) £12.21/hr | SSP £116.75/wk | SMP/SPP £184.03/wk or 90% AWE | LEL £125/wk | Statutory notice: 1 week/year, max 12 weeks | Redundancy: 0.5-1.5 weeks/year by age.
+Family leave: SMP/SPP eligibility = 26 weeks by 15th week before EWC. MATB1 (maternity), SC3 (paternity). KIT days: up to 10.
+Working abroad: NOT a flexible working request. Tax residency risk, jurisdiction issues. Never approve without legal/tax sign-off.
+Flexible working: day one right since April 2024, max 2 requests/year.
+Absence: SSP = 4 waiting days then £116.75/wk up to 28 weeks. Long-term (4+ weeks): Equality Act disability, OH referral, reasonable adjustments.
+Disciplinary: always distinguish conduct from capability. ACAS code: investigate → hearing → right to be accompanied → decision → appeal. Tribunal uplift up to 25% for non-compliance.
+Leavers: accrued holiday in final payslip. Restrictive covenants in HR Actions only — never mention in draft unless HR has confirmed the specific restrictions.
+
+━━━ RESPONSE FORMAT ━━━
+You are in a chat with an HR professional. Be direct and practical.
+For Tier 1 (simple policy questions): answer in 2-4 sentences. No draft needed.
+When providing an email draft for the employee, clearly label it:
+
+📧 DRAFT FOR EMPLOYEE:
+[draft text]
+
+---
+
+**HR Actions** (not for the employee):
+• [what to check/do]
+
+Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
+}
+
+async function sendChat(overrideMsg) {
+  const ta = document.getElementById('chatInput');
+  const msg = overrideMsg || ta.value.trim();
+  if (!msg || chatLoading) return;
+  chatLoading = true;
+  const btn = document.getElementById('chatSendBtn');
+  if (btn) btn.disabled = true;
+  ta.value = ''; ta.style.height = 'auto';
+  chatMessages.push({role:'user', content:msg});
+  renderChatHistory();
+  if (!chatSystemPrompt) chatSystemPrompt = await buildChatSystemPrompt();
+  const apiMessages = chatMessages.map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
+  const reply = await callClaude(apiMessages, chatSystemPrompt);
+  chatLoading = false;
+  if (btn) btn.disabled = false;
+  chatMessages.push({role:'assistant', content: reply || 'Sorry, connection issue. Please check your API connection and try again.'});
+  renderChatHistory();
+}
+
+function useChip(prompt) {
+  const ta = document.getElementById('chatInput');
+  if (ta) { ta.value = prompt; ta.focus(); ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight,160)+'px'; }
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+function formatChatResponse(text) {
+  return text
+    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+    .replace(/^•\s+(.+)$/gm,'<li style="margin-left:18px;margin-bottom:3px;">$1</li>')
+    .replace(/^-\s+(.+)$/gm,'<li style="margin-left:18px;margin-bottom:3px;">$1</li>')
+    .replace(/\n\n/g,'<br><br>')
+    .replace(/\n/g,'<br>');
+}
+
+function renderChatHistory() {
+  const el = document.getElementById('chatHistory');
+  if (!el) return;
+  if (!chatMessages.length && !chatLoading) {
+    el.innerHTML = `<div class="chat-welcome">
+      <div class="chat-welcome-icon">◈</div>
+      <div class="chat-welcome-title">Chat with Breeze HR</div>
+      <div class="chat-welcome-sub">Ask policy questions, paste an email for a draft response, request a letter, or get ACAS guidance — your company policies are automatically loaded.</div>
+    </div>`;
+    return;
+  }
+  let html = chatMessages.map((m,i) => {
+    if (m.role === 'user') return `<div class="chat-msg user-msg">
+      <div class="chat-av user-av">HR</div>
+      <div class="chat-bubble user-bubble">${escapeHtml(m.content).replace(/\n/g,'<br>')}</div>
+    </div>`;
+    return `<div class="chat-msg">
+      <div class="chat-av ai-av">◈</div>
+      <div style="flex:1;min-width:0;">
+        <div class="chat-bubble ai-bubble">${formatChatResponse(m.content)}</div>
+        <div class="chat-actions">
+          <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
+          <button class="chat-action-btn${m._ratingUp?' rated-up':''}" id="rate-up-${i}" onclick="rateChatMsg(${i},1)">👍</button>
+          <button class="chat-action-btn${m._ratingDown?' rated-down':''}" id="rate-down-${i}" onclick="rateChatMsg(${i},-1)">👎</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+  if (chatLoading) html += `<div class="chat-msg"><div class="chat-av ai-av">◈</div><div class="chat-bubble ai-bubble"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  el.innerHTML = html;
+  el.scrollTop = el.scrollHeight;
+}
+
+async function copyChatMsg(idx) {
+  const msg = chatMessages[idx]; if (!msg) return;
+  try { await navigator.clipboard.writeText(msg.content); } catch(e) {}
+  const btn = document.getElementById(`copy-${idx}`);
+  if (btn) { btn.textContent = '✓ Copied'; setTimeout(()=>{const b=document.getElementById(`copy-${idx}`);if(b)b.textContent='Copy';},2000); }
+  if (currentProfile) await saveResponse(null, msg.content, msg.content);
+}
+
+async function rateChatMsg(idx, rating) {
+  const msg = chatMessages[idx]; if (!msg || !currentProfile) return;
+  msg._ratingUp = rating===1; msg._ratingDown = rating===-1;
+  const up = document.getElementById(`rate-up-${idx}`), dn = document.getElementById(`rate-down-${idx}`);
+  if (up) up.className = 'chat-action-btn'+(rating===1?' rated-up':'');
+  if (dn) dn.className = 'chat-action-btn'+(rating===-1?' rated-down':'');
+  await sb.from('ratings').insert({company_id:currentProfile.company_id, message_type:'chat', ai_draft:msg.content, rating});
+  chatSystemPrompt = null;
 }
 
 // ── INIT ──
-renderMsgs();renderTmpls();openMsg(msgs[0]);
+renderTmpls();
 
-// Poll for new messages every 30 seconds
-let lastMsgCheck = new Date().toISOString();
-setInterval(async () => {
-  if (!currentProfile) return;
-  const { data } = await sb.from('messages')
-    .select('*')
-    .eq('company_id', currentProfile.company_id)
-    .eq('status', 'new')
-    .gt('created_at', lastMsgCheck)
-    .order('created_at', { ascending: false });
-  if (data && data.length > 0) {
-    lastMsgCheck = new Date().toISOString();
-    data.forEach(m => {
-      if (!msgs.find(x => x.id === m.id)) {
-        msgs.unshift({
-          id: m.id, from: m.from_name,
-          initials: m.from_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase(),
-          bg: '#EBF3FF', fg: '#0066CC',
-          source: m.source || 'email', type: m.type || 'General',
-          status: 'new',
-          time: new Date(m.created_at).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'}),
-          subject: m.subject, preview: m.body.substring(0,80), body: m.body,
-          aiType: 'clarify', policyRef: null, draftAnswer: null, clarifyQs: [], thread: []
-        });
-      }
-    });
-    renderMsgs();
-    // Flash the inbox badge
-    const badge = document.getElementById('nbNew');
-    if (badge) { badge.style.background = '#FF3B30'; setTimeout(() => badge.style.background = '', 2000); }
-  }
-}, 30000);
 
-// ── RICH TEXT FORMATTING ──
-function formatText(cmd, msgId) {
-  const ta = msgId ? document.getElementById('replyTa-'+msgId) : document.querySelector('.gm-ta[contenteditable]');
-  if (ta) ta.focus();
-  document.execCommand(cmd, false, null);
-}
-
-function handleReplyKey(e, msgId) {
-  if ((e.ctrlKey || e.metaKey) && !e.shiftKey) {
-    if (e.key === 'b') { e.preventDefault(); formatText('bold', msgId); }
-    if (e.key === 'i') { e.preventDefault(); formatText('italic', msgId); }
-    if (e.key === 'u') { e.preventDefault(); formatText('underline', msgId); }
-  }
-}
-
-// ── FOLDERS ──
-const FOLDER_COLOURS = ['#0066CC','#1A7A3C','#7A4A0A','#4B0082','#8B0000','#6E6E73'];
-
-async function loadFolders() {
-  if (currentProfile) {
-    try {
-      const { data } = await sb.from('folders').select('*').eq('company_id', currentProfile.company_id).order('created_at');
-      if (data) folders = data;
-    } catch(e) {}
-  }
-  renderFolders();
-}
-
-function renderFolders() {
-  const el = document.getElementById('foldersList'); if (!el) return;
-  const items = folders.map(f => {
-    const count = msgs.filter(m => m.folder_id === f.id).length;
-    return `<div class="folder-ni${activeFolderId===f.id?' active':''}" data-fid="${f.id}" onclick="filterByFolder('${f.id}')" oncontextmenu="folderCtxMenu(event,'${f.id}');return false;">
-      <div class="folder-dot" style="background:${f.color||'#6E6E73'}"></div>
-      <span style="flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${f.name}</span>
-      ${count ? `<span class="ni-badge" style="background:rgba(255,255,255,0.15);color:rgba(255,255,255,0.8);">${count}</span>` : ''}
-    </div>`;
-  }).join('');
-  el.innerHTML = items
-    + `<div class="folder-new" onclick="startNewFolder()"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg> New folder</div>`
-    + `<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;margin-top:4px;border-top:1px solid var(--border);">
-        <span style="font-size:10px;color:rgba(255,255,255,0.4);flex:1;">Auto-sort by type</span>
-        <div onclick="toggleAutoSort()" style="width:28px;height:16px;border-radius:8px;background:${autoSort?'#4D8EE8':'rgba(255,255,255,0.2)'};cursor:pointer;position:relative;transition:background 0.15s;">
-          <div style="position:absolute;top:2px;left:${autoSort?'14':'2'}px;width:12px;height:12px;border-radius:50%;background:white;transition:left 0.15s;"></div>
-        </div>
-      </div>`;
-}
-
-function toggleAutoSort() {
-  autoSort = !autoSort;
-  localStorage.setItem('breeze_autosort', autoSort);
-  renderFolders();
-  showToast(autoSort ? 'Auto-sort on' : 'Auto-sort off');
-}
-
-function toggleFolders() {
-  foldersOpen = !foldersOpen;
-  const el = document.getElementById('foldersList');
-  const arrow = document.getElementById('foldersArrow');
-  if (el) el.style.display = foldersOpen ? 'block' : 'none';
-  if (arrow) arrow.style.transform = foldersOpen ? 'rotate(90deg)' : 'rotate(0deg)';
-}
-
-function filterByFolder(id) {
-  activeFolderId = activeFolderId === id ? null : id;
-  renderFolders(); renderMsgs();
-  document.querySelectorAll('.ni').forEach(n => n.classList.remove('active'));
-  if (!activeFolderId) document.querySelector('.ni[onclick*="intake"]')?.classList.add('active');
-}
-
-function startNewFolder() {
-  const el = document.getElementById('foldersList'); if (!el) return;
-  if (el.querySelector('.folder-name-input')) return;
-  const inp = document.createElement('div');
-  inp.className = 'folder-ni';
-  inp.style.padding = '4px 8px';
-  inp.innerHTML = `<div class="folder-dot" style="background:#6E6E73"></div><input class="folder-name-input" placeholder="Folder name">`;
-  const newBtn = el.querySelector('.folder-new');
-  el.insertBefore(inp, newBtn);
-  const input = inp.querySelector('input');
-  input.focus();
-  let saving = false;
-  input.addEventListener('keydown', async e => {
-    if (e.key === 'Escape') { renderFolders(); return; }
-    if (e.key !== 'Enter' || !input.value.trim() || saving) return;
-    saving = true;
-    const name = input.value.trim();
-    const color = FOLDER_COLOURS[folders.length % FOLDER_COLOURS.length];
-    try {
-      if (currentProfile) {
-        const { data } = await sb.from('folders').insert({ company_id: currentProfile.company_id, name, color }).select().single();
-        folders.push(data || { id: 'local-' + Date.now(), name, color, company_id: currentProfile?.company_id });
-      } else {
-        folders.push({ id: 'local-' + Date.now(), name, color });
-      }
-    } catch { folders.push({ id: 'local-' + Date.now(), name, color }); }
-    renderFolders();
-    showToast(`"${name}" folder created`);
-  });
-  input.addEventListener('blur', () => { if (!saving) setTimeout(() => { if (!saving) renderFolders(); }, 200); });
-}
-
-function toggleFolderPicker(msgId, e) {
-  e.stopPropagation();
-  const el = document.getElementById('folderPicker-'+msgId);
-  if (!el) return;
-  const wasHidden = el.style.display === 'none';
-  document.querySelectorAll('[id^="folderPicker-"]').forEach(x => x.style.display='none');
-  el.style.display = wasHidden ? 'block' : 'none';
-}
-
-function showToast(msg) {
-  const t = document.getElementById('breezeToast');
-  if (!t) return;
-  t.textContent = msg; t.classList.add('visible');
-  setTimeout(() => t.classList.remove('visible'), 2800);
-}
-
-function quickMarkRead(msgId, wasUnread) {
-  const m = msgs.find(x=>x.id===msgId); if (!m) return;
-  m.status = wasUnread ? 'open' : 'new';
-  updateMessageStatus(msgId, m.status);
-  renderMsgs();
-}
-
-function showMsgCtxMenu(e, msgId) {
-  e.preventDefault && e.preventDefault();
-  const menu = document.getElementById('msgCtxMenu');
-  const m = msgs.find(x=>x.id===msgId); if (!m) return;
-  const isUnread = m.status === 'new';
-  const folderSection = folders.length
-    ? `<div style="font-size:10px;font-weight:600;color:var(--ink3);padding:4px 12px 2px;letter-spacing:0.06em;text-transform:uppercase;">Move to folder</div>`
-      + folders.map(f=>`<div class="ctx-item" onclick="moveToFolder('${msgId}','${f.id}');closeMsgCtx();renderMsgs()"><span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:${f.color};margin-right:7px;"></span>${f.name}${m.folder_id===f.id?' ✓':''}</div>`).join('')
-      + (m.folder_id ? `<div class="ctx-item" style="color:var(--ink3)" onclick="moveToFolder('${msgId}',null);closeMsgCtx();renderMsgs()">Remove from folder</div>` : '')
-    : `<div class="ctx-item" onclick="startNewFolder();closeMsgCtx()">Create a folder...</div>`;
-  menu.innerHTML = `
-    <div class="ctx-item" onclick="openMsg(m=msgs.find(x=>x.id==='${msgId}'));setTimeout(()=>gmSwitchCompose('reply','${msgId}'),80);closeMsgCtx()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="9 17 4 12 9 7"/><path d="M20 18v-2a4 4 0 0 0-4-4H4"/></svg>Reply
-    </div>
-    <div class="ctx-item" onclick="openMsg(m=msgs.find(x=>x.id==='${msgId}'));setTimeout(()=>gmSwitchCompose('replyall','${msgId}'),80);closeMsgCtx()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="7 17 2 12 7 7"/><polyline points="13 17 8 12 13 7"/><path d="M22 18v-2a4 4 0 0 0-4-4H8"/></svg>Reply All
-    </div>
-    <div class="ctx-item" onclick="openMsg(m=msgs.find(x=>x.id==='${msgId}'));setTimeout(()=>gmSwitchCompose('forward','${msgId}'),80);closeMsgCtx()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="15 17 20 12 15 7"/><path d="M4 18v-2a4 4 0 0 1 4-4h12"/></svg>Forward
-    </div>
-    <div class="ctx-sep"></div>
-    <div class="ctx-item" onclick="quickMarkRead('${msgId}',${!isUnread});closeMsgCtx()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><circle cx="12" cy="12" r="3" fill="${isUnread?'none':'currentColor'}"/></svg>${isUnread ? 'Mark as read' : 'Mark as unread'}
-    </div>
-    <div class="ctx-item" onclick="updateStatus('${msgId}','resolved');closeMsgCtx()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="20 6 9 17 4 12"/></svg>Mark resolved
-    </div>
-    <div class="ctx-sep"></div>
-    ${folderSection}
-    <div class="ctx-sep"></div>
-    <div class="ctx-item danger" onclick="deleteMsg('${msgId}');closeMsgCtx()">
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="margin-right:7px"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/></svg>Delete
-    </div>`;
-  menu.style.display = 'block';
-  menu.style.left = Math.min(e.clientX, window.innerWidth - 210) + 'px';
-  menu.style.top = Math.min(e.clientY, window.innerHeight - 260) + 'px';
-}
-function closeMsgCtx() { document.getElementById('msgCtxMenu').style.display = 'none'; }
-
-function folderCtxMenu(e, fid) {
-  ctxFolderId = fid;
-  const menu = document.getElementById('folderCtxMenu');
-  menu.dataset.fid = fid;
-  menu.style.display = 'block';
-  menu.style.left = Math.min(e.clientX, window.innerWidth - 160) + 'px';
-  menu.style.top = Math.min(e.clientY, window.innerHeight - 100) + 'px';
-}
-
-function closeFolderCtx() { document.getElementById('folderCtxMenu').style.display = 'none'; }
-
-async function renameFolder(fid) {
-  const f = folders.find(x=>x.id===fid); if (!f) return;
-  const name = prompt('Rename folder:', f.name); if (!name || !name.trim() || name===f.name) return;
-  try { await sb.from('folders').update({ name: name.trim() }).eq('id', f.id); } catch(e) {}
-  f.name = name.trim(); renderFolders();
-}
-
-async function deleteFolder(fid) {
-  const f = folders.find(x=>x.id===fid); if (!f) return;
-  if (!confirm(`Delete "${f.name}"? Messages will move back to inbox.`)) return;
-  try { await sb.from('folders').delete().eq('id', fid); } catch(e) {}
-  msgs.forEach(m => { if (m.folder_id===fid) m.folder_id=null; });
-  folders = folders.filter(x=>x.id!==fid);
-  if (activeFolderId===fid) activeFolderId=null;
-  renderFolders(); renderMsgs();
-  showToast(`"${f.name}" deleted`);
-}
-
-async function moveToFolder(msgId, folderId) {
-  const m = msgs.find(x=>x.id===msgId); if (!m) return;
-  m.folder_id = folderId || null;
-  try { if (m._dbId) await sb.from('messages').update({ folder_id: folderId||null }).eq('id', m._dbId); } catch(e) {}
-  if (folderId) {
-    activeFolderId = folderId;
-    const f = folders.find(x=>x.id===folderId);
-    if (f) showToast(`Moved to ${f.name}`);
-  }
-  renderFolders(); renderMsgs();
-}
-
-function showAdvisory(msgId, sheetType) {
-  const m = msgs.find(x=>x.id===msgId);
-  if (!m || !m.hrActions) return;
-  const isEscalate = sheetType !== 'actions';
-  const colour = isEscalate ? 'var(--red)' : 'var(--accent)';
-  const bgColour = isEscalate ? 'var(--red-bg)' : 'var(--accent-bg)';
-  document.getElementById('advisoryIcon').textContent = isEscalate ? '⚠' : '◈';
-  document.getElementById('advisoryIcon').style.background = bgColour;
-  document.getElementById('advisoryIcon').style.color = colour;
-  document.getElementById('advisoryTitle').textContent = isEscalate ? 'HR Advisory - do not respond yet' : 'HR Actions';
-  document.getElementById('advisoryTitle').style.color = colour;
-  document.getElementById('advisoryAck').textContent = isEscalate ? 'Acknowledged - close' : 'Got it - close';
-  document.getElementById('advisoryAck').style.background = colour;
-  const actions = m.hrActions.split('\n').filter(l=>l.trim()).map(l=>l.replace(/^[•\-\*]\s?/,'').trim()).filter(Boolean);
-  document.getElementById('advisoryBody').innerHTML = actions.map(a => {
-    const isUrgent = isEscalate && (a.toUpperCase().includes('ESCALATE') || a.toUpperCase().includes('LEGAL') || a.toUpperCase().includes('SENIOR HR'));
-    return `<div class="advisory-action"><div class="advisory-bullet" style="background:${isUrgent?'var(--red)':colour}"></div><div class="advisory-action-text">${isUrgent?`<strong>${a}</strong>`:a}</div></div>`;
-  }).join('');
-  document.getElementById('advisoryBackdrop').classList.add('visible');
-  document.getElementById('advisorySheet').classList.add('visible');
-}
-
-function closeAdvisory() {
-  document.getElementById('advisoryBackdrop').classList.remove('visible');
-  document.getElementById('advisorySheet').classList.remove('visible');
-}
 </script>
 
 <div id="breezeToast"></div>
-<div id="msgCtxMenu" class="ctx-menu" style="display:none;"></div>
-
-<div id="folderCtxMenu" class="ctx-menu" style="display:none;">
-  <div class="ctx-item" onclick="(function(){const fid=document.getElementById('folderCtxMenu').dataset.fid;closeFolderCtx();renameFolder(fid);})()">Rename</div>
-  <div class="ctx-sep"></div>
-  <div class="ctx-item danger" onclick="(function(){const fid=document.getElementById('folderCtxMenu').dataset.fid;closeFolderCtx();deleteFolder(fid);})()">Delete</div>
-</div>
-
-<div class="advisory-backdrop" id="advisoryBackdrop" onclick="closeAdvisory()"></div>
-<div class="advisory-sheet" id="advisorySheet">
-  <div class="advisory-drag"></div>
-  <div class="advisory-head" id="advisoryHead">
-    <div class="advisory-icon" id="advisoryIcon">⚠</div>
-    <div class="advisory-title" id="advisoryTitle">HR Advisory - do not respond yet</div>
-    <button class="advisory-close" onclick="closeAdvisory()">✕</button>
-  </div>
-  <div class="advisory-body" id="advisoryBody"></div>
-  <div class="advisory-foot">
-    <button class="advisory-ack" id="advisoryAck" onclick="closeAdvisory()">Acknowledged - close</button>
-  </div>
-</div>
 </body>
 </html>
