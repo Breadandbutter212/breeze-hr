@@ -752,6 +752,74 @@ const processes = [
   {icon:'🚪',name:'Offboarding',badge:'Beta',steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned']}
 ];
 
+// ── MERGE HRIS ──
+const MERGE_API_KEY = 'YOUR_NEW_API_KEY';
+const MERGE_ACCOUNT_TOKEN = 'YOUR_NEW_ACCOUNT_TOKEN';
+let mergeSearchTimeout = null;
+
+function debounceSearchMerge(query) {
+  clearTimeout(mergeSearchTimeout);
+  const dd = document.getElementById('mergeDropdown');
+  if (!query || query.length < 2) { if (dd) dd.style.display = 'none'; return; }
+  mergeSearchTimeout = setTimeout(() => searchMergeEmployees(query), 300);
+}
+
+async function searchMergeEmployees(query) {
+  const dd = document.getElementById('mergeDropdown'); if (!dd) return;
+  dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">Searching...</div>';
+  dd.style.display = 'block';
+  try {
+    const res = await fetch(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(query)}`, {
+      headers: { 'Authorization': `Bearer ${MERGE_API_KEY}`, 'X-Account-Token': MERGE_ACCOUNT_TOKEN }
+    });
+    const data = await res.json();
+    const emps = data.results || [];
+    if (!emps.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
+    dd.innerHTML = emps.slice(0, 8).map(emp => {
+      const name = emp.display_full_name || '';
+      const title = emp.employments?.[0]?.job_title || '';
+      const co = emp.company || '';
+      const safe = encodeURIComponent(JSON.stringify(emp));
+      return `<div style="padding:8px 12px;font-size:12px;cursor:pointer;border-bottom:1px solid var(--border);background:white;"
+        onmousedown="selectMergeEmployee(decodeURIComponent('${safe}'))"
+        onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='white'">
+        <div style="font-weight:500;color:var(--ink);">${name}</div>
+        ${title||co ? `<div style="font-size:11px;color:var(--ink3);">${[title,co].filter(Boolean).join(' · ')}</div>` : ''}
+      </div>`;
+    }).join('');
+  } catch(e) {
+    dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--red);">Could not connect to HRIS</div>';
+  }
+}
+
+function selectMergeEmployee(empJson) {
+  const emp = JSON.parse(empJson);
+  const name = emp.display_full_name || '';
+  const title = emp.employments?.[0]?.job_title || '';
+  const co = emp.company || '';
+  const dd = document.getElementById('mergeDropdown'); if (dd) dd.style.display = 'none';
+  const inp = document.getElementById('gcInp'); if (inp) inp.value = name;
+  genVals['employee_name'] = name;
+  if (title) genVals['job_title'] = title;
+  if (co) genVals['company_name'] = co;
+  const filled = [name && 'employee_name', title && 'job_title', co && 'company_name'].filter(Boolean);
+  addGMsg('ai', `Found **${name}**${title ? ` — ${title}` : ''}. Auto-filled ${filled.length} field${filled.length>1?'s':''} from your HRIS.`);
+  genStep++;
+  updatePreview();
+  skipMergeFilledFields();
+}
+
+function skipMergeFilledFields() {
+  while (genStep < selTmpl.flow.length) {
+    const f = selTmpl.flow[genStep];
+    if (genVals[f.f]) {
+      addGMsg('ai', `${f.f.replace(/_/g,' ')}: **${genVals[f.f]}** *(from HRIS)*`);
+      genStep++;
+    } else { break; }
+  }
+  setTimeout(askQ, 280);
+}
+
 // ── DOCUMENT GENERATOR ──
 let selTmpl=null, genStep=0, genVals={};
 
@@ -930,7 +998,21 @@ function askQ() {
   const q=selTmpl.flow[genStep]; if(!q){finishTmpl();return;}
   addGMsg('ai',q.q);
   const field=document.getElementById('gcField');
-  field.innerHTML=`<div class="gc-field-label">${q.f.replace(/_/g,' ')}</div><div class="gc-field-row"><input class="gc-input" id="gcInp" placeholder="Type here..." onkeydown="if(event.key==='Enter'){event.preventDefault();submitQ()}"><button class="gc-next" onclick="submitQ()">→</button></div>`;
+  if (q.f === 'employee_name') {
+    field.innerHTML=`<div class="gc-field-label">employee name</div>
+      <div style="position:relative;">
+        <div class="gc-field-row">
+          <input class="gc-input" id="gcInp" placeholder="Search your HRIS..." autocomplete="off"
+            oninput="debounceSearchMerge(this.value)"
+            onblur="setTimeout(()=>{const d=document.getElementById('mergeDropdown');if(d)d.style.display='none'},200)"
+            onkeydown="if(event.key==='Enter'){event.preventDefault();submitQ()}">
+          <button class="gc-next" onclick="submitQ()">→</button>
+        </div>
+        <div id="mergeDropdown" style="display:none;position:absolute;top:100%;left:0;right:36px;background:white;border:1px solid var(--border2);border-radius:0 0 var(--r-sm) var(--r-sm);box-shadow:var(--shadow);z-index:100;max-height:220px;overflow-y:auto;"></div>
+      </div>`;
+  } else {
+    field.innerHTML=`<div class="gc-field-label">${q.f.replace(/_/g,' ')}</div><div class="gc-field-row"><input class="gc-input" id="gcInp" placeholder="Type here..." onkeydown="if(event.key==='Enter'){event.preventDefault();submitQ()}"><button class="gc-next" onclick="submitQ()">→</button></div>`;
+  }
   setTimeout(()=>{const i=document.getElementById('gcInp');if(i)i.focus();},40);
 }
 
