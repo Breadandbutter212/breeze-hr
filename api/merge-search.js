@@ -8,16 +8,25 @@ export default async function handler(req, res) {
   const { search } = req.query;
   if (!search) return res.status(400).json({ error: 'search query required' });
 
+  const apiKey = process.env.MERGE_API_KEY;
+  const accountToken = process.env.MERGE_ACCOUNT_TOKEN;
+
+  if (!apiKey || !accountToken) {
+    return res.status(500).json({ error: 'Merge credentials not configured in environment variables' });
+  }
+
   try {
     const response = await fetch(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(search)}`, {
       headers: {
-        'Authorization': `Bearer ${process.env.MERGE_API_KEY}`,
-        'X-Account-Token': process.env.MERGE_ACCOUNT_TOKEN
+        'Authorization': `Bearer ${apiKey}`,
+        'X-Account-Token': accountToken
       }
     });
-    const data = await response.json();
-    return res.status(200).json(data);
+    const text = await response.text();
+    let data;
+    try { data = JSON.parse(text); } catch(e) { return res.status(502).json({ error: 'Invalid response from Merge', raw: text.substring(0, 200) }); }
+    return res.status(response.status).json(data);
   } catch(e) {
-    return res.status(500).json({ error: 'Failed to reach Merge API' });
+    return res.status(500).json({ error: e.message });
   }
 }

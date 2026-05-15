@@ -1734,7 +1734,7 @@ async function buildChatSystemPrompt() {
       sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at',{ascending:false}).limit(30),
       sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating',1).order('created_at',{ascending:false}).limit(3),
       sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(1),
-      sb.from('policies').select('content').eq('company_id', cid).eq('name','STYLE:WritingSample').single()
+      sb.from('policies').select('content').eq('company_id', cid).eq('name','STYLE:WritingSample').maybeSingle()
     ]);
     const pols = polsRes.data;
     if (pols && pols.length) {
