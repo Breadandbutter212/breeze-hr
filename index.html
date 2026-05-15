@@ -1298,6 +1298,16 @@ function renderSettings() {
       </div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Writing style</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">Paste a sample of your writing — an email or letter you've sent. Breeze HR will match your tone, sign-off and style when drafting. The more you use it, the better the learning model gets on its own, but this gives it a head start.</div>
+      <textarea id="set-style-sample" placeholder="Paste an example email or letter you've written here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--surface2);outline:none;resize:vertical;line-height:1.6;" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'"></textarea>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary btn-sm" onclick="saveWritingStyle()">Save style</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearWritingStyle()">Clear</button>
+        <div id="set-style-msg" style="font-size:12px;min-height:16px;"></div>
+      </div>
+    </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Danger zone</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">These actions cannot be undone.</div>
       <button style="background:var(--red-bg);color:var(--red);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:6px 14px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="signOut()">Sign out of all devices</button>
@@ -1305,6 +1315,7 @@ function renderSettings() {
   </div>`;
   // Load documents list async
   loadSettingsDocs();
+  loadWritingStyle();
 }
 
 async function loadSettingsDocs() {
@@ -1336,6 +1347,37 @@ async function loadSettingsDocs() {
     }).join('');
   }
   el.innerHTML = html || '<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>';
+}
+
+async function loadWritingStyle() {
+  const ta = document.getElementById('set-style-sample'); if (!ta || !currentProfile) return;
+  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample').single();
+  if (data) ta.value = data.content;
+}
+
+async function saveWritingStyle() {
+  const ta = document.getElementById('set-style-sample');
+  const msg = document.getElementById('set-style-msg');
+  const sample = ta?.value?.trim();
+  if (!sample || !currentProfile) return;
+  const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample').single();
+  if (existing) {
+    await sb.from('policies').update({ content: sample }).eq('id', existing.id);
+  } else {
+    await sb.from('policies').insert({ company_id: currentProfile.company_id, name: 'STYLE:WritingSample', content: sample });
+  }
+  chatSystemPrompt = null; // force rebuild so new style is picked up
+  if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Saved — chat will now match your writing style'; }
+}
+
+async function clearWritingStyle() {
+  const ta = document.getElementById('set-style-sample');
+  const msg = document.getElementById('set-style-msg');
+  if (!currentProfile) return;
+  await sb.from('policies').delete().eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample');
+  if (ta) ta.value = '';
+  chatSystemPrompt = null;
+  if (msg) { msg.style.color = 'var(--ink3)'; msg.textContent = 'Style cleared'; }
 }
 
 async function saveInboundEmail() {
@@ -1606,11 +1648,12 @@ async function buildChatSystemPrompt() {
   let policyContext = '', learningContext = '', ratingContext = '';
   if (currentProfile) {
     const cid = currentProfile.company_id;
-    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes] = await Promise.all([
-      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%'),
+    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes, styleRes] = await Promise.all([
+      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%').not('name','like','STYLE:%'),
       sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at',{ascending:false}).limit(30),
       sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating',1).order('created_at',{ascending:false}).limit(3),
-      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(1)
+      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(1),
+      sb.from('policies').select('content').eq('company_id', cid).eq('name','STYLE:WritingSample').single()
     ]);
     const pols = polsRes.data;
     if (pols && pols.length) {
@@ -1653,6 +1696,11 @@ async function buildChatSystemPrompt() {
     }
     if (badRatings && badRatings.length) {
       ratingContext += `\n\nREJECTED DRAFT STYLE (do NOT repeat this):\n${badRatings[0].ai_draft.substring(0,400)}`;
+    }
+
+    const styleData = styleRes?.data;
+    if (styleData?.content) {
+      ratingContext += `\n\nHR WRITING STYLE SAMPLE — match this tone, vocabulary and sign-off in all drafts:\n${styleData.content.substring(0,1500)}`;
     }
   }
   return `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You are chatting with an HR professional.
