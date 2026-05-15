@@ -439,7 +439,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- DOCUMENTS -->
 <div class="view docs-view" id="view-docs">
   <div class="docs-topbar">
-    <div><div class="docs-title">Documents</div><div class="docs-sub">Select a template — answer questions, letter builds live</div></div>
+    <div><div class="docs-title">Documents</div><div class="docs-sub">Select a template - answer questions, letter builds live</div></div>
     <div style="display:flex;gap:8px;">
       <button class="btn btn-secondary btn-sm" onclick="openBulkModal()" style="display:flex;align-items:center;gap:5px;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
@@ -471,7 +471,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- POLICIES -->
 <div class="view manage-view" id="view-manage">
   <div class="manage-topbar">
-    <div><div class="manage-title">Policies</div><div class="manage-sub">Upload your HR policies — Breeze HR reads these to answer employee questions.</div></div>
+    <div><div class="manage-title">Policies</div><div class="manage-sub">Upload your HR policies - Breeze HR reads these to answer employee questions.</div></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <a href="https://www.acas.org.uk/advice" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
@@ -486,7 +486,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- PROCESS MAPS -->
 <div class="view manage-view" id="view-processmaps">
   <div class="manage-topbar">
-    <div><div class="manage-title">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div><div class="manage-sub">Built automatically from your inbox — the more you use Breeze HR, the more accurate they become.</div></div>
+    <div><div class="manage-title">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div><div class="manage-sub">Built automatically from your inbox - the more you use Breeze HR, the more accurate they become.</div></div>
   </div>
   <div class="manage-body" id="processMapsBody"></div>
 </div>
@@ -561,7 +561,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="9" height="9" rx="1"/><rect x="13" y="2" width="9" height="9" rx="1"/><rect x="2" y="13" width="9" height="9" rx="1"/><rect x="13" y="13" width="9" height="9" rx="1"/></svg>
         Connect with Microsoft
       </button>
-      <div style="font-size:11px;color:var(--ink3);margin-top:12px;">Requires Microsoft 365 — coming soon</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:12px;">Requires Microsoft 365 - coming soon</div>
     </div>
   </div>
 
@@ -634,7 +634,7 @@ async function handleAuth() {
       if (co) await sb.from('profiles').insert({ id: data.user.id, company_id: co.id, full_name: name });
     } catch(e) {}
     errEl.style.color = 'var(--green)';
-    errEl.textContent = 'Account created — check your email to confirm, then sign in.';
+    errEl.textContent = 'Account created - check your email to confirm, then sign in.';
     btn.textContent = 'Create account'; btn.disabled = false;
     setTimeout(() => { authMode = 'signup'; toggleAuthMode(); }, 2000);
   }
@@ -763,12 +763,12 @@ const policies = [
   {icon:'👨‍👩‍👧',name:'Shared parental leave policy',desc:'Up to 50 weeks between parents, ShPP, eligibility and curtailment notice requirements',status:'missing',acas:'https://www.acas.org.uk/shared-parental-leave-and-pay'},
   {icon:'🏥',name:'Sickness absence policy',desc:'Self-certification (7 days), fit notes, SSP (£116.75/week), trigger points, long-term absence',status:'missing',acas:'https://www.acas.org.uk/absence-from-work'},
   {icon:'💰',name:'Pension policy',desc:'Auto-enrolment obligations, qualifying earnings, employer/employee contributions, opt-out',status:'missing',acas:'https://www.acas.org.uk/workplace-pensions'},
-  {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review, PIP — ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/performance-management'},
-  {icon:'⚖️',name:'Disciplinary policy',desc:'Investigation, hearing, right to be accompanied, warnings, dismissal, appeal — ACAS Code of Practice',status:'missing',acas:'https://www.acas.org.uk/disciplinary-procedure-step-by-step'},
+  {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review, PIP - ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/performance-management'},
+  {icon:'⚖️',name:'Disciplinary policy',desc:'Investigation, hearing, right to be accompanied, warnings, dismissal, appeal - ACAS Code of Practice',status:'missing',acas:'https://www.acas.org.uk/disciplinary-procedure-step-by-step'},
   {icon:'📣',name:'Grievance policy',desc:'Informal resolution, formal grievance, investigation, hearing, right to be accompanied, appeal',status:'missing',acas:'https://www.acas.org.uk/grievance-procedure-step-by-step'},
   {icon:'🏠',name:'Flexible working policy',desc:'Day one right to request (from April 2024), 2 requests per year, 2-month decision window',status:'missing',acas:'https://www.acas.org.uk/flexible-working'},
   {icon:'📋',name:'Redundancy policy',desc:'Fair selection criteria, 45-day collective consultation (20+ redundancies), statutory pay',status:'missing',acas:'https://www.acas.org.uk/redundancy'},
-  {icon:'🔄',name:'TUPE policy',desc:'Transfer of Undertakings — employee rights, information and consultation, ETO reasons',status:'missing',acas:'https://www.acas.org.uk/tupe-transfers'},
+  {icon:'🔄',name:'TUPE policy',desc:'Transfer of Undertakings - employee rights, information and consultation, ETO reasons',status:'missing',acas:'https://www.acas.org.uk/tupe-transfers'},
   {icon:'🌍',name:'Equal opportunities policy',desc:'Protected characteristics (Equality Act 2010), recruitment, harassment, reporting procedure',status:'missing',acas:'https://www.acas.org.uk/discrimination-and-the-law'},
   {icon:'🔒',name:'Whistleblowing policy',desc:'Protected disclosures, qualifying disclosures, reporting channels, protection from detriment',status:'missing',acas:'https://www.acas.org.uk/whistleblowing-at-work'},
   {icon:'💻',name:'Remote & hybrid working policy',desc:'Eligibility, DSE assessment, data security, expenses, communication expectations',status:'missing',acas:'https://www.acas.org.uk/working-from-home'}
@@ -839,23 +839,23 @@ function selectMergeEmployee(empJson) {
   const dd = document.getElementById('mergeDropdown'); if (dd) dd.style.display = 'none';
   const inp = document.getElementById('gcInp'); if (inp) inp.value = name;
 
-  // Salary — current pay only
+  // Salary - current pay only
   const payRate = employment?.pay_rate;
   const payCurrency = employment?.pay_currency || 'GBP';
   const payPeriod = employment?.pay_period || '';
   const salaryStr = payRate ? `${payCurrency === 'GBP' ? '£' : payCurrency}${Number(payRate).toLocaleString('en-GB')}${payPeriod==='ANNUAL'||payPeriod==='YEAR' ? ' per annum' : payPeriod==='HOURLY' ? ' per hour' : ''}` : '';
 
-  // Always fill — current/existing data only
+  // Always fill - current/existing data only
   if (name) { genVals['employee_name'] = name; genVals['candidate_name'] = name; }
   if (co)   { genVals['company_name'] = co; }
   if (email){ genVals['email'] = email; }
 
-  // Job title — only fill if this template uses CURRENT role, not a new one
+  // Job title - only fill if this template uses CURRENT role, not a new one
   if (title && !TMPL_NEW_ROLE.includes(selTmpl?.id)) {
     genVals['job_title'] = title;
   }
 
-  // Salary — only fill as current_salary, never as new_salary or salary (those are HR decisions)
+  // Salary - only fill as current_salary, never as new_salary or salary (those are HR decisions)
   if (salaryStr) {
     genVals['current_salary'] = salaryStr;
   }
@@ -863,7 +863,7 @@ function selectMergeEmployee(empJson) {
   // Never auto-fill: new_salary, salary, effective_date, start_date, dates, manager_name
 
   const filled = Object.keys(genVals).length;
-  addGMsg('ai', `Found **${name}**${title ? ` — ${title}` : ''}. Auto-filled ${filled} field${filled>1?'s':''} from your HRIS.`);
+  addGMsg('ai', `Found **${name}**${title ? ` - ${title}` : ''}. Auto-filled ${filled} field${filled>1?'s':''} from your HRIS.`);
   genStep++;
   updatePreview();
   skipMergeFilledFields();
@@ -959,7 +959,7 @@ async function renderTmpls(filter) {
   const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
-  // Track which groups are collapsed — default built-ins open, custom open
+  // Track which groups are collapsed - default built-ins open, custom open
   // Default: Your templates open, all built-in groups collapsed
   if (!window._tmplCollapsed) {
     window._tmplCollapsed = { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true };
@@ -1009,7 +1009,7 @@ async function renameTmpl(tmplId) {
       .eq('company_id',currentProfile.company_id);
     if(error){alert('Rename failed: '+error.message);return;}
   }
-  // Update local name — don't do a full DB reload or it will overwrite
+  // Update local name - don't do a full DB reload or it will overwrite
   t.name=newName;
   // Manually update just the name text in the DOM if visible
   const nameEls = document.querySelectorAll('.ti-name');
@@ -1024,7 +1024,7 @@ async function renameTmpl(tmplId) {
 }
 
 function renderTmplsLocal() {
-  // Render from local tmpls array only — no DB fetch
+  // Render from local tmpls array only - no DB fetch
   const list=document.getElementById('tmplList'); if(!list)return;
   const filter = document.getElementById('tmplSearch')?.value||'';
   const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
@@ -1066,14 +1066,14 @@ const TMPL_NEW_SALARY = ['t1','t2','t3'];
 
 function openTmpl(t) {
   selTmpl=t;genStep=0;
-  // Pre-fill date and reset — always auto-fill letter date, never ask
+  // Pre-fill date and reset - always auto-fill letter date, never ask
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   genVals = { date: today, letter_date: today };
   mergeEmployeeCache = null; // refresh employee cache for each new template session
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template — answer each question to populate it':'Answer each question — letter builds live on the right'}</div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show skeleton with placeholders immediately
   askQ();
 }
@@ -1127,7 +1127,7 @@ function updatePreview() {
     Object.keys(vals).forEach(f=>{const esc=f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');rendered=rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'),`<span class="filled">${vals[f]}</span>`);});
     rendered=rendered.replace(/\{([^}]{1,40})\}/g,'<span class="ph">[$1]</span>');
     const paragraphs=rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
-    body.innerHTML=`<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview shows text only — your logo, header and footer will appear in the downloaded Word doc.</div><div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
+    body.innerHTML=`<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview shows text only - your logo, header and footer will appear in the downloaded Word doc.</div><div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
     return;
   }
 
@@ -1141,11 +1141,11 @@ function updatePreview() {
 
   else if(t.id==='t2') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Salary increase</strong></p><p>I am pleased to confirm that your annual salary will increase from ${ph('current_salary')} to ${ph('new_salary')}, with effect from ${ph('effective_date')}.</p><p>Your salary will be paid monthly in arrears. All other terms and conditions of your employment remain unchanged.</p><p>This increase is in recognition of your valued contribution to ${co()}. Please sign and return a copy of this letter to confirm your acceptance.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t3') content=`${header()}${salutation('candidate_name')}<div class="doc-body-text"><p><strong>Offer of employment — ${ph('job_title')}</strong></p><p>We are delighted to offer you the position of ${ph('job_title')} at ${co()}, commencing ${ph('start_date')}.</p><p>Your annual salary will be ${ph('salary')}, payable monthly in arrears. Your primary place of work will be ${ph('location')}.</p><p>This offer is conditional upon receipt of satisfactory references and verification of your right to work in the UK, as required under the Immigration, Asylum and Nationality Act 2006.</p><p>Your employment will be subject to a probationary period of ${ph('probation_period')}, during which either party may terminate employment with one week's notice.</p><p>Full details of your terms and conditions will be set out in your contract of employment, which will be sent to you separately.</p><p>Please sign and return one copy of this letter within five working days to confirm your acceptance.</p><p>We look forward to welcoming you to the team.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t3') content=`${header()}${salutation('candidate_name')}<div class="doc-body-text"><p><strong>Offer of employment - ${ph('job_title')}</strong></p><p>We are delighted to offer you the position of ${ph('job_title')} at ${co()}, commencing ${ph('start_date')}.</p><p>Your annual salary will be ${ph('salary')}, payable monthly in arrears. Your primary place of work will be ${ph('location')}.</p><p>This offer is conditional upon receipt of satisfactory references and verification of your right to work in the UK, as required under the Immigration, Asylum and Nationality Act 2006.</p><p>Your employment will be subject to a probationary period of ${ph('probation_period')}, during which either party may terminate employment with one week's notice.</p><p>Full details of your terms and conditions will be set out in your contract of employment, which will be sent to you separately.</p><p>Please sign and return one copy of this letter within five working days to confirm your acceptance.</p><p>We look forward to welcoming you to the team.</p><p>Yours sincerely,</p></div>${sign()}`;
 
   else if(t.id==='t4') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Successful completion of probationary period</strong></p><p>I am pleased to confirm that you have successfully completed your probationary period as ${ph('job_title')}, which ended on ${ph('probation_end_date')}.</p><p>Your employment with ${co()} is now confirmed. All other terms and conditions of your employment remain as set out in your contract.</p><p>We are delighted to have you as a permanent member of the team and look forward to your continued contribution.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t5') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Flexible working request — decision</strong></p><p>Further to your flexible working request and our subsequent discussions, I am pleased to confirm that ${co()} has approved the following arrangement:</p><p><strong>Approved arrangement:</strong> ${ph('arrangement')}</p><p><strong>Start date:</strong> ${ph('start_date')}</p><p>This arrangement will be reviewed on ${ph('review_date')}. If the arrangement is not working for either party, we will discuss this openly and in good faith before any changes are made, in line with the ACAS code of practice on flexible working.</p><p>All other terms and conditions of your employment remain unchanged.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t5') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Flexible working request - decision</strong></p><p>Further to your flexible working request and our subsequent discussions, I am pleased to confirm that ${co()} has approved the following arrangement:</p><p><strong>Approved arrangement:</strong> ${ph('arrangement')}</p><p><strong>Start date:</strong> ${ph('start_date')}</p><p>This arrangement will be reviewed on ${ph('review_date')}. If the arrangement is not working for either party, we will discuss this openly and in good faith before any changes are made, in line with the ACAS code of practice on flexible working.</p><p>All other terms and conditions of your employment remain unchanged.</p><p>Yours sincerely,</p></div>${sign()}`;
 
   else if(t.id==='t6') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: First written warning</strong></p><p>Following the disciplinary hearing held on [date of hearing], and in accordance with ${co()}'s disciplinary procedure, which follows the ACAS Code of Practice on Disciplinary and Grievance Procedures, I am writing to confirm that you have been issued with a <strong>first written warning</strong>.</p><p><strong>Nature of the issue:</strong> ${ph('issue_description')}</p><p><strong>Improvement required:</strong> ${ph('improvement_required')}</p><p>This warning will remain on your personnel file for 12 months from the date of this letter, after which it will be disregarded for disciplinary purposes, provided there is no further cause for concern.</p><p>You have the right to appeal against this decision. If you wish to appeal, you must do so in writing to your HR department within five working days of receiving this letter, stating your grounds for appeal.</p><p><strong>Review date:</strong> ${ph('review_date')}</p><p>Yours sincerely,</p></div>${sign()}`;
 
@@ -1169,15 +1169,15 @@ function updatePreview() {
 
   else if(t.id==='t16') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Acknowledgement of resignation</strong></p><p>I am writing to acknowledge receipt of your resignation from the position of ${ph('job_title')} at ${co()}.</p><p>In accordance with your contract, your notice period is ${ph('notice_period')}. Your last day of employment will therefore be ${ph('last_day')}.</p><p>During your notice period we ask that you continue to perform your duties to the best of your ability, complete any handover documentation, and return all company property on your last day.</p><p>We will arrange an exit interview and ensure your final pay, including any accrued holiday entitlement, is calculated and paid promptly.</p><p>We wish you well in your future career.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t17') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Flexible working request — decision</strong></p><p>Thank you for your flexible working request dated [date of request] in which you requested the following arrangement: ${ph('arrangement_requested')}.</p><p>After careful consideration, I regret to inform you that we are unable to approve your request at this time. The business reason for this decision is:</p><p>${ph('refusal_reason')}</p><p>This decision has been made in accordance with the statutory grounds for refusing a flexible working request under the Employment Relations (Flexible Working) Act 2023.</p><p>You have the right to appeal this decision. If you wish to appeal, please do so in writing within 14 days of receiving this letter, stating your grounds for appeal.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t17') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Flexible working request - decision</strong></p><p>Thank you for your flexible working request dated [date of request] in which you requested the following arrangement: ${ph('arrangement_requested')}.</p><p>After careful consideration, I regret to inform you that we are unable to approve your request at this time. The business reason for this decision is:</p><p>${ph('refusal_reason')}</p><p>This decision has been made in accordance with the statutory grounds for refusing a flexible working request under the Employment Relations (Flexible Working) Act 2023.</p><p>You have the right to appeal this decision. If you wish to appeal, please do so in writing within 14 days of receiving this letter, stating your grounds for appeal.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t18') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Sickness absence — formal review</strong></p><p>I am writing following our absence review meeting to confirm the outcome and next steps.</p><p>During the review period of ${ph('review_period')}, you have been absent for a total of ${ph('days_absent')} days. We recognise that illness can be beyond your control and we are committed to supporting you. However, the level of absence is having a significant impact on the business.</p><p><strong>Improvement expected:</strong> ${ph('improvement_required')}</p><p>This letter is not a disciplinary warning. However, should your attendance not improve, we may need to move to a more formal process in line with our absence management policy and ACAS guidance.</p><p>A further review will take place on ${ph('review_date')}. We will continue to offer any reasonable support during this time. Please speak to your line manager or HR if you need assistance.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t18') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Sickness absence - formal review</strong></p><p>I am writing following our absence review meeting to confirm the outcome and next steps.</p><p>During the review period of ${ph('review_period')}, you have been absent for a total of ${ph('days_absent')} days. We recognise that illness can be beyond your control and we are committed to supporting you. However, the level of absence is having a significant impact on the business.</p><p><strong>Improvement expected:</strong> ${ph('improvement_required')}</p><p>This letter is not a disciplinary warning. However, should your attendance not improve, we may need to move to a more formal process in line with our absence management policy and ACAS guidance.</p><p>A further review will take place on ${ph('review_date')}. We will continue to offer any reasonable support during this time. Please speak to your line manager or HR if you need assistance.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t19') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Without prejudice — settlement agreement</strong></p><p>I am writing to confirm the terms of the settlement agreement reached between you and ${co()}.</p><p>This letter is written without prejudice and subject to contract until a formal settlement agreement is signed by both parties.</p><p><strong>Proposed terms:</strong></p><p><strong>Termination date:</strong> ${ph('termination_date')}<br><strong>Settlement payment:</strong> ${ph('settlement_amount')} (of which the first £30,000 may be paid tax-free)</p><p>You will need to obtain independent legal advice before signing the settlement agreement, as required by law. ${co()} will make a contribution towards your reasonable legal fees.</p><p>This offer is open for acceptance for 10 calendar days. If you have any questions, please do not hesitate to contact us.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t19') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Without prejudice - settlement agreement</strong></p><p>I am writing to confirm the terms of the settlement agreement reached between you and ${co()}.</p><p>This letter is written without prejudice and subject to contract until a formal settlement agreement is signed by both parties.</p><p><strong>Proposed terms:</strong></p><p><strong>Termination date:</strong> ${ph('termination_date')}<br><strong>Settlement payment:</strong> ${ph('settlement_amount')} (of which the first £30,000 may be paid tax-free)</p><p>You will need to obtain independent legal advice before signing the settlement agreement, as required by law. ${co()} will make a contribution towards your reasonable legal fees.</p><p>This offer is open for acceptance for 10 calendar days. If you have any questions, please do not hesitate to contact us.</p><p>Yours sincerely,</p></div>${sign()}`;
 
   else if(t.id==='t20') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Invitation to disciplinary hearing</strong></p><p>I am writing to invite you to a disciplinary hearing in accordance with ${co()}'s disciplinary procedure, which follows the ACAS Code of Practice on Disciplinary and Grievance Procedures.</p><p><strong>Allegation:</strong> ${ph('allegation')}</p><p><strong>Date and time:</strong> ${ph('hearing_date')}<br><strong>Location:</strong> ${ph('hearing_location')}</p><p>You have the right to be accompanied at this hearing by a work colleague or a trade union representative of your choice. Please let us know in advance if you intend to bring a companion.</p><p>You are entitled to see any evidence that will be referred to at the hearing. If you have not already received this, please contact us and we will arrange for it to be provided.</p><p>The purpose of the hearing is to consider the allegation above and give you the opportunity to respond. No decision has been made at this stage.</p><p>If you are unable to attend on the date proposed, please contact us as soon as possible to arrange an alternative.</p><p>Yours sincerely,</p></div>${sign()}`;
 
-  else if(t.id==='t21') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Outcome of disciplinary hearing — dismissal</strong></p><p>I am writing to confirm the outcome of the disciplinary hearing held on [date of hearing] in accordance with ${co()}'s disciplinary procedure and the ACAS Code of Practice.</p><p><strong>Reason for dismissal:</strong> ${ph('dismissal_reason')}</p><p>After careful consideration of all the evidence and your representations at the hearing, the decision has been made to dismiss you from your employment with ${co()}. Your last day of employment will be ${ph('last_day')}.</p><p><strong>Notice:</strong> ${ph('notice_details')}</p><p>You have the right to appeal against this decision. If you wish to do so, you must appeal in writing within five working days of receiving this letter, setting out your grounds for appeal.</p><p>Yours sincerely,</p></div>${sign()}`;
+  else if(t.id==='t21') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Outcome of disciplinary hearing - dismissal</strong></p><p>I am writing to confirm the outcome of the disciplinary hearing held on [date of hearing] in accordance with ${co()}'s disciplinary procedure and the ACAS Code of Practice.</p><p><strong>Reason for dismissal:</strong> ${ph('dismissal_reason')}</p><p>After careful consideration of all the evidence and your representations at the hearing, the decision has been made to dismiss you from your employment with ${co()}. Your last day of employment will be ${ph('last_day')}.</p><p><strong>Notice:</strong> ${ph('notice_details')}</p><p>You have the right to appeal against this decision. If you wish to do so, you must appeal in writing within five working days of receiving this letter, setting out your grounds for appeal.</p><p>Yours sincerely,</p></div>${sign()}`;
 
   else if(t.id==='t22') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Outcome of redundancy appeal</strong></p><p>I am writing to confirm the outcome of your appeal against the decision to make your role redundant.</p><p><strong>Appeal outcome:</strong> ${ph('appeal_outcome')}</p><p><strong>Reasons for decision:</strong> ${ph('appeal_reasons')}</p><p>This decision is final. If your appeal has not been upheld, your original redundancy terms remain as previously communicated.</p><p>Yours sincerely,</p></div>${sign()}`;
 
@@ -1192,14 +1192,14 @@ function updatePreview() {
 
 function finishTmpl() {
   addGMsg('ai',`✓ Complete. Click Download to get your Word document.`);
-  const f=document.getElementById('gcField');if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--green);font-weight:500;text-align:center;">Complete — ready to download</div>`;
+  const f=document.getElementById('gcField');if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--green);font-weight:500;text-align:center;">Complete - ready to download</div>`;
   const dl=document.getElementById('dlBtn'),sb2=document.getElementById('sendBtn');
   if(dl){dl.style.display='inline-flex';dl.textContent='⬇ Download .docx';dl.onclick=selTmpl.isDocx?downloadDocx:downloadAsDocx;}
   if(sb2)sb2.style.display='inline-flex';
   updatePreview();
 }
 
-// For built-in templates — generate a simple docx from the preview text
+// For built-in templates - generate a simple docx from the preview text
 async function downloadAsDocx() {
   const btn=document.getElementById('dlBtn');
   if(btn){btn.textContent='Generating...';btn.disabled=true;}
@@ -1217,7 +1217,7 @@ async function downloadAsDocx() {
       })
     });
     if(!res.ok){
-      // Fallback — download as .txt if docx fails
+      // Fallback - download as .txt if docx fails
       const blob=new Blob([text],{type:'text/plain'});
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');a.href=url;a.download=`${selTmpl.name}.txt`;a.click();
@@ -1257,7 +1257,7 @@ async function renderManage() {
   if(currentProfile){const{data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).not('name','like','TEMPLATE:%').order('created_at',{ascending:false});if(data)dbPolicies=data;}
   const allPolicies=policies.map(p=>{const up=dbPolicies.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};});
   const uc=allPolicies.filter(p=>p.status==='uploaded').length;
-  body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded — Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+  body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded - Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
 }
 
 async function renamePolicy(id) {
@@ -1462,7 +1462,7 @@ function renderSettings() {
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Writing style</div>
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">Paste a sample of your writing — Breeze HR will match your tone, sign-off and style when drafting.</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">Paste a sample of your writing - Breeze HR will match your tone, sign-off and style when drafting.</div>
       <textarea id="set-style-sample" placeholder="Paste an example email or letter you've written here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--surface2);outline:none;resize:vertical;line-height:1.6;" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'"></textarea>
       <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
         <button class="btn btn-primary btn-sm" onclick="saveWritingStyle()">Save style</button>
@@ -1562,7 +1562,7 @@ async function saveWritingStyle() {
     await sb.from('policies').insert({ company_id: currentProfile.company_id, name: 'STYLE:WritingSample', content: sample });
   }
   chatSystemPrompt = null; // force rebuild so new style is picked up
-  if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Saved — chat will now match your writing style'; }
+  if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Saved - chat will now match your writing style'; }
 }
 
 async function clearWritingStyle() {
@@ -1584,7 +1584,7 @@ async function saveInboundEmail() {
     .update({ inbound_email: email })
     .eq('id', currentProfile.company_id);
   if (error) { msg.style.color='var(--red)'; msg.textContent='Failed: '+error.message; return; }
-  msg.style.color='var(--green)'; msg.textContent='✓ Saved — emails forwarded to this address will appear in your inbox.';
+  msg.style.color='var(--green)'; msg.textContent='✓ Saved - emails forwarded to this address will appear in your inbox.';
 }
 
 async function saveAccountSettings() {
@@ -1729,7 +1729,7 @@ async function runBulkGenerate() {
           await new Promise(r => setTimeout(r, 300)); // small delay between downloads
         }
       } else {
-        // Built-in template — generate from preview
+        // Built-in template - generate from preview
         const savedTmpl = selTmpl, savedVals = {...genVals}, savedStep = genStep;
         selTmpl = t; genVals = row; genStep = t.flow.length;
         const body = document.createElement('div');
@@ -1829,10 +1829,10 @@ function getDemoResults(query) {
     { title:'People & Culture Report 2024', type:'pptx', location:'HR / Annual Reports', modified:'12 Jan 2025', author:'Dougie Gordon', snippet:'Overall attrition rate: 14.2% (down from 18.1% in 2023). Voluntary attrition: 9.8%. Top reasons for leaving: career progression (42%), compensation (28%), work-life balance (18%).', url:'https://yourcompany.sharepoint.com/sites/HR/Reports/People-Culture-2024.pptx' },
     { title:'Headcount & Attrition Q3 2024', type:'xlsx', location:'HR / Quarterly Data', modified:'3 Oct 2024', author:'Dougie Gordon', snippet:'Q3 headcount: 187. Leavers in Q3: 8. Attrition rate Q3: 4.3%. New starters Q3: 12. Net headcount change: +4.', url:'https://yourcompany.sharepoint.com/sites/HR/Data/Headcount-Q3-2024.xlsx' },
     { title:'Annual Leave Policy 2025', type:'docx', location:'HR / Policies', modified:'6 Jan 2025', author:'Dougie Gordon', snippet:'All employees are entitled to a minimum of 28 days paid annual leave per leave year, inclusive of bank and public holidays.', url:'https://yourcompany.sharepoint.com/sites/HR/Policies/Annual-Leave-2025.docx' },
-    { title:'Salary Review 2024 — Final', type:'xlsx', location:'HR / Compensation', modified:'28 Mar 2024', author:'Dougie Gordon', snippet:'Average salary increase: 5.2%. Median increase: 4.8%. Budget utilisation: 94%. Promotions awarded: 14.', url:'https://yourcompany.sharepoint.com/sites/HR/Compensation/Salary-Review-2024.xlsx' },
-    { title:'Onboarding Process — Updated', type:'docx', location:'HR / Processes', modified:'15 Feb 2025', author:'Dougie Gordon', snippet:'Updated onboarding checklist covering right to work checks, IT setup, welcome email, day one agenda and probation review schedule.', url:'https://yourcompany.sharepoint.com/sites/HR/Processes/Onboarding.docx' },
+    { title:'Salary Review 2024 - Final', type:'xlsx', location:'HR / Compensation', modified:'28 Mar 2024', author:'Dougie Gordon', snippet:'Average salary increase: 5.2%. Median increase: 4.8%. Budget utilisation: 94%. Promotions awarded: 14.', url:'https://yourcompany.sharepoint.com/sites/HR/Compensation/Salary-Review-2024.xlsx' },
+    { title:'Onboarding Process - Updated', type:'docx', location:'HR / Processes', modified:'15 Feb 2025', author:'Dougie Gordon', snippet:'Updated onboarding checklist covering right to work checks, IT setup, welcome email, day one agenda and probation review schedule.', url:'https://yourcompany.sharepoint.com/sites/HR/Processes/Onboarding.docx' },
     { title:'Employee Engagement Survey Results 2024', type:'pptx', location:'HR / Engagement', modified:'20 Nov 2024', author:'Dougie Gordon', snippet:'Overall engagement score: 72% (up 4pts from 2023). Top themes: team culture (83% positive), growth opportunities (61%), leadership communication (68%).', url:'https://yourcompany.sharepoint.com/sites/HR/Engagement/Survey-2024.pptx' },
-    { title:'Redundancy Process — Legal Checklist', type:'docx', location:'HR / Legal', modified:'9 Mar 2024', author:'Dougie Gordon', snippet:'ACAS-compliant redundancy process checklist covering selection criteria, at-risk notification, individual consultation, collective consultation (20+ roles), statutory pay calculations.', url:'https://yourcompany.sharepoint.com/sites/HR/Legal/Redundancy-Checklist.docx' },
+    { title:'Redundancy Process - Legal Checklist', type:'docx', location:'HR / Legal', modified:'9 Mar 2024', author:'Dougie Gordon', snippet:'ACAS-compliant redundancy process checklist covering selection criteria, at-risk notification, individual consultation, collective consultation (20+ roles), statutory pay calculations.', url:'https://yourcompany.sharepoint.com/sites/HR/Legal/Redundancy-Checklist.docx' },
   ];
   return allDocs.filter(d =>
     d.title.toLowerCase().includes(q) ||
@@ -1886,10 +1886,10 @@ async function buildChatSystemPrompt() {
     ]);
     const pols = polsRes.data;
     if (pols && pols.length) {
-      policyContext = `\n\nCOMPANY POLICIES (use these first — they override generic advice):\n` +
+      policyContext = `\n\nCOMPANY POLICIES (use these first - they override generic advice):\n` +
         pols.map(p=>`\n--- ${p.name} ---\n${p.content.substring(0,2000)}`).join('\n');
     } else {
-      policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET — use ACAS guidance and UK employment law. Recommend HR uploads their policies.`;
+      policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET - use ACAS guidance and UK employment law. Recommend HR uploads their policies.`;
     }
     const responses = responsesRes.data;
     if (responses && responses.length) {
@@ -1898,8 +1898,8 @@ async function buildChatSystemPrompt() {
       if (edited.length >= 3) {
         const aiAvgLen = edited.reduce((s,r)=>s+(r.ai_draft?.length||0),0)/edited.length;
         const hrAvgLen = edited.reduce((s,r)=>s+(r.hr_sent?.length||0),0)/edited.length;
-        if (hrAvgLen < aiAvgLen*0.7) editPatterns.push('This team consistently shortens AI drafts — be more concise');
-        if (hrAvgLen > aiAvgLen*1.3) editPatterns.push('This team tends to add more detail — be more thorough');
+        if (hrAvgLen < aiAvgLen*0.7) editPatterns.push('This team consistently shortens AI drafts - be more concise');
+        if (hrAvgLen > aiAvgLen*1.3) editPatterns.push('This team tends to add more detail - be more thorough');
         const removedAcas = edited.filter(r=>r.ai_draft?.includes('ACAS')&&!r.hr_sent?.includes('ACAS')).length;
         if (removedAcas > edited.length*0.4) editPatterns.push('This team removes ACAS references from employee drafts');
         const infSigs = ['Hi ','Thanks','Cheers'];
@@ -1916,12 +1916,12 @@ async function buildChatSystemPrompt() {
       }
       learningContext = `\n\nLEARNING FROM ${total} PREVIOUS RESPONSES (edit rate: ${editRate}%):`;
       if (editPatterns.length) learningContext += `\nStyle patterns detected:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
-      else if (editRate < 20) learningContext += `\nHR edits very few drafts (${editRate}%) — current style is working well.`;
+      else if (editRate < 20) learningContext += `\nHR edits very few drafts (${editRate}%) - current style is working well.`;
       else learningContext += `\nHR edits ${editRate}% of drafts. Use standard best practice.`;
     }
     const goodRatings = goodRatingsRes.data, badRatings = badRatingsRes.data;
     if (goodRatings && goodRatings.length) {
-      ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES — match this style:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,800)}`).join('\n')}`;
+      ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES - match this style:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,800)}`).join('\n')}`;
     }
     if (badRatings && badRatings.length) {
       ratingContext += `\n\nREJECTED DRAFT STYLE (do NOT repeat this):\n${badRatings[0].ai_draft.substring(0,400)}`;
@@ -1929,7 +1929,7 @@ async function buildChatSystemPrompt() {
 
     const styleData = styleRes?.data;
     if (styleData?.content) {
-      ratingContext += `\n\nHR WRITING STYLE SAMPLE — match this tone, vocabulary and sign-off in all drafts:\n${styleData.content.substring(0,1500)}`;
+      ratingContext += `\n\nHR WRITING STYLE SAMPLE - match this tone, vocabulary and sign-off in all drafts:\n${styleData.content.substring(0,1500)}`;
     }
   }
   return `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You are chatting with an HR professional.
@@ -1938,10 +1938,10 @@ async function buildChatSystemPrompt() {
 Use UK English throughout. payslip (not paycheck), holiday (not vacation), CV (not resume), redundancy (not layoff), authorise/organise/recognise (not -ize). Single dash (-) never double (--). Bullet points use •. Use **bold** for headings.
 
 ━━━ TRIAGE ━━━
-TIER 1 — TRANSACTIONAL: factual policy question, no emotional language. Answer in 2-4 sentences. No draft needed.
-TIER 2 — STANDARD PROCESS: family leave, flexible working, resignation, standard absence. Draft + HR checklist.
-TIER 3 — SENSITIVE/RISK: performance, grievance, disciplinary, distress signals ("struggling", "not sleeping", "dreading coming in"), protected characteristics. Acknowledgement draft only + advisory note.
-TIER 4 — LEGAL RISK: "tribunal", "solicitor", "ACAS early conciliation", "discrimination claim", "without prejudice", "whistleblowing". DO NOT draft a reply. Tell HR to get legal advice immediately.
+TIER 1 - TRANSACTIONAL: factual policy question, no emotional language. Answer in 2-4 sentences. No draft needed.
+TIER 2 - STANDARD PROCESS: family leave, flexible working, resignation, standard absence. Draft + HR checklist.
+TIER 3 - SENSITIVE/RISK: performance, grievance, disciplinary, distress signals ("struggling", "not sleeping", "dreading coming in"), protected characteristics. Acknowledgement draft only + advisory note.
+TIER 4 - LEGAL RISK: "tribunal", "solicitor", "ACAS early conciliation", "discrimination claim", "without prejudice", "whistleblowing". DO NOT draft a reply. Tell HR to get legal advice immediately.
 
 ━━━ EMOTIONAL STATE ━━━
 DISTRESSED → Lead with human acknowledgement. Offer a call. Check EAP. Consider OH referral.
@@ -1961,8 +1961,8 @@ OCCUPATIONAL HEALTH: long-term absence 4+ weeks, disability adjustments.
 ━━━ DRAFT vs HR ACTIONS ━━━
 EMPLOYEE-FACING DRAFT: What HR sends to the employee after verifying facts.
 - NEVER include eligibility thresholds, statutory rate calculations, or payroll figures not yet confirmed.
-- Use [PLACEHOLDER] in square brackets for unknown specifics — HR fills them in before sending.
-- BANNED phrases: "I'll check and get back to you", "I'll look into this", "I'll confirm shortly", "I'll find out", "I'll need to review your contract", "your contract may contain". If you need a placeholder, use [PLACEHOLDER] and stop there — do NOT also promise to follow up.
+- Use [PLACEHOLDER] in square brackets for unknown specifics - HR fills them in before sending.
+- BANNED phrases: "I'll check and get back to you", "I'll look into this", "I'll confirm shortly", "I'll find out", "I'll need to review your contract", "your contract may contain". If you need a placeholder, use [PLACEHOLDER] and stop there - do NOT also promise to follow up.
 
 HR ACTIONS (not seen by employee): eligibility checks, statutory calculations, what to verify in HRIS, who to escalate to.
 
@@ -1973,7 +1973,7 @@ Working abroad: NOT a flexible working request. Tax residency risk, jurisdiction
 Flexible working: day one right since April 2024, max 2 requests/year.
 Absence: SSP = 4 waiting days then £116.75/wk up to 28 weeks. Long-term (4+ weeks): Equality Act disability, OH referral, reasonable adjustments.
 Disciplinary: always distinguish conduct from capability. ACAS code: investigate → hearing → right to be accompanied → decision → appeal. Tribunal uplift up to 25% for non-compliance.
-Leavers: accrued holiday in final payslip. Restrictive covenants in HR Actions only — never mention in draft unless HR has confirmed the specific restrictions.
+Leavers: accrued holiday in final payslip. Restrictive covenants in HR Actions only - never mention in draft unless HR has confirmed the specific restrictions.
 
 ━━━ RESPONSE FORMAT ━━━
 You are in a chat with an HR professional. Be direct and practical.
@@ -2082,7 +2082,7 @@ async function handleChatAttachment(event) {
   nameEl.textContent = file.name;
   preview.style.display = 'flex';
   const text = await readFileAsText(file);
-  chatAttachmentText = `Attached document — ${file.name}:\n\n${text.substring(0, 8000)}`;
+  chatAttachmentText = `Attached document - ${file.name}:\n\n${text.substring(0, 8000)}`;
   event.target.value = '';
 }
 
@@ -2139,7 +2139,7 @@ function renderChatHistory() {
     el.innerHTML = `<div class="chat-welcome">
       <div class="chat-welcome-icon">◈</div>
       <div class="chat-welcome-title">Chat with Breeze HR</div>
-      <div class="chat-welcome-sub">Ask policy questions, paste an email for a draft response, request a letter, or get ACAS guidance — your company policies are automatically loaded.</div>
+      <div class="chat-welcome-sub">Ask policy questions, paste an email for a draft response, request a letter, or get ACAS guidance - your company policies are automatically loaded.</div>
     </div>`;
     return;
   }
@@ -2149,7 +2149,7 @@ function renderChatHistory() {
       <div class="chat-bubble user-bubble">${escapeHtml(m.content).replace(/\n/g,'<br>')}</div>
     </div>`;
     const artifact = parseArtifact(m.content);
-    const bubbleText = artifact ? (artifact.advice || 'Draft generated — see panel on the right.') : m.content;
+    const bubbleText = artifact ? (artifact.advice || 'Draft generated - see panel on the right.') : m.content;
     // Auto-show artifact for latest AI message
     if (artifact && i === chatMessages.length - 1) setTimeout(() => showArtifact(artifact, i), 50);
     return `<div class="chat-msg">
