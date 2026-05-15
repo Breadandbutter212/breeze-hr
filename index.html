@@ -168,11 +168,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .manage-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
 .manage-body { flex: 1; overflow-y: auto; padding: 20px; }
 .policy-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; margin-bottom: 24px; }
-.policy-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; transition: all 0.15s; box-shadow: var(--shadow-sm); }
+.policy-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px; transition: all 0.15s; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; }
 .policy-card:hover { box-shadow: var(--shadow); transform: translateY(-1px); }
 .pc-icon { font-size: 20px; margin-bottom: 8px; }
 .pc-name { font-size: 12px; font-weight: 600; color: var(--ink); margin-bottom: 4px; }
-.pc-desc { font-size: 11px; color: var(--ink3); line-height: 1.5; }
+.pc-desc { font-size: 11px; color: var(--ink3); line-height: 1.5; flex: 1; }
 .pc-foot { display: flex; align-items: center; justify-content: space-between; margin-top: 12px; padding-top: 10px; border-top: 1px solid var(--border); }
 .pc-status { font-size: 10px; padding: 2px 7px; border-radius: 20px; font-weight: 500; }
 .pcs-uploaded { background: var(--green-bg); color: var(--green); }
@@ -510,8 +510,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         </select>
       </div>
       <div style="margin-bottom:16px;">
-        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:4px;">2. Upload a CSV with recipient data</div>
-        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">One row per person. Column headers must match template field names (e.g. employee_name, job_title, new_salary)</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;">
+          <div style="font-size:13px;font-weight:500;color:var(--ink);">2. Upload a CSV with recipient data</div>
+          <button class="btn btn-secondary btn-sm" onclick="downloadCsvTemplate()" id="csvTemplateBtn" style="opacity:0.4;cursor:not-allowed;" disabled>⬇ Download CSV template</button>
+        </div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:8px;">Select a template above first, then download the CSV template pre-filled with the correct column headers.</div>
         <label style="display:flex;align-items:center;justify-content:center;gap:8px;padding:20px;border:1.5px dashed var(--border2);border-radius:var(--r);cursor:pointer;font-size:12px;color:var(--ink3);transition:all 0.15s;" id="csvDropZone">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
           <span id="csvFileName">Upload CSV file</span>
@@ -753,13 +756,13 @@ const tmpls = [
 ];
 
 const policies = [
-  {icon:'🏖️',name:'Annual leave policy',desc:'Entitlement (28 days statutory inc. bank holidays), carry-over, booking procedure',status:'missing',acas:'https://www.acas.org.uk/holiday-entitlement-and-pay'},
-  {icon:'🤱',name:'Maternity leave policy',desc:'52 weeks entitlement, SMP, enhanced pay, KIT days, return to work rights',status:'missing',acas:'https://www.acas.org.uk/maternity-leave'},
-  {icon:'👶',name:'Paternity leave policy',desc:'2 weeks statutory entitlement, SPP (£184.03/week), 15 weeks notice required before due date',status:'missing',acas:'https://www.acas.org.uk/paternity-leave-and-pay'},
+  {icon:'🏖️',name:'Annual leave policy',desc:'Entitlement (28 days statutory inc. bank holidays), carry-over, booking procedure',status:'missing',acas:'https://www.acas.org.uk/holiday-entitlement'},
+  {icon:'🤱',name:'Maternity leave policy',desc:'52 weeks entitlement, SMP, enhanced pay, KIT days, return to work rights',status:'missing',acas:'https://www.acas.org.uk/maternity-paternity-and-adoption'},
+  {icon:'👶',name:'Paternity leave policy',desc:'2 weeks statutory entitlement, SPP (£184.03/week), 15 weeks notice required before due date',status:'missing',acas:'https://www.acas.org.uk/maternity-paternity-and-adoption'},
   {icon:'👨‍👩‍👧',name:'Shared parental leave policy',desc:'Up to 50 weeks between parents, ShPP, eligibility and curtailment notice requirements',status:'missing',acas:'https://www.acas.org.uk/shared-parental-leave-and-pay'},
   {icon:'🏥',name:'Sickness absence policy',desc:'Self-certification (7 days), fit notes, SSP (£116.75/week), trigger points, long-term absence',status:'missing',acas:'https://www.acas.org.uk/absence-from-work'},
-  {icon:'💰',name:'Pension policy',desc:'Auto-enrolment obligations, qualifying earnings, employer/employee contributions, opt-out',status:'missing',acas:'https://www.acas.org.uk/pensions'},
-  {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review, PIP — ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/managing-performance'},
+  {icon:'💰',name:'Pension policy',desc:'Auto-enrolment obligations, qualifying earnings, employer/employee contributions, opt-out',status:'missing',acas:'https://www.acas.org.uk/workplace-pensions'},
+  {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review, PIP — ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/performance-management'},
   {icon:'⚖️',name:'Disciplinary policy',desc:'Investigation, hearing, right to be accompanied, warnings, dismissal, appeal — ACAS Code of Practice',status:'missing',acas:'https://www.acas.org.uk/disciplinary-procedure-step-by-step'},
   {icon:'📣',name:'Grievance policy',desc:'Informal resolution, formal grievance, investigation, hearing, right to be accompanied, appeal',status:'missing',acas:'https://www.acas.org.uk/grievance-procedure-step-by-step'},
   {icon:'🏠',name:'Flexible working policy',desc:'Day one right to request (from April 2024), 2 requests per year, 2-month decision window',status:'missing',acas:'https://www.acas.org.uk/flexible-working'},
@@ -1284,28 +1287,54 @@ async function deletePolicy(id) {
 // ── PROCESS MAPS ──
 const openProcessMaps = new Set(['New starter onboarding']); // open by default
 
-function renderProcessMaps() {
+async function renderProcessMaps() {
   const body=document.getElementById('processMapsBody');if(!body)return;
   body.style.padding='0';
   body.style.overflow='auto';
+
+  // Build process maps from uploaded policies
+  let policyProcesses = [...processes];
+  if (currentProfile) {
+    const {data} = await sb.from('policies').select('name,content').eq('company_id', currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','STYLE:%');
+    if (data && data.length) {
+      const policyMap = {
+        'maternity': {icon:'🤱',name:'Maternity leave',badge:'From your policies',steps:['Employee notifies HR','MATB1 form received','SMP eligibility checked','Leave dates confirmed','Manager notified','Cover arranged','KIT days agreed','Return date set']},
+        'paternity': {icon:'👶',name:'Paternity leave',badge:'From your policies',steps:['Employee notifies HR','SC3 form received','SPP eligibility checked','Leave dates confirmed','Manager notified','Return confirmed']},
+        'disciplin': {icon:'⚖️',name:'Disciplinary process',badge:'From your policies',steps:['Issue identified','Investigation','Hearing invite issued','Hearing held','Decision made','Appeal period open']},
+        'grievance': {icon:'📣',name:'Grievance process',badge:'From your policies',steps:['Grievance received','Acknowledgement sent','Investigation','Hearing arranged','Decision issued','Appeal considered']},
+        'redundan': {icon:'📋',name:'Redundancy process',badge:'From your policies',steps:['Business case made','At-risk notification','Consultation period','Selection criteria','Outcome confirmed','Appeals handled']},
+        'flexible': {icon:'🕐',name:'Flexible working request',badge:'From your policies',steps:['Request received','Acknowledgement sent','Business review','Decision within 2 months','Outcome communicated','Appeal if refused']},
+        'absence': {icon:'🏥',name:'Sickness absence',badge:'From your policies',steps:['Absence reported','Self-cert (7 days)','Fit note requested','Return to work interview','Trigger point review','OH referral if needed']},
+      };
+      const uploadedNames = data.map(p=>p.name.toLowerCase());
+      Object.entries(policyMap).forEach(([key, proc]) => {
+        if (uploadedNames.some(n=>n.includes(key)) && !policyProcesses.find(p=>p.name===proc.name)) {
+          policyProcesses.unshift(proc);
+        }
+      });
+    }
+  }
+
   body.innerHTML=`
     <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:12px;color:var(--ink3);">Click any process to expand. Builds automatically from inbox conversations.</div>
+      <div style="font-size:12px;color:var(--ink3);">Click any process to expand. Upload policies to build your own process maps automatically.</div>
       <div style="display:flex;gap:10px;align-items:center;">
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Auto-building</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);font-weight:500;">◌ Beta</span>
       </div>
     </div>
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
-      ${processes.map(p=>renderProcessRow(p)).join('')}
+      ${policyProcesses.map(p=>renderProcessRow(p)).join('')}
     </div>`;
 }
 
 function renderProcessRow(p) {
   const isOpen = openProcessMaps.has(p.name);
+  const isPolicy = p.badge==='From your policies';
   const isAuto = p.badge==='Auto-building';
-  const accent = isAuto ? '#0066CC' : '#4B0082';
-  const accentBg = isAuto ? '#EBF3FF' : '#F3EEFF';
+  const accent = isPolicy ? '#1A7A3C' : isAuto ? '#0066CC' : '#4B0082';
+  const accentBg = isPolicy ? '#E8F5EE' : isAuto ? '#EBF3FF' : '#F3EEFF';
   const count = Math.floor(Math.random()*8)+3;
 
   const timelineHtml = buildTimeline(p.steps, accent, accentBg);
@@ -1317,7 +1346,7 @@ function renderProcessRow(p) {
         <div style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</div>
         <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps · built from ${count} conversations</div>
       </div>
-      <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isAuto?'var(--accent)':'var(--purple-bg)'};color:${isAuto?'white':'var(--purple)'};">${p.badge}</span>
+      <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isPolicy?'var(--green)':isAuto?'var(--accent)':'var(--purple-bg)'};color:${isPolicy||isAuto?'white':'var(--purple)'};">${p.badge}</span>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
     <div class="pm-body" style="display:${isOpen?'block':'none'};border-top:1px solid var(--border);padding:20px 16px;background:${accentBg}08;overflow-x:auto;">
@@ -1394,7 +1423,7 @@ function toggleProcessMap(headerEl, name) {
 function renderSettings() {
   const body=document.getElementById('settingsBody');if(!body)return;
   const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';
-  body.innerHTML=`<div style="max-width:560px;display:flex;flex-direction:column;gap:16px;">
+  body.innerHTML=`<div style="max-width:960px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;">
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Account</div>
       <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Full name</div><input id="set-name" value="${name}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.background='white';this.style.borderColor='var(--accent)'" onblur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'"></div>
@@ -1412,7 +1441,7 @@ function renderSettings() {
       <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">All policies and templates uploaded to your account.</div>
       <div id="settingsDocsList"><div style="font-size:12px;color:var(--ink3);">Loading...</div></div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Integrations</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Connect channels so messages arrive automatically.</div>
       <div style="display:flex;flex-direction:column;gap:12px;">
@@ -1454,7 +1483,7 @@ function renderSettings() {
         <div id="set-style-msg" style="font-size:12px;min-height:16px;"></div>
       </div>
     </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Danger zone</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">These actions cannot be undone.</div>
       <button style="background:var(--red-bg);color:var(--red);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:6px 14px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="signOut()">Sign out of all devices</button>
@@ -1570,7 +1599,6 @@ function showView(v,el) {
 let bulkCsvData = [];
 
 function openBulkModal() {
-  // Populate template select
   const sel = document.getElementById('bulkTmplSelect');
   sel.innerHTML = '<option value="">Select a template...</option>';
   tmpls.forEach(t => {
@@ -1578,7 +1606,33 @@ function openBulkModal() {
     opt.value = t.id; opt.textContent = t.name;
     sel.appendChild(opt);
   });
+  sel.onchange = () => {
+    const btn = document.getElementById('csvTemplateBtn');
+    if (sel.value) { btn.disabled = false; btn.style.opacity = '1'; btn.style.cursor = 'pointer'; }
+    else { btn.disabled = true; btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed'; }
+  };
   document.getElementById('bulkModal').classList.add('open');
+}
+
+function downloadCsvTemplate() {
+  const tmplId = document.getElementById('bulkTmplSelect').value;
+  const t = tmpls.find(x => x.id === tmplId); if (!t) return;
+  const headers = t.flow.map(f => f.f);
+  const exampleRow = t.flow.map(f => {
+    if (f.f === 'employee_name') return 'Jane Smith';
+    if (f.f === 'job_title') return 'Senior Manager';
+    if (f.f === 'company_name') return 'Acme Corp';
+    if (f.f === 'effective_date' || f.f === 'start_date') return '01 June 2025';
+    if (f.f.includes('salary') || f.f.includes('pay')) return '£45,000';
+    if (f.f.includes('date')) return '01 June 2025';
+    if (f.f === 'manager_name') return 'John Davis';
+    return '';
+  });
+  const csv = [headers.join(','), exampleRow.map(v => `"${v}"`).join(',')].join('\n');
+  const blob = new Blob([csv], {type:'text/csv'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`${t.name} - template.csv`; a.click();
+  URL.revokeObjectURL(url);
 }
 
 function closeBulkModal() {
