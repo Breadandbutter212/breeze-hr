@@ -6,7 +6,6 @@ export default async function handler(req, res) {
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
   const { search } = req.query;
-  if (!search) return res.status(400).json({ error: 'search query required' });
 
   const rawKey = process.env.MERGE_API_KEY || '';
   const accountToken = process.env.MERGE_ACCOUNT_TOKEN || '';
