@@ -1432,7 +1432,7 @@ async function loadSettingsDocs() {
 
 async function loadWritingStyle() {
   const ta = document.getElementById('set-style-sample'); if (!ta || !currentProfile) return;
-  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample').single();
+  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample').maybeSingle();
   if (data) ta.value = data.content;
 }
 
@@ -1441,7 +1441,7 @@ async function saveWritingStyle() {
   const msg = document.getElementById('set-style-msg');
   const sample = ta?.value?.trim();
   if (!sample || !currentProfile) return;
-  const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample').single();
+  const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name', 'STYLE:WritingSample').maybeSingle();
   if (existing) {
     await sb.from('policies').update({ content: sample }).eq('id', existing.id);
   } else {
