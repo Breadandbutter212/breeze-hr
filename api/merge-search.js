@@ -16,6 +16,8 @@ export default async function handler(req, res) {
     return res.status(500).json({ error: 'Merge credentials not configured in environment variables' });
   }
 
+  console.log('Merge key length:', apiKey.length, 'first 8 chars:', apiKey.substring(0,8), 'token length:', accountToken.length);
+
   try {
     const response = await fetch(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(search)}`, {
       headers: {
