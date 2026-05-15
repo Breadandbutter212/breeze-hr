@@ -15,10 +15,12 @@ export default async function handler(req, res) {
 
   try {
     let allEmployees = [];
-    let url = `https://api.merge.dev/api/hris/v1/employees?page_size=100&expand=employments,company`;
+    let cursor = null;
 
     // Paginate through all employees
-    while (url) {
+    while (true) {
+      const base = `https://api.merge.dev/api/hris/v1/employees?page_size=100&expand=employments,company`;
+      const url = cursor ? `${base}&cursor=${encodeURIComponent(cursor)}` : base;
       const response = await fetch(url, {
         headers: {
           'Authorization': `Bearer ${apiKey}`,
@@ -32,7 +34,8 @@ export default async function handler(req, res) {
       }
       if (!response.ok) return res.status(response.status).json(data);
       allEmployees = allEmployees.concat(data.results || []);
-      url = data.next || null;
+      cursor = data.next || null;
+      if (!cursor) break;
     }
 
     return res.status(200).json({ results: allEmployees });
