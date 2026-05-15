@@ -769,7 +769,7 @@ async function searchMergeEmployees(query) {
   dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">Searching HRIS...</div>';
   dd.style.display = 'block';
   try {
-    const res = await fetch(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(query)}`, {
+    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(query)}`)}`, {
       headers: { 'Authorization': `Bearer ${MERGE_API_KEY}`, 'X-Account-Token': MERGE_ACCOUNT_TOKEN }
     });
     const data = await res.json();
