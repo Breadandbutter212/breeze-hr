@@ -810,19 +810,28 @@ function selectMergeEmployee(empJson) {
   const dd = document.getElementById('mergeDropdown'); if (dd) dd.style.display = 'none';
   const inp = document.getElementById('gcInp'); if (inp) inp.value = name;
 
-  // Salary from employment record
+  // Salary — current pay only
   const payRate = employment?.pay_rate;
   const payCurrency = employment?.pay_currency || 'GBP';
   const payPeriod = employment?.pay_period || '';
-  const salaryStr = payRate ? `${payCurrency === 'GBP' ? '£' : payCurrency}${Number(payRate).toLocaleString('en-GB')}${payPeriod === 'ANNUAL' || payPeriod === 'YEAR' ? ' per annum' : payPeriod === 'HOURLY' ? ' per hour' : ''}` : '';
+  const salaryStr = payRate ? `${payCurrency === 'GBP' ? '£' : payCurrency}${Number(payRate).toLocaleString('en-GB')}${payPeriod==='ANNUAL'||payPeriod==='YEAR' ? ' per annum' : payPeriod==='HOURLY' ? ' per hour' : ''}` : '';
 
-  // Map to all matching template fields
-  if (name)      { genVals['employee_name'] = name; genVals['candidate_name'] = name; }
-  if (title)     { genVals['job_title'] = title; }
-  if (co)        { genVals['company_name'] = co; }
-  if (startDate) { genVals['start_date'] = startDate; }
-  if (email)     { genVals['email'] = email; }
-  if (salaryStr) { genVals['salary'] = salaryStr; genVals['new_salary'] = salaryStr; genVals['current_salary'] = salaryStr; }
+  // Always fill — current/existing data only
+  if (name) { genVals['employee_name'] = name; genVals['candidate_name'] = name; }
+  if (co)   { genVals['company_name'] = co; }
+  if (email){ genVals['email'] = email; }
+
+  // Job title — only fill if this template uses CURRENT role, not a new one
+  if (title && !TMPL_NEW_ROLE.includes(selTmpl?.id)) {
+    genVals['job_title'] = title;
+  }
+
+  // Salary — only fill as current_salary, never as new_salary or salary (those are HR decisions)
+  if (salaryStr) {
+    genVals['current_salary'] = salaryStr;
+  }
+
+  // Never auto-fill: new_salary, salary, effective_date, start_date, dates, manager_name
 
   const filled = Object.keys(genVals).length;
   addGMsg('ai', `Found **${name}**${title ? ` — ${title}` : ''}. Auto-filled ${filled} field${filled>1?'s':''} from your HRIS.`);
@@ -1006,8 +1015,17 @@ async function deleteTemplate(tmplId) {
 
 function filterTmpls(v){renderTmpls(v);}
 
+// Templates where job_title = NEW role (don't pre-fill from HRIS)
+const TMPL_NEW_ROLE = ['t1','t3'];
+// Templates where salary = NEW salary (don't pre-fill from HRIS)
+const TMPL_NEW_SALARY = ['t1','t2','t3'];
+
 function openTmpl(t) {
-  selTmpl=t;genStep=0;genVals={};
+  selTmpl=t;genStep=0;
+  // Pre-fill date and reset — always auto-fill letter date, never ask
+  const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  genVals = { date: today, letter_date: today };
+  mergeEmployeeCache = null; // refresh employee cache for each new template session
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
