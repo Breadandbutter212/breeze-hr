@@ -443,19 +443,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         Upload template (.docx, .txt or .pdf)
         <input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)">
       </label>
-      <div style="display:flex;align-items:center;gap:5px;padding:6px 4px 2px;">
-        <span style="font-size:10px;color:var(--ink3);">Use <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">{field_name}</code> or <code style="background:var(--surface2);padding:1px 4px;border-radius:3px;">[FIELD NAME]</code></span>
-        <div style="position:relative;">
-          <span id="phTipTrigger" style="width:14px;height:14px;border-radius:50%;background:var(--border2);color:var(--ink3);font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;flex-shrink:0;" onmouseenter="document.getElementById('phTip').style.display='block'" onmouseleave="document.getElementById('phTip').style.display='none'">?</span>
-          <div id="phTip" style="display:none;position:absolute;bottom:22px;left:50%;transform:translateX(-50%);width:250px;background:#1D1D1F;color:white;font-size:11px;line-height:1.65;padding:10px 12px;border-radius:var(--r);box-shadow:var(--shadow-lg);z-index:500;pointer-events:none;">
-            <strong style="font-size:11px;">Placeholder format</strong><br><br>
-            In your Word or text file, mark each field like:<br>
-            <code style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;">{employee_name}</code> or <code style="background:rgba(255,255,255,0.15);padding:1px 5px;border-radius:3px;">[SALARY]</code><br><br>
-            Breeze HR auto-detects these and asks you to fill each one before generating the document.<br><br>
-            <em style="color:rgba(255,255,255,0.6);">e.g. Dear {employee_name}, your new salary is {new_salary} from {effective_date}.</em>
-          </div>
-        </div>
-      </div>
     </div>
     <div class="gen-area">
       <div class="gen-empty" id="genEmpty">
@@ -916,7 +903,7 @@ async function uploadTemplate(event) {
   const storageContent=isDocx?`DOCX_BASE64:${base64}|||TEXT:${textContent.substring(0,10000)}`:textContent;
   const {error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name:`TEMPLATE: ${name}`,content:storageContent.substring(0,60000)}).select().single();
   if(error){alert('Upload failed: '+error.message);return;}
-  tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your templates',isCustom:true,isDocx,base64,content:textContent,flow:fields});
+  tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx,base64,content:textContent,flow:fields});
   renderTmpls();
   alert(`✓ "${name}" uploaded.`);
   event.target.value='';
@@ -951,7 +938,7 @@ async function renderTmpls(filter) {
         const isDocx=d.content&&d.content.startsWith('DOCX_BASE64:');
         let base64=null,textContent=d.content;
         if(isDocx){const parts=d.content.split('|||TEXT:');base64=parts[0].replace('DOCX_BASE64:','');textContent=parts[1]||'';}
-        tmpls.unshift({id:'t_db_'+d.id,name,emoji:'📄',type:'Your templates',isCustom:true,isDocx,base64,content:textContent,flow:detectTemplateFields(textContent,name)});
+        tmpls.unshift({id:'t_db_'+d.id,name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx,base64,content:textContent,flow:detectTemplateFields(textContent,name)});
       });
     }
   }
@@ -968,14 +955,14 @@ async function renderTmpls(filter) {
   const hasBuiltIns = builtInGroups.some(g => groups[g]?.length);
   let shownBuiltInSep = false;
 
-  ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
+  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
     // Add separator before first built-in group
     if (builtInGroups.includes(grp) && !shownBuiltInSep && hasBuiltIns) {
       shownBuiltInSep = true;
       const sep = document.createElement('div');
       sep.style.cssText='font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:14px 12px 4px;border-top:1px solid var(--border);margin-top:4px;';
-      sep.textContent = 'ACAS & generic templates';
+      sep.textContent = 'Templates';
       list.appendChild(sep);
     }
     const isCollapsed = collapsed[grp] || false;
@@ -1030,7 +1017,7 @@ function renderTmplsLocal() {
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
   const collapsed = window._tmplCollapsed || { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true };
-  ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
+  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
     const isCollapsed = collapsed[grp] || false;
     const lbl=document.createElement('div');
