@@ -775,8 +775,8 @@ const policies = [
 ];
 
 const processes = [
-  {icon:'👋',name:'New starter onboarding',badge:'Auto-building',steps:['Contract issued','Right to work check','IT setup','Welcome email','Day one check-in','Probation review set']},
-  {icon:'🤱',name:'Maternity leave',badge:'Auto-building',steps:['Initial notification','MAT B1 received','Pay calculated','Manager notified','Cover planned','Return date confirmed']},
+  {icon:'👋',name:'New starter onboarding',badge:'Building',steps:['Contract issued','Right to work check','IT setup','Welcome email','Day one check-in','Probation review set']},
+  {icon:'🤱',name:'Maternity leave',badge:'Building',steps:['Initial notification','MAT B1 received','Pay calculated','Manager notified','Cover planned','Return date confirmed']},
   {icon:'📉',name:'Performance management',badge:'Beta',steps:['Informal conversation','Follow-up email sent','Formal PIP issued','Review meetings','Outcome decision']},
   {icon:'🚪',name:'Offboarding',badge:'Beta',steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned']}
 ];
@@ -1334,10 +1334,10 @@ async function renderProcessMaps() {
 
   body.innerHTML=`
     <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:12px;color:var(--ink3);">Click any process to expand. Upload policies to build your own process maps automatically.</div>
+      <div style="font-size:12px;color:var(--ink3);">Building from chat, SharePoint and connected sources. Upload policies to generate process maps automatically.</div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
-        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Auto-building</span>
+        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Building</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);font-weight:500;">◌ Beta</span>
       </div>
     </div>
@@ -1974,6 +1974,9 @@ Flexible working: day one right since April 2024, max 2 requests/year.
 Absence: SSP = 4 waiting days then £116.75/wk up to 28 weeks. Long-term (4+ weeks): Equality Act disability, OH referral, reasonable adjustments.
 Disciplinary: always distinguish conduct from capability. ACAS code: investigate → hearing → right to be accompanied → decision → appeal. Tribunal uplift up to 25% for non-compliance.
 Leavers: accrued holiday in final payslip. Restrictive covenants in HR Actions only - never mention in draft unless HR has confirmed the specific restrictions.
+
+━━━ SCOPE ━━━
+You only answer HR, employment law, people management and business-related questions. If asked anything outside this scope (weather, general knowledge, coding, current events etc.), politely decline and redirect: "I'm Breeze HR - I can only help with HR and employment questions."
 
 ━━━ RESPONSE FORMAT ━━━
 You are in a chat with an HR professional. Be direct and practical.
