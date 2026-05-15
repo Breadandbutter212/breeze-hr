@@ -959,10 +959,25 @@ async function renderTmpls(filter) {
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
   // Track which groups are collapsed — default built-ins open, custom open
-  const collapsed = window._tmplCollapsed || {};
-  window._tmplCollapsed = collapsed;
+  // Default: Your templates open, all built-in groups collapsed
+  if (!window._tmplCollapsed) {
+    window._tmplCollapsed = { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true };
+  }
+  const collapsed = window._tmplCollapsed;
+  const builtInGroups = ['Letters','Disciplinary','Redundancy','Contracts'];
+  const hasBuiltIns = builtInGroups.some(g => groups[g]?.length);
+  let shownBuiltInSep = false;
+
   ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
+    // Add separator before first built-in group
+    if (builtInGroups.includes(grp) && !shownBuiltInSep && hasBuiltIns) {
+      shownBuiltInSep = true;
+      const sep = document.createElement('div');
+      sep.style.cssText='font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:14px 12px 4px;border-top:1px solid var(--border);margin-top:4px;';
+      sep.textContent = 'ACAS & generic templates';
+      list.appendChild(sep);
+    }
     const isCollapsed = collapsed[grp] || false;
     const lbl=document.createElement('div');
     lbl.style.cssText='font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;';
@@ -1014,7 +1029,7 @@ function renderTmplsLocal() {
   const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
-  const collapsed = window._tmplCollapsed || {};
+  const collapsed = window._tmplCollapsed || { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true };
   ['Your templates','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
     const isCollapsed = collapsed[grp] || false;
@@ -1170,7 +1185,7 @@ function updatePreview() {
 
   else { const rows=t.flow.map(f=>`<p><strong>${f.f.replace(/_/g,' ')}:</strong> ${ph(f.f)}</p>`).join(''); content=`${header()}${salutation()}<div class="doc-body-text">${rows}</div>${sign()}`; }
 
-  body.innerHTML=`<div class="doc-page">${content}</div>`;
+  body.innerHTML=`<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click anywhere to edit">${content}</div>`;
 }
 
 function finishTmpl() {
@@ -1441,6 +1456,16 @@ function renderSettings() {
       <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">All policies and templates uploaded to your account.</div>
       <div id="settingsDocsList"><div style="font-size:12px;color:var(--ink3);">Loading...</div></div>
     </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Writing style</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">Paste a sample of your writing — Breeze HR will match your tone, sign-off and style when drafting.</div>
+      <textarea id="set-style-sample" placeholder="Paste an example email or letter you've written here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--surface2);outline:none;resize:vertical;line-height:1.6;" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'"></textarea>
+      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
+        <button class="btn btn-primary btn-sm" onclick="saveWritingStyle()">Save style</button>
+        <button class="btn btn-secondary btn-sm" onclick="clearWritingStyle()">Clear</button>
+        <div id="set-style-msg" style="font-size:12px;min-height:16px;"></div>
+      </div>
+    </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Integrations</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Connect channels so messages arrive automatically.</div>
@@ -1471,16 +1496,6 @@ function renderSettings() {
           <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;background:var(--accent-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/></svg></div><div><div style="font-size:12px;font-weight:500;">Slack</div><div style="font-size:11px;color:var(--ink3);">Messages from your HR channel</div></div></div>
           <button class="btn btn-secondary btn-sm">Connect</button>
         </div>
-      </div>
-    </div>
-    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
-      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Writing style</div>
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">Paste a sample of your writing — an email or letter you've sent. Breeze HR will match your tone, sign-off and style when drafting. The more you use it, the better the learning model gets on its own, but this gives it a head start.</div>
-      <textarea id="set-style-sample" placeholder="Paste an example email or letter you've written here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;font-family:inherit;color:var(--ink);background:var(--surface2);outline:none;resize:vertical;line-height:1.6;" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'"></textarea>
-      <div style="display:flex;align-items:center;gap:8px;margin-top:8px;">
-        <button class="btn btn-primary btn-sm" onclick="saveWritingStyle()">Save style</button>
-        <button class="btn btn-secondary btn-sm" onclick="clearWritingStyle()">Clear</button>
-        <div id="set-style-msg" style="font-size:12px;min-height:16px;"></div>
       </div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
@@ -1989,10 +2004,16 @@ function showArtifact(artifact, msgIdx) {
   head.innerHTML = `
     <span class="artifact-type">${artifact.type}</span>
     <span class="artifact-title">Draft response</span>
+    <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .txt</button>
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
-  body.innerHTML = `<div class="artifact-doc" id="artifactDoc">${escapeHtml(artifact.draft)}</div>`;
+  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${escapeHtml(artifact.draft).replace(/\n/g,'<br>')}</div>`;
+  // Update currentArtifact.draft when user edits
+  setTimeout(() => {
+    const doc = document.getElementById('artifactDoc');
+    if (doc) doc.addEventListener('input', () => { currentArtifact.draft = doc.innerText; });
+  }, 50);
   if (msgIdx !== undefined && currentProfile) saveResponse(null, artifact.draft, artifact.draft);
 }
 
