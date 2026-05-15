@@ -1850,6 +1850,15 @@ function spInsertToReply(title, url) {
 // ── CHAT ──
 let chatMessages = [], chatSystemPrompt = null, chatLoading = false;
 
+async function callClaude(messages, systemPrompt) {
+  try {
+    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({messages, system: systemPrompt}) });
+    const data = await res.json();
+    if (data.content && data.content[0]) return data.content[0].text;
+    return null;
+  } catch(e) { return null; }
+}
+
 async function buildChatSystemPrompt() {
   let policyContext = '', learningContext = '', ratingContext = '';
   if (currentProfile) {
