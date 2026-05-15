@@ -1342,7 +1342,7 @@ async function renderProcessMaps() {
       </div>
     </div>
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
-      ${policyProcesses.map(p=>renderProcessRow(p)).join('')}
+      ${(window._allProcessMaps = policyProcesses, policyProcesses.map(p=>renderProcessRow(p)).join(''))}
     </div>`;
 }
 
@@ -1365,7 +1365,7 @@ function renderProcessRow(p) {
         <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps · built from ${count} conversations</div>
       </div>
       <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isPolicy?'var(--green)':isAuto?'var(--accent)':'var(--purple-bg)'};color:${isPolicy||isAuto?'white':'var(--purple)'};">${p.badge}</span>
-      <button onclick="downloadProcessMap(${JSON.stringify(p).replace(/'/g,'&#39;')})" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap;" title="Download as Excel">⬇ Excel</button>
+      <button onclick="downloadProcessMap('${p.name.replace(/'/g,"\\'")}',event)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap;" title="Download as Excel">⬇ Excel</button>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;cursor:pointer;" onclick="toggleProcessMap(this.parentElement,'${safeName}')"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
     <div class="pm-body" style="display:${isOpen?'block':'none'};border-top:1px solid var(--border);padding:20px 16px;background:${accentBg}08;overflow-x:auto;">
@@ -1440,7 +1440,10 @@ function toggleProcessMap(headerEl, name) {
   else openProcessMaps.add(name);
 }
 
-function downloadProcessMap(p) {
+function downloadProcessMap(name, e) {
+  if (e) e.stopPropagation();
+  const p = window._allProcessMaps && window._allProcessMaps.find(x => x.name === name);
+  if (!p) return;
   const isPolicy = p.badge === 'From your policies';
   const headerColour = isPolicy ? '#1A7A3C' : '#0066CC';
   const lightBg = isPolicy ? '#E8F5EE' : '#EBF3FF';
