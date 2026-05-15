@@ -769,11 +769,13 @@ async function searchMergeEmployees(query) {
   try {
     const res = await fetch(`/api/merge-search?search=${encodeURIComponent(query)}`);
     const data = await res.json();
-    if (data.detail) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.detail}</div>`; return; }
+    console.log('Merge response:', res.status, data);
+    if (!res.ok) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.error || data.detail || res.status}</div>`; return; }
     const emps = data.results || [];
     if (!emps.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
     dd.innerHTML = emps.slice(0,8).map(emp => renderMergeRow(emp)).join('');
   } catch(e) {
+    console.error('Merge fetch error:', e);
     dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--red);">Could not connect to HRIS</div>';
   }
 }
