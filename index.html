@@ -278,6 +278,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .typing-dot:nth-child(2) { animation-delay: 0.2s; }
 .typing-dot:nth-child(3) { animation-delay: 0.4s; }
 @keyframes typingBounce { 0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-6px);opacity:1} }
+.thinking-block { display: flex; flex-direction: column; gap: 8px; padding: 2px 0; min-width: 200px; }
+.thinking-label { font-size: 12px; color: var(--ink3); font-style: italic; }
+.thinking-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; width: 240px; }
+.thinking-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; animation: thinkingFill 1.8s ease-in-out infinite; }
+@keyframes thinkingFill { 0%{width:0%;opacity:1} 70%{width:85%;opacity:1} 90%{width:92%;opacity:0.7} 100%{width:92%;opacity:0.7} }
 .chat-welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 60px 24px; gap: 10px; }
 .chat-welcome-icon { width: 52px; height: 52px; border-radius: 12px; background: var(--accent-bg); border: 1px solid var(--accent-mid); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 4px; }
 .chat-welcome-title { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
@@ -404,7 +409,16 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
             <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
             <button class="chat-chip" onclick="useChip('What do I need to know about maternity leave?')">Maternity leave</button>
           </div>
+          <div id="chatAttachPreview" style="display:none;margin-bottom:6px;padding:6px 10px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);font-size:11px;color:var(--accent);display:none;align-items:center;gap:6px;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <span id="chatAttachName"></span>
+            <button onclick="clearChatAttachment()" style="margin-left:auto;background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;line-height:1;">×</button>
+          </div>
           <div class="chat-input-wrap">
+            <label style="cursor:pointer;display:flex;align-items:center;padding:0 4px;color:var(--ink3);flex-shrink:0;" title="Attach a document">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <input type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" style="display:none" onchange="handleChatAttachment(event)">
+            </label>
             <textarea class="chat-ta" id="chatInput" placeholder="Paste an email, ask a policy question, or request a letter..." rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
@@ -2059,6 +2073,25 @@ async function downloadArtifact() {
   if (btn) { btn.textContent = '⬇ .docx'; btn.disabled = false; }
 }
 
+let chatAttachmentText = null;
+
+async function handleChatAttachment(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const preview = document.getElementById('chatAttachPreview');
+  const nameEl = document.getElementById('chatAttachName');
+  nameEl.textContent = file.name;
+  preview.style.display = 'flex';
+  const text = await readFileAsText(file);
+  chatAttachmentText = `Attached document — ${file.name}:\n\n${text.substring(0, 8000)}`;
+  event.target.value = '';
+}
+
+function clearChatAttachment() {
+  chatAttachmentText = null;
+  const preview = document.getElementById('chatAttachPreview');
+  if (preview) preview.style.display = 'none';
+}
+
 async function sendChat(overrideMsg) {
   const ta = document.getElementById('chatInput');
   const msg = overrideMsg || ta.value.trim();
@@ -2067,7 +2100,9 @@ async function sendChat(overrideMsg) {
   const btn = document.getElementById('chatSendBtn');
   if (btn) btn.disabled = true;
   ta.value = ''; ta.style.height = 'auto';
-  chatMessages.push({role:'user', content:msg});
+  const fullMsg = chatAttachmentText ? `${msg}\n\n${chatAttachmentText}` : msg;
+  clearChatAttachment();
+  chatMessages.push({role:'user', content: fullMsg});
   renderChatHistory();
   if (!chatSystemPrompt) chatSystemPrompt = await buildChatSystemPrompt();
   const apiMessages = chatMessages.map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
@@ -2130,7 +2165,11 @@ function renderChatHistory() {
       </div>
     </div>`;
   }).join('');
-  if (chatLoading) html += `<div class="chat-msg"><div class="chat-av ai-av">◈</div><div class="chat-bubble ai-bubble"><div class="typing-dots"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div></div>`;
+  if (chatLoading) {
+    const labels = ['Thinking...','Checking your policies...','Applying UK employment law...','Drafting response...','Reviewing ACAS guidance...'];
+    const label = labels[Math.floor(Date.now() / 2000) % labels.length];
+    html += `<div class="chat-msg"><div class="chat-av ai-av">◈</div><div class="chat-bubble ai-bubble"><div class="thinking-block"><div class="thinking-label">${label}</div><div class="thinking-bar"><div class="thinking-bar-fill"></div></div></div></div></div>`;
+  }
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
 }
