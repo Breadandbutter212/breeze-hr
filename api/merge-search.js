@@ -8,8 +8,9 @@ export default async function handler(req, res) {
   const { search } = req.query;
   if (!search) return res.status(400).json({ error: 'search query required' });
 
-  const apiKey = process.env.MERGE_API_KEY;
-  const accountToken = process.env.MERGE_ACCOUNT_TOKEN;
+  const rawKey = process.env.MERGE_API_KEY || '';
+  const accountToken = process.env.MERGE_ACCOUNT_TOKEN || '';
+  const apiKey = rawKey.replace(/^Bearer\s+/i, '').trim();
 
   if (!apiKey || !accountToken) {
     return res.status(500).json({ error: 'Merge credentials not configured in environment variables' });
