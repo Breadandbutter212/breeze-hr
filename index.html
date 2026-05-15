@@ -901,7 +901,7 @@ async function uploadTemplate(event) {
   const [base64,textContent]=await Promise.all([readBase64(file),readFileAsText(file)]);
   const fields=detectTemplateFields(textContent,name);
   const storageContent=isDocx?`DOCX_BASE64:${base64}|||TEXT:${textContent.substring(0,10000)}`:textContent;
-  const {error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name:`TEMPLATE: ${name}`,content:storageContent.substring(0,60000)}).select().single();
+  const {error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name:`TEMPLATE: ${name}`,content:storageContent.substring(0,500000)}).select().single();
   if(error){alert('Upload failed: '+error.message);return;}
   tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx,base64,content:textContent,flow:fields});
   renderTmpls();
@@ -1108,11 +1108,12 @@ function updatePreview() {
   const co=()=>ph('company_name');
 
   if(t.isCustom&&t.content){
+    body.dataset.customNote = '1';
     let rendered=t.content;
     Object.keys(vals).forEach(f=>{const esc=f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');rendered=rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'),`<span class="filled">${vals[f]}</span>`);});
     rendered=rendered.replace(/\{([^}]{1,40})\}/g,'<span class="ph">[$1]</span>');
     const paragraphs=rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
-    body.innerHTML=`<div class="doc-page"><div class="doc-co">${co()}</div><div class="doc-rule"></div><div class="doc-date">${today}</div><div class="doc-body-text">${paragraphs}</div></div>`;
+    body.innerHTML=`<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview shows text only — your logo, header and footer will appear in the downloaded Word doc.</div><div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
     return;
   }
 
