@@ -142,6 +142,23 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .ph { color: var(--ink3); background: var(--surface2); border-radius: 3px; padding: 1px 5px; font-style: italic; font-size: 12px; }
 .filled { color: var(--accent); font-weight: 500; }
 
+/* ── ARTIFACT PANEL ── */
+.chat-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
+.chat-pane { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; transition: flex 0.25s; }
+.chat-artifact-pane { width: 0; flex-shrink: 0; overflow: hidden; border-left: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
+.chat-artifact-pane.open { width: 46%; }
+.artifact-head { padding: 11px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+.artifact-type { font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ink3); background: var(--surface2); padding: 2px 8px; border-radius: 20px; }
+.artifact-title { font-size: 13px; font-weight: 600; color: var(--ink); flex: 1; letter-spacing: -0.01em; }
+.artifact-btn { font-size: 11px; padding: 4px 11px; border-radius: 20px; border: 1px solid var(--border); background: var(--surface); color: var(--ink2); cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
+.artifact-btn:hover { border-color: var(--border2); color: var(--ink); }
+.artifact-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+.artifact-btn.primary:hover { opacity: 0.88; }
+.artifact-close { width: 26px; height: 26px; border-radius: 50%; background: var(--surface2); border: none; cursor: pointer; color: var(--ink2); font-size: 14px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.artifact-close:hover { background: var(--border2); }
+.artifact-body { flex: 1; overflow-y: auto; padding: 24px; }
+.artifact-doc { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 40px 44px; max-width: 540px; margin: 0 auto; font-size: 13px; line-height: 1.85; color: var(--ink); white-space: pre-wrap; font-family: 'Inter', sans-serif; }
+
 /* ══════════════════════
    MANAGE VIEWS
 ══════════════════════ */
@@ -230,7 +247,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 /* ── CHAT VIEW ── */
 .chat-view { flex-direction: column; background: var(--surface); }
-.chat-main { display: flex; flex-direction: column; height: 100%; overflow: hidden; }
+.chat-main { display: flex; flex-direction: column; height: 100%; overflow: hidden; background: var(--surface); }
 .chat-history { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
 .chat-msg { display: flex; gap: 12px; max-width: 820px; width: 100%; margin: 0 auto; }
 .chat-msg.user-msg { flex-direction: row-reverse; }
@@ -377,21 +394,29 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- CHAT -->
 <div class="view chat-view active" id="view-chat">
   <div class="chat-main">
-    <div class="chat-history" id="chatHistory"></div>
-    <div class="chat-input-area">
-      <div class="chat-chips">
-        <button class="chat-chip" onclick="useChip('Draft a letter for me')">Draft a letter</button>
-        <button class="chat-chip" onclick="useChip('What does ACAS guidance say about ')">ACAS guidance</button>
-        <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
-        <button class="chat-chip" onclick="useChip('What do I need to know about maternity leave?')">Maternity leave</button>
+    <div class="chat-body">
+      <div class="chat-pane">
+        <div class="chat-history" id="chatHistory"></div>
+        <div class="chat-input-area">
+          <div class="chat-chips">
+            <button class="chat-chip" onclick="useChip('Draft a letter for me')">Draft a letter</button>
+            <button class="chat-chip" onclick="useChip('What does ACAS guidance say about ')">ACAS guidance</button>
+            <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
+            <button class="chat-chip" onclick="useChip('What do I need to know about maternity leave?')">Maternity leave</button>
+          </div>
+          <div class="chat-input-wrap">
+            <textarea class="chat-ta" id="chatInput" placeholder="Paste an email, ask a policy question, or request a letter..." rows="1"
+              onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
+              oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
+            <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            </button>
+          </div>
+        </div>
       </div>
-      <div class="chat-input-wrap">
-        <textarea class="chat-ta" id="chatInput" placeholder="Paste an email, ask a policy question, or request a letter..." rows="1"
-          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
-          oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
-        <button class="chat-send-btn" id="chatSendBtn" onclick="sendChat()">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
-        </button>
+      <div class="chat-artifact-pane" id="chatArtifactPane">
+        <div class="artifact-head" id="artifactHead"></div>
+        <div class="artifact-body" id="artifactBody"></div>
       </div>
     </div>
   </div>
@@ -1884,6 +1909,59 @@ When providing an email draft for the employee, clearly label it:
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
 
+// ── ARTIFACT PANEL ──
+let currentArtifact = null;
+
+function parseArtifact(text) {
+  // Look for 📧 DRAFT FOR EMPLOYEE: marker
+  const markerMatch = text.match(/📧\s*DRAFT FOR EMPLOYEE:?\s*\n/i);
+  if (!markerMatch) return null;
+  const markerEnd = text.indexOf(markerMatch[0]) + markerMatch[0].length;
+  const afterMarker = text.substring(markerEnd);
+  // Split off HR actions if present
+  const hrSplit = afterMarker.match(/\n---+\n|\n\*\*HR Actions?\*\*|\nHR Actions?:/i);
+  const draft = hrSplit ? afterMarker.substring(0, afterMarker.indexOf(hrSplit[0])).trim() : afterMarker.trim();
+  const hrSection = hrSplit ? afterMarker.substring(afterMarker.indexOf(hrSplit[0])).trim() : '';
+  const advice = text.substring(0, text.indexOf(markerMatch[0])).trim();
+  return { type: 'Draft', draft, advice: [advice, hrSection].filter(Boolean).join('\n\n') };
+}
+
+function showArtifact(artifact, msgIdx) {
+  currentArtifact = artifact;
+  const pane = document.getElementById('chatArtifactPane');
+  const head = document.getElementById('artifactHead');
+  const body = document.getElementById('artifactBody');
+  pane.classList.add('open');
+  head.innerHTML = `
+    <span class="artifact-type">${artifact.type}</span>
+    <span class="artifact-title">Draft response</span>
+    <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
+    <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .txt</button>
+    <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
+  body.innerHTML = `<div class="artifact-doc" id="artifactDoc">${escapeHtml(artifact.draft)}</div>`;
+  if (msgIdx !== undefined && currentProfile) saveResponse(null, artifact.draft, artifact.draft);
+}
+
+function closeArtifact() {
+  document.getElementById('chatArtifactPane').classList.remove('open');
+  currentArtifact = null;
+}
+
+async function copyArtifact() {
+  if (!currentArtifact) return;
+  try { await navigator.clipboard.writeText(currentArtifact.draft); } catch(e) {}
+  const btn = document.querySelector('.artifact-btn');
+  if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+}
+
+function downloadArtifact() {
+  if (!currentArtifact) return;
+  const blob = new Blob([currentArtifact.draft], {type:'text/plain'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download='draft.txt'; a.click();
+  URL.revokeObjectURL(url);
+}
+
 async function sendChat(overrideMsg) {
   const ta = document.getElementById('chatInput');
   const msg = overrideMsg || ta.value.trim();
@@ -1938,10 +2016,15 @@ function renderChatHistory() {
       <div class="chat-av user-av">HR</div>
       <div class="chat-bubble user-bubble">${escapeHtml(m.content).replace(/\n/g,'<br>')}</div>
     </div>`;
+    const artifact = parseArtifact(m.content);
+    const bubbleText = artifact ? (artifact.advice || 'Draft generated — see panel on the right.') : m.content;
+    // Auto-show artifact for latest AI message
+    if (artifact && i === chatMessages.length - 1) setTimeout(() => showArtifact(artifact, i), 50);
     return `<div class="chat-msg">
       <div class="chat-av ai-av">◈</div>
       <div style="flex:1;min-width:0;">
-        <div class="chat-bubble ai-bubble">${formatChatResponse(m.content)}</div>
+        <div class="chat-bubble ai-bubble">${formatChatResponse(bubbleText)}</div>
+        ${artifact ? `<div style="margin:7px 0 4px 44px;"><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick='showArtifact(${JSON.stringify(artifact).replace(/'/g,"&#39;")},${i})'>📄 View draft</button></div>` : ''}
         <div class="chat-actions">
           <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
           <button class="chat-action-btn${m._ratingUp?' rated-up':''}" id="rate-up-${i}" onclick="rateChatMsg(${i},1)">👍</button>
