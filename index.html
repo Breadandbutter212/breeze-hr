@@ -758,7 +758,7 @@ let mergeSearchTimeout = null;
 function debounceSearchMerge(query) {
   clearTimeout(mergeSearchTimeout);
   const dd = document.getElementById('mergeDropdown');
-  if (!query || query.length < 2) { if (dd) dd.style.display = 'none'; return; }
+  if (!query || query.length < 1) { if (dd) dd.style.display = 'none'; return; }
   mergeSearchTimeout = setTimeout(() => searchMergeEmployees(query), 300);
 }
 
@@ -769,9 +769,9 @@ async function searchMergeEmployees(query) {
   try {
     const res = await fetch(`/api/merge-search?search=${encodeURIComponent(query)}`);
     const data = await res.json();
-    console.log('Merge response:', res.status, JSON.stringify(data));
     if (!res.ok) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.error || data.detail || res.status}</div>`; return; }
-    const emps = data.results || [];
+    const q = query.toLowerCase();
+    const emps = (data.results || []).filter(e => (e.display_full_name||'').toLowerCase().includes(q));
     if (!emps.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
     dd.innerHTML = emps.slice(0,8).map(emp => renderMergeRow(emp)).join('');
   } catch(e) {
@@ -796,15 +796,24 @@ function renderMergeRow(emp) {
 function selectMergeEmployee(empJson) {
   const emp = JSON.parse(empJson);
   const name = emp.display_full_name || '';
-  const title = emp.employments?.[0]?.job_title || '';
-  const co = emp.company || '';
+  const employment = typeof emp.employments?.[0] === 'object' ? emp.employments[0] : null;
+  const title = employment?.job_title || '';
+  const co = (typeof emp.company === 'object' ? emp.company?.legal_name : emp.company) || '';
+  const startDate = emp.start_date ? new Date(emp.start_date).toLocaleDateString('en-GB') : '';
+  const email = emp.work_email || '';
+
   const dd = document.getElementById('mergeDropdown'); if (dd) dd.style.display = 'none';
   const inp = document.getElementById('gcInp'); if (inp) inp.value = name;
-  genVals['employee_name'] = name;
-  if (title) genVals['job_title'] = title;
-  if (co) genVals['company_name'] = co;
-  const filled = [name && 'employee_name', title && 'job_title', co && 'company_name'].filter(Boolean);
-  addGMsg('ai', `Found **${name}**${title ? ` — ${title}` : ''}. Auto-filled ${filled.length} field${filled.length>1?'s':''} from your HRIS.`);
+
+  // Map to all matching template fields
+  if (name)      { genVals['employee_name'] = name; genVals['candidate_name'] = name; }
+  if (title)     { genVals['job_title'] = title; }
+  if (co)        { genVals['company_name'] = co; }
+  if (startDate) { genVals['start_date'] = startDate; }
+  if (email)     { genVals['email'] = email; }
+
+  const filled = Object.keys(genVals).length;
+  addGMsg('ai', `Found **${name}**${title ? ` — ${title}` : ''}. Auto-filled ${filled} field${filled>1?'s':''} from your HRIS.`);
   genStep++;
   updatePreview();
   skipMergeFilledFields();
