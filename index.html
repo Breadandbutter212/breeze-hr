@@ -769,7 +769,7 @@ async function searchMergeEmployees(query) {
   try {
     const res = await fetch(`/api/merge-search?search=${encodeURIComponent(query)}`);
     const data = await res.json();
-    console.log('Merge response:', res.status, data);
+    console.log('Merge response:', res.status, JSON.stringify(data));
     if (!res.ok) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.error || data.detail || res.status}</div>`; return; }
     const emps = data.results || [];
     if (!emps.length) { dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">No employees found</div>'; return; }
