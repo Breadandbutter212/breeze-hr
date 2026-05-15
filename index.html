@@ -1425,7 +1425,7 @@ function toggleProcessMap(headerEl, name) {
 function renderSettings() {
   const body=document.getElementById('settingsBody');if(!body)return;
   const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';
-  body.innerHTML=`<div style="max-width:960px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;">
+  body.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;">
     <div style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);">Account</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Account</div>
