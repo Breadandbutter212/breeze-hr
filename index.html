@@ -144,7 +144,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 /* ── ARTIFACT PANEL ── */
 .chat-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
-.chat-pane { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; transition: flex 0.25s; background: #EBF3FF; padding: 0 56px; }
+.chat-pane { display: flex; flex-direction: column; flex: 1; overflow: hidden; min-width: 0; transition: flex 0.25s; }
 .chat-artifact-pane { width: 0; flex-shrink: 0; overflow: hidden; border-left: 1px solid var(--border); background: var(--bg); display: flex; flex-direction: column; transition: width 0.25s cubic-bezier(0.4,0,0.2,1); }
 .chat-artifact-pane.open { width: 46%; }
 .artifact-head { padding: 11px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
@@ -1362,7 +1362,7 @@ function renderProcessRow(p) {
       <span style="font-size:20px;cursor:pointer;" onclick="toggleProcessMap(this.closest('div').nextElementSibling?this.parentElement:this.parentElement,'${safeName}')">${p.icon}</span>
       <div style="flex:1;cursor:pointer;" onclick="toggleProcessMap(this.parentElement,'${safeName}')">
         <div style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps · built from ${count} conversations</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps</div>
       </div>
       <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isPolicy?'var(--green)':isAuto?'var(--accent)':'var(--purple-bg)'};color:${isPolicy||isAuto?'white':'var(--purple)'};">${p.badge}</span>
       <button onclick="downloadProcessMap('${p.name.replace(/'/g,"\\'")}',event)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap;" title="Download as Excel">⬇ Excel</button>
@@ -2040,6 +2040,28 @@ When providing an email draft for the employee, clearly label it:
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
 
+function formatArtifactContent(text) {
+  const lines = text.split('\n');
+  let html = '';
+  for (let i = 0; i < lines.length; i++) {
+    let line = lines[i]
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
+      .replace(/\[([A-Z][A-Z\s]+)\]/g,'<span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:3px;font-size:12px;">[$1]</span>');
+    const trimmed = lines[i].trim();
+    if (!trimmed) {
+      html += '<br>';
+    } else if (trimmed.startsWith('• ') || trimmed.startsWith('- ')) {
+      html += `<div style="display:flex;gap:8px;padding:2px 0;"><span style="flex-shrink:0;color:#0066CC;">•</span><span>${line.replace(/^[•\-]\s+/,'')}</span></div>`;
+    } else if (/^\*\*[^*]+\*\*$/.test(trimmed)) {
+      html += `<div style="font-weight:600;color:#1D1D1F;margin-top:14px;margin-bottom:4px;font-size:13px;">${line.replace(/\*\*/g,'')}</div>`;
+    } else {
+      html += `<div style="margin-bottom:2px;">${line}</div>`;
+    }
+  }
+  return html;
+}
+
 // ── ARTIFACT PANEL ──
 let currentArtifact = null;
 
@@ -2070,7 +2092,7 @@ function showArtifact(artifact, msgIdx) {
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
-  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${escapeHtml(artifact.draft).replace(/\n/g,'<br>')}</div>`;
+  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft)}</div>`;
   // Update currentArtifact.draft when user edits
   setTimeout(() => {
     const doc = document.getElementById('artifactDoc');
@@ -2085,10 +2107,13 @@ function closeArtifact() {
 }
 
 async function copyArtifact() {
-  if (!currentArtifact) return;
-  try { await navigator.clipboard.writeText(currentArtifact.draft); } catch(e) {}
-  const btn = document.querySelector('.artifact-btn');
-  if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 2000); }
+  const doc = document.getElementById('artifactDoc');
+  const text = doc ? doc.innerText : currentArtifact?.draft;
+  if (!text) return;
+  try { await navigator.clipboard.writeText(text); } catch(e) {}
+  const btns = document.querySelectorAll('.artifact-btn');
+  const copyBtn = [...btns].find(b => b.textContent === 'Copy');
+  if (copyBtn) { copyBtn.textContent = '✓ Copied'; setTimeout(() => copyBtn.textContent = 'Copy', 2000); }
 }
 
 async function downloadArtifact() {
@@ -2099,7 +2124,7 @@ async function downloadArtifact() {
     const res = await fetch('/api/generate-doc', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ plainText: currentArtifact.draft, templateName: 'Draft response' })
+      body: JSON.stringify({ plainText: (document.getElementById('artifactDoc')?.innerText || currentArtifact.draft), templateName: 'Draft response' })
     });
     if (res.ok) {
       const blob = await res.blob();
