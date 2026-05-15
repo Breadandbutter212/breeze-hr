@@ -753,8 +753,6 @@ const processes = [
 ];
 
 // ── MERGE HRIS ──
-const MERGE_API_KEY = '62cd9653-acdf-4e66-af42-0f4ab03b6e37';
-const MERGE_ACCOUNT_TOKEN = 'zx04D44Y452PhIyaRx4moI8ZlvvzeFDrrKwgUVaWUpElYM-XTt-4Mw';
 let mergeSearchTimeout = null;
 
 function debounceSearchMerge(query) {
@@ -769,9 +767,7 @@ async function searchMergeEmployees(query) {
   dd.innerHTML = '<div style="padding:8px 12px;font-size:12px;color:var(--ink3);">Searching HRIS...</div>';
   dd.style.display = 'block';
   try {
-    const res = await fetch(`https://corsproxy.io/?url=${encodeURIComponent(`https://api.merge.dev/api/hris/v1/employees?search=${encodeURIComponent(query)}`)}`, {
-      headers: { 'Authorization': `Bearer ${MERGE_API_KEY}`, 'X-Account-Token': MERGE_ACCOUNT_TOKEN }
-    });
+    const res = await fetch(`/api/merge-search?search=${encodeURIComponent(query)}`);
     const data = await res.json();
     if (data.detail) { dd.innerHTML = `<div style="padding:8px 12px;font-size:12px;color:var(--red);">HRIS error: ${data.detail}</div>`; return; }
     const emps = data.results || [];
