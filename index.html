@@ -1356,15 +1356,17 @@ function renderProcessRow(p) {
 
   const timelineHtml = buildTimeline(p.steps, accent, accentBg);
 
+  const safeName = p.name.replace(/'/g,"\\'");
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
-    <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none;" onclick="toggleProcessMap(this,'${p.name.replace(/'/g,"\\'")}')">
-      <span style="font-size:20px;">${p.icon}</span>
-      <div style="flex:1;">
+    <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;user-select:none;">
+      <span style="font-size:20px;cursor:pointer;" onclick="toggleProcessMap(this.closest('div').nextElementSibling?this.parentElement:this.parentElement,'${safeName}')">${p.icon}</span>
+      <div style="flex:1;cursor:pointer;" onclick="toggleProcessMap(this.parentElement,'${safeName}')">
         <div style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</div>
         <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps · built from ${count} conversations</div>
       </div>
       <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isPolicy?'var(--green)':isAuto?'var(--accent)':'var(--purple-bg)'};color:${isPolicy||isAuto?'white':'var(--purple)'};">${p.badge}</span>
-      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+      <button onclick="downloadProcessMap(${JSON.stringify(p).replace(/'/g,'&#39;')})" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap;" title="Download as Excel">⬇ Excel</button>
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;cursor:pointer;" onclick="toggleProcessMap(this.parentElement,'${safeName}')"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
     <div class="pm-body" style="display:${isOpen?'block':'none'};border-top:1px solid var(--border);padding:20px 16px;background:${accentBg}08;overflow-x:auto;">
       ${timelineHtml}
@@ -1427,13 +1429,54 @@ function buildTimeline(steps, accent, accentBg) {
 }
 
 function toggleProcessMap(headerEl, name) {
-  const body = headerEl.nextElementSibling;
-  const arrow = headerEl.querySelector('svg:last-child');
+  const card = headerEl.closest ? headerEl.closest('div[style*="border-radius:var(--r-lg)"]') : headerEl.parentElement;
+  const body = card ? card.querySelector('.pm-body') : headerEl.nextElementSibling;
+  const arrow = headerEl.querySelector ? headerEl.querySelector('svg:last-child') : null;
+  if (!body) return;
   const isOpen = body.style.display !== 'none';
   body.style.display = isOpen ? 'none' : 'block';
   if (arrow) arrow.style.transform = isOpen ? 'rotate(0deg)' : 'rotate(90deg)';
   if (isOpen) openProcessMaps.delete(name);
   else openProcessMaps.add(name);
+}
+
+function downloadProcessMap(p) {
+  const isPolicy = p.badge === 'From your policies';
+  const headerColour = isPolicy ? '#1A7A3C' : '#0066CC';
+  const lightBg = isPolicy ? '#E8F5EE' : '#EBF3FF';
+
+  const html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8"><!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>${p.name}</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]--></head>
+<body><table border="0" cellpadding="0" cellspacing="0" style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;">
+  <tr>
+    <td colspan="4" style="background-color:${headerColour};color:white;font-size:16px;font-weight:bold;padding:14px 16px;letter-spacing:-0.02em;">${p.icon}  ${p.name}</td>
+  </tr>
+  <tr>
+    <td colspan="4" style="background-color:#1B2D50;color:rgba(255,255,255,0.6);font-size:11px;padding:6px 16px;">${p.badge} · ${p.steps.length} steps</td>
+  </tr>
+  <tr><td colspan="4" style="padding:4px;"></td></tr>
+  <tr>
+    <td style="background-color:${headerColour};color:white;font-weight:bold;padding:8px 12px;font-size:11px;width:50px;text-align:center;">STEP</td>
+    <td style="background-color:${headerColour};color:white;font-weight:bold;padding:8px 12px;font-size:11px;width:320px;">DESCRIPTION</td>
+    <td style="background-color:${headerColour};color:white;font-weight:bold;padding:8px 12px;font-size:11px;width:140px;">OWNER</td>
+    <td style="background-color:${headerColour};color:white;font-weight:bold;padding:8px 12px;font-size:11px;width:140px;">STATUS</td>
+  </tr>
+  ${p.steps.map((step, i) => `<tr>
+    <td style="background-color:${i===0?headerColour:lightBg};color:${i===0?'white':headerColour};font-weight:bold;text-align:center;padding:10px 12px;font-size:13px;border-bottom:1px solid #D0DFF0;">${i+1}</td>
+    <td style="padding:10px 12px;font-size:12px;color:#1D1D1F;border-bottom:1px solid #E8EEF5;background-color:white;">${step}</td>
+    <td style="padding:10px 12px;font-size:12px;color:#6E6E73;border-bottom:1px solid #E8EEF5;background-color:white;">HR</td>
+    <td style="padding:10px 12px;font-size:12px;border-bottom:1px solid #E8EEF5;background-color:white;"><span style="background-color:${lightBg};color:${headerColour};padding:2px 8px;border-radius:3px;font-size:11px;font-weight:500;">Pending</span></td>
+  </tr>`).join('')}
+  <tr><td colspan="4" style="padding:12px;background-color:#F5F5F7;font-size:10px;color:#AEAEB2;">Generated by Breeze HR</td></tr>
+</table></body></html>`;
+
+  const blob = new Blob([html], {type:'application/vnd.ms-excel;charset=utf-8'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = `${p.name}.xls`; a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── SETTINGS ──
