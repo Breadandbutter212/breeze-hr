@@ -2006,7 +2006,7 @@ function showArtifact(artifact, msgIdx) {
     <span class="artifact-title">Draft response</span>
     <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
-    <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .txt</button>
+    <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
   body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${escapeHtml(artifact.draft).replace(/\n/g,'<br>')}</div>`;
   // Update currentArtifact.draft when user edits
@@ -2029,12 +2029,35 @@ async function copyArtifact() {
   if (btn) { btn.textContent = '✓ Copied'; setTimeout(() => btn.textContent = 'Copy', 2000); }
 }
 
-function downloadArtifact() {
+async function downloadArtifact() {
   if (!currentArtifact) return;
-  const blob = new Blob([currentArtifact.draft], {type:'text/plain'});
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a'); a.href=url; a.download='draft.txt'; a.click();
-  URL.revokeObjectURL(url);
+  const btn = document.querySelector('.artifact-btn.primary');
+  if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
+  try {
+    const res = await fetch('/api/generate-doc', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ plainText: currentArtifact.draft, templateName: 'Draft response' })
+    });
+    if (res.ok) {
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='draft.docx'; a.click();
+      URL.revokeObjectURL(url);
+    } else {
+      // Fallback to txt if docx fails
+      const blob = new Blob([currentArtifact.draft], {type:'text/plain'});
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href=url; a.download='draft.txt'; a.click();
+      URL.revokeObjectURL(url);
+    }
+  } catch(e) {
+    const blob = new Blob([currentArtifact.draft], {type:'text/plain'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download='draft.txt'; a.click();
+    URL.revokeObjectURL(url);
+  }
+  if (btn) { btn.textContent = '⬇ .docx'; btn.disabled = false; }
 }
 
 async function sendChat(overrideMsg) {
