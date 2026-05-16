@@ -350,19 +350,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="logo-name">Breeze HR</div><div class="logo-sub">Operations</div></div>
   </div>
   <div class="nav">
-    <div class="nav-label" style="display:flex;align-items:center;">Workspace
-      <button onclick="newChat()" title="New chat" style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.65);width:18px;height:18px;border-radius:4px;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">+</button>
-    </div>
+    <div class="nav-label">Workspace</div>
     <div class="ni active" id="nav-chat" onclick="showView('chat',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Chat with Breeze HR
     </div>
-    <!-- Chat history list -->
-    <div style="margin:4px 0 6px;">
-      <div style="padding:0 8px 4px;">
-        <input class="chat-search-inp" id="chatSearchInput" placeholder="Search chats..." oninput="renderChatList(this.value)">
-      </div>
-      <div id="chatListItems" style="max-height:200px;overflow-y:auto;"></div>
+    <div class="ni" id="nav-chats" onclick="showView('chats',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
+      Chats
     </div>
 
     <div class="nav-label">Manage</div>
@@ -455,6 +450,15 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       </div>
     </div>
   </div>
+</div>
+
+<!-- CHATS -->
+<div class="view manage-view" id="view-chats">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Chats</div><div class="manage-sub">Your saved conversations with Breeze HR.</div></div>
+    <button class="btn btn-primary btn-sm" onclick="newChat()">+ New chat</button>
+  </div>
+  <div class="manage-body" id="chatsBody"></div>
 </div>
 
 <!-- DOCUMENTS -->
@@ -1725,6 +1729,7 @@ function showView(v,el) {
   if(v==='processmaps')renderProcessMaps();
   if(v==='settings')renderSettings();
   if(v==='chat')renderChatHistory();
+  if(v==='chats')renderChatsPage();
 }
 
 // ── BULK MAIL MERGE ──
@@ -2347,20 +2352,56 @@ async function loadChatList() {
     title: d.name.replace(/^CHAT:/, '').trim(),
     created_at: d.created_at
   }));
-  renderChatList();
 }
 
-function renderChatList(filter) {
-  const el = document.getElementById('chatListItems');
-  if (!el) return;
-  const q = (typeof filter === 'string' ? filter : (document.getElementById('chatSearchInput')?.value || '')).toLowerCase();
-  const items = q ? chatList.filter(c => c.title.toLowerCase().includes(q)) : chatList;
-  if (!items.length && !q) { el.innerHTML = ''; return; }
+async function renderChatsPage() {
+  const body = document.getElementById('chatsBody'); if (!body) return;
+  body.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--ink3);">Loading...</div>';
+  await loadChatList();
+  body.innerHTML = `
+    <div style="margin-bottom:16px;max-width:440px;">
+      <input id="chatPageSearch" placeholder="Search chats..." oninput="filterChatsPage(this.value)"
+        style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);"
+        onfocus="this.style.borderColor='var(--accent)';this.style.background='white'"
+        onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+    </div>
+    <div id="chatPageList"></div>`;
+  renderChatPageItems(chatList);
+}
+
+function filterChatsPage(q) {
+  const filtered = q ? chatList.filter(c => c.title.toLowerCase().includes(q.toLowerCase())) : chatList;
+  renderChatPageItems(filtered);
+}
+
+function renderChatPageItems(items) {
+  const el = document.getElementById('chatPageList'); if (!el) return;
   if (!items.length) {
-    el.innerHTML = `<div style="padding:4px 8px 4px 22px;font-size:11px;color:rgba(255,255,255,0.2);">No chats found</div>`;
+    el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
+      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;margin:0 auto 12px;opacity:0.25;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:4px;">No chats yet</div>
+      <div style="font-size:12px;color:var(--ink3);">Start a new conversation with Breeze HR</div>
+    </div>`;
     return;
   }
-  el.innerHTML = items.map(c => `<div class="chat-li${c.id === currentChatId ? ' active-chat' : ''}" onclick="openChatHistory('${c.id}')"><div class="chat-li-title">${escapeHtml(c.title)}</div><button class="chat-li-del" onclick="event.stopPropagation();deleteChatHistory('${c.id}')" title="Delete">×</button></div>`).join('');
+  el.innerHTML = items.map(c => {
+    const date = new Date(c.created_at).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+    return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;"
+      onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'"
+      onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'"
+      onclick="openChatHistory('${c.id}')">
+      <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.title)}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${date}</div>
+      </div>
+      <button onclick="event.stopPropagation();deleteChatHistory('${c.id}')"
+        style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0;transition:background 0.1s;"
+        onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">Delete</button>
+    </div>`;
+  }).join('');
 }
 
 async function newChat() {
@@ -2368,10 +2409,7 @@ async function newChat() {
   chatMessages = [];
   chatSystemPrompt = null;
   closeArtifact();
-  const searchInput = document.getElementById('chatSearchInput');
-  if (searchInput) searchInput.value = '';
   renderChatHistory();
-  renderChatList('');
   showView('chat', document.getElementById('nav-chat'));
   setTimeout(() => document.getElementById('chatInput')?.focus(), 50);
 }
@@ -2385,7 +2423,6 @@ async function openChatHistory(id) {
   chatSystemPrompt = null;
   closeArtifact();
   renderChatHistory();
-  renderChatList();
   showView('chat', document.getElementById('nav-chat'));
 }
 
@@ -2399,7 +2436,7 @@ async function deleteChatHistory(id) {
     renderChatHistory();
   }
   chatList = chatList.filter(c => c.id !== id);
-  renderChatList();
+  renderChatPageItems(chatList);
 }
 
 async function saveCurrentChat() {
@@ -2417,7 +2454,6 @@ async function saveCurrentChat() {
     if (data) {
       currentChatId = data.id;
       chatList.unshift({ id: data.id, title, created_at: data.created_at });
-      renderChatList();
     }
   }
 }
