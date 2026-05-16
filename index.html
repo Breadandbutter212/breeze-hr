@@ -9,6 +9,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
   --bg: #F5F5F7;
@@ -373,6 +375,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M5 8v6l7 6 7-6V8"/></svg>
       Process maps <span style="font-size:9px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:1px 5px;border-radius:8px;margin-left:2px;">Beta</span>
     </div>
+    <div class="ni" onclick="showView('analytics',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics
+    </div>
     <div class="ni" onclick="showView('settings',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
       Settings
@@ -514,6 +520,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="manage-title">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div><div class="manage-sub">Built automatically from your inbox - the more you use Breeze HR, the more accurate they become.</div></div>
   </div>
   <div class="manage-body" id="processMapsBody"></div>
+</div>
+
+<!-- ANALYTICS -->
+<div class="view manage-view" id="view-analytics">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Analytics</div><div class="manage-sub">Connect your HRIS or upload a CSV to visualise your workforce.</div></div>
+  </div>
+  <div class="manage-body" id="analyticsBody"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -1738,6 +1752,7 @@ function showView(v,el) {
   if(v==='settings')renderSettings();
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
+  if(v==='analytics')renderAnalytics();
 }
 
 // ── BULK MAIL MERGE ──
@@ -2345,6 +2360,258 @@ async function rateChatMsg(idx, rating) {
   if (dn) dn.className = 'chat-action-btn'+(rating===-1?' rated-down':'');
   await sb.from('ratings').insert({company_id:currentProfile.company_id, message_type:'chat', ai_draft:msg.content, rating});
   chatSystemPrompt = null;
+}
+
+// ── ANALYTICS ──
+let analyticsData = null, analyticsSource = '', analyticsCharts = {};
+
+function renderAnalytics() {
+  const body = document.getElementById('analyticsBody'); if (!body) return;
+  if (!analyticsData) {
+    body.innerHTML = `
+      <div style="max-width:520px;margin:60px auto;text-align:center;padding:0 20px;">
+        <div style="width:56px;height:56px;background:var(--accent-bg);border-radius:14px;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="1.8"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+        </div>
+        <div style="font-size:18px;font-weight:700;color:var(--ink);letter-spacing:-0.03em;margin-bottom:8px;">People Analytics</div>
+        <div style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:32px;">Connect your HRIS for live workforce data, or upload a CSV / Excel export to visualise headcount, departments, tenure and more.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;text-align:left;">
+          <div onclick="connectAnalyticsHRIS()" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;cursor:pointer;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.boxShadow='var(--shadow-sm)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+            <div style="width:36px;height:36px;background:var(--accent-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Connect HRIS</div>
+            <div style="font-size:11px;color:var(--ink3);line-height:1.6;">Pull live employee data from your connected Merge integration</div>
+          </div>
+          <label style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;cursor:pointer;display:block;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.boxShadow='var(--shadow-sm)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+            <div style="width:36px;height:36px;background:var(--green-bg);border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+            </div>
+            <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Upload CSV / Excel</div>
+            <div style="font-size:11px;color:var(--ink3);line-height:1.6;">Upload an employee data export from your HR system</div>
+            <input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="loadAnalyticsFile(event)">
+          </label>
+        </div>
+      </div>`;
+    return;
+  }
+  renderDashboard();
+}
+
+async function connectAnalyticsHRIS() {
+  const body = document.getElementById('analyticsBody');
+  if (body) body.innerHTML = '<div style="padding:80px;text-align:center;color:var(--ink3);font-size:13px;">Connecting to HRIS...</div>';
+  try {
+    const res = await fetch('/api/merge-search');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Connection failed');
+    if (!data.results || !data.results.length) throw new Error('No employee data returned from HRIS');
+    analyticsData = normalizeHRISData(data.results);
+    analyticsSource = 'Merge HRIS (live)';
+    renderDashboard();
+  } catch(e) {
+    if (body) body.innerHTML = `<div style="padding:60px;text-align:center;">
+      <div style="color:var(--red);font-size:13px;margin-bottom:12px;">Could not connect: ${escapeHtml(e.message)}</div>
+      <button onclick="renderAnalytics()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;text-decoration:underline;">Try again</button>
+    </div>`;
+  }
+}
+
+function normalizeHRISData(employees) {
+  return employees.map(emp => {
+    const employment = (Array.isArray(emp.employments) ? emp.employments[0] : null) || {};
+    return {
+      name: emp.display_full_name || '',
+      department: employment.department || emp.department || 'Unknown',
+      job_title: employment.job_title || emp.job_title || '',
+      employment_type: (emp.employment_type || employment.employment_type || 'Unknown').replace(/_/g, ' '),
+      gender: (emp.gender || '').replace(/_/g, ' '),
+      start_date: emp.start_date || null,
+      salary: employment.pay_rate ? Number(employment.pay_rate) : null,
+      pay_period: employment.pay_period || '',
+    };
+  });
+}
+
+async function loadAnalyticsFile(event) {
+  const file = event.target.files[0]; if (!file) return;
+  try {
+    let rows;
+    if (/\.(xlsx|xls)$/i.test(file.name) && typeof XLSX !== 'undefined') {
+      const buf = await file.arrayBuffer();
+      const wb = XLSX.read(buf);
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      rows = XLSX.utils.sheet_to_json(ws, { defval: '' }).map(r => {
+        const obj = {};
+        Object.entries(r).forEach(([k,v]) => { obj[k.toLowerCase().replace(/\s+/g,'_')] = String(v); });
+        return obj;
+      });
+    } else {
+      rows = parseAnalyticsCSV(await file.text());
+    }
+    if (!rows.length) { alert('No data found in file'); return; }
+    analyticsData = normalizeCSVData(rows);
+    analyticsSource = file.name;
+    renderDashboard();
+  } catch(e) { alert('Could not read file: ' + e.message); }
+  event.target.value = '';
+}
+
+function parseAnalyticsCSV(text) {
+  const lines = text.split('\n').filter(l => l.trim());
+  if (lines.length < 2) return [];
+  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase().replace(/\s+/g,'_'));
+  return lines.slice(1).map(line => {
+    const vals = []; let cur = '', inQ = false;
+    for (const ch of line+',') {
+      if (ch==='"') inQ=!inQ;
+      else if (ch===',' && !inQ) { vals.push(cur.trim()); cur=''; }
+      else cur+=ch;
+    }
+    const obj = {};
+    headers.forEach((h,i) => { obj[h] = (vals[i]||'').replace(/^"|"$/g,''); });
+    return obj;
+  }).filter(r => Object.values(r).some(v=>v));
+}
+
+function normalizeCSVData(rows) {
+  const fieldMap = {
+    department:      ['department','dept','team','division','business_unit','group'],
+    employment_type: ['employment_type','type','contract_type','worker_type','fte_type','employment_status'],
+    gender:          ['gender','sex'],
+    start_date:      ['start_date','hire_date','joined','employment_start','date_of_hire','start'],
+    job_title:       ['job_title','title','role','position','job_role'],
+    salary:          ['salary','pay','annual_salary','base_salary','compensation','gross_salary'],
+    name:            ['name','employee_name','full_name','employee'],
+  };
+  const keys = Object.keys(rows[0]||{});
+  const map = {};
+  Object.entries(fieldMap).forEach(([std,variants]) => { const m=keys.find(k=>variants.includes(k)); if(m) map[std]=m; });
+  return rows.map(row => ({
+    name: row[map.name]||'',
+    department: row[map.department]||'Unknown',
+    job_title: row[map.job_title]||'',
+    employment_type: row[map.employment_type]||'Unknown',
+    gender: row[map.gender]||'',
+    start_date: row[map.start_date]||null,
+    salary: map.salary&&row[map.salary] ? parseFloat(String(row[map.salary]).replace(/[^0-9.]/g,''))||null : null,
+  }));
+}
+
+function kpiCard(label, value, sub, color) {
+  return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 20px;">
+    <div style="font-size:28px;font-weight:700;color:${color};letter-spacing:-0.04em;line-height:1;">${value}</div>
+    <div style="font-size:12px;font-weight:500;color:var(--ink);margin-top:6px;">${label}</div>
+    ${sub?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;">${sub}</div>`:''}
+  </div>`;
+}
+
+function renderDashboard() {
+  const body = document.getElementById('analyticsBody');
+  if (!body || !analyticsData) return;
+  Object.values(analyticsCharts).forEach(c => { try { c.destroy(); } catch(e) {} });
+  analyticsCharts = {};
+
+  const n = analyticsData.length;
+  const now = new Date();
+  const C = ['#0066CC','#30D158','#6B4FBB','#F59E0B','#EF4444','#14B8A6','#F97316','#8B5CF6','#EC4899','#06B6D4'];
+
+  const tenures = analyticsData.filter(e=>e.start_date&&!isNaN(new Date(e.start_date))).map(e=>(now-new Date(e.start_date))/(365.25*24*60*60*1000));
+  const avgTenure = tenures.length ? (tenures.reduce((a,b)=>a+b,0)/tenures.length).toFixed(1)+' yrs' : 'N/A';
+
+  const ftCount = analyticsData.filter(e=>(e.employment_type||'').toUpperCase().includes('FULL')).length;
+  const ftPct = n&&ftCount ? Math.round((ftCount/n)*100)+'%' : 'N/A';
+
+  const depts = {};
+  analyticsData.forEach(e=>{ const d=e.department||'Unknown'; depts[d]=(depts[d]||0)+1; });
+  const deptEntries = Object.entries(depts).sort((a,b)=>b[1]-a[1]).slice(0,12);
+
+  const empTypes = {};
+  analyticsData.forEach(e=>{
+    let t=(e.employment_type||'Unknown').toLowerCase().replace(/_/g,' ');
+    t=t.charAt(0).toUpperCase()+t.slice(1);
+    empTypes[t]=(empTypes[t]||0)+1;
+  });
+
+  const tBuckets = {'< 1 year':0,'1-2 years':0,'2-5 years':0,'5+ years':0};
+  tenures.forEach(t=>{ if(t<1)tBuckets['< 1 year']++; else if(t<2)tBuckets['1-2 years']++; else if(t<5)tBuckets['2-5 years']++; else tBuckets['5+ years']++; });
+
+  const genders = {};
+  analyticsData.forEach(e=>{
+    if(!e.gender)return;
+    let g=e.gender.toLowerCase().replace(/_/g,' ');
+    g=g.charAt(0).toUpperCase()+g.slice(1);
+    if(g.includes('Prefer')||g.includes('Decline')||g.includes('Not')) g='Not disclosed';
+    genders[g]=(genders[g]||0)+1;
+  });
+  const hasGender = analyticsData.some(e=>e.gender&&!['','not disclosed','prefer not to self identify','decline to self identify'].includes((e.gender||'').toLowerCase().replace(/_/g,' ')));
+
+  const hasSalary = analyticsData.some(e=>e.salary&&e.salary>0);
+  const salaryBands = {'< £25k':0,'£25k-35k':0,'£35k-50k':0,'£50k-75k':0,'£75k-100k':0,'£100k+':0};
+  if(hasSalary) analyticsData.filter(e=>e.salary).forEach(e=>{
+    const s=e.salary;
+    if(s<25000)salaryBands['< £25k']++; else if(s<35000)salaryBands['£25k-35k']++; else if(s<50000)salaryBands['£35k-50k']++; else if(s<75000)salaryBands['£50k-75k']++; else if(s<100000)salaryBands['£75k-100k']++; else salaryBands['£100k+']++;
+  });
+
+  body.innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      <span style="font-size:12px;color:var(--ink3);">Source: <strong style="color:var(--ink);">${escapeHtml(analyticsSource)}</strong> &nbsp;·&nbsp; ${n} employees</span>
+      <button onclick="resetAnalytics()" style="margin-left:auto;font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">Change source</button>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
+      ${kpiCard('Total headcount', n, '', '#0066CC')}
+      ${kpiCard('Avg tenure', avgTenure, tenures.length ? tenures.length+' employees with start date' : 'No start date data', '#30D158')}
+      ${kpiCard('Full-time', ftPct, ftCount&&n ? ftCount+' of '+n : 'No type data', '#6B4FBB')}
+      ${kpiCard('Departments', deptEntries.length||'N/A', '', '#F59E0B')}
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Headcount by department</div>
+        ${deptEntries.length?`<canvas id="ac-dept"></canvas>`:`<div style="color:var(--ink3);font-size:12px;padding:20px 0;text-align:center;">No department data in this file</div>`}
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Employment type</div>
+        ${Object.keys(empTypes).length>1?`<canvas id="ac-emptype" style="max-height:220px;"></canvas>`:`<div style="color:var(--ink3);font-size:12px;padding:20px 0;text-align:center;">No employment type data in this file</div>`}
+      </div>
+      ${tenures.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Tenure distribution</div>
+        <canvas id="ac-tenure"></canvas>
+      </div>`:''}
+      ${hasGender?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Gender</div>
+        <canvas id="ac-gender" style="max-height:220px;"></canvas>
+      </div>`:''}
+      ${hasSalary?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Salary bands</div>
+        <canvas id="ac-salary" style="max-height:180px;"></canvas>
+      </div>`:''}
+    </div>`;
+
+  const gridC = '#F0F0F0';
+  setTimeout(()=>{
+    const deptEl=document.getElementById('ac-dept');
+    if(deptEl&&deptEntries.length) analyticsCharts.dept=new Chart(deptEl,{type:'bar',data:{labels:deptEntries.map(([k])=>k),datasets:[{data:deptEntries.map(([,v])=>v),backgroundColor:'#0066CC',borderRadius:4,barThickness:16}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{precision:0}},y:{grid:{display:false}}}}});
+
+    const etEl=document.getElementById('ac-emptype');
+    if(etEl) analyticsCharts.emptype=new Chart(etEl,{type:'doughnut',data:{labels:Object.keys(empTypes),datasets:[{data:Object.values(empTypes),backgroundColor:C,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}}}}});
+
+    const tenEl=document.getElementById('ac-tenure');
+    if(tenEl) analyticsCharts.tenure=new Chart(tenEl,{type:'bar',data:{labels:Object.keys(tBuckets),datasets:[{data:Object.values(tBuckets),backgroundColor:['#EBF3FF','#B8D4F8','#4D8EE8','#0066CC'],borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:gridC},ticks:{precision:0}}}}});
+
+    const genEl=document.getElementById('ac-gender');
+    if(genEl) analyticsCharts.gender=new Chart(genEl,{type:'doughnut',data:{labels:Object.keys(genders),datasets:[{data:Object.values(genders),backgroundColor:C,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}}}}});
+
+    const salEl=document.getElementById('ac-salary');
+    if(salEl) analyticsCharts.salary=new Chart(salEl,{type:'bar',data:{labels:Object.keys(salaryBands),datasets:[{data:Object.values(salaryBands),backgroundColor:'#0066CC',borderRadius:4,barThickness:44}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:gridC},ticks:{precision:0}}}}});
+  }, 60);
+}
+
+function resetAnalytics() {
+  analyticsData=null; analyticsSource='';
+  Object.values(analyticsCharts).forEach(c=>{ try{c.destroy();}catch(e){} });
+  analyticsCharts={};
+  renderAnalytics();
 }
 
 // ── CHAT HISTORY ──
