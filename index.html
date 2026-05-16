@@ -73,6 +73,17 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 
+/* ── CHAT HISTORY LIST ── */
+.chat-li { display:flex;align-items:center;padding:5px 8px 5px 22px;border-radius:var(--r-sm);cursor:pointer;color:rgba(255,255,255,0.5);font-size:11px;gap:4px;transition:all 0.1s;user-select:none; }
+.chat-li:hover { background:rgba(255,255,255,0.07);color:rgba(255,255,255,0.82); }
+.chat-li.active-chat { background:rgba(255,255,255,0.11);color:rgba(255,255,255,0.92); }
+.chat-li-title { flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+.chat-li-del { opacity:0;background:none;border:none;color:rgba(255,255,255,0.35);cursor:pointer;font-size:15px;padding:0 2px;flex-shrink:0;line-height:1;transition:opacity 0.1s; }
+.chat-li:hover .chat-li-del { opacity:1; }
+.chat-search-inp { width:100%;background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.08);border-radius:var(--r-sm);padding:5px 8px;font-size:11px;color:rgba(255,255,255,0.6);font-family:inherit;outline:none;transition:border-color 0.15s; }
+.chat-search-inp::placeholder { color:rgba(255,255,255,0.22); }
+.chat-search-inp:focus { border-color:rgba(255,255,255,0.2); }
+
 /* ── MAIN ── */
 .main { flex: 1; overflow: hidden; display: flex; flex-direction: column; }
 .view { display: none; flex: 1; overflow: hidden; }
@@ -339,10 +350,19 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="logo-name">Breeze HR</div><div class="logo-sub">Operations</div></div>
   </div>
   <div class="nav">
-    <div class="nav-label">Workspace</div>
+    <div class="nav-label" style="display:flex;align-items:center;">Workspace
+      <button onclick="newChat()" title="New chat" style="margin-left:auto;background:rgba(255,255,255,0.1);border:none;color:rgba(255,255,255,0.65);width:18px;height:18px;border-radius:4px;cursor:pointer;font-size:16px;line-height:1;display:flex;align-items:center;justify-content:center;padding:0;flex-shrink:0;" onmouseover="this.style.background='rgba(255,255,255,0.18)'" onmouseout="this.style.background='rgba(255,255,255,0.1)'">+</button>
+    </div>
     <div class="ni active" id="nav-chat" onclick="showView('chat',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       Chat with Breeze HR
+    </div>
+    <!-- Chat history list -->
+    <div style="margin:4px 0 6px;">
+      <div style="padding:0 8px 4px;">
+        <input class="chat-search-inp" id="chatSearchInput" placeholder="Search chats..." oninput="renderChatList(this.value)">
+      </div>
+      <div id="chatListItems" style="max-height:200px;overflow-y:auto;"></div>
     </div>
 
     <div class="nav-label">Manage</div>
@@ -660,6 +680,7 @@ async function onSignedIn(user) {
   }
   chatSystemPrompt = null;
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
+  loadChatList();
   renderChatHistory();
 }
 
@@ -1255,7 +1276,7 @@ function downloadTxt() {
 async function renderManage() {
   const body=document.getElementById('manageBody');if(!body)return;
   let dbPolicies=[];
-  if(currentProfile){const{data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).not('name','like','TEMPLATE:%').order('created_at',{ascending:false});if(data)dbPolicies=data;}
+  if(currentProfile){const{data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','CHAT:%').order('created_at',{ascending:false});if(data)dbPolicies=data;}
   const allPolicies=policies.map(p=>{const up=dbPolicies.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};});
   const uc=allPolicies.filter(p=>p.status==='uploaded').length;
   body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded - Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
@@ -1607,7 +1628,7 @@ function renderSettings() {
 
 async function loadSettingsDocs() {
   const el = document.getElementById('settingsDocsList'); if(!el||!currentProfile) return;
-  const {data} = await sb.from('policies').select('id,name,created_at').eq('company_id',currentProfile.company_id).order('created_at',{ascending:false});
+  const {data} = await sb.from('policies').select('id,name,created_at').eq('company_id',currentProfile.company_id).not('name','like','CHAT:%').order('created_at',{ascending:false});
   if (!data||!data.length) { el.innerHTML='<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>'; return; }
   const policies = data.filter(d=>!d.name.startsWith('TEMPLATE:'));
   const templates = data.filter(d=>d.name.startsWith('TEMPLATE:'));
@@ -1954,7 +1975,7 @@ function spInsertToReply(title, url) {
 }
 
 // ── CHAT ──
-let chatMessages = [], chatSystemPrompt = null, chatLoading = false;
+let chatMessages = [], chatSystemPrompt = null, chatLoading = false, currentChatId = null, chatList = [];
 
 async function callClaude(messages, systemPrompt) {
   try {
@@ -1970,7 +1991,7 @@ async function buildChatSystemPrompt() {
   if (currentProfile) {
     const cid = currentProfile.company_id;
     const [polsRes, responsesRes, goodRatingsRes, badRatingsRes, styleRes] = await Promise.all([
-      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%').not('name','like','STYLE:%'),
+      sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%').not('name','like','STYLE:%').not('name','like','CHAT:%'),
       sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at',{ascending:false}).limit(30),
       sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating',1).order('created_at',{ascending:false}).limit(3),
       sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(1),
@@ -2231,6 +2252,7 @@ async function sendChat(overrideMsg) {
   if (btn) btn.disabled = false;
   chatMessages.push({role:'assistant', content: reply || 'Sorry, connection issue. Please check your API connection and try again.'});
   renderChatHistory();
+  saveCurrentChat();
 }
 
 function useChip(prompt) {
@@ -2310,6 +2332,94 @@ async function rateChatMsg(idx, rating) {
   if (dn) dn.className = 'chat-action-btn'+(rating===-1?' rated-down':'');
   await sb.from('ratings').insert({company_id:currentProfile.company_id, message_type:'chat', ai_draft:msg.content, rating});
   chatSystemPrompt = null;
+}
+
+// ── CHAT HISTORY ──
+async function loadChatList() {
+  if (!currentProfile) return;
+  const { data } = await sb.from('policies')
+    .select('id,name,created_at')
+    .eq('company_id', currentProfile.company_id)
+    .like('name', 'CHAT:%')
+    .order('created_at', { ascending: false });
+  chatList = (data || []).map(d => ({
+    id: d.id,
+    title: d.name.replace(/^CHAT:/, '').trim(),
+    created_at: d.created_at
+  }));
+  renderChatList();
+}
+
+function renderChatList(filter) {
+  const el = document.getElementById('chatListItems');
+  if (!el) return;
+  const q = (typeof filter === 'string' ? filter : (document.getElementById('chatSearchInput')?.value || '')).toLowerCase();
+  const items = q ? chatList.filter(c => c.title.toLowerCase().includes(q)) : chatList;
+  if (!items.length && !q) { el.innerHTML = ''; return; }
+  if (!items.length) {
+    el.innerHTML = `<div style="padding:4px 8px 4px 22px;font-size:11px;color:rgba(255,255,255,0.2);">No chats found</div>`;
+    return;
+  }
+  el.innerHTML = items.map(c => `<div class="chat-li${c.id === currentChatId ? ' active-chat' : ''}" onclick="openChatHistory('${c.id}')"><div class="chat-li-title">${escapeHtml(c.title)}</div><button class="chat-li-del" onclick="event.stopPropagation();deleteChatHistory('${c.id}')" title="Delete">×</button></div>`).join('');
+}
+
+async function newChat() {
+  currentChatId = null;
+  chatMessages = [];
+  chatSystemPrompt = null;
+  closeArtifact();
+  const searchInput = document.getElementById('chatSearchInput');
+  if (searchInput) searchInput.value = '';
+  renderChatHistory();
+  renderChatList('');
+  showView('chat', document.getElementById('nav-chat'));
+  setTimeout(() => document.getElementById('chatInput')?.focus(), 50);
+}
+
+async function openChatHistory(id) {
+  if (!currentProfile) return;
+  const { data } = await sb.from('policies').select('content').eq('id', id).eq('company_id', currentProfile.company_id).single();
+  if (!data) return;
+  try { chatMessages = JSON.parse(data.content); } catch(e) { chatMessages = []; }
+  currentChatId = id;
+  chatSystemPrompt = null;
+  closeArtifact();
+  renderChatHistory();
+  renderChatList();
+  showView('chat', document.getElementById('nav-chat'));
+}
+
+async function deleteChatHistory(id) {
+  if (!currentProfile || !confirm('Delete this chat?')) return;
+  await sb.from('policies').delete().eq('id', id).eq('company_id', currentProfile.company_id);
+  if (currentChatId === id) {
+    currentChatId = null;
+    chatMessages = [];
+    closeArtifact();
+    renderChatHistory();
+  }
+  chatList = chatList.filter(c => c.id !== id);
+  renderChatList();
+}
+
+async function saveCurrentChat() {
+  if (!currentProfile || !chatMessages.length) return;
+  const title = (chatMessages[0]?.content || 'Chat').substring(0, 50).replace(/\n/g, ' ');
+  const content = JSON.stringify(chatMessages);
+  if (currentChatId) {
+    await sb.from('policies').update({ content }).eq('id', currentChatId).eq('company_id', currentProfile.company_id);
+  } else {
+    const { data } = await sb.from('policies').insert({
+      company_id: currentProfile.company_id,
+      name: `CHAT:${title}`,
+      content
+    }).select().single();
+    if (data) {
+      currentChatId = data.id;
+      chatList.unshift({ id: data.id, title, created_at: data.created_at });
+      renderChatList();
+    }
+  }
 }
 
 // ── INIT ──
