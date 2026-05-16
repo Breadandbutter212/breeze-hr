@@ -780,6 +780,10 @@ const tmpls = [
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Transfer date?",f:'transfer_date'},{q:"New employer name?",f:'new_employer'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t24', name:'Performance improvement plan (PIP)', emoji:'📈', type:'Disciplinary',
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Specific performance issues?",f:'performance_issues'},{q:"Targets required (measurable)?",f:'targets'},{q:"Support to be provided?",f:'support_provided'},{q:"PIP start date?",f:'pip_start_date'},{q:"PIP review date?",f:'pip_review_date'},{q:"PIP end date?",f:'pip_end_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t25', name:'Reference letter', emoji:'✉️', type:'References',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title / role held?",f:'job_title'},{q:"Employment start date?",f:'start_date'},{q:"Employment end date?",f:'end_date'},{q:"Brief description of duties and responsibilities?",f:'responsibilities'},{q:"Your name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
+  { id:'t26', name:'Regulated reference (FCA)', emoji:'🏦', type:'References',
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Job title / role held?",f:'job_title'},{q:"Employment start date?",f:'start_date'},{q:"Employment end date?",f:'end_date'},{q:"Disciplinary action in last 6 years? (enter 'None' or describe)",f:'disciplinary_history'},{q:"Fitness and propriety conclusion?",f:'fit_and_proper_conclusion'},{q:"Outstanding investigations at date of departure? (enter 'None' or describe)",f:'outstanding_matters'},{q:"Your name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
 ];
 
 const policies = [
@@ -988,14 +992,14 @@ async function renderTmpls(filter) {
   // Track which groups are collapsed - default built-ins open, custom open
   // Default: Your templates open, all built-in groups collapsed
   if (!window._tmplCollapsed) {
-    window._tmplCollapsed = { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true };
+    window._tmplCollapsed = { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true, 'References': true };
   }
   const collapsed = window._tmplCollapsed;
-  const builtInGroups = ['Letters','Disciplinary','Redundancy','Contracts'];
+  const builtInGroups = ['Letters','Disciplinary','Redundancy','Contracts','References'];
   const hasBuiltIns = builtInGroups.some(g => groups[g]?.length);
   let shownBuiltInSep = false;
 
-  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
+  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts','References'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
     // Add separator before first built-in group
     if (builtInGroups.includes(grp) && !shownBuiltInSep && hasBuiltIns) {
@@ -1056,8 +1060,8 @@ function renderTmplsLocal() {
   const filtered=filter?tmpls.filter(t=>t.name.toLowerCase().includes(filter.toLowerCase())):tmpls;
   const groups={};filtered.forEach(t=>{if(!groups[t.type])groups[t.type]=[];groups[t.type].push(t);});
   list.innerHTML='';
-  const collapsed = window._tmplCollapsed || { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true };
-  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts'].forEach(grp=>{
+  const collapsed = window._tmplCollapsed || { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true, 'References': true };
+  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts','References'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
     const isCollapsed = collapsed[grp] || false;
     const lbl=document.createElement('div');
@@ -1210,6 +1214,10 @@ function updatePreview() {
   else if(t.id==='t23') content=`${header(false)}${salutation()}<div class="doc-body-text"><p><strong>Re: Home / hybrid working agreement</strong></p><p>Further to our discussions, I am pleased to confirm the following home working arrangement.</p><p><strong>Arrangement:</strong> ${ph('arrangement')}<br><strong>Start date:</strong> ${ph('start_date')}<br><strong>Review date:</strong> ${ph('review_date')}</p><p>By agreeing to this arrangement, you confirm that you have a safe, suitable workspace at home and that you will comply with ${co()}'s data security and IT policies at all times when working remotely. ${co()} will carry out a DSE assessment for your home workspace.</p><p>Either party may request a review at any time. This does not constitute a permanent change to your contract.</p><p>Please sign and return a copy to confirm your agreement.</p><p>Yours sincerely,</p></div>${sign()}`;
 
   else if(t.id==='t24') content=`${header()}${salutation()}<div class="doc-body-text"><p><strong>Re: Performance Improvement Plan</strong></p><p>Further to our recent discussions and in accordance with ${co()}'s performance management procedure, which follows the ACAS Code of Practice, I am writing to set out a formal Performance Improvement Plan (PIP) to support you in meeting the required standard.</p><p><strong>Performance concerns identified:</strong><br>${ph('performance_issues')}</p><p><strong>Required targets and standards:</strong><br>${ph('targets')}</p><p>These targets are specific, measurable and achievable within the timescale set out below.</p><p><strong>Support to be provided:</strong><br>${ph('support_provided')}</p><p><strong>PIP period:</strong> ${ph('pip_start_date')} to ${ph('pip_end_date')}<br><strong>Formal review date:</strong> ${ph('pip_review_date')}</p><p>Progress will be reviewed formally on the review date above, with informal check-ins throughout. If the required improvement is achieved by the end of the PIP period, no further action will be taken. If insufficient improvement is made, this may result in further disciplinary action, up to and including dismissal.</p><p>You have the right to be accompanied at any formal meetings relating to this PIP by a work colleague or trade union representative.</p><p>Please sign and return a copy of this letter to acknowledge receipt.</p><p>Yours sincerely,</p></div>${sign()}`;
+
+  else if(t.id==='t25') content=`${header(false)}<div class="doc-body-text"><p><strong>To Whom It May Concern</strong></p><p>I am writing to provide an employment reference for ${ph('employee_name')}, who was employed by ${co()} as ${ph('job_title')} from ${ph('start_date')} to ${ph('end_date')}.</p><p>During their time with us, ${ph('employee_name')}'s responsibilities included: ${ph('responsibilities')}.</p><p>I can confirm that ${ph('employee_name')} left ${co()} on good terms. I would have no hesitation in recommending them for a suitable role and wish them well in their future career.</p><p>This reference is provided in good faith and on the basis of information available to us. It does not constitute a warranty as to the character or abilities of the individual. Should you wish to discuss this reference further, please do not hesitate to contact us.</p><p>Yours faithfully,</p></div>${sign('manager_name')}`;
+
+  else if(t.id==='t26') content=`${header(false)}<div class="doc-body-text"><p style="font-size:11px;color:var(--red);font-weight:600;background:var(--red-bg);border:1px solid #F0C5C5;border-radius:4px;padding:7px 10px;">STRICTLY CONFIDENTIAL - Regulatory Reference. This document must only be shared with the requesting firm's authorised personnel and used solely for fit and proper assessment purposes.</p><p style="margin-top:14px;"><strong>Regulatory Reference</strong><br>Provided in accordance with FCA and PRA rules on regulatory references (SYSC 22 / SS28/15)</p><p><strong>Subject details</strong><br><strong>Full name:</strong> ${ph('employee_name')}<br><strong>Role(s) held:</strong> ${ph('job_title')}<br><strong>Period of employment:</strong> ${ph('start_date')} to ${ph('end_date')}<br><strong>Employing entity:</strong> ${co()}</p><p><strong>Section 1 - Fitness and propriety assessment</strong><br>Was the individual assessed as fit and proper to perform the role(s) held?<br>${ph('fit_and_proper_conclusion')}</p><p><strong>Section 2 - Disciplinary history (preceding 6 years)</strong><br>Details of any disciplinary action concluded in the 6 years preceding the date of this reference, where the action was taken because the individual was found to have breached a conduct rule, was not fit and proper, or where the firm formed the view that such action would have been taken had the individual not resigned:<br>${ph('disciplinary_history')}</p><p><strong>Section 3 - Outstanding matters at date of departure</strong><br>Details of any outstanding investigation, disciplinary process or pending regulatory action at the time of the individual's departure from the firm:<br>${ph('outstanding_matters')}</p><p><strong>Declaration</strong><br>The information provided in this reference is accurate and complete to the best of our knowledge and belief. ${co()} has taken reasonable steps to verify the information. This reference has been approved by a senior manager or director of ${co()} with authority to issue regulatory references.</p><p>Authorised signatory:</p></div>${sign('manager_name')}`;
 
   else { const rows=t.flow.map(f=>`<p><strong>${f.f.replace(/_/g,' ')}:</strong> ${ph(f.f)}</p>`).join(''); content=`${header()}${salutation()}<div class="doc-body-text">${rows}</div>${sign()}`; }
 
