@@ -1,8 +1,18 @@
+import { createClient } from '@supabase/supabase-js';
+
+async function verifyAuth(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+  const { data: { user } } = await sb.auth.getUser(token);
+  return user || null;
+}
+
 export default async function handler(req, res) {
-  // Only allow POST requests
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
+  if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const { messages, system } = req.body;
 
@@ -24,7 +34,6 @@ export default async function handler(req, res) {
 
     const data = await response.json();
     return res.status(200).json(data);
-
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }

@@ -2144,9 +2144,19 @@ function spInsertToReply(title, url) {
 // ── CHAT ──
 let chatMessages = [], chatSystemPrompt = null, chatLoading = false, currentChatId = null, chatList = [];
 
+async function getAuthToken() {
+  const { data: { session } } = await sb.auth.getSession();
+  return session?.access_token || '';
+}
+
 async function callClaude(messages, systemPrompt) {
   try {
-    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({messages, system: systemPrompt}) });
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ messages, system: systemPrompt })
+    });
     const data = await res.json();
     if (data.content && data.content[0]) return data.content[0].text;
     return null;
@@ -2527,16 +2537,14 @@ async function loadEmailInbox() {
   if (titleEl) titleEl.textContent = provider === 'outlook' ? 'Outlook inbox' : 'Gmail inbox';
   list.innerHTML = `<div style="padding:40px 20px;text-align:center;color:var(--ink3);font-size:12px;">Loading inbox...</div>`;
   try {
+    const token = await getAuthToken();
     const res = await fetch('/api/fetch-emails', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ userId: currentUser.id, provider, connectedAccountId: window._emailAccountId, query: 'is:inbox', maxResults: 20 })
     });
     const data = await res.json();
     if (!res.ok) { console.error('fetch-emails error:', JSON.stringify(data)); }
-    // Log first raw message to see field names
-    const firstMsg = data?.data?.data?.messages?.[0] || data?.data?.messages?.[0];
-    if (firstMsg) console.log('First msg keys:', Object.keys(firstMsg), JSON.stringify(firstMsg).substring(0,400));
     _allEmails = parseEmailList(data, provider);
     renderEmailList(_allEmails);
   } catch(e) {
@@ -2686,9 +2694,10 @@ async function submitSendEmail(provider) {
   if (!to) { if (msg) { msg.style.color='var(--red)'; msg.textContent = 'Please enter a recipient email.'; } return; }
   if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
   try {
+    const token = await getAuthToken();
     const res = await fetch('/api/send-email', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({ userId: currentUser.id, to, subject, body, provider })
     });
     const data = await res.json();
