@@ -3,7 +3,7 @@ const BASE = 'https://backend.composio.dev/api/v3';
 // Known auth config IDs (set env vars to override)
 const AUTH_CONFIGS = {
   gmail:   process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID   || 'ac_c2wnUZ4TgV8S',
-  outlook: process.env.COMPOSIO_OUTLOOK_AUTH_CONFIG_ID || null,
+  outlook: process.env.COMPOSIO_OUTLOOK_AUTH_CONFIG_ID || 'ac_XCYlyd6APE7n',
 };
 
 // Fallback: look up auth config from Composio API by toolkit slug
