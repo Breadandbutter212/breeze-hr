@@ -1385,6 +1385,7 @@ async function uploadPolicy(event) {
   }
   const{error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name,content:storageContent.substring(0,500000)});
   if(error){alert('Upload failed: '+error.message);return;}
+  chatSystemPrompt = null;
   alert(`✓ "${name}" uploaded.`); renderManage(); event.target.value='';
 }
 
@@ -1409,12 +1410,15 @@ async function uploadNamedPolicy(event,policyName,existingId) {
     if(found){await sb.from('policies').update({content}).eq('id',found.id).eq('company_id',currentProfile.company_id);}
     else{await sb.from('policies').insert({company_id:currentProfile.company_id,name:policyName,content});}
   }
+  chatSystemPrompt = null;
   await renderManage(); event.target.value='';
 }
 
 async function deletePolicy(id) {
   if(!confirm('Delete this policy?'))return;
-  await sb.from('policies').delete().eq('id',id); renderManage();
+  await sb.from('policies').delete().eq('id',id);
+  chatSystemPrompt = null;
+  renderManage();
 }
 
 async function viewPolicy(id, name) {
