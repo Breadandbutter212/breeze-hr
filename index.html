@@ -1395,22 +1395,27 @@ async function uploadNamedPolicy(event,policyName,existingId) {
   let storageContent;
   if(isPdf){
     const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
-    const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
+    // Timeout pdf.js text extraction — it can hang if CDN worker fails
+    const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(''),ms))]);
+    const [b64,txt]=await Promise.all([readBase64(file),withTimeout(readFileAsText(file),5000)]);
     storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,10000)}`;
   } else {
     storageContent=await readFileAsText(file);
     if(!storageContent){alert('Could not read file');return;}
   }
   const content=storageContent.substring(0,500000);
+  const cid=currentProfile.company_id;
+  // Delete old record first, then insert fresh — avoids all RLS update issues
   if(existingId){
-    const{error}=await sb.from('policies').update({content}).eq('id',existingId).eq('company_id',currentProfile.company_id);
-    if(error){alert('Replace failed: '+error.message);return;}
+    await sb.from('policies').delete().eq('id',existingId).eq('company_id',cid);
   } else {
-    const{data:found}=await sb.from('policies').select('id').eq('company_id',currentProfile.company_id).eq('name',policyName).single();
-    if(found){await sb.from('policies').update({content}).eq('id',found.id).eq('company_id',currentProfile.company_id);}
-    else{await sb.from('policies').insert({company_id:currentProfile.company_id,name:policyName,content});}
+    // No ID passed — try to find any existing record by name and delete it
+    const{data:found}=await sb.from('policies').select('id').eq('company_id',cid).eq('name',policyName).maybeSingle();
+    if(found) await sb.from('policies').delete().eq('id',found.id).eq('company_id',cid);
   }
-  chatSystemPrompt = null;
+  const{error}=await sb.from('policies').insert({company_id:cid,name:policyName,content});
+  if(error){alert('Replace failed: '+error.message);return;}
+  chatSystemPrompt=null;
   await renderManage(); event.target.value='';
 }
 
