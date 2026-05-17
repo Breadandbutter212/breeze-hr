@@ -2369,7 +2369,7 @@ async function loadIntegrations() {
   let status = { gmail: false, outlook: false };
   try {
     const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
-    if (res.ok) status = await res.json();
+    if (res.ok) { status = await res.json(); console.log('Composio status:', JSON.stringify(status, null, 2)); }
   } catch(e) {}
   renderIntegrationsUI(status);
 }

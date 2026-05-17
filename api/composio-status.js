@@ -18,22 +18,34 @@ export default async function handler(req, res) {
     const r = await fetch(`${BASE}/connected_accounts?user_id=${encodeURIComponent(user_id)}`, {
       headers: { 'x-api-key': apiKey }
     });
-    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false });
 
-    const data = await r.json();
+    const raw = await r.text();
+    let data;
+    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+
+    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, debug: data });
+
+    // Return raw data so we can see the actual field names
     const items = data.items || data.connected_accounts || data.connectedAccounts || [];
-    const active = items.filter(c => c.status === 'ACTIVE');
 
-    const gmail   = active.find(c => (c.appName || c.app_name || c.toolkit || '').toLowerCase().includes('gmail'));
-    const outlook = active.find(c => (c.appName || c.app_name || c.toolkit || '').toLowerCase().includes('outlook'));
+    const gmail   = items.find(c => {
+      const name = (c.toolkit || c.appName || c.app_name || c.appUniqueId || c.app || '').toLowerCase();
+      return name.includes('gmail');
+    });
+    const outlook = items.find(c => {
+      const name = (c.toolkit || c.appName || c.app_name || c.appUniqueId || c.app || '').toLowerCase();
+      return name.includes('outlook');
+    });
 
     return res.status(200).json({
-      gmail:            !!gmail,
-      outlook:          !!outlook,
-      gmailAccountId:   gmail?.id   || null,
+      gmail:            !!(gmail && (gmail.status === 'ACTIVE' || gmail.isActive || gmail.status === 'active')),
+      outlook:          !!(outlook && (outlook.status === 'ACTIVE' || outlook.isActive || outlook.status === 'active')),
+      gmailAccountId:   gmail?.id || null,
       outlookAccountId: outlook?.id || null,
+      // Debug: show raw so we can see field names
+      _raw: items.slice(0, 3)
     });
   } catch(e) {
-    return res.status(200).json({ gmail: false, outlook: false });
+    return res.status(200).json({ gmail: false, outlook: false, error: e.message });
   }
 }
