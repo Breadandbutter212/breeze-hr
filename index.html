@@ -2490,11 +2490,25 @@ function renderEmailList(emails) {
   list.innerHTML = emails.map((e, i) => {
     const fromName = (e.from || '').replace(/<[^>]+>/,'').replace(/"/g,'').trim() || 'Unknown sender';
     const dateStr = e.date ? new Date(e.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
-    return `<div class="email-item" onclick="selectEmailForChat(${i})">
-      <div class="email-item-from">${escapeHtml(fromName)}</div>
+    return `<div class="email-item">
+      <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
+        <div class="email-item-from">${escapeHtml(fromName)}</div>
+        <div class="email-item-meta" style="flex-shrink:0;">${dateStr}</div>
+      </div>
       <div class="email-item-subject">${escapeHtml(e.subject)}</div>
       ${e.snippet ? `<div class="email-item-snippet">${escapeHtml(e.snippet)}</div>` : ''}
-      <div class="email-item-meta">${dateStr}</div>
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button onclick="openEmailInGmail('${e.id}')"
+          style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--ink2);cursor:pointer;font-family:inherit;"
+          onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
+          Open in Gmail ↗
+        </button>
+        <button onclick="selectEmailForChat(${i})"
+          style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
+          onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
+          ✍ Draft reply
+        </button>
+      </div>
     </div>`;
   }).join('');
 }
@@ -2506,6 +2520,10 @@ function filterEmails(q) {
     e.snippet.toLowerCase().includes(q.toLowerCase())
   ) : _allEmails;
   renderEmailList(filtered);
+}
+
+function openEmailInGmail(messageId) {
+  window.open(`https://mail.google.com/mail/u/0/#inbox/${messageId}`, '_blank', 'noopener');
 }
 
 function selectEmailForChat(idx) {
