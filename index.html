@@ -741,10 +741,16 @@ async function onSignedIn(user) {
 async function signOut() {
   await sb.auth.signOut();
   currentUser = null; currentProfile = null;
+  chatMessages = []; chatSystemPrompt = null; chatList = []; currentChatId = null;
+  analyticsData = null; analyticsSource = ''; analyticsCharts = {};
+  window._emailProvider = null; window._emailAccountId = null; _allEmails = [];
+  mergeEmployeeCache = null; selTmpl = null; genVals = {};
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
   document.getElementById('loginBtn').textContent = 'Sign in';
   document.getElementById('loginBtn').disabled = false;
+  const emailChip = document.getElementById('emailChip');
+  if (emailChip) emailChip.style.display = 'none';
 }
 
 window.addEventListener('load', async () => {
