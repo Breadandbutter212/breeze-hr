@@ -2369,7 +2369,7 @@ async function loadIntegrations() {
   el.innerHTML = '<div style="font-size:11px;color:var(--ink3);">Checking connections...</div>';
   let status = { gmail: false, outlook: false };
   try {
-    const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(userId)}`);
+    const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(userId)}&userEmail=${encodeURIComponent(currentUser.email||'')}`);
     if (res.ok) status = await res.json();
   } catch(e) {}
   renderIntegrationsUI(status);
@@ -2413,7 +2413,10 @@ async function connectIntegration(app) {
       body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email, app })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Failed to connect');
+    if (!res.ok) {
+      const msg = typeof data.error === 'string' ? data.error : JSON.stringify(data.composio_detail || data.error || data);
+      throw new Error(msg);
+    }
     if (data.authUrl) {
       window.open(data.authUrl, '_blank', 'width=600,height=700,noopener');
       btn.textContent = 'Waiting...';
@@ -2422,7 +2425,7 @@ async function connectIntegration(app) {
       const poll = setInterval(async () => {
         attempts++;
         try {
-          const sr = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
+          const sr = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}&userEmail=${encodeURIComponent(currentUser.email||'')}`);
           if (sr.ok) {
             const st = await sr.json();
             if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
