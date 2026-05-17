@@ -2432,7 +2432,6 @@ async function loadEmailInbox() {
       body: JSON.stringify({ userId: currentUser.id, provider, connectedAccountId: window._emailAccountId, query: 'is:inbox', maxResults: 20 })
     });
     const data = await res.json();
-    console.log('Email raw response:', JSON.stringify(data, null, 2).substring(0, 3000));
     _allEmails = parseEmailList(data, provider);
     renderEmailList(_allEmails);
   } catch(e) {
@@ -2440,29 +2439,25 @@ async function loadEmailInbox() {
   }
 }
 
-function parseEmailList(data, provider) {
-  // Handle Composio's wrapped response format
-  const result = data?.data?.response_data || data?.data || data?.result || data;
-  const messages = result?.messages || result?.emails || result?.value || result?.items || [];
-  if (!Array.isArray(messages)) return [];
+function parseEmailList(apiData, provider) {
+  // Composio wraps: { _success, data: { data: { messages: [...] } } }
+  const messages =
+    apiData?.data?.data?.messages ||   // main path
+    apiData?.data?.messages ||
+    apiData?.messages || [];
+  if (!Array.isArray(messages) || !messages.length) return [];
+
   return messages.map(m => {
-    const headers = m.payload?.headers || m.internetMessageHeaders || [];
-    const getHeader = (name) => (headers.find(h => (h.name||h.Name||'').toLowerCase() === name.toLowerCase()) || {}).value || (headers.find(h => (h.name||h.Name||'').toLowerCase() === name.toLowerCase()) || {}).Value || '';
-    const from    = getHeader('from') || m.from?.emailAddress?.name || m.sender || '';
-    const subject = getHeader('subject') || m.subject || '(No subject)';
-    const date    = getHeader('date') || m.receivedDateTime || m.date || '';
-    const snippet = m.snippet || m.bodyPreview || m.preview || '';
-    const id      = m.id || m.messageId || '';
-    // Try to get body text
-    let body = '';
-    if (m.payload?.body?.data) body = atob(m.payload.body.data.replace(/-/g,'+').replace(/_/g,'/'));
-    else if (m.body?.content) body = m.body.content;
-    else if (m.payload?.parts) {
-      const part = m.payload.parts.find(p=>p.mimeType==='text/plain');
-      if (part?.body?.data) body = atob(part.body.data.replace(/-/g,'+').replace(/_/g,'/'));
-    }
+    // Strip HTML tags and excess whitespace from body
+    const cleanText = (t) => (t||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+    const body    = cleanText(m.messageText || m.body || m.bodyPreview || '');
+    const snippet = body.substring(0, 180);
+    const from    = m.sender || m.from || m.senderEmail || m.fromAddress || '';
+    const subject = m.subject || m.messageSubject || '(No subject)';
+    const date    = m.date || m.timestamp || m.internalDate || m.receivedAt || '';
+    const id      = m.messageId || m.id || '';
     return { id, from, subject, date, snippet, body };
-  }).filter(m => m.from || m.subject);
+  }).filter(m => m.id);
 }
 
 function renderEmailList(emails) {
