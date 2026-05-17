@@ -55,10 +55,11 @@ export default async function handler(req, res) {
     try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
 
     if (!r.ok) {
-      return res.status(r.status).json({
-        error: `Composio: ${data.message || data.error || raw.substring(0, 200)}`,
-        detail: data
-      });
+      // Stringify whatever Composio returns so it's always readable
+      const errMsg = typeof data.message === 'string' ? data.message
+                   : typeof data.error === 'string'   ? data.error
+                   : raw.substring(0, 500);
+      return res.status(r.status).json({ error: errMsg, raw: raw.substring(0, 500) });
     }
 
     const authUrl = data.redirectUrl || data.redirectUri || data.connectionUrl;
