@@ -694,10 +694,10 @@ async function handleAuth() {
     if (!name || !company) { errEl.textContent = 'Please enter your name and company.'; btn.textContent = 'Create account'; btn.disabled = false; return; }
     const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
     if (error) { errEl.textContent = error.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
-    try {
-      const { data: co } = await sb.from('companies').insert({ name: company }).select().single();
-      if (co) await sb.from('profiles').insert({ id: data.user.id, company_id: co.id, full_name: name });
-    } catch(e) {}
+    const { data: co, error: coErr } = await sb.from('companies').insert({ name: company }).select().single();
+    if (coErr || !co) { errEl.textContent = 'Account created but setup failed — please contact support. (' + (coErr?.message||'no company') + ')'; btn.textContent = 'Create account'; btn.disabled = false; return; }
+    const { error: profErr } = await sb.from('profiles').insert({ id: data.user.id, company_id: co.id, full_name: name });
+    if (profErr) { errEl.textContent = 'Account created but profile setup failed: ' + profErr.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
     errEl.style.color = 'var(--green)';
     errEl.textContent = 'Account created - check your email to confirm, then sign in.';
     btn.textContent = 'Create account'; btn.disabled = false;
@@ -714,6 +714,12 @@ async function onSignedIn(user) {
   if (emailEl) emailEl.textContent = user.email;
   const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
   currentProfile = profile;
+  if (!profile) {
+    // Profile missing — signup may have partially failed. Show a warning.
+    console.warn('No profile found for user', user.id);
+    document.getElementById('userInitials').textContent = user.email.substring(0,2).toUpperCase();
+    document.getElementById('userDisplayName').textContent = user.email;
+  }
   if (profile?.company_id) {
     const { data: co } = await sb.from('companies').select('name').eq('id', profile.company_id).single();
     if (co) currentProfile.company_name = co.name;
