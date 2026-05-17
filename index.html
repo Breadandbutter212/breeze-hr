@@ -2429,7 +2429,7 @@ async function loadEmailInbox() {
     const res = await fetch('/api/fetch-emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, provider, query: 'is:inbox', maxResults: 20 })
+      body: JSON.stringify({ userId: currentUser.id, provider, connectedAccountId: window._emailAccountId, query: 'is:inbox', maxResults: 20 })
     });
     const data = await res.json();
     console.log('Email raw response:', JSON.stringify(data, null, 2).substring(0, 3000));
@@ -2586,6 +2586,7 @@ async function loadIntegrations() {
       status = await res.json();
       // Store provider globally so artifact panel can show Send button
       window._emailProvider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
+      window._emailAccountId = status.gmailAccountId || status.outlookAccountId || null;
       const btn = document.getElementById('emailInboxBtn');
       if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
     }
