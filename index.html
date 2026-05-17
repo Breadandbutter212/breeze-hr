@@ -692,12 +692,13 @@ async function handleAuth() {
     const name = document.getElementById('loginName').value.trim();
     const company = document.getElementById('loginCompany').value.trim();
     if (!name || !company) { errEl.textContent = 'Please enter your name and company.'; btn.textContent = 'Create account'; btn.disabled = false; return; }
-    const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
+    // Store name + company in auth metadata so onSignedIn can create the profile
+    // even when email confirmation is required (user isn't authenticated during signUp)
+    const { data, error } = await sb.auth.signUp({
+      email, password,
+      options: { emailRedirectTo: window.location.href, data: { full_name: name, company_name: company } }
+    });
     if (error) { errEl.textContent = error.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
-    const { data: co, error: coErr } = await sb.from('companies').insert({ name: company }).select().single();
-    if (coErr || !co) { errEl.textContent = 'Account created but setup failed: ' + (coErr?.message||'no company returned'); btn.textContent = 'Create account'; btn.disabled = false; return; }
-    const { error: profErr } = await sb.from('profiles').insert({ id: data.user.id, company_id: co.id, full_name: name });
-    if (profErr) { errEl.textContent = 'Account created but profile setup failed: ' + profErr.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
     // If Supabase signed them in immediately (email confirmation off), go straight into the app
     if (data.session) {
       await onSignedIn(data.user);
@@ -717,10 +718,18 @@ async function onSignedIn(user) {
   // Set email in footer (hidden element kept for compat)
   const emailEl = document.getElementById('userEmail');
   if (emailEl) emailEl.textContent = user.email;
-  const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  let { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
+  // First login after email confirmation — create company + profile from auth metadata
+  if (!profile && user.user_metadata) {
+    const meta = user.user_metadata;
+    const { data: co } = await sb.from('companies').insert({ name: meta.company_name || 'My Company' }).select().single();
+    if (co) {
+      const { data: newProf } = await sb.from('profiles').insert({ id: user.id, company_id: co.id, full_name: meta.full_name || '' }).select().single();
+      profile = newProf;
+    }
+  }
   currentProfile = profile;
   if (!profile) {
-    // Profile missing — signup may have partially failed. Show a warning.
     console.warn('No profile found for user', user.id);
     document.getElementById('userInitials').textContent = user.email.substring(0,2).toUpperCase();
     document.getElementById('userDisplayName').textContent = user.email;
