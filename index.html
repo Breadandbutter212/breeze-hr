@@ -319,43 +319,85 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .chat-welcome-sub { font-size: 13px; color: var(--ink3); max-width: 380px; line-height: 1.65; }
 
 /* ── LOGIN ── */
-.login-screen { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; z-index: 999; }
-.login-box { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-xl); padding: 44px 40px; width: 400px; box-shadow: var(--shadow-lg); }
-.login-logo { display: flex; align-items: center; gap: 12px; margin-bottom: 32px; }
-.login-logo-icon { width: 36px; height: 36px; background: var(--accent); border-radius: 9px; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 12px rgba(0,102,204,0.35); }
-.login-logo-name { font-size: 20px; font-weight: 600; color: var(--ink); letter-spacing: -0.03em; }
-.login-title { font-size: 17px; font-weight: 600; color: var(--ink); margin-bottom: 4px; letter-spacing: -0.02em; }
-.login-sub { font-size: 13px; color: var(--ink3); margin-bottom: 28px; }
+.login-screen { position: fixed; inset: 0; display: flex; z-index: 999; }
+.login-left { width: 52%; background: linear-gradient(145deg, #0A1628 0%, #0F2044 60%, #0A2460 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 48px 56px; position: relative; overflow: hidden; }
+.login-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(0,102,204,0.18) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(99,179,255,0.08) 0%, transparent 50%); pointer-events: none; }
+.login-left-logo { display: flex; align-items: center; gap: 12px; position: relative; }
+.login-left-logo-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
+.login-left-logo-name { font-size: 20px; font-weight: 600; color: white; letter-spacing: -0.02em; }
+.login-left-hero { position: relative; }
+.login-left-title { font-size: 38px; font-weight: 700; color: white; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 16px; }
+.login-left-title span { color: #63B3FF; }
+.login-left-sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.65; max-width: 340px; }
+.login-left-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 32px; }
+.login-left-pill { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.65); }
+.login-left-footer { display: flex; align-items: center; justify-content: space-between; position: relative; }
+.login-left-copy { font-size: 11px; color: rgba(255,255,255,0.3); }
+.login-left-insta { display: flex; align-items: center; gap: 6px; text-decoration: none; color: rgba(255,255,255,0.45); font-size: 12px; transition: color 0.15s; }
+.login-left-insta:hover { color: rgba(255,255,255,0.8); }
+.login-right { flex: 1; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; }
+.login-box { width: 100%; max-width: 380px; }
+.login-box-header { margin-bottom: 32px; }
+.login-box-title { font-size: 24px; font-weight: 700; color: #0A1628; letter-spacing: -0.03em; margin-bottom: 6px; }
+.login-box-sub { font-size: 13px; color: #8A94A6; }
 .login-field { display: flex; flex-direction: column; gap: 5px; margin-bottom: 14px; }
-.login-label { font-size: 12px; font-weight: 500; color: var(--ink2); }
-.login-input { border: 1px solid var(--border); border-radius: var(--r-sm); padding: 10px 12px; font-size: 13px; font-family: inherit; color: var(--ink); background: var(--surface2); outline: none; transition: border 0.15s, background 0.15s; }
-.login-input:focus { border-color: var(--accent); background: var(--surface); }
-.login-btn { width: 100%; padding: 11px; background: var(--accent); color: white; border: none; border-radius: var(--r-sm); font-size: 14px; font-weight: 500; font-family: inherit; cursor: pointer; margin-top: 8px; box-shadow: 0 2px 8px rgba(0,102,204,0.3); transition: opacity 0.15s; }
-.login-btn:hover { opacity: 0.88; }
-.login-error { font-size: 12px; color: var(--red); margin-top: 8px; min-height: 16px; }
-.login-toggle { font-size: 12px; color: var(--ink3); text-align: center; margin-top: 16px; }
-.login-toggle a { color: var(--accent); text-decoration: none; font-weight: 500; cursor: pointer; }
+.login-label { font-size: 12px; font-weight: 600; color: #4A5568; letter-spacing: 0.01em; }
+.login-input { border: 1.5px solid #E2E8F0; border-radius: 8px; padding: 11px 14px; font-size: 14px; font-family: inherit; color: #1A202C; background: #F8FAFC; outline: none; transition: border 0.15s, background 0.15s, box-shadow 0.15s; }
+.login-input:focus { border-color: #0066CC; background: white; box-shadow: 0 0 0 3px rgba(0,102,204,0.1); }
+.login-btn { width: 100%; padding: 12px; background: #0A1628; color: white; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; font-family: inherit; cursor: pointer; margin-top: 8px; letter-spacing: 0.01em; transition: background 0.15s, transform 0.1s; }
+.login-btn:hover { background: #0F2044; }
+.login-btn:active { transform: scale(0.99); }
+.login-error { font-size: 12px; color: #E53E3E; margin-top: 8px; min-height: 16px; background: #FFF5F5; border-radius: 6px; padding: 0; }
+.login-error:not(:empty) { padding: 8px 12px; border: 1px solid #FED7D7; }
+.login-toggle { font-size: 13px; color: #8A94A6; text-align: center; margin-top: 20px; }
+.login-toggle a { color: #0066CC; text-decoration: none; font-weight: 600; cursor: pointer; }
 .login-toggle a:hover { text-decoration: underline; }
+@media (max-width: 700px) { .login-left { display: none; } .login-right { padding: 32px 24px; } }
 </style>
 </head>
 <body>
 
 <!-- LOGIN -->
 <div class="login-screen" id="loginScreen">
-  <div class="login-box">
-    <div class="login-logo">
-      <div class="login-logo-icon"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
-      <div class="login-logo-name">Breeze HR</div>
+  <!-- Left branding panel -->
+  <div class="login-left">
+    <div class="login-left-logo">
+      <div class="login-left-logo-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div>
+      <div class="login-left-logo-name">Breeze HR</div>
     </div>
-    <div class="login-title" id="loginTitle">Sign in</div>
-    <div class="login-sub" id="loginSub">HR operations platform</div>
-    <div class="login-field"><label class="login-label">Email</label><input class="login-input" type="email" id="loginEmail" placeholder="you@company.com"></div>
-    <div class="login-field"><label class="login-label">Password</label><input class="login-input" type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()"></div>
-    <div class="login-field" id="nameField" style="display:none;"><label class="login-label">Full name</label><input class="login-input" type="text" id="loginName" placeholder="Jane Smith"></div>
-    <div class="login-field" id="companyField" style="display:none;"><label class="login-label">Company name</label><input class="login-input" type="text" id="loginCompany" placeholder="Acme Corp"></div>
-    <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
-    <div class="login-error" id="loginError"></div>
-    <div class="login-toggle" id="loginToggle">Don't have an account? <a onclick="toggleAuthMode()">Create one</a></div>
+    <div class="login-left-hero">
+      <div class="login-left-title">HR operations,<br><span>made simple.</span></div>
+      <div class="login-left-sub">Draft letters, manage policies, answer employee questions and run your HR function — all in one place.</div>
+      <div class="login-left-pills">
+        <div class="login-left-pill">✦ AI-powered drafting</div>
+        <div class="login-left-pill">📋 Policy management</div>
+        <div class="login-left-pill">✉️ Email integration</div>
+        <div class="login-left-pill">📊 Analytics</div>
+      </div>
+    </div>
+    <div class="login-left-footer">
+      <div class="login-left-copy">© 2025 Breeze HR</div>
+      <a href="https://www.instagram.com/get_breeze_" target="_blank" class="login-left-insta">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5" ry="5"/><path d="M16 11.37A4 4 0 1 1 12.63 8 4 4 0 0 1 16 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+        @get_breeze_
+      </a>
+    </div>
+  </div>
+  <!-- Right form panel -->
+  <div class="login-right">
+    <div class="login-box">
+      <div class="login-box-header">
+        <div class="login-box-title" id="loginTitle">Welcome back</div>
+        <div class="login-box-sub" id="loginSub">Sign in to your Breeze HR account</div>
+      </div>
+      <div class="login-field"><label class="login-label">Email address</label><input class="login-input" type="email" id="loginEmail" placeholder="you@company.com"></div>
+      <div class="login-field"><label class="login-label">Password</label><input class="login-input" type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()"></div>
+      <div class="login-field" id="nameField" style="display:none;"><label class="login-label">Full name</label><input class="login-input" type="text" id="loginName" placeholder="Jane Smith"></div>
+      <div class="login-field" id="companyField" style="display:none;"><label class="login-label">Company name</label><input class="login-input" type="text" id="loginCompany" placeholder="Acme Corp"></div>
+      <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
+      <div class="login-error" id="loginError"></div>
+      <div class="login-toggle" id="loginToggle">Don't have an account? <a onclick="toggleAuthMode()">Create one free</a></div>
+    </div>
   </div>
 </div>
 
@@ -666,10 +708,11 @@ let currentUser = null, currentProfile = null, authMode = 'signin';
 
 function toggleAuthMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
-  document.getElementById('loginTitle').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
+  document.getElementById('loginTitle').textContent = authMode === 'signin' ? 'Welcome back' : 'Create your account';
+  document.getElementById('loginSub').textContent = authMode === 'signin' ? 'Sign in to your Breeze HR account' : 'Get started — it\'s free';
   document.getElementById('loginBtn').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
   document.getElementById('loginToggle').innerHTML = authMode === 'signin'
-    ? 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one</a>'
+    ? 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one free</a>'
     : 'Already have an account? <a onclick="toggleAuthMode()">Sign in</a>';
   document.getElementById('nameField').style.display = authMode === 'signup' ? 'flex' : 'none';
   document.getElementById('companyField').style.display = authMode === 'signup' ? 'flex' : 'none';
