@@ -1,9 +1,9 @@
 import { Composio } from 'composio-core';
 
-// Map frontend app names to Composio app slugs
-const APP_NAMES = {
-  gmail: 'gmail',
-  outlook: 'outlook'
+// Auth Config IDs from Composio dashboard (Auth Configs section)
+const INTEGRATION_IDS = {
+  gmail:   process.env.COMPOSIO_GMAIL_INTEGRATION_ID   || 'ac_c2wnUZ4TgV8S',
+  outlook: process.env.COMPOSIO_OUTLOOK_INTEGRATION_ID || null
 };
 
 export default async function handler(req, res) {
@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'Composio API key not configured' });
 
   const entityId = userId.replace(/-/g, '');
-  const appName = APP_NAMES[app] || app;
+  const integrationId = INTEGRATION_IDS[app];
   const origin = req.headers.origin || 'https://breeze-hr.vercel.app';
 
   try {
@@ -31,7 +31,7 @@ export default async function handler(req, res) {
       try {
         const connections = await entity.getConnections();
         for (const conn of connections) {
-          if ((conn.appName || '').toLowerCase() === appName.toLowerCase()) {
+          if ((conn.appName || '').toLowerCase().includes(app.toLowerCase())) {
             await conn.delete();
           }
         }
@@ -39,26 +39,26 @@ export default async function handler(req, res) {
       return res.status(200).json({ disconnected: true });
     }
 
-    // Initiate OAuth — include redirectUrl and authMode so Composio
-    // has everything it needs for the v2 initiateConnection endpoint
+    if (!integrationId) {
+      return res.status(400).json({ error: `No Auth Config found for ${app}. Create one in the Composio dashboard under Auth Configs.` });
+    }
+
+    // Use integrationId (the Auth Config ID) — this is the reliable way
     const connection = await entity.initiateConnection({
-      appName,
-      authMode: 'OAUTH2',
-      redirectUrl: `${origin}?composio_connected=${appName}`
+      integrationId,
+      redirectUrl: `${origin}?composio_connected=${app}`
     });
 
     const authUrl = connection.redirectUrl || connection.redirectUri;
     if (!authUrl) {
       return res.status(502).json({
-        error: 'Composio did not return an auth URL. Check that an Auth Config for ' + appName + ' exists in your Composio dashboard.',
+        error: 'Composio did not return an auth URL.',
         detail: JSON.stringify(connection)
       });
     }
 
     return res.status(200).json({ authUrl });
   } catch(e) {
-    // Surface the full Composio error message so it's visible in the UI
-    const msg = e?.message || String(e);
-    return res.status(500).json({ error: msg });
+    return res.status(500).json({ error: e?.message || String(e) });
   }
 }
