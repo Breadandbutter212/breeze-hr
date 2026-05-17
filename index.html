@@ -2432,6 +2432,7 @@ async function loadEmailInbox() {
       body: JSON.stringify({ userId: currentUser.id, provider, query: 'is:inbox', maxResults: 20 })
     });
     const data = await res.json();
+    console.log('Email raw response:', JSON.stringify(data, null, 2).substring(0, 3000));
     _allEmails = parseEmailList(data, provider);
     renderEmailList(_allEmails);
   } catch(e) {
