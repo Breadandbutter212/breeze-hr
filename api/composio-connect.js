@@ -1,4 +1,4 @@
-const COMPOSIO_BASE = 'https://backend.composio.dev/api/v1';
+import { Composio } from 'composio-core';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,48 +13,29 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Composio API key not configured' });
 
-  // Use a safe entity ID (email-safe alphanumeric)
-  const entityId = userId.replace(/[^a-zA-Z0-9._-]/g, '_');
-
-  const headers = { 'x-api-key': apiKey, 'Content-Type': 'application/json' };
+  // Sanitise UUID to a Composio-safe entity ID
+  const entityId = userId.replace(/-/g, '');
 
   try {
+    const client = new Composio({ apiKey });
+    const entity = client.getEntity(entityId);
+
     if (action === 'disconnect') {
-      // Find and delete active connection for this app+entity
-      const listRes = await fetch(`${COMPOSIO_BASE}/connectedAccounts?entityId=${encodeURIComponent(entityId)}&status=ACTIVE`, { headers });
-      if (listRes.ok) {
-        const listData = await listRes.json();
-        const conn = (listData.items || []).find(c => c.appName?.toLowerCase() === app.toLowerCase());
-        if (conn?.id) {
-          await fetch(`${COMPOSIO_BASE}/connectedAccounts/${conn.id}`, { method: 'DELETE', headers });
+      try {
+        const connections = await entity.getConnections();
+        for (const conn of connections) {
+          if ((conn.appName || '').toLowerCase() === app.toLowerCase()) {
+            await conn.delete();
+          }
         }
-      }
+      } catch(e) { /* best effort */ }
       return res.status(200).json({ disconnected: true });
     }
 
-    // Initiate OAuth connection
-    const body = {
-      appName: app,
-      entityId,
-      redirectUri: `${req.headers.origin || 'https://breeze-hr.vercel.app'}?connected=${app}`
-    };
-
-    const initRes = await fetch(`${COMPOSIO_BASE}/connectedAccounts`, {
-      method: 'POST',
-      headers,
-      body: JSON.stringify(body)
-    });
-
-    const text = await initRes.text();
-    let data;
-    try { data = JSON.parse(text); } catch(e) {
-      return res.status(502).json({ error: 'Bad response from Composio', raw: text.substring(0, 300) });
-    }
-
-    if (!initRes.ok) return res.status(initRes.status).json({ error: data.message || data.error || 'Composio error', detail: data });
-
-    const authUrl = data.redirectUrl || data.redirectUri || data.connectionUrl;
-    if (!authUrl) return res.status(502).json({ error: 'No auth URL returned', detail: data });
+    // Initiate OAuth flow
+    const connection = await entity.initiateConnection({ appName: app });
+    const authUrl = connection.redirectUrl;
+    if (!authUrl) return res.status(502).json({ error: 'No redirect URL returned by Composio', detail: connection });
 
     return res.status(200).json({ authUrl });
   } catch(e) {
