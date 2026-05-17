@@ -2433,6 +2433,9 @@ async function loadEmailInbox() {
     });
     const data = await res.json();
     if (!res.ok) { console.error('fetch-emails error:', JSON.stringify(data)); }
+    // Log first raw message to see field names
+    const firstMsg = data?.data?.data?.messages?.[0] || data?.data?.messages?.[0];
+    if (firstMsg) console.log('First msg keys:', Object.keys(firstMsg), JSON.stringify(firstMsg).substring(0,400));
     _allEmails = parseEmailList(data, provider);
     renderEmailList(_allEmails);
   } catch(e) {
@@ -2441,21 +2444,29 @@ async function loadEmailInbox() {
 }
 
 function parseEmailList(apiData, provider) {
-  // Composio wraps: { _success, data: { data: { messages: [...] } } }
   const messages =
-    apiData?.data?.data?.messages ||   // main path
+    apiData?.data?.data?.messages ||
     apiData?.data?.messages ||
     apiData?.messages || [];
   if (!Array.isArray(messages) || !messages.length) return [];
 
+  const cleanBody = (t) => (t||'')
+    .replace(/<style[\s\S]*?<\/style>/gi, '')   // strip CSS blocks
+    .replace(/<[^>]+>/g, ' ')                    // strip HTML tags
+    .replace(/\{[^}]*\}/g, '')                   // strip remaining CSS rules
+    .replace(/&[a-z]+;/gi, ' ')                  // decode entities
+    .replace(/https?:\/\/\S+/g, '[link]')        // replace URLs
+    .replace(/\s{2,}/g, ' ').trim();
+
   return messages.map(m => {
-    // Strip HTML tags and excess whitespace from body
-    const cleanText = (t) => (t||'').replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-    const body    = cleanText(m.messageText || m.body || m.bodyPreview || '');
-    const snippet = body.substring(0, 180);
-    const from    = m.sender || m.from || m.senderEmail || m.fromAddress || '';
-    const subject = m.subject || m.messageSubject || '(No subject)';
-    const date    = m.date || m.timestamp || m.internalDate || m.receivedAt || '';
+    const body    = cleanBody(m.messageText || m.body || m.bodyPreview || '');
+    const snippet = body.substring(0, 160);
+    const from    = m.sender || m.from || m.senderEmail || m.fromAddress || m.fromName || '';
+    const subject = m.subject || m.messageSubject || m.title || '(No subject)';
+    // internalDate is epoch ms as string; date may be ISO or RFC string
+    const rawDate = m.date || m.receivedAt || m.timestamp || m.internalDate || '';
+    const dateObj = rawDate ? new Date(isNaN(rawDate) ? rawDate : parseInt(rawDate)) : null;
+    const date    = dateObj && !isNaN(dateObj) ? dateObj.toISOString() : '';
     const id      = m.messageId || m.id || '';
     return { id, from, subject, date, snippet, body };
   }).filter(m => m.id);
@@ -2468,7 +2479,7 @@ function renderEmailList(emails) {
     return;
   }
   list.innerHTML = emails.map((e, i) => {
-    const fromName = e.from.replace(/<[^>]+>/,'').trim().replace(/"/g,'');
+    const fromName = (e.from || '').replace(/<[^>]+>/,'').replace(/"/g,'').trim() || 'Unknown sender';
     const dateStr = e.date ? new Date(e.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     return `<div class="email-item" onclick="selectEmailForChat(${i})">
       <div class="email-item-from">${escapeHtml(fromName)}</div>
@@ -2491,8 +2502,9 @@ function filterEmails(q) {
 function selectEmailForChat(idx) {
   const email = _allEmails[idx]; if (!email) return;
   toggleEmailPanel();
-  const fromName = email.from.replace(/<[^>]+>/,'').trim();
-  const bodyText = email.body || email.snippet || '(No body)';
+  const fromName = (email.from || '').replace(/<[^>]+>/,'').replace(/"/g,'').trim() || 'Unknown sender';
+  // Use first 1200 chars of cleaned body to keep context concise
+  const bodyText = (email.body || email.snippet || '').substring(0, 1200);
   const msg = `I've received this email and need help drafting an HR reply:\n\nFrom: ${fromName}\nSubject: ${email.subject}\n\n${bodyText}\n\nPlease draft a professional HR response.`;
   const ta = document.getElementById('chatInput');
   if (ta) {
