@@ -692,18 +692,24 @@ async function handleAuth() {
     const name = document.getElementById('loginName').value.trim();
     const company = document.getElementById('loginCompany').value.trim();
     if (!name || !company) { errEl.textContent = 'Please enter your name and company.'; btn.textContent = 'Create account'; btn.disabled = false; return; }
-    // Store name + company in auth metadata so onSignedIn can create the profile
-    // even when email confirmation is required (user isn't authenticated during signUp)
     const { data, error } = await sb.auth.signUp({
       email, password,
       options: { emailRedirectTo: window.location.href, data: { full_name: name, company_name: company } }
     });
     if (error) { errEl.textContent = error.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
-    // If Supabase signed them in immediately (email confirmation off), go straight into the app
+    // If we have a session (email confirmation off), set up account now then go into app
     if (data.session) {
+      const setupRes = await fetch('/api/setup-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${data.session.access_token}` },
+        body: JSON.stringify({ full_name: name, company_name: company })
+      });
+      const setupData = await setupRes.json();
+      if (!setupRes.ok) { errEl.textContent = 'Setup failed: ' + setupData.error; btn.textContent = 'Create account'; btn.disabled = false; return; }
       await onSignedIn(data.user);
       return;
     }
+    // Email confirmation on — account will be set up on first sign-in via onSignedIn
     errEl.style.color = 'var(--green)';
     errEl.textContent = 'Account created — check your email to confirm, then sign in.';
     btn.textContent = 'Create account'; btn.disabled = false;
@@ -719,12 +725,17 @@ async function onSignedIn(user) {
   const emailEl = document.getElementById('userEmail');
   if (emailEl) emailEl.textContent = user.email;
   let { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
-  // First login after email confirmation — create company + profile from auth metadata
-  if (!profile && user.user_metadata) {
-    const meta = user.user_metadata;
-    const { data: co } = await sb.from('companies').insert({ name: meta.company_name || 'My Company' }).select().single();
-    if (co) {
-      const { data: newProf } = await sb.from('profiles').insert({ id: user.id, company_id: co.id, full_name: meta.full_name || '' }).select().single();
+  // First login after email confirmation — create company + profile via server (bypasses RLS)
+  if (!profile) {
+    const { data: { session } } = await sb.auth.getSession();
+    if (session) {
+      const meta = user.user_metadata || {};
+      await fetch('/api/setup-account', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+        body: JSON.stringify({ full_name: meta.full_name || '', company_name: meta.company_name || 'My Company' })
+      });
+      const { data: newProf } = await sb.from('profiles').select('*').eq('id', user.id).single();
       profile = newProf;
     }
   }
