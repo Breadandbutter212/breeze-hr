@@ -1,3 +1,5 @@
+const BASE = 'https://backend.composio.dev/api/v2';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -8,36 +10,30 @@ export default async function handler(req, res) {
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
   const apiKey = process.env.COMPOSIO_API_KEY;
-  if (!apiKey) return res.status(200).json({ gmail: false, outlook: false, error: 'COMPOSIO_API_KEY not set' });
+  if (!apiKey) return res.status(200).json({ gmail: false, outlook: false });
 
-  const entityId = userId.replace(/-/g, '');
-
-  let Composio;
-  try {
-    ({ Composio } = await import('@composio/core'));
-  } catch(e) {
-    return res.status(200).json({ gmail: false, outlook: false, importError: e.message });
-  }
+  const entityId = 'user_' + userId.replace(/-/g, '');
 
   try {
-    let composio;
-    try { composio = new Composio({ apiKey }); }
-    catch(e) { composio = new Composio(); }
+    const r = await fetch(`${BASE}/connectedAccounts?entityId=${encodeURIComponent(entityId)}`, {
+      headers: { 'x-api-key': apiKey }
+    });
+    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false });
 
-    const session = await composio.create(entityId);
-    const { items } = await session.toolkits({ limit: 50 });
+    const data = await r.json();
+    const items = data.items || data.connectedAccounts || [];
+    const active = items.filter(c => c.status === 'ACTIVE');
 
-    const find = (slug) => items.find(t => t.slug === slug);
-    const gmail   = find('gmail');
-    const outlook = find('outlook');
+    const gmail   = active.find(c => (c.appName || '').toLowerCase().includes('gmail'));
+    const outlook = active.find(c => (c.appName || '').toLowerCase().includes('outlook'));
 
     return res.status(200).json({
-      gmail:            gmail?.connection?.isActive   ?? false,
-      outlook:          outlook?.connection?.isActive ?? false,
-      gmailAccountId:   gmail?.connection?.connectedAccount?.id   || null,
-      outlookAccountId: outlook?.connection?.connectedAccount?.id || null,
+      gmail:            !!gmail,
+      outlook:          !!outlook,
+      gmailAccountId:   gmail?.id   || null,
+      outlookAccountId: outlook?.id || null,
     });
   } catch(e) {
-    return res.status(200).json({ gmail: false, outlook: false, runtimeError: e?.message });
+    return res.status(200).json({ gmail: false, outlook: false });
   }
 }

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "Breeze HR Operations Platform",
   "dependencies": {
-    "@composio/core": "latest",
     "@supabase/supabase-js": "^2.39.0",
     "docxtemplater": "^3.47.0",
     "pizzip": "^3.1.4"
