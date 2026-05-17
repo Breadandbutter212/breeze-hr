@@ -1,9 +1,8 @@
-import { Composio } from 'composio-core';
+const COMPOSIO_BASE = 'https://backend.composio.dev/api/v2';
 
-// Auth Config IDs from Composio dashboard (Auth Configs section)
 const INTEGRATION_IDS = {
-  gmail:   process.env.COMPOSIO_GMAIL_INTEGRATION_ID   || 'ac_c2wnUZ4TgV8S',
-  outlook: process.env.COMPOSIO_OUTLOOK_INTEGRATION_ID || null
+  gmail:   'ac_c2wnUZ4TgV8S',
+  outlook: null
 };
 
 export default async function handler(req, res) {
@@ -13,52 +12,67 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, app, action } = req.body;
+  const { userId, userEmail, app, action } = req.body;
   if (!userId || !app) return res.status(400).json({ error: 'Missing userId or app' });
 
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Composio API key not configured' });
 
-  const entityId = userId.replace(/-/g, '');
   const integrationId = INTEGRATION_IDS[app];
+  const headers = { 'x-api-key': apiKey, 'Content-Type': 'application/json' };
+
+  // Use email as entity ID if available - simpler and more readable in Composio dashboard
+  const entityId = userEmail ? userEmail.replace(/[^a-zA-Z0-9@._-]/g, '_') : userId.replace(/-/g, '').substring(0, 20);
   const origin = req.headers.origin || 'https://breeze-hr.vercel.app';
 
   try {
-    const client = new Composio({ apiKey });
-    const entity = client.getEntity(entityId);
-
     if (action === 'disconnect') {
-      try {
-        const connections = await entity.getConnections();
-        for (const conn of connections) {
-          if ((conn.appName || '').toLowerCase().includes(app.toLowerCase())) {
-            await conn.delete();
-          }
+      const listRes = await fetch(`${COMPOSIO_BASE}/connectedAccounts?entityId=${encodeURIComponent(entityId)}`, { headers });
+      if (listRes.ok) {
+        const listData = await listRes.json();
+        const items = listData.items || listData.connectedAccounts || [];
+        const conn = items.find(c => (c.appName || c.app || '').toLowerCase().includes(app));
+        if (conn?.id) {
+          await fetch(`${COMPOSIO_BASE}/connectedAccounts/${conn.id}`, { method: 'DELETE', headers });
         }
-      } catch(e) { /* best effort */ }
+      }
       return res.status(200).json({ disconnected: true });
     }
 
     if (!integrationId) {
-      return res.status(400).json({ error: `No Auth Config found for ${app}. Create one in the Composio dashboard under Auth Configs.` });
+      return res.status(400).json({ error: `No Auth Config found for ${app}. Add one in Composio dashboard → Auth Configs.` });
     }
 
-    // Use integrationId (the Auth Config ID) — this is the reliable way
-    const connection = await entity.initiateConnection({
+    const body = {
       integrationId,
-      redirectUrl: `${origin}?composio_connected=${app}`
+      entityId,
+      redirectUri: `${origin}?composio_connected=${app}`
+    };
+
+    const initRes = await fetch(`${COMPOSIO_BASE}/connectedAccounts/initiateConnection`, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify(body)
     });
 
-    const authUrl = connection.redirectUrl || connection.redirectUri;
-    if (!authUrl) {
-      return res.status(502).json({
-        error: 'Composio did not return an auth URL.',
-        detail: JSON.stringify(connection)
+    const raw = await initRes.text();
+    let data;
+    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+
+    if (!initRes.ok) {
+      // Return full detail so we can diagnose exactly what Composio rejects
+      return res.status(initRes.status).json({
+        error: data.message || data.error || 'Composio error',
+        composio_detail: data,
+        request_body_sent: body
       });
     }
 
+    const authUrl = data.redirectUrl || data.redirectUri || data.connectionUrl || data.url;
+    if (!authUrl) return res.status(502).json({ error: 'No auth URL in Composio response', composio_detail: data });
+
     return res.status(200).json({ authUrl });
   } catch(e) {
-    return res.status(500).json({ error: e?.message || String(e) });
+    return res.status(500).json({ error: e.message });
   }
 }
