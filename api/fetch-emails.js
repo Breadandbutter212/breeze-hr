@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const raw = await r.text();
     let data;
     try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
-    if (!r.ok) return res.status(r.status).json({ error: raw.substring(0, 400) });
+    if (!r.ok) return res.status(r.status).json({ error: raw.substring(0, 600), sentEntityId: entityId, sentAction: action });
     return res.status(200).json({ data });
   } catch(e) {
     return res.status(500).json({ error: e.message });

@@ -2432,6 +2432,7 @@ async function loadEmailInbox() {
       body: JSON.stringify({ userId: currentUser.id, provider, connectedAccountId: window._emailAccountId, query: 'is:inbox', maxResults: 20 })
     });
     const data = await res.json();
+    if (!res.ok) { console.error('fetch-emails error:', JSON.stringify(data)); }
     _allEmails = parseEmailList(data, provider);
     renderEmailList(_allEmails);
   } catch(e) {
