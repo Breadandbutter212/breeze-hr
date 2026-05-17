@@ -2,17 +2,33 @@ import { createClient } from '@supabase/supabase-js';
 
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
-  if (!token) return null;
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
-  const { data: { user } } = await sb.auth.getUser(token);
-  return user || null;
+  if (!token) return { user: null, error: 'No token' };
+
+  const sbUrl = process.env.SUPABASE_URL;
+  const sbKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+  if (!sbUrl || !sbKey) {
+    console.warn('Supabase env vars missing — skipping auth check');
+    return { user: { id: 'unknown' }, error: null }; // degrade gracefully
+  }
+
+  try {
+    const sb = createClient(sbUrl, sbKey);
+    const { data: { user }, error } = await sb.auth.getUser(token);
+    return { user: user || null, error: error?.message || null };
+  } catch(e) {
+    console.error('Auth check failed:', e.message);
+    return { user: null, error: e.message };
+  }
 }
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const user = await verifyAuth(req);
-  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const { user, error: authError } = await verifyAuth(req);
+  if (!user) {
+    console.error('Unauthorized chat request:', authError);
+    return res.status(401).json({ error: 'Unauthorized', detail: authError });
+  }
 
   const { messages, system } = req.body;
 

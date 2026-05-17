@@ -2159,8 +2159,9 @@ async function callClaude(messages, systemPrompt) {
     });
     const data = await res.json();
     if (data.content && data.content[0]) return data.content[0].text;
+    if (!res.ok) return `Error ${res.status}: ${data.error || 'Unknown error from API'}`;
     return null;
-  } catch(e) { return null; }
+  } catch(e) { return `Connection error: ${e.message}`; }
 }
 
 async function buildChatSystemPrompt() {
