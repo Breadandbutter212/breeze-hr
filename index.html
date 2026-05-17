@@ -418,11 +418,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div class="chat-pane">
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input-area">
-          <div class="chat-chips">
+          <div class="chat-chips" id="chatChips">
             <button class="chat-chip" onclick="useChip('Draft a letter for me')">Draft a letter</button>
             <button class="chat-chip" onclick="useChip('What does ACAS guidance say about ')">ACAS guidance</button>
             <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
             <button class="chat-chip" onclick="useChip('What do I need to know about maternity leave?')">Maternity leave</button>
+            <button class="chat-chip" id="emailChip" onclick="fetchEmailsForChat()" style="display:none;">📧 My emails</button>
           </div>
           <div id="chatAttachPreview" style="display:none;margin-bottom:6px;padding:6px 10px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);font-size:11px;color:var(--accent);display:none;align-items:center;gap:6px;">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -693,6 +694,12 @@ async function onSignedIn(user) {
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
   loadChatList();
   renderChatHistory();
+  // Check email connection and show chip if connected
+  fetch(`/api/composio-status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(st=>{
+    window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
+    const chip = document.getElementById('emailChip');
+    if (chip) chip.style.display = window._emailProvider ? 'inline-flex' : 'none';
+  }).catch(()=>{});
 }
 
 async function signOut() {
@@ -2180,12 +2187,14 @@ function showArtifact(artifact, msgIdx) {
   const head = document.getElementById('artifactHead');
   const body = document.getElementById('artifactBody');
   pane.classList.add('open');
+  const emailProvider = window._emailProvider || null;
   head.innerHTML = `
     <span class="artifact-type">${artifact.type}</span>
     <span class="artifact-title">Draft response</span>
     <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
+    ${emailProvider ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
   body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft)}</div>`;
   // Update currentArtifact.draft when user edits
@@ -2362,6 +2371,74 @@ async function rateChatMsg(idx, rating) {
   chatSystemPrompt = null;
 }
 
+// ── EMAIL SEND & FETCH ──
+function openSendEmailModal() {
+  if (!currentArtifact) return;
+  const body = document.getElementById('artifactDoc')?.innerText || currentArtifact.draft;
+  let modal = document.getElementById('sendEmailModal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'sendEmailModal'; document.body.appendChild(modal); }
+  const provider = window._emailProvider || 'gmail';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:560px;box-shadow:var(--shadow-lg);">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+      <div style="font-size:14px;font-weight:600;">Send via ${provider === 'outlook' ? 'Outlook' : 'Gmail'}</div>
+      <button onclick="document.getElementById('sendEmailModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--ink3);">×</button>
+    </div>
+    <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">To</div>
+        <input id="sendEmailTo" placeholder="employee@company.com" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Subject</div>
+        <input id="sendEmailSubject" value="Letter from HR" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Body</div>
+        <textarea id="sendEmailBody" style="width:100%;min-height:160px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${body}</textarea>
+      </div>
+      <div id="sendEmailMsg" style="font-size:12px;min-height:16px;"></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('sendEmailModal').style.display='none'">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="sendEmailBtn" onclick="submitSendEmail('${provider}')">Send email</button>
+    </div>
+  </div>`;
+  modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
+}
+
+async function submitSendEmail(provider) {
+  if (!currentUser) return;
+  const to = document.getElementById('sendEmailTo')?.value?.trim();
+  const subject = document.getElementById('sendEmailSubject')?.value?.trim();
+  const body = document.getElementById('sendEmailBody')?.value?.trim();
+  const msg = document.getElementById('sendEmailMsg');
+  const btn = document.getElementById('sendEmailBtn');
+  if (!to) { if (msg) { msg.style.color='var(--red)'; msg.textContent = 'Please enter a recipient email.'; } return; }
+  if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+  try {
+    const res = await fetch('/api/send-email', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, to, subject, body, provider })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Send failed');
+    if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Email sent successfully'; }
+    if (btn) { btn.textContent = '✓ Sent'; }
+    setTimeout(() => { const m = document.getElementById('sendEmailModal'); if (m) m.style.display = 'none'; }, 1500);
+  } catch(e) {
+    if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Failed: ' + e.message; }
+    if (btn) { btn.textContent = 'Send email'; btn.disabled = false; }
+  }
+}
+
+async function fetchEmailsForChat() {
+  if (!currentUser) return;
+  const status = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`).then(r=>r.json()).catch(()=>({}));
+  const provider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
+  if (!provider) { sendChat('What HR emails do I have? (Note: no email account connected — go to Settings → Integrations to connect Gmail or Outlook)'); return; }
+  const ta = document.getElementById('chatInput');
+  if (ta) { ta.value = 'Summarise my most recent emails, highlighting anything that needs urgent HR attention'; ta.focus(); }
+}
+
 // ── INTEGRATIONS (Composio) ──
 async function loadIntegrations() {
   const el = document.getElementById('integrationsBody'); if (!el || !currentUser) return;
@@ -2369,7 +2446,11 @@ async function loadIntegrations() {
   let status = { gmail: false, outlook: false };
   try {
     const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
-    if (res.ok) status = await res.json();
+    if (res.ok) {
+      status = await res.json();
+      // Store provider globally so artifact panel can show Send button
+      window._emailProvider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
+    }
   } catch(e) {}
   renderIntegrationsUI(status);
 }
