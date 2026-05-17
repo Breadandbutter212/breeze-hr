@@ -367,7 +367,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
     <div class="login-left-hero">
       <div class="login-left-title">HR operations,<br><span>made simple.</span></div>
-      <div class="login-left-sub">Draft letters, manage policies, answer employee questions and run your HR function — all in one place.</div>
+      <div class="login-left-sub">Draft letters, manage policies, answer employee questions and run your HR function - all in one place.</div>
       <div class="login-left-pills">
         <div class="login-left-pill">✦ AI-powered drafting</div>
         <div class="login-left-pill">📋 Policy management</div>
@@ -709,7 +709,7 @@ let currentUser = null, currentProfile = null, authMode = 'signin';
 function toggleAuthMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
   document.getElementById('loginTitle').textContent = authMode === 'signin' ? 'Welcome back' : 'Create your account';
-  document.getElementById('loginSub').textContent = authMode === 'signin' ? 'Sign in to your Breeze HR account' : 'Get started — it\'s free';
+  document.getElementById('loginSub').textContent = authMode === 'signin' ? 'Sign in to your Breeze HR account' : 'Get started - it\'s free';
   document.getElementById('loginBtn').textContent = authMode === 'signin' ? 'Sign in' : 'Create account';
   document.getElementById('loginToggle').innerHTML = authMode === 'signin'
     ? 'Don\'t have an account? <a onclick="toggleAuthMode()">Create one free</a>'
@@ -754,7 +754,7 @@ async function handleAuth() {
     }
     // Email confirmation on — account will be set up on first sign-in via onSignedIn
     errEl.style.color = 'var(--green)';
-    errEl.textContent = 'Account created — check your email to confirm, then sign in.';
+    errEl.textContent = 'Account created - check your email to confirm, then sign in.';
     btn.textContent = 'Create account'; btn.disabled = false;
     setTimeout(() => { authMode = 'signup'; toggleAuthMode(); }, 2000);
   }
@@ -2983,7 +2983,7 @@ async function loadAnalyticsFile(event) {
       rows = parseAnalyticsCSV(await file.text());
     }
     if (!rows.length) { alert('No data found in file'); return; }
-    analyticsData = normalizeCSVData(rows);
+    analyticsData = rows; // store raw rows — renderDashboard handles any shape
     analyticsSource = file.name;
     renderDashboard();
   } catch(e) { alert('Could not read file: ' + e.message); }
@@ -3007,28 +3007,21 @@ function parseAnalyticsCSV(text) {
   }).filter(r => Object.values(r).some(v=>v));
 }
 
-function normalizeCSVData(rows) {
-  const fieldMap = {
-    department:      ['department','dept','team','division','business_unit','group'],
-    employment_type: ['employment_type','type','contract_type','worker_type','fte_type','employment_status'],
-    gender:          ['gender','sex'],
-    start_date:      ['start_date','hire_date','joined','employment_start','date_of_hire','start'],
-    job_title:       ['job_title','title','role','position','job_role'],
-    salary:          ['salary','pay','annual_salary','base_salary','compensation','gross_salary'],
-    name:            ['name','employee_name','full_name','employee'],
-  };
-  const keys = Object.keys(rows[0]||{});
-  const map = {};
-  Object.entries(fieldMap).forEach(([std,variants]) => { const m=keys.find(k=>variants.includes(k)); if(m) map[std]=m; });
-  return rows.map(row => ({
-    name: row[map.name]||'',
-    department: row[map.department]||'Unknown',
-    job_title: row[map.job_title]||'',
-    employment_type: row[map.employment_type]||'Unknown',
-    gender: row[map.gender]||'',
-    start_date: row[map.start_date]||null,
-    salary: map.salary&&row[map.salary] ? parseFloat(String(row[map.salary]).replace(/[^0-9.]/g,''))||null : null,
-  }));
+function detectColumnTypes(rows) {
+  const cols = Object.keys(rows[0]||{});
+  const result = {};
+  const dateRx = /^\d{4}[-/]\d{1,2}[-/]\d{1,2}$|^\d{1,2}[-/]\d{1,2}[-/]\d{2,4}$/;
+  cols.forEach(col => {
+    const vals = rows.map(r => String(r[col]||'').trim()).filter(v => v && v !== 'null' && v !== 'undefined');
+    if (!vals.length) { result[col] = 'empty'; return; }
+    const cleaned = vals.map(v => parseFloat(v.replace(/[£$€,\s%]/g,'')));
+    if (cleaned.filter(n=>!isNaN(n)).length > vals.length * 0.85) { result[col] = 'numeric'; return; }
+    if (vals.filter(v=>dateRx.test(v)||(!isNaN(Date.parse(v))&&v.length>=8)).length > vals.length * 0.7) { result[col] = 'date'; return; }
+    const unique = new Set(vals.map(v=>v.toLowerCase())).size;
+    if (unique <= Math.min(25, rows.length * 0.6) && unique >= 2) { result[col] = 'categorical'; return; }
+    result[col] = 'text';
+  });
+  return result;
 }
 
 function kpiCard(label, value, sub, color) {
@@ -3045,98 +3038,100 @@ function renderDashboard() {
   Object.values(analyticsCharts).forEach(c => { try { c.destroy(); } catch(e) {} });
   analyticsCharts = {};
 
-  const n = analyticsData.length;
-  const now = new Date();
+  const rows = analyticsData;
+  const n = rows.length;
   const C = ['#0066CC','#30D158','#6B4FBB','#F59E0B','#EF4444','#14B8A6','#F97316','#8B5CF6','#EC4899','#06B6D4'];
+  const gridC = '#F0F0F0';
 
-  const tenures = analyticsData.filter(e=>e.start_date&&!isNaN(new Date(e.start_date))).map(e=>(now-new Date(e.start_date))/(365.25*24*60*60*1000));
-  const avgTenure = tenures.length ? (tenures.reduce((a,b)=>a+b,0)/tenures.length).toFixed(1)+' yrs' : 'N/A';
+  const types = detectColumnTypes(rows);
+  const catCols  = Object.entries(types).filter(([,t])=>t==='categorical').map(([c])=>c);
+  const numCols  = Object.entries(types).filter(([,t])=>t==='numeric').map(([c])=>c);
+  const dateCols = Object.entries(types).filter(([,t])=>t==='date').map(([c])=>c);
 
-  const ftCount = analyticsData.filter(e=>(e.employment_type||'').toUpperCase().includes('FULL')).length;
-  const ftPct = n&&ftCount ? Math.round((ftCount/n)*100)+'%' : 'N/A';
-
-  const depts = {};
-  analyticsData.forEach(e=>{ const d=e.department||'Unknown'; depts[d]=(depts[d]||0)+1; });
-  const deptEntries = Object.entries(depts).sort((a,b)=>b[1]-a[1]).slice(0,12);
-
-  const empTypes = {};
-  analyticsData.forEach(e=>{
-    let t=(e.employment_type||'Unknown').toLowerCase().replace(/_/g,' ');
-    t=t.charAt(0).toUpperCase()+t.slice(1);
-    empTypes[t]=(empTypes[t]||0)+1;
+  // KPI row: total rows + up to 3 numeric summaries
+  const kpiNums = numCols.slice(0,3);
+  const kpiColors = ['#0066CC','#30D158','#6B4FBB','#F59E0B'];
+  let kpiHtml = kpiCard('Total rows', n, `${Object.keys(types).length} columns detected`, '#0066CC');
+  kpiNums.forEach((col,i) => {
+    const vals = rows.map(r=>parseFloat(String(r[col]||'').replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
+    const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
+    const label = col.replace(/_/g,' ');
+    const fmt = avg >= 1000 ? avg.toLocaleString('en-GB',{maximumFractionDigits:0}) : avg.toFixed(1);
+    kpiHtml += kpiCard('Avg '+label, fmt, `${vals.length} values`, kpiColors[i+1]);
   });
 
-  const tBuckets = {'< 1 year':0,'1-2 years':0,'2-5 years':0,'5+ years':0};
-  tenures.forEach(t=>{ if(t<1)tBuckets['< 1 year']++; else if(t<2)tBuckets['1-2 years']++; else if(t<5)tBuckets['2-5 years']++; else tBuckets['5+ years']++; });
+  // Charts: categorical columns (bar or doughnut) + date timeline + numeric histogram
+  const charts = [];
 
-  const genders = {};
-  analyticsData.forEach(e=>{
-    if(!e.gender)return;
-    let g=e.gender.toLowerCase().replace(/_/g,' ');
-    g=g.charAt(0).toUpperCase()+g.slice(1);
-    if(g.includes('Prefer')||g.includes('Decline')||g.includes('Not')) g='Not disclosed';
-    genders[g]=(genders[g]||0)+1;
-  });
-  const hasGender = analyticsData.some(e=>e.gender&&!['','not disclosed','prefer not to self identify','decline to self identify'].includes((e.gender||'').toLowerCase().replace(/_/g,' ')));
-
-  const hasSalary = analyticsData.some(e=>e.salary&&e.salary>0);
-  const salaryBands = {'< £25k':0,'£25k-35k':0,'£35k-50k':0,'£50k-75k':0,'£75k-100k':0,'£100k+':0};
-  if(hasSalary) analyticsData.filter(e=>e.salary).forEach(e=>{
-    const s=e.salary;
-    if(s<25000)salaryBands['< £25k']++; else if(s<35000)salaryBands['£25k-35k']++; else if(s<50000)salaryBands['£35k-50k']++; else if(s<75000)salaryBands['£50k-75k']++; else if(s<100000)salaryBands['£75k-100k']++; else salaryBands['£100k+']++;
+  // Date timeline (count by month)
+  dateCols.slice(0,1).forEach(col => {
+    const months = {};
+    rows.forEach(r => {
+      const d = new Date(r[col]); if (isNaN(d)) return;
+      const key = d.toLocaleDateString('en-GB',{year:'numeric',month:'short'});
+      months[key] = (months[key]||0)+1;
+    });
+    const sorted = Object.entries(months).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).slice(-18);
+    if (sorted.length > 1) charts.push({ id:'ac-date-'+col, title: col.replace(/_/g,' ')+' over time', type:'line',
+      data:{ labels:sorted.map(([k])=>k), datasets:[{data:sorted.map(([,v])=>v),borderColor:'#0066CC',backgroundColor:'rgba(0,102,204,0.08)',tension:0.3,fill:true,pointRadius:3}]},
+      opts:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:45,font:{size:10}}},y:{grid:{color:gridC},ticks:{precision:0}}}}, span:2 });
   });
 
+  // Categorical columns
+  catCols.slice(0,6).forEach((col,idx) => {
+    const counts = {};
+    rows.forEach(r=>{ const v=(String(r[col]||'').trim()||'(blank)'); counts[v]=(counts[v]||0)+1; });
+    const entries = Object.entries(counts).sort((a,b)=>b[1]-a[1]).slice(0,15);
+    const useDoughnut = entries.length <= 7;
+    const label = col.replace(/_/g,' ');
+    if (useDoughnut) {
+      charts.push({ id:'ac-cat-'+idx, title:label, type:'doughnut',
+        data:{ labels:entries.map(([k])=>k), datasets:[{data:entries.map(([,v])=>v),backgroundColor:C,borderWidth:2,borderColor:'#fff'}]},
+        opts:{responsive:true,cutout:'58%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:8,boxWidth:11}}}} });
+    } else {
+      charts.push({ id:'ac-cat-'+idx, title:label, type:'bar',
+        data:{ labels:entries.map(([k])=>k), datasets:[{data:entries.map(([,v])=>v),backgroundColor:'#0066CC',borderRadius:4,barThickness:14}]},
+        opts:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{precision:0}},y:{grid:{display:false},ticks:{font:{size:11}}}}}, span: entries.length>8?2:1 });
+    }
+  });
+
+  // Numeric histogram for first numeric column not already in KPIs
+  const histCol = numCols.find(c=>!kpiNums.includes(c)) || numCols[0];
+  if (histCol && numCols.length > 1) {
+    const vals = rows.map(r=>parseFloat(String(r[histCol]||'').replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
+    if (vals.length > 4) {
+      const mn=Math.min(...vals), mx=Math.max(...vals), step=(mx-mn)/8;
+      const buckets = Array.from({length:8},(_,i)=>({ label:`${(mn+i*step).toFixed(0)}-${(mn+(i+1)*step).toFixed(0)}`, count:0 }));
+      vals.forEach(v=>{ const bi=Math.min(7,Math.floor((v-mn)/(step||1))); buckets[bi].count++; });
+      charts.push({ id:'ac-hist', title:histCol.replace(/_/g,' ')+' distribution', type:'bar',
+        data:{ labels:buckets.map(b=>b.label), datasets:[{data:buckets.map(b=>b.count),backgroundColor:'#6B4FBB',borderRadius:4}]},
+        opts:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{grid:{color:gridC},ticks:{precision:0}}}} });
+    }
+  }
+
+  // Build chart grid HTML
+  const chartGrid = charts.map(ch =>
+    `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;${ch.span===2?'grid-column:1/-1':''}">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;text-transform:capitalize;">${escapeHtml(ch.title)}</div>
+      <canvas id="${ch.id}" ${ch.type==='doughnut'?'style="max-height:220px;"':''}></canvas>
+    </div>`
+  ).join('');
+
+  const kpiCols = 1 + kpiNums.length;
   body.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      <span style="font-size:12px;color:var(--ink3);">Source: <strong style="color:var(--ink);">${escapeHtml(analyticsSource)}</strong> &nbsp;·&nbsp; ${n} employees</span>
-      <button onclick="resetAnalytics()" style="margin-left:auto;font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">Change source</button>
+      <span style="font-size:12px;color:var(--ink3);">Source: <strong style="color:var(--ink);">${escapeHtml(analyticsSource)}</strong></span>
+      <button onclick="resetAnalytics()" style="margin-left:auto;font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">Change file</button>
     </div>
-    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px;">
-      ${kpiCard('Total headcount', n, '', '#0066CC')}
-      ${kpiCard('Avg tenure', avgTenure, tenures.length ? tenures.length+' employees with start date' : 'No start date data', '#30D158')}
-      ${kpiCard('Full-time', ftPct, ftCount&&n ? ftCount+' of '+n : 'No type data', '#6B4FBB')}
-      ${kpiCard('Departments', deptEntries.length||'N/A', '', '#F59E0B')}
-    </div>
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Headcount by department</div>
-        ${deptEntries.length?`<canvas id="ac-dept"></canvas>`:`<div style="color:var(--ink3);font-size:12px;padding:20px 0;text-align:center;">No department data in this file</div>`}
-      </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Employment type</div>
-        ${Object.keys(empTypes).length>1?`<canvas id="ac-emptype" style="max-height:220px;"></canvas>`:`<div style="color:var(--ink3);font-size:12px;padding:20px 0;text-align:center;">No employment type data in this file</div>`}
-      </div>
-      ${tenures.length?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Tenure distribution</div>
-        <canvas id="ac-tenure"></canvas>
-      </div>`:''}
-      ${hasGender?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Gender</div>
-        <canvas id="ac-gender" style="max-height:220px;"></canvas>
-      </div>`:''}
-      ${hasSalary?`<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:16px;">Salary bands</div>
-        <canvas id="ac-salary" style="max-height:180px;"></canvas>
-      </div>`:''}
-    </div>`;
+    <div style="display:grid;grid-template-columns:repeat(${Math.min(kpiCols,4)},1fr);gap:12px;margin-bottom:20px;">${kpiHtml}</div>
+    ${charts.length ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${chartGrid}</div>` : '<div style="color:var(--ink3);font-size:13px;padding:20px 0;">No chartable columns found. Make sure your CSV has headers and at least some categorical or numeric data.</div>'}`;
 
-  const gridC = '#F0F0F0';
   setTimeout(()=>{
-    const deptEl=document.getElementById('ac-dept');
-    if(deptEl&&deptEntries.length) analyticsCharts.dept=new Chart(deptEl,{type:'bar',data:{labels:deptEntries.map(([k])=>k),datasets:[{data:deptEntries.map(([,v])=>v),backgroundColor:'#0066CC',borderRadius:4,barThickness:16}]},options:{responsive:true,indexAxis:'y',plugins:{legend:{display:false}},scales:{x:{grid:{color:gridC},ticks:{precision:0}},y:{grid:{display:false}}}}});
-
-    const etEl=document.getElementById('ac-emptype');
-    if(etEl) analyticsCharts.emptype=new Chart(etEl,{type:'doughnut',data:{labels:Object.keys(empTypes),datasets:[{data:Object.values(empTypes),backgroundColor:C,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}}}}});
-
-    const tenEl=document.getElementById('ac-tenure');
-    if(tenEl) analyticsCharts.tenure=new Chart(tenEl,{type:'bar',data:{labels:Object.keys(tBuckets),datasets:[{data:Object.values(tBuckets),backgroundColor:['#EBF3FF','#B8D4F8','#4D8EE8','#0066CC'],borderRadius:4}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:gridC},ticks:{precision:0}}}}});
-
-    const genEl=document.getElementById('ac-gender');
-    if(genEl) analyticsCharts.gender=new Chart(genEl,{type:'doughnut',data:{labels:Object.keys(genders),datasets:[{data:Object.values(genders),backgroundColor:C,borderWidth:2,borderColor:'#fff'}]},options:{responsive:true,cutout:'62%',plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10,boxWidth:12}}}}});
-
-    const salEl=document.getElementById('ac-salary');
-    if(salEl) analyticsCharts.salary=new Chart(salEl,{type:'bar',data:{labels:Object.keys(salaryBands),datasets:[{data:Object.values(salaryBands),backgroundColor:'#0066CC',borderRadius:4,barThickness:44}]},options:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false}},y:{grid:{color:gridC},ticks:{precision:0}}}}});
+    charts.forEach(ch => {
+      const el = document.getElementById(ch.id);
+      if (el) analyticsCharts[ch.id] = new Chart(el, { type:ch.type, data:ch.data, options:ch.opts });
+    });
   }, 60);
 }
 
