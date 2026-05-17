@@ -22,6 +22,7 @@ export default async function handler(req, res) {
       headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
         entityId,
+        appName: provider,
         input: { query: 'is:inbox', max_results: 20, maxResults: 20 }
       })
     });
