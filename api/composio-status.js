@@ -12,13 +12,13 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(200).json({ gmail: false, outlook: false, connected: [] });
 
-  const entityId = (userEmail || userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  const raw = (userEmail || userId).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+  const entityId = `user_${raw}`;
 
   try {
     const composio = new Composio({ apiKey });
     const session = await composio.create(entityId);
 
-    // Check which apps are connected for this user
     const connected = [];
     for (const app of ['gmail', 'outlook']) {
       try {

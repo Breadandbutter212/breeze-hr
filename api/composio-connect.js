@@ -13,42 +13,42 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'Composio API key not configured' });
 
-  // Safe entity ID - no special chars
-  const entityId = (userEmail || userId).replace(/[^a-zA-Z0-9_-]/g, '_');
+  // Composio expects user IDs in user_xxxxx format (alphanumeric only after prefix)
+  const raw = (userEmail || userId).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
+  const entityId = `user_${raw}`;
 
+  let session;
   try {
     const composio = new Composio({ apiKey });
 
-    if (action === 'disconnect') {
-      // Create session and attempt to remove the connected account
-      try {
-        const session = await composio.create(entityId);
-        // Best-effort disconnect - ignore errors
-        await session.disconnectApp?.(app);
-      } catch(e) {}
-      return res.status(200).json({ disconnected: true });
-    }
+    // Step 1: create session
+    session = await composio.create(entityId);
+  } catch(e) {
+    return res.status(500).json({ error: e?.message || String(e), step: 'create_session', entityId });
+  }
 
-    // Create a session for this user (manual authentication flow)
-    const session = await composio.create(entityId);
+  if (action === 'disconnect') {
+    try { await session.disconnectApp?.(app); } catch(e) {}
+    return res.status(200).json({ disconnected: true });
+  }
 
-    // session.authorize() generates a Composio Connect Link
+  try {
+    // Step 2: get Connect Link via manual auth
     const result = await session.authorize(app);
 
-    // The result could be a string URL or an object with a url property
     const authUrl = typeof result === 'string'
       ? result
       : result?.url || result?.connectUrl || result?.authUrl || result?.redirectUrl;
 
     if (!authUrl) {
       return res.status(502).json({
-        error: 'Composio returned no connect URL',
+        error: 'No connect URL returned',
         result: JSON.stringify(result).substring(0, 300)
       });
     }
 
     return res.status(200).json({ authUrl });
   } catch(e) {
-    return res.status(500).json({ error: e?.message || String(e) });
+    return res.status(500).json({ error: e?.message || String(e), step: 'authorize', app, entityId });
   }
 }
