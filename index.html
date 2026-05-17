@@ -2416,7 +2416,9 @@ async function connectIntegration(app) {
     if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data));
     if (data.authUrl) {
       window.open(data.authUrl, '_blank', 'width=600,height=700,noopener');
-      btn.textContent = 'Waiting...';
+      btn.textContent = 'Waiting...'; btn.disabled = false;
+      btn.onclick = () => loadIntegrations(); // click to refresh if polling misses it
+
       let attempts = 0;
       const poll = setInterval(async () => {
         attempts++;
@@ -2427,7 +2429,8 @@ async function connectIntegration(app) {
             if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
           }
         } catch(e) {}
-        if (attempts >= 20) { clearInterval(poll); btn.textContent='Connect'; btn.disabled=false; }
+        // After 2 minutes just refresh — they may have connected but polling missed it
+        if (attempts >= 40) { clearInterval(poll); loadIntegrations(); }
       }, 3000);
     }
   } catch(e) {
