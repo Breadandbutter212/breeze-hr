@@ -1,4 +1,6 @@
-const BASE = 'https://backend.composio.dev/api/v2';
+import { Composio } from '@composio/core';
+
+const composio = new Composio();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -6,33 +8,26 @@ export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  const { userId, userEmail } = req.query;
+  const { userId } = req.query;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
-  const apiKey = process.env.COMPOSIO_API_KEY;
-  if (!apiKey) return res.status(200).json({ gmail: false, outlook: false, connected: [] });
-
-  const safeId = (userEmail || userId).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-  const entityId = `user_${safeId}`;
+  const entityId = userId.replace(/-/g, '');
 
   try {
-    const r = await fetch(`${BASE}/connectedAccounts?entityId=${entityId}`, {
-      headers: { 'x-api-key': apiKey }
-    });
-    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, connected: [] });
+    const session = await composio.create(entityId);
+    const { items } = await session.toolkits({ limit: 50 });
 
-    const data = await r.json();
-    const items = data.items || data.connectedAccounts || [];
-    const active = items
-      .filter(c => c.status === 'ACTIVE')
-      .map(c => (c.appName || '').toLowerCase());
+    const find = (slug) => items.find(t => t.slug === slug);
+    const gmail   = find('gmail');
+    const outlook = find('outlook');
 
     return res.status(200).json({
-      gmail:   active.some(a => a.includes('gmail')),
-      outlook: active.some(a => a.includes('outlook')),
-      connected: active
+      gmail:              gmail?.connection?.isActive   ?? false,
+      outlook:            outlook?.connection?.isActive ?? false,
+      gmailAccountId:     gmail?.connection?.connectedAccount?.id   || null,
+      outlookAccountId:   outlook?.connection?.connectedAccount?.id || null,
     });
   } catch(e) {
-    return res.status(200).json({ gmail: false, outlook: false, connected: [] });
+    return res.status(200).json({ gmail: false, outlook: false });
   }
 }

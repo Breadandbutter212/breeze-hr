@@ -1,9 +1,7 @@
-const BASE = 'https://backend.composio.dev/api/v2';
+import { Composio } from '@composio/core';
 
-const AUTH_CONFIGS = {
-  gmail:   'ac_c2wnUZ4TgV8S',
-  outlook: null
-};
+// Reads COMPOSIO_API_KEY from env automatically — do NOT pass apiKey to constructor
+const composio = new Composio();
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,54 +10,34 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { userId, userEmail, app, action } = req.body;
-  if (!userId || !app) return res.status(400).json({ error: 'Missing userId or app' });
+  const { userId, app, action, connectedAccountId } = req.body;
+  if (!userId) return res.status(400).json({ error: 'Missing userId' });
 
-  const apiKey = process.env.COMPOSIO_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'Composio API key not configured' });
-
-  // Composio entity IDs: user_ prefix + alphanumeric only
-  const safeId = (userEmail || userId).replace(/[^a-zA-Z0-9]/g, '').substring(0, 20);
-  const entityId = `user_${safeId}`;
+  // Use clean UUID (no hyphens) as the Composio entity ID
+  const entityId = userId.replace(/-/g, '');
   const origin = req.headers.origin || 'https://breeze-hr.vercel.app';
-  const headers = { 'x-api-key': apiKey, 'Content-Type': 'application/json' };
 
   try {
     if (action === 'disconnect') {
-      const lr = await fetch(`${BASE}/connectedAccounts?entityId=${entityId}`, { headers });
-      if (lr.ok) {
-        const ld = await lr.json();
-        const conn = (ld.items || []).find(c => (c.appName || '').toLowerCase().includes(app));
-        if (conn?.id) await fetch(`${BASE}/connectedAccounts/${conn.id}`, { method: 'DELETE', headers });
+      if (connectedAccountId) {
+        await composio.connectedAccounts.delete(connectedAccountId);
       }
       return res.status(200).json({ disconnected: true });
     }
 
-    const integrationId = AUTH_CONFIGS[app];
-    if (!integrationId) return res.status(400).json({ error: `No auth config for ${app}` });
+    if (!app) return res.status(400).json({ error: 'Missing app' });
 
-    const body = { integrationId, entityId, redirectUri: origin };
+    const session = await composio.create(entityId);
 
-    const r = await fetch(`${BASE}/connectedAccounts/initiateConnection`, {
-      method: 'POST', headers, body: JSON.stringify(body)
+    const connectionRequest = await session.authorize(app, {
+      callbackUrl: origin
     });
 
-    const raw = await r.text();
-    let data;
-    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
-
-    if (!r.ok) {
-      return res.status(r.status).json({
-        error: typeof data.message === 'string' ? data.message : raw.substring(0, 400),
-        sent: body
-      });
-    }
-
-    const authUrl = data.redirectUrl || data.redirectUri || data.connectionUrl || data.url;
-    if (!authUrl) return res.status(502).json({ error: 'No auth URL in response', data });
+    const authUrl = connectionRequest.redirectUrl;
+    if (!authUrl) return res.status(502).json({ error: 'No redirect URL returned', detail: connectionRequest });
 
     return res.status(200).json({ authUrl });
   } catch(e) {
-    return res.status(500).json({ error: e.message });
+    return res.status(500).json({ error: e?.message || String(e) });
   }
 }

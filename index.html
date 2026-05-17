@@ -2365,11 +2365,10 @@ async function rateChatMsg(idx, rating) {
 // ── INTEGRATIONS (Composio) ──
 async function loadIntegrations() {
   const el = document.getElementById('integrationsBody'); if (!el || !currentUser) return;
-  const userId = currentUser.id;
   el.innerHTML = '<div style="font-size:11px;color:var(--ink3);">Checking connections...</div>';
   let status = { gmail: false, outlook: false };
   try {
-    const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(userId)}&userEmail=${encodeURIComponent(currentUser.email||'')}`);
+    const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
     if (res.ok) status = await res.json();
   } catch(e) {}
   renderIntegrationsUI(status);
@@ -2378,24 +2377,25 @@ async function loadIntegrations() {
 function renderIntegrationsUI(status) {
   const el = document.getElementById('integrationsBody'); if (!el) return;
   const integrations = [
-    { id:'gmail', label:'Gmail', icon:'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z', color:'#EA4335', bg:'#FEF2F2', desc:'Send and read HR emails via Gmail' },
-    { id:'outlook', label:'Outlook', icon:'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z', color:'#0078D4', bg:'#EBF5FB', desc:'Send and read HR emails via Outlook' },
-    { id:'slack', label:'Slack', icon:'M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5zm-5 0c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5S11 2.67 11 3.5v5c0 .83-.67 1.5-1.5 1.5zm5 4c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S13 21.33 13 20.5v-5c0-.83.67-1.5 1.5-1.5zm-5 0c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5zM10 9.5c0 .83-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5S2.67 8 3.5 8h5c.83 0 1.5.67 1.5 1.5zm14 0c0 .83-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8h5c.83 0 1.5.67 1.5 1.5zM10 14.5c0-.83.67-1.5 1.5-1.5h1.5v1.5c0 .83-.67 1.5-1.5 1.5S10 15.33 10 14.5zm0 0', color:'#4A154B', bg:'#F9F0FF', desc:'HR alerts to your Slack channel', comingSoon: true },
+    { id:'gmail',   label:'Gmail',   color:'#EA4335', bg:'#FEF2F2', desc:'Send and read HR emails via Gmail' },
+    { id:'outlook', label:'Outlook', color:'#0078D4', bg:'#EBF5FB', desc:'Send and read HR emails via Outlook' },
+    { id:'slack',   label:'Slack',   color:'#4A154B', bg:'#F9F0FF', desc:'HR alerts to your Slack channel', comingSoon: true },
   ];
   el.innerHTML = integrations.map(intg => {
     const connected = status[intg.id];
-    return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid ${connected?'var(--green)':' var(--border)'};border-radius:var(--r);background:${connected?'var(--green-bg)':'var(--surface)'};">
-      <div style="width:36px;height:36px;background:${intg.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="${intg.color}"><path d="${intg.icon}"/></svg>
+    const accountId = status[`${intg.id}AccountId`] || '';
+    return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid ${connected?'var(--green)':'var(--border)'};border-radius:var(--r);background:${connected?'var(--green-bg)':'var(--surface)'};">
+      <div style="width:36px;height:36px;background:${intg.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">
+        ${intg.id==='gmail'?'✉️':intg.id==='outlook'?'📧':'💬'}
       </div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:500;color:var(--ink);">${intg.label}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${connected?'Connected':'Not connected'} - ${intg.desc}</div>
+        <div style="font-size:11px;color:${connected?'var(--green)':'var(--ink3)'};margin-top:1px;">${connected?'Connected':'Not connected'} — ${intg.desc}</div>
       </div>
       ${intg.comingSoon
         ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink3);padding:3px 8px;border-radius:20px;border:1px solid var(--border);">Coming soon</span>`
         : connected
-          ? `<button onclick="disconnectIntegration('${intg.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Disconnect</button>`
+          ? `<button onclick="disconnectIntegration('${intg.id}','${accountId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Disconnect</button>`
           : `<button onclick="connectIntegration('${intg.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Connect</button>`
       }
     </div>`;
@@ -2410,22 +2410,18 @@ async function connectIntegration(app) {
     const res = await fetch('/api/composio-connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, userEmail: currentUser.email, app })
+      body: JSON.stringify({ userId: currentUser.id, app })
     });
     const data = await res.json();
-    if (!res.ok) {
-      const msg = typeof data.error === 'string' ? data.error : JSON.stringify(data.composio_detail || data.error || data);
-      throw new Error(msg);
-    }
+    if (!res.ok) throw new Error(typeof data.error === 'string' ? data.error : JSON.stringify(data));
     if (data.authUrl) {
       window.open(data.authUrl, '_blank', 'width=600,height=700,noopener');
       btn.textContent = 'Waiting...';
-      // Poll for connection status every 3s for up to 60s
       let attempts = 0;
       const poll = setInterval(async () => {
         attempts++;
         try {
-          const sr = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}&userEmail=${encodeURIComponent(currentUser.email||'')}`);
+          const sr = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
           if (sr.ok) {
             const st = await sr.json();
             if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
@@ -2440,13 +2436,13 @@ async function connectIntegration(app) {
   }
 }
 
-async function disconnectIntegration(app) {
+async function disconnectIntegration(app, connectedAccountId) {
   if (!currentUser || !confirm(`Disconnect ${app}?`)) return;
   try {
     await fetch('/api/composio-connect', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId: currentUser.id, app, action: 'disconnect' })
+      body: JSON.stringify({ userId: currentUser.id, app, action: 'disconnect', connectedAccountId })
     });
   } catch(e) {}
   loadIntegrations();
