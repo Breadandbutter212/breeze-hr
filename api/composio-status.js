@@ -45,7 +45,6 @@ export default async function handler(req, res) {
       outlook:          !!(outlook && isActive(outlook)),
       gmailAccountId:   gmail?.id   || null,
       outlookAccountId: outlook?.id || null,
-      _raw: items.slice(0, 2)  // debug: remove once working
     });
   } catch(e) {
     return res.status(200).json({ gmail: false, outlook: false, error: e.message });

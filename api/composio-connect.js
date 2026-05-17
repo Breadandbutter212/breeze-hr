@@ -19,8 +19,18 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'disconnect') {
-      if (connectedAccountId) {
-        await fetch(`${BASE}/connected_accounts/${connectedAccountId}`, { method: 'DELETE', headers });
+      // Delete ALL connections for this app/user (handles duplicates from testing)
+      const lr = await fetch(`${BASE}/connected_accounts?user_id=${encodeURIComponent(user_id)}`, { headers });
+      if (lr.ok) {
+        const ld = await lr.json();
+        const items = ld.items || ld.connected_accounts || [];
+        const toDelete = items.filter(c => {
+          const slug = c.toolkit?.slug || String(c.toolkit || '');
+          return slug.toLowerCase().includes(app.toLowerCase());
+        });
+        await Promise.all(toDelete.map(c =>
+          fetch(`${BASE}/connected_accounts/${c.id}`, { method: 'DELETE', headers })
+        ));
       }
       return res.status(200).json({ disconnected: true });
     }

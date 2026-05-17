@@ -2369,7 +2369,7 @@ async function loadIntegrations() {
   let status = { gmail: false, outlook: false };
   try {
     const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
-    if (res.ok) { status = await res.json(); console.log('Composio status:', JSON.stringify(status, null, 2)); }
+    if (res.ok) status = await res.json();
   } catch(e) {}
   renderIntegrationsUI(status);
 }
@@ -2440,7 +2440,9 @@ async function connectIntegration(app) {
 }
 
 async function disconnectIntegration(app, connectedAccountId) {
-  if (!currentUser || !confirm(`Disconnect ${app}?`)) return;
+  if (!currentUser) return;
+  const btn = event.target;
+  btn.textContent = 'Disconnecting...'; btn.disabled = true;
   try {
     await fetch('/api/composio-connect', {
       method: 'POST',
