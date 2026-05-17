@@ -1,4 +1,4 @@
-const BASE = 'https://backend.composio.dev/api/v2';
+const BASE = 'https://backend.composio.dev/api/v3';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -13,27 +13,28 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'COMPOSIO_API_KEY not set' });
 
-  const entityId = 'user_' + userId.replace(/-/g, '');
+  const user_id = 'user_' + userId.replace(/-/g, '');
   const origin = req.headers.origin || 'https://breeze-hr.vercel.app';
   const headers = { 'x-api-key': apiKey, 'Content-Type': 'application/json' };
 
   try {
     if (action === 'disconnect') {
       if (connectedAccountId) {
-        await fetch(`${BASE}/connectedAccounts/${connectedAccountId}`, { method: 'DELETE', headers });
+        await fetch(`${BASE}/connected_accounts/${connectedAccountId}`, { method: 'DELETE', headers });
       }
       return res.status(200).json({ disconnected: true });
     }
 
     if (!app) return res.status(400).json({ error: 'Missing app' });
 
+    // v3 API: POST /api/v3/connected_accounts/link
     const body = {
-      integrationId: 'ac_c2wnUZ4TgV8S',
-      entityId,
-      redirectUri: origin
+      auth_config_id: 'ac_c2wnUZ4TgV8S',
+      user_id,
+      redirect_uri: origin
     };
 
-    const r = await fetch(`${BASE}/connectedAccounts/initiateConnection`, {
+    const r = await fetch(`${BASE}/connected_accounts/link`, {
       method: 'POST', headers, body: JSON.stringify(body)
     });
 
@@ -45,8 +46,8 @@ export default async function handler(req, res) {
       return res.status(r.status).json({ error: raw.substring(0, 500), sent: body });
     }
 
-    const authUrl = data.redirectUrl || data.redirectUri || data.connectionUrl || data.url;
-    if (!authUrl) return res.status(502).json({ error: 'No auth URL', data });
+    const authUrl = data.redirectUrl || data.redirect_url || data.url || data.connectionUrl;
+    if (!authUrl) return res.status(502).json({ error: 'No auth URL in response', data });
 
     return res.status(200).json({ authUrl });
   } catch(e) {

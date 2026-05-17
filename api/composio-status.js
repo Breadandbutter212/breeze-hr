@@ -1,4 +1,4 @@
-const BASE = 'https://backend.composio.dev/api/v2';
+const BASE = 'https://backend.composio.dev/api/v3';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -12,20 +12,20 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(200).json({ gmail: false, outlook: false });
 
-  const entityId = 'user_' + userId.replace(/-/g, '');
+  const user_id = 'user_' + userId.replace(/-/g, '');
 
   try {
-    const r = await fetch(`${BASE}/connectedAccounts?entityId=${encodeURIComponent(entityId)}`, {
+    const r = await fetch(`${BASE}/connected_accounts?user_id=${encodeURIComponent(user_id)}`, {
       headers: { 'x-api-key': apiKey }
     });
     if (!r.ok) return res.status(200).json({ gmail: false, outlook: false });
 
     const data = await r.json();
-    const items = data.items || data.connectedAccounts || [];
+    const items = data.items || data.connected_accounts || data.connectedAccounts || [];
     const active = items.filter(c => c.status === 'ACTIVE');
 
-    const gmail   = active.find(c => (c.appName || '').toLowerCase().includes('gmail'));
-    const outlook = active.find(c => (c.appName || '').toLowerCase().includes('outlook'));
+    const gmail   = active.find(c => (c.appName || c.app_name || c.toolkit || '').toLowerCase().includes('gmail'));
+    const outlook = active.find(c => (c.appName || c.app_name || c.toolkit || '').toLowerCase().includes('outlook'));
 
     return res.status(200).json({
       gmail:            !!gmail,
