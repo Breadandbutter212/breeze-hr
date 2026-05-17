@@ -1,4 +1,4 @@
-const BASE = 'https://backend.composio.dev/api/v2';
+import { Composio } from '@composio/core';
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -15,21 +15,22 @@ export default async function handler(req, res) {
   const entityId = (userEmail || userId).replace(/[^a-zA-Z0-9_-]/g, '_');
 
   try {
-    const r = await fetch(`${BASE}/connectedAccounts?entityId=${encodeURIComponent(entityId)}`, {
-      headers: { 'x-api-key': apiKey }
-    });
-    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, connected: [] });
+    const composio = new Composio({ apiKey });
+    const session = await composio.create(entityId);
 
-    const data = await r.json();
-    const items = data.items || data.connectedAccounts || [];
-    const active = items
-      .filter(c => c.status === 'ACTIVE')
-      .map(c => (c.appName || '').toLowerCase());
+    // Check which apps are connected for this user
+    const connected = [];
+    for (const app of ['gmail', 'outlook']) {
+      try {
+        const isAuth = await session.isAuthorized?.(app);
+        if (isAuth) connected.push(app);
+      } catch(e) {}
+    }
 
     return res.status(200).json({
-      gmail:   active.some(a => a.includes('gmail')),
-      outlook: active.some(a => a.includes('outlook')),
-      connected: active
+      gmail:   connected.includes('gmail'),
+      outlook: connected.includes('outlook'),
+      connected
     });
   } catch(e) {
     return res.status(200).json({ gmail: false, outlook: false, connected: [] });
