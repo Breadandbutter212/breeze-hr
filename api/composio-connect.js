@@ -1,5 +1,29 @@
 const BASE = 'https://backend.composio.dev/api/v3';
 
+// Known auth config IDs (set env vars to override)
+const AUTH_CONFIGS = {
+  gmail:   process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID   || 'ac_c2wnUZ4TgV8S',
+  outlook: process.env.COMPOSIO_OUTLOOK_AUTH_CONFIG_ID || null,
+};
+
+// Fallback: look up auth config from Composio API by toolkit slug
+async function lookupAuthConfig(slug, headers) {
+  try {
+    const r = await fetch(`${BASE}/auth_configs?toolkit_slug=${slug}&limit=10`, { headers });
+    if (r.ok) {
+      const d = await r.json();
+      const items = d.items || d.auth_configs || [];
+      if (items.length) return items[0].id;
+    }
+  } catch(e) {}
+  return null;
+}
+
+const APP_SLUG = {
+  gmail:   'gmail',
+  outlook: 'microsoft-outlook',
+};
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -19,7 +43,6 @@ export default async function handler(req, res) {
 
   try {
     if (action === 'disconnect') {
-      // Delete ALL connections for this app/user (handles duplicates from testing)
       const lr = await fetch(`${BASE}/connected_accounts?user_id=${encodeURIComponent(user_id)}`, { headers });
       if (lr.ok) {
         const ld = await lr.json();
@@ -37,12 +60,19 @@ export default async function handler(req, res) {
 
     if (!app) return res.status(400).json({ error: 'Missing app' });
 
-    // v3 API: POST /api/v3/connected_accounts/link
-    const body = {
-      auth_config_id: 'ac_c2wnUZ4TgV8S',
-      user_id,
-      redirect_uri: origin
-    };
+    // Resolve auth config ID for this app
+    let auth_config_id = AUTH_CONFIGS[app];
+    if (!auth_config_id) {
+      const slug = APP_SLUG[app] || app;
+      auth_config_id = await lookupAuthConfig(slug, headers);
+    }
+    if (!auth_config_id) {
+      return res.status(400).json({
+        error: `No auth config found for ${app}. Please create one in the Composio dashboard and set COMPOSIO_OUTLOOK_AUTH_CONFIG_ID.`
+      });
+    }
+
+    const body = { auth_config_id, user_id, redirect_uri: origin };
 
     const r = await fetch(`${BASE}/connected_accounts/link`, {
       method: 'POST', headers, body: JSON.stringify(body)
