@@ -517,7 +517,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- PROCESS MAPS -->
 <div class="view manage-view" id="view-processmaps">
   <div class="manage-topbar">
-    <div><div class="manage-title">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div><div class="manage-sub">Built automatically from your inbox - the more you use Breeze HR, the more accurate they become.</div></div>
+    <div><div class="manage-title">Process maps <span style="font-size:11px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:6px;font-weight:500;">Beta</span></div><div class="manage-sub">Built from chat, SharePoint and connected sources. Upload policies to generate process maps automatically.</div></div>
   </div>
   <div class="manage-body" id="processMapsBody"></div>
 </div>
@@ -1112,7 +1112,7 @@ function openTmpl(t) {
   selTmpl=t;genStep=0;
   // Pre-fill date and reset - always auto-fill letter date, never ask
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
-  genVals = { date: today, letter_date: today };
+  genVals = { date: today, letter_date: today, today: today, current_date: today, todays_date: today, document_date: today, DATE: today };
   mergeEmployeeCache = null; // refresh employee cache for each new template session
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
@@ -1305,7 +1305,7 @@ async function renderManage() {
   if(currentProfile){const{data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','CHAT:%').order('created_at',{ascending:false});if(data)dbPolicies=data;}
   const allPolicies=policies.map(p=>{const up=dbPolicies.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};});
   const uc=allPolicies.filter(p=>p.status==='uploaded').length;
-  body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded - Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+  body.innerHTML=`<div style="margin-bottom:16px;font-size:12px;color:var(--ink3);">${uc} of ${policies.length} policies uploaded - Breeze HR uses these to answer employee questions accurately</div><div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${p.name.replace(/'/g,"\\'")}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${p.name.replace(/'/g,"\\'")}')">⬇</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}')"></label></div></div></div>`).join('')}</div>${dbPolicies.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${dbPolicies.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${p.name.replace(/'/g,"\\'")}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${p.name.replace(/'/g,"\\'")}')">⬇</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
 }
 
 async function renamePolicy(id) {
@@ -1347,6 +1347,36 @@ async function uploadNamedPolicy(event,policyName) {
 async function deletePolicy(id) {
   if(!confirm('Delete this policy?'))return;
   await sb.from('policies').delete().eq('id',id); renderManage();
+}
+
+async function viewPolicy(id, name) {
+  if (!currentProfile) return;
+  const { data } = await sb.from('policies').select('content').eq('id', id).single();
+  if (!data) return;
+  let modal = document.getElementById('policyViewModal');
+  if (!modal) { modal = document.createElement('div'); modal.id = 'policyViewModal'; document.body.appendChild(modal); }
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:700px;max-height:82vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
+      <div style="font-size:14px;font-weight:600;color:var(--ink);">${escapeHtml(name)}</div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button id="pvDownloadBtn" class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${name.replace(/'/g,"\\'")}')">⬇ Download .txt</button>
+        <button onclick="document.getElementById('policyViewModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;padding:0 4px;">×</button>
+      </div>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(data.content)}</div>
+  </div>`;
+  modal.onclick = e => { if (e.target===modal) modal.style.display='none'; };
+}
+
+async function downloadPolicyFile(id, name) {
+  if (!currentProfile) return;
+  const { data } = await sb.from('policies').select('content').eq('id', id).single();
+  if (!data) return;
+  const blob = new Blob([data.content], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=`${name}.txt`; a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── PROCESS MAPS ──
@@ -1610,35 +1640,10 @@ function renderSettings() {
       </div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
-      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Integrations</div>
-      <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">Connect channels so messages arrive automatically.</div>
-      <div style="display:flex;flex-direction:column;gap:12px;">
-
-        <div style="border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;">
-          <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;background:var(--surface2);">
-            <div style="display:flex;align-items:center;gap:10px;">
-              <div style="width:28px;height:28px;background:var(--amber-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><polyline points="22,4 12,13 2,4"/></svg></div>
-              <div><div style="font-size:12px;font-weight:500;">Email forwarding</div><div style="font-size:11px;color:var(--ink3);">Forward your HR inbox to Breeze HR</div></div>
-            </div>
-            <span style="font-size:10px;background:var(--green-bg);color:var(--green);padding:2px 8px;border-radius:20px;font-weight:500;">Active</span>
-          </div>
-          <div style="padding:12px;">
-            <div style="font-size:11px;color:var(--ink2);margin-bottom:8px;">Your HR email address (employees email this)</div>
-            <div style="display:flex;gap:6px;">
-              <input id="set-inbound-email" placeholder="hr@yourcompany.com" style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);">
-              <button class="btn btn-primary btn-sm" onclick="saveInboundEmail()">Save</button>
-            </div>
-            <div style="margin-top:10px;padding:10px;background:var(--surface2);border-radius:var(--r-sm);font-size:11px;color:var(--ink2);line-height:1.7;">
-              <strong>Setup:</strong> In Gmail, go to Settings → Forwarding → Add forwarding address → paste your Postmark inbound address. Once confirmed, set Gmail to forward all mail to it. New emails will appear in your Breeze HR inbox automatically.
-            </div>
-            <div id="set-inbound-msg" style="font-size:11px;margin-top:6px;min-height:14px;"></div>
-          </div>
-        </div>
-
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);">
-          <div style="display:flex;align-items:center;gap:10px;"><div style="width:28px;height:28px;background:var(--accent-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="4"/></svg></div><div><div style="font-size:12px;font-weight:500;">Slack</div><div style="font-size:11px;color:var(--ink3);">Messages from your HR channel</div></div></div>
-          <button class="btn btn-secondary btn-sm">Connect</button>
-        </div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Integrations</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">Connect your email so you can send letters and drafts directly from Breeze HR.</div>
+      <div style="display:flex;flex-direction:column;gap:10px;" id="integrationsBody">
+        <div style="font-size:11px;color:var(--ink3);">Loading...</div>
       </div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
@@ -1650,6 +1655,7 @@ function renderSettings() {
   // Load documents list async
   loadSettingsDocs();
   loadWritingStyle();
+  loadIntegrations();
 }
 
 async function loadSettingsDocs() {
@@ -1957,8 +1963,8 @@ function spSearch() {
           <div class="sp-result-meta">${r.location} · Modified ${r.modified} by ${r.author}</div>
           <div class="sp-result-snippet">${r.snippet}</div>
           <div class="sp-result-actions">
-            <button onclick="event.stopPropagation();spCopyLink('${r.url}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Copy link</button>
-            <button onclick="event.stopPropagation();spInsertToReply('${r.title}','${r.url}')" style="font-size:11px;color:var(--green);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Insert into reply</button>
+            <button onclick="event.stopPropagation();spOpenResult('${r.url}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Open link</button>
+            <button onclick="event.stopPropagation();spInsertToReply('${r.title}','${r.url}')" style="font-size:11px;color:var(--green);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Add to chat</button>
           </div>
         </div>`).join('')}`;
   }, 800);
@@ -1995,10 +2001,11 @@ function spCopyLink(url) {
 function spInsertToReply(title, url) {
   const ta = document.getElementById('chatInput');
   if (ta) {
-    ta.value += (ta.value ? '\n\n' : '') + `Relevant document: ${title}\n${url}`;
+    ta.value += (ta.value ? '\n\n' : '') + `I found this document: "${title}" - ${url}`;
     ta.focus();
     ta.style.height = 'auto'; ta.style.height = Math.min(ta.scrollHeight,160)+'px';
     toggleSharePoint();
+    showView('chat', document.getElementById('nav-chat'));
   }
 }
 
@@ -2360,6 +2367,93 @@ async function rateChatMsg(idx, rating) {
   if (dn) dn.className = 'chat-action-btn'+(rating===-1?' rated-down':'');
   await sb.from('ratings').insert({company_id:currentProfile.company_id, message_type:'chat', ai_draft:msg.content, rating});
   chatSystemPrompt = null;
+}
+
+// ── INTEGRATIONS (Composio) ──
+async function loadIntegrations() {
+  const el = document.getElementById('integrationsBody'); if (!el || !currentUser) return;
+  const userId = currentUser.id;
+  el.innerHTML = '<div style="font-size:11px;color:var(--ink3);">Checking connections...</div>';
+  let status = { gmail: false, outlook: false };
+  try {
+    const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(userId)}`);
+    if (res.ok) status = await res.json();
+  } catch(e) {}
+  renderIntegrationsUI(status);
+}
+
+function renderIntegrationsUI(status) {
+  const el = document.getElementById('integrationsBody'); if (!el) return;
+  const integrations = [
+    { id:'gmail', label:'Gmail', icon:'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z', color:'#EA4335', bg:'#FEF2F2', desc:'Send and read HR emails via Gmail' },
+    { id:'outlook', label:'Outlook', icon:'M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 4l-8 5-8-5V6l8 5 8-5v2z', color:'#0078D4', bg:'#EBF5FB', desc:'Send and read HR emails via Outlook' },
+    { id:'slack', label:'Slack', icon:'M14.5 10c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5s1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5zm-5 0c-.83 0-1.5-.67-1.5-1.5v-5c0-.83.67-1.5 1.5-1.5S11 2.67 11 3.5v5c0 .83-.67 1.5-1.5 1.5zm5 4c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S13 21.33 13 20.5v-5c0-.83.67-1.5 1.5-1.5zm-5 0c.83 0 1.5.67 1.5 1.5v5c0 .83-.67 1.5-1.5 1.5S8 21.33 8 20.5v-5c0-.83.67-1.5 1.5-1.5zM10 9.5c0 .83-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5S2.67 8 3.5 8h5c.83 0 1.5.67 1.5 1.5zm14 0c0 .83-.67 1.5-1.5 1.5h-5c-.83 0-1.5-.67-1.5-1.5S16.67 8 17.5 8h5c.83 0 1.5.67 1.5 1.5zM10 14.5c0-.83.67-1.5 1.5-1.5h1.5v1.5c0 .83-.67 1.5-1.5 1.5S10 15.33 10 14.5zm0 0', color:'#4A154B', bg:'#F9F0FF', desc:'HR alerts to your Slack channel', comingSoon: true },
+  ];
+  el.innerHTML = integrations.map(intg => {
+    const connected = status[intg.id];
+    return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid ${connected?'var(--green)':' var(--border)'};border-radius:var(--r);background:${connected?'var(--green-bg)':'var(--surface)'};">
+      <div style="width:36px;height:36px;background:${intg.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="${intg.color}"><path d="${intg.icon}"/></svg>
+      </div>
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);">${intg.label}</div>
+        <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${connected?'Connected':'Not connected'} - ${intg.desc}</div>
+      </div>
+      ${intg.comingSoon
+        ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink3);padding:3px 8px;border-radius:20px;border:1px solid var(--border);">Coming soon</span>`
+        : connected
+          ? `<button onclick="disconnectIntegration('${intg.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Disconnect</button>`
+          : `<button onclick="connectIntegration('${intg.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Connect</button>`
+      }
+    </div>`;
+  }).join('');
+}
+
+async function connectIntegration(app) {
+  if (!currentUser) return;
+  const btn = event.target;
+  btn.textContent = 'Connecting...'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/composio-connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, app })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed to connect');
+    if (data.authUrl) {
+      window.open(data.authUrl, '_blank', 'width=600,height=700,noopener');
+      btn.textContent = 'Waiting...';
+      // Poll for connection status every 3s for up to 60s
+      let attempts = 0;
+      const poll = setInterval(async () => {
+        attempts++;
+        try {
+          const sr = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
+          if (sr.ok) {
+            const st = await sr.json();
+            if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
+          }
+        } catch(e) {}
+        if (attempts >= 20) { clearInterval(poll); btn.textContent='Connect'; btn.disabled=false; }
+      }, 3000);
+    }
+  } catch(e) {
+    alert('Could not connect: ' + e.message);
+    btn.textContent = 'Connect'; btn.disabled = false;
+  }
+}
+
+async function disconnectIntegration(app) {
+  if (!currentUser || !confirm(`Disconnect ${app}?`)) return;
+  try {
+    await fetch('/api/composio-connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, app, action: 'disconnect' })
+    });
+  } catch(e) {}
+  loadIntegrations();
 }
 
 // ── ANALYTICS ──
