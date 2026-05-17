@@ -695,11 +695,16 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signUp({ email, password, options: { emailRedirectTo: window.location.href } });
     if (error) { errEl.textContent = error.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
     const { data: co, error: coErr } = await sb.from('companies').insert({ name: company }).select().single();
-    if (coErr || !co) { errEl.textContent = 'Account created but setup failed — please contact support. (' + (coErr?.message||'no company') + ')'; btn.textContent = 'Create account'; btn.disabled = false; return; }
+    if (coErr || !co) { errEl.textContent = 'Account created but setup failed: ' + (coErr?.message||'no company returned'); btn.textContent = 'Create account'; btn.disabled = false; return; }
     const { error: profErr } = await sb.from('profiles').insert({ id: data.user.id, company_id: co.id, full_name: name });
     if (profErr) { errEl.textContent = 'Account created but profile setup failed: ' + profErr.message; btn.textContent = 'Create account'; btn.disabled = false; return; }
+    // If Supabase signed them in immediately (email confirmation off), go straight into the app
+    if (data.session) {
+      await onSignedIn(data.user);
+      return;
+    }
     errEl.style.color = 'var(--green)';
-    errEl.textContent = 'Account created - check your email to confirm, then sign in.';
+    errEl.textContent = 'Account created — check your email to confirm, then sign in.';
     btn.textContent = 'Create account'; btn.disabled = false;
     setTimeout(() => { authMode = 'signup'; toggleAuthMode(); }, 2000);
   }
