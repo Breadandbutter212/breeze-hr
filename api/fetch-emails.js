@@ -23,7 +23,14 @@ export default async function handler(req, res) {
       body: JSON.stringify({
         entityId,
         appName: provider,
-        input: { query: 'is:inbox', max_results: 20, maxResults: 20 }
+        input: {
+          query: 'is:inbox',
+          max_results: 20,
+          maxResults: 20,
+          metadata_headers: ['From', 'Subject', 'Date', 'To'],
+          include_headers: true,
+          format: 'metadata'
+        }
       })
     });
     const raw = await r.text();

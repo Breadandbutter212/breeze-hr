@@ -2459,14 +2459,23 @@ function parseEmailList(apiData, provider) {
     .replace(/\s{2,}/g, ' ').trim();
 
   return messages.map(m => {
+    // Try headers array first (when metadata format is requested)
+    const headers = m.payload?.headers || m.headers || [];
+    const getHeader = (name) => (headers.find(h =>
+      (h.name||h.key||'').toLowerCase() === name.toLowerCase()
+    ) || {}).value || '';
+
     const body    = cleanBody(m.messageText || m.body || m.bodyPreview || '');
     const snippet = body.substring(0, 160);
-    const from    = m.sender || m.from || m.senderEmail || m.fromAddress || m.fromName || '';
-    const subject = m.subject || m.messageSubject || m.title || '(No subject)';
-    // internalDate is epoch ms as string; date may be ISO or RFC string
-    const rawDate = m.date || m.receivedAt || m.timestamp || m.internalDate || '';
+
+    const from    = getHeader('from') || m.sender || m.from || m.senderEmail || m.fromAddress || '';
+    const subject = getHeader('subject') || m.subject || m.messageSubject || '(No subject)';
+
+    // internalDate = epoch ms string; also try header Date
+    const rawDate = m.internalDate || m.date || m.receivedAt || m.timestamp || getHeader('date') || '';
     const dateObj = rawDate ? new Date(isNaN(rawDate) ? rawDate : parseInt(rawDate)) : null;
-    const date    = dateObj && !isNaN(dateObj) ? dateObj.toISOString() : '';
+    const date    = dateObj && !isNaN(dateObj.getTime()) ? dateObj.toISOString() : '';
+
     const id      = m.messageId || m.id || '';
     return { id, from, subject, date, snippet, body };
   }).filter(m => m.id);
