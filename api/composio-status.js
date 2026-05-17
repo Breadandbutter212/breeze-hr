@@ -29,7 +29,9 @@ export default async function handler(req, res) {
 
     // Use String() to safely convert any field type before .toLowerCase()
     const findApp = (keyword) => items.find(c => {
-      const candidates = [c.toolkit, c.appName, c.app_name, c.appUniqueId, c.app, c.authConfigId, c.auth_config_id];
+      // toolkit is an object { slug: "gmail" } in v3 API
+      const slug = c.toolkit?.slug || c.toolkit;
+      const candidates = [slug, c.appName, c.app_name, c.appUniqueId, c.app];
       return candidates.some(f => f && String(f).toLowerCase().includes(keyword));
     });
 
