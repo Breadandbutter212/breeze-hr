@@ -3,7 +3,7 @@ import { createClient } from '@supabase/supabase-js';
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return null;
-  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_ANON_KEY);
+  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
   const { data: { user } } = await sb.auth.getUser(token);
   return user || null;
 }
