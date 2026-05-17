@@ -714,6 +714,10 @@ async function onSignedIn(user) {
   if (emailEl) emailEl.textContent = user.email;
   const { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
   currentProfile = profile;
+  if (profile?.company_id) {
+    const { data: co } = await sb.from('companies').select('name').eq('id', profile.company_id).single();
+    if (co) currentProfile.company_name = co.name;
+  }
   // Update sidebar user display
   if (profile) {
     const initials = profile.full_name ? profile.full_name.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() : user.email.substring(0,2).toUpperCase();
@@ -983,6 +987,15 @@ async function readFileAsText(file) {
   });
 }
 
+function policyText(content) {
+  if (!content) return '';
+  if (content.startsWith('PDF_BASE64:') || content.startsWith('DOCX_BASE64:')) {
+    const parts = content.split('|||TEXT:');
+    return parts.length > 1 ? parts[1] : '';
+  }
+  return content;
+}
+
 async function uploadTemplate(event) {
   const file=event.target.files[0]; if(!file||!currentProfile)return;
   const name=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
@@ -1145,6 +1158,7 @@ function openTmpl(t) {
   // Pre-fill date and reset - always auto-fill letter date, never ask
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   genVals = { date: today, letter_date: today, today: today, current_date: today, todays_date: today, document_date: today, DATE: today };
+  if (currentProfile?.company_name) genVals['company_name'] = currentProfile.company_name;
   mergeEmployeeCache = null; // refresh employee cache for each new template session
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
@@ -1359,20 +1373,36 @@ async function renamePolicy(id) {
 async function uploadPolicy(event) {
   const file=event.target.files[0];if(!file||!currentProfile){alert('Not logged in');return;}
   const name=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
-  const content=await readFileAsText(file);
-  if(!content){alert('Could not read file. Try saving as .txt first.');return;}
-  const{error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name,content:content.substring(0,50000)});
+  const isPdf=file.name.toLowerCase().endsWith('.pdf');
+  let storageContent;
+  if(isPdf){
+    const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
+    const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
+    storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,10000)}`;
+  } else {
+    storageContent=await readFileAsText(file);
+    if(!storageContent){alert('Could not read file. Try saving as .txt first.');return;}
+  }
+  const{error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name,content:storageContent.substring(0,500000)});
   if(error){alert('Upload failed: '+error.message);return;}
   alert(`✓ "${name}" uploaded.`); renderManage(); event.target.value='';
 }
 
 async function uploadNamedPolicy(event,policyName) {
   const file=event.target.files[0];if(!file||!currentProfile)return;
-  const content=await readFileAsText(file);
-  if(!content){alert('Could not read file');return;}
+  const isPdf=file.name.toLowerCase().endsWith('.pdf');
+  let storageContent;
+  if(isPdf){
+    const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
+    const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
+    storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,10000)}`;
+  } else {
+    storageContent=await readFileAsText(file);
+    if(!storageContent){alert('Could not read file');return;}
+  }
   const{data:existing}=await sb.from('policies').select('id').eq('company_id',currentProfile.company_id).eq('name',policyName).single();
-  if(existing){await sb.from('policies').update({content:content.substring(0,50000)}).eq('id',existing.id);}
-  else{await sb.from('policies').insert({company_id:currentProfile.company_id,name:policyName,content:content.substring(0,50000)});}
+  if(existing){await sb.from('policies').update({content:storageContent.substring(0,500000)}).eq('id',existing.id);}
+  else{await sb.from('policies').insert({company_id:currentProfile.company_id,name:policyName,content:storageContent.substring(0,500000)});}
   renderManage(); event.target.value='';
 }
 
@@ -1388,15 +1418,29 @@ async function viewPolicy(id, name) {
   let modal = document.getElementById('policyViewModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'policyViewModal'; document.body.appendChild(modal); }
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:700px;max-height:82vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);">
+  const isPdf = data.content && data.content.startsWith('PDF_BASE64:');
+  const dlLabel = isPdf ? '⬇ Download PDF' : '⬇ Download .doc';
+  let bodyHtml;
+  if (isPdf) {
+    const b64 = data.content.split('|||TEXT:')[0].replace('PDF_BASE64:', '');
+    const binaryStr = atob(b64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const blobUrl = URL.createObjectURL(blob);
+    bodyHtml = `<iframe src="${blobUrl}" style="flex:1;width:100%;border:none;min-height:0;" onload=""></iframe>`;
+  } else {
+    bodyHtml = `<div style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(policyText(data.content))}</div>`;
+  }
+  modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:780px;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="font-size:14px;font-weight:600;color:var(--ink);">${escapeHtml(name)}</div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button id="pvDownloadBtn" class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${name.replace(/'/g,"\\'")}')">⬇ Download .doc</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${name.replace(/'/g,"\\'")}')"> ${dlLabel}</button>
         <button onclick="document.getElementById('policyViewModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;padding:0 4px;">×</button>
       </div>
     </div>
-    <div style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(data.content)}</div>
+    ${bodyHtml}
   </div>`;
   modal.onclick = e => { if (e.target===modal) modal.style.display='none'; };
 }
@@ -1405,10 +1449,21 @@ async function downloadPolicyFile(id, name) {
   if (!currentProfile) return;
   const { data } = await sb.from('policies').select('content').eq('id', id).single();
   if (!data) return;
+  if (data.content && data.content.startsWith('PDF_BASE64:')) {
+    const b64 = data.content.split('|||TEXT:')[0].replace('PDF_BASE64:', '');
+    const binaryStr = atob(b64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'application/pdf' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`${name}.pdf`; a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
   const res = await fetch('/api/generate-doc', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ plainText: data.content, templateName: name })
+    body: JSON.stringify({ plainText: policyText(data.content), templateName: name })
   });
   if (res.ok) {
     const blob = await res.blob();
@@ -1647,14 +1702,19 @@ function downloadProcessMap(name, e) {
 // ── SETTINGS ──
 function renderSettings() {
   const body=document.getElementById('settingsBody');if(!body)return;
-  const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';
+  const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';const coName=currentProfile?.company_name||'';
+  const inputStyle='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);';
+  const inputFocus="this.style.background='white';this.style.borderColor='var(--accent)'";
+  const inputBlur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'";
   body.innerHTML=`<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:stretch;">
     <div style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);">Account</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Account</div>
-      <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Full name</div><input id="set-name" value="${name}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.background='white';this.style.borderColor='var(--accent)'" onblur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'"></div>
-      <div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Email</div><input value="${email}" disabled style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;opacity:0.5;background:var(--surface2);"></div>
+      <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Full name</div><input id="set-name" value="${name}" style="${inputStyle}" onfocus="${inputFocus}" onblur="${inputBlur}"></div>
+      <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Company name</div><input id="set-company" value="${escapeHtml(coName)}" placeholder="Your company name" style="${inputStyle}" onfocus="${inputFocus}" onblur="${inputBlur}"></div>
+      <div style="margin-bottom:16px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Email</div><input value="${email}" disabled style="${inputStyle}opacity:0.5;"></div>
       <button class="btn btn-primary btn-sm" onclick="saveAccountSettings()">Save changes</button>
+      <div id="set-acct-msg" style="font-size:12px;margin-top:8px;min-height:16px;color:var(--green);"></div>
     </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:14px;">Change password</div>
@@ -1772,9 +1832,21 @@ async function saveInboundEmail() {
 }
 
 async function saveAccountSettings() {
-  const name=document.getElementById('set-name').value.trim();if(!name||!currentProfile)return;
-  const{error}=await sb.from('profiles').update({full_name:name}).eq('id',currentUser.id);
-  if(error){alert('Failed: '+error.message);return;}currentProfile.full_name=name;alert('✓ Saved');
+  const name=document.getElementById('set-name').value.trim();
+  const coName=document.getElementById('set-company')?.value.trim()||'';
+  const msg=document.getElementById('set-acct-msg');
+  if(!name||!currentProfile)return;
+  const[profileRes,coRes]=await Promise.all([
+    sb.from('profiles').update({full_name:name}).eq('id',currentUser.id),
+    coName&&currentProfile.company_id?sb.from('companies').update({name:coName}).eq('id',currentProfile.company_id):Promise.resolve({error:null})
+  ]);
+  if(profileRes.error){if(msg){msg.style.color='var(--red)';msg.textContent='Failed: '+profileRes.error.message;}return;}
+  currentProfile.full_name=name;
+  if(coName)currentProfile.company_name=coName;
+  if(msg){msg.style.color='var(--green)';msg.textContent='✓ Saved';}
+  const nameEl=document.getElementById('userDisplayName');
+  if(nameEl)nameEl.textContent=name;
+  setTimeout(()=>{if(msg)msg.textContent='';},3000);
 }
 
 async function savePassword() {
@@ -2074,7 +2146,7 @@ async function buildChatSystemPrompt() {
     const pols = polsRes.data;
     if (pols && pols.length) {
       policyContext = `\n\nCOMPANY POLICIES (use these first - they override generic advice):\n` +
-        pols.map(p=>`\n--- ${p.name} ---\n${p.content.substring(0,2000)}`).join('\n');
+        pols.map(p=>`\n--- ${p.name} ---\n${policyText(p.content).substring(0,2000)}`).join('\n');
     } else {
       policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET - use ACAS guidance and UK employment law. Recommend HR uploads their policies.`;
     }
