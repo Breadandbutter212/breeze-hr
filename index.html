@@ -1402,13 +1402,14 @@ async function uploadNamedPolicy(event,policyName,existingId) {
   }
   const content=storageContent.substring(0,500000);
   if(existingId){
-    await sb.from('policies').update({content,name:policyName}).eq('id',existingId);
+    const{error}=await sb.from('policies').update({content}).eq('id',existingId).eq('company_id',currentProfile.company_id);
+    if(error){alert('Replace failed: '+error.message);return;}
   } else {
     const{data:found}=await sb.from('policies').select('id').eq('company_id',currentProfile.company_id).eq('name',policyName).single();
-    if(found){await sb.from('policies').update({content}).eq('id',found.id);}
+    if(found){await sb.from('policies').update({content}).eq('id',found.id).eq('company_id',currentProfile.company_id);}
     else{await sb.from('policies').insert({company_id:currentProfile.company_id,name:policyName,content});}
   }
-  renderManage(); event.target.value='';
+  await renderManage(); event.target.value='';
 }
 
 async function deletePolicy(id) {
