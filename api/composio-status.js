@@ -21,29 +21,29 @@ export default async function handler(req, res) {
 
     const raw = await r.text();
     let data;
-    try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+    try { data = JSON.parse(raw); } catch(e) { data = {}; }
 
-    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, debug: data });
+    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, _debug: data });
 
-    // Return raw data so we can see the actual field names
     const items = data.items || data.connected_accounts || data.connectedAccounts || [];
 
-    const gmail   = items.find(c => {
-      const name = (c.toolkit || c.appName || c.app_name || c.appUniqueId || c.app || '').toLowerCase();
-      return name.includes('gmail');
-    });
-    const outlook = items.find(c => {
-      const name = (c.toolkit || c.appName || c.app_name || c.appUniqueId || c.app || '').toLowerCase();
-      return name.includes('outlook');
+    // Use String() to safely convert any field type before .toLowerCase()
+    const findApp = (keyword) => items.find(c => {
+      const candidates = [c.toolkit, c.appName, c.app_name, c.appUniqueId, c.app, c.authConfigId, c.auth_config_id];
+      return candidates.some(f => f && String(f).toLowerCase().includes(keyword));
     });
 
+    const isActive = (c) => !c || c.status === 'ACTIVE' || c.isActive === true || c.status === 'active';
+
+    const gmail   = findApp('gmail');
+    const outlook = findApp('outlook');
+
     return res.status(200).json({
-      gmail:            !!(gmail && (gmail.status === 'ACTIVE' || gmail.isActive || gmail.status === 'active')),
-      outlook:          !!(outlook && (outlook.status === 'ACTIVE' || outlook.isActive || outlook.status === 'active')),
-      gmailAccountId:   gmail?.id || null,
+      gmail:            !!(gmail && isActive(gmail)),
+      outlook:          !!(outlook && isActive(outlook)),
+      gmailAccountId:   gmail?.id   || null,
       outlookAccountId: outlook?.id || null,
-      // Debug: show raw so we can see field names
-      _raw: items.slice(0, 3)
+      _raw: items.slice(0, 2)  // debug: remove once working
     });
   } catch(e) {
     return res.status(200).json({ gmail: false, outlook: false, error: e.message });
