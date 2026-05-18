@@ -2023,8 +2023,8 @@ function renderSettings() {
       <button class="btn btn-primary btn-sm" onclick="savePassword()">Update password</button>
       <div id="set-pw-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
     </div>
-    <div style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;">Beta applicants</div>
-    <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;" id="waitlistSection">
+    <div id="waitlistLabel" style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;display:none;">Beta applicants</div>
+    <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:none;" id="waitlistSection">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Access requests</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">People who have requested early access. Approve to send them an invite email.</div>
       <div id="waitlistList"><div style="font-size:12px;color:var(--ink3);">Loading...</div></div>
@@ -2069,6 +2069,12 @@ async function loadWaitlist() {
   const el = document.getElementById('waitlistList'); if (!el) return;
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
+  // Only show to admin
+  if (session.user.email !== 'dwgordon7@icloud.com') return;
+  const section = document.getElementById('waitlistSection');
+  const label = document.getElementById('waitlistLabel');
+  if (section) section.style.display = 'block';
+  if (label) label.style.display = 'block';
   const res = await fetch('/api/waitlist?action=list', {
     headers: { 'Authorization': `Bearer ${session.access_token}` }
   });
