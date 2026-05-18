@@ -810,6 +810,54 @@ async function onSignedIn(user) {
     const btn = document.getElementById('emailChip');
     if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
   }).catch(()=>{});
+  // Show onboarding tour on first login
+  if (!localStorage.getItem('breeze_tour_done')) showOnboardingTour();
+}
+
+function showOnboardingTour() {
+  const steps = [
+    { icon:'💬', title:'Chat with Breeze HR', desc:'Ask any HR question — policy queries, employee situations, what to say in a difficult conversation. Breeze HR responds like a senior HR advisor.' },
+    { icon:'📄', title:'Generate letters & documents', desc:'Go to Documents to draft offer letters, disciplinary letters, reference letters and more. Answer a few questions and the letter builds live.' },
+    { icon:'📋', title:'Upload your policies', desc:'Go to Policies and upload your company HR policies. Breeze HR reads them to give you accurate, company-specific answers.' },
+    { icon:'📊', title:'Analytics', desc:'Drop in any CSV or Excel file and get an instant dashboard. Works with employee data, absence records, payroll — anything.' },
+    { icon:'✉️', title:'Connect your email', desc:'Go to Settings - Integrations to connect Gmail or Outlook. Then you can read emails and send letters directly from Breeze HR.' },
+  ];
+  let step = 0;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'tourOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+
+  function render() {
+    const s = steps[step];
+    const isLast = step === steps.length - 1;
+    overlay.innerHTML = `
+      <div style="background:white;border-radius:16px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden;">
+        <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:32px 32px 24px;">
+          <div style="font-size:40px;margin-bottom:12px;">${s.icon}</div>
+          <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;">Step ${step+1} of ${steps.length}</div>
+        </div>
+        <div style="padding:24px 32px;">
+          <div style="font-size:14px;color:#4A5568;line-height:1.7;">${s.desc}</div>
+          <div style="display:flex;gap:6px;margin-top:20px;margin-bottom:4px;">
+            ${steps.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<=step?'#0A1628':'#E2E8F0'};transition:background 0.2s;"></div>`).join('')}
+          </div>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
+            <button onclick="document.getElementById('tourOverlay').remove();localStorage.setItem('breeze_tour_done','1')" style="font-size:12px;color:#8A94A6;background:none;border:none;cursor:pointer;font-family:inherit;">Skip tour</button>
+            <button onclick="tourNext()" style="background:#0A1628;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">${isLast?'Get started':'Next'}</button>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  window.tourNext = function() {
+    if (step < steps.length - 1) { step++; render(); }
+    else { overlay.remove(); localStorage.setItem('breeze_tour_done','1'); }
+  };
+
+  render();
+  document.body.appendChild(overlay);
 }
 
 async function signOut() {
@@ -1243,7 +1291,7 @@ function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show skeleton with placeholders immediately
   askQ();
 }
@@ -2940,6 +2988,7 @@ async function connectAnalyticsHRIS() {
     if (!res.ok) throw new Error(data.error || 'Connection failed');
     if (!data.results || !data.results.length) throw new Error('No employee data returned from HRIS');
     analyticsData = normalizeHRISData(data.results);
+    _analyticsRawData = analyticsData;
     analyticsSource = 'Merge HRIS (live)';
     renderDashboard();
   } catch(e) {
@@ -2983,7 +3032,8 @@ async function loadAnalyticsFile(event) {
       rows = parseAnalyticsCSV(await file.text());
     }
     if (!rows.length) { alert('No data found in file'); return; }
-    analyticsData = rows; // store raw rows — renderDashboard handles any shape
+    analyticsData = rows;
+    _analyticsRawData = rows; // keep original for filter reset
     analyticsSource = file.name;
     renderDashboard();
   } catch(e) { alert('Could not read file: ' + e.message); }
@@ -3118,11 +3168,18 @@ function renderDashboard() {
   ).join('');
 
   const kpiCols = 1 + kpiNums.length;
+  const colNames = Object.keys(types).join(', ');
   body.innerHTML = `
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       <span style="font-size:12px;color:var(--ink3);">Source: <strong style="color:var(--ink);">${escapeHtml(analyticsSource)}</strong></span>
-      <button onclick="resetAnalytics()" style="margin-left:auto;font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">Change file</button>
+      <button onclick="downloadAnalyticsPPT()" style="margin-left:auto;font-size:11px;color:var(--accent);background:none;border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--accent-bg)'" onmouseout="this.style.background='none'">⬇ PowerPoint</button>
+      <button onclick="resetAnalytics()" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">Change file</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+      <input id="analyticsFilter" placeholder="Filter or edit: e.g. department = Engineering, salary > 50000, status is Active..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'" onkeydown="if(event.key==='Enter')applyAnalyticsFilter()">
+      <button onclick="applyAnalyticsFilter()" class="btn btn-primary btn-sm">Apply</button>
+      <button onclick="clearAnalyticsFilter()" class="btn btn-secondary btn-sm">Clear</button>
     </div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(kpiCols,4)},1fr);gap:12px;margin-bottom:20px;">${kpiHtml}</div>
     ${charts.length ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${chartGrid}</div>` : '<div style="color:var(--ink3);font-size:13px;padding:20px 0;">No chartable columns found. Make sure your CSV has headers and at least some categorical or numeric data.</div>'}`;
@@ -3140,6 +3197,76 @@ function resetAnalytics() {
   Object.values(analyticsCharts).forEach(c=>{ try{c.destroy();}catch(e){} });
   analyticsCharts={};
   renderAnalytics();
+}
+
+let _analyticsRawData = null; // unfiltered original rows
+
+function applyAnalyticsFilter() {
+  const input = document.getElementById('analyticsFilter');
+  if (!input || !_analyticsRawData) return;
+  const expr = input.value.trim();
+  if (!expr) { analyticsData = _analyticsRawData; renderDashboard(); return; }
+  try {
+    // Parse: "col operator value" - supports =, !=, >, <, >=, <=, is, contains
+    const m = expr.match(/^(.+?)\s*(>=|<=|!=|>|<|=|is|contains)\s*(.+)$/i);
+    if (!m) { alert('Format: column = value  or  column > 100  or  column contains text'); return; }
+    const [,col,op,val] = m.map(s=>s?.trim());
+    const colKey = col.toLowerCase().replace(/\s+/g,'_');
+    analyticsData = _analyticsRawData.filter(row => {
+      const rv = String(row[colKey]||'').toLowerCase();
+      const nv = parseFloat(val), nr = parseFloat(rv);
+      switch(op.toLowerCase()) {
+        case '=': case 'is': return rv === val.toLowerCase();
+        case '!=': return rv !== val.toLowerCase();
+        case '>': return nr > nv;
+        case '<': return nr < nv;
+        case '>=': return nr >= nv;
+        case '<=': return nr <= nv;
+        case 'contains': return rv.includes(val.toLowerCase());
+        default: return true;
+      }
+    });
+    if (!analyticsData.length) { alert('No rows match that filter.'); analyticsData = _analyticsRawData; return; }
+    renderDashboard();
+    // Restore filter text after re-render
+    setTimeout(()=>{ const f=document.getElementById('analyticsFilter'); if(f)f.value=expr; },80);
+  } catch(e) { alert('Filter error: ' + e.message); }
+}
+
+function clearAnalyticsFilter() {
+  if (_analyticsRawData) analyticsData = _analyticsRawData;
+  const f = document.getElementById('analyticsFilter'); if(f) f.value='';
+  renderDashboard();
+}
+
+async function downloadAnalyticsPPT() {
+  if (!analyticsData || !Object.keys(analyticsCharts).length) { alert('No charts to export yet.'); return; }
+  const pptx = new PptxGenJS();
+  pptx.layout = 'LAYOUT_WIDE';
+  pptx.theme = { headFontFace: 'Inter', bodyFontFace: 'Inter' };
+
+  // Title slide
+  const title = pptx.addSlide();
+  title.addShape(pptx.ShapeType.rect, { x:0,y:0,w:'100%',h:'100%', fill:{color:'0A1628'} });
+  title.addText('Analytics Report', { x:0.8,y:2.8,w:11,h:0.9, fontSize:36, bold:true, color:'FFFFFF', fontFace:'Inter' });
+  title.addText(`Source: ${analyticsSource}  |  ${analyticsData.length} rows`, { x:0.8,y:3.9,w:11,h:0.5, fontSize:14, color:'63B3FF', fontFace:'Inter' });
+  title.addText('Breeze HR', { x:0.8,y:6.7,w:4,h:0.4, fontSize:11, color:'FFFFFF', fontFace:'Inter', transparency:50 });
+
+  // One chart per slide
+  const entries = Object.entries(analyticsCharts);
+  for (const [id, chart] of entries) {
+    const canvas = document.getElementById(id);
+    if (!canvas) continue;
+    const imgData = canvas.toDataURL('image/png');
+    const slide = pptx.addSlide();
+    slide.addShape(pptx.ShapeType.rect, { x:0,y:0,w:'100%',h:0.7, fill:{color:'0A1628'} });
+    const titleEl = canvas.closest('div')?.querySelector('div[style*="font-weight:600"]');
+    const chartTitle = titleEl?.textContent || id.replace('ac-','').replace(/-/g,' ');
+    slide.addText(chartTitle.charAt(0).toUpperCase()+chartTitle.slice(1), { x:0.4,y:0.12,w:12,h:0.45, fontSize:16, bold:true, color:'FFFFFF', fontFace:'Inter' });
+    slide.addImage({ data: imgData, x:0.5, y:0.9, w:12, h:6.0 });
+  }
+
+  await pptx.writeFile({ fileName: `Breeze HR Analytics - ${analyticsSource.replace(/\.[^.]+$/,'')}.pptx` });
 }
 
 // ── CHAT HISTORY ──
