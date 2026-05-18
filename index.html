@@ -320,7 +320,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 /* ── LOGIN ── */
 .login-screen { position: fixed; inset: 0; display: flex; z-index: 999; }
-.login-left { width: 52%; background: linear-gradient(145deg, #0A1628 0%, #0F2044 60%, #0A2460 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 48px 56px; position: relative; overflow-y: auto; }
+.login-left { width: 52%; background: linear-gradient(145deg, #0A1628 0%, #0F2044 60%, #0A2460 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 48px 56px; position: relative; overflow: hidden; }
 .login-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(0,102,204,0.18) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(99,179,255,0.08) 0%, transparent 50%); pointer-events: none; }
 .login-left-logo { display: flex; align-items: center; gap: 12px; position: relative; }
 .login-left-logo-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
@@ -373,27 +373,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="login-left-hero">
       <div class="login-left-title">HR operations,<br><span>made simple.</span></div>
       <div class="login-left-sub">Draft letters, manage policies, answer employee questions and run your HR function - all in one place.</div>
-      <div class="login-left-faq">
-        <div class="login-faq-item">
-          <div class="login-faq-q">Does it stay up to date with UK employment law?</div>
-          <div class="login-faq-a">Yes. Breeze HR is built on continuously updated AI trained on ACAS guidance, statutory rates and UK legislation - so the advice is always current.</div>
-        </div>
-        <div class="login-faq-item">
-          <div class="login-faq-q">How does it learn my writing style?</div>
-          <div class="login-faq-a">Paste a writing sample in Settings and it matches your tone and sign-off. It also adapts in real time based on how your team edits its drafts.</div>
-        </div>
-        <div class="login-faq-item">
-          <div class="login-faq-q">Can I use my own HR policies?</div>
-          <div class="login-faq-a">Yes - upload your policies and Breeze HR reads them first when answering questions, giving answers specific to your business rather than generic advice.</div>
-        </div>
-        <div class="login-faq-item">
-          <div class="login-faq-q">Is each account kept separate?</div>
-          <div class="login-faq-a">Completely. Every company has its own isolated workspace - your policies, documents and chats are never visible to other users.</div>
-        </div>
-        <div class="login-faq-item">
-          <div class="login-faq-q">What documents can it draft?</div>
-          <div class="login-faq-a">Over 25 templates - offer letters, disciplinary letters, grievance responses, redundancy letters, reference letters, flexible working decisions and more.</div>
-        </div>
+      <div class="login-left-pills">
+        <div class="login-left-pill">✦ Letters drafted in seconds</div>
+        <div class="login-left-pill">⚡ Adapts to how your team works</div>
+        <div class="login-left-pill">📋 Your policies, always on hand</div>
+        <div class="login-left-pill">✉️ Works with your inbox</div>
+        <div class="login-left-pill">📊 Instant people insights</div>
       </div>
     </div>
     <div class="login-left-footer">
