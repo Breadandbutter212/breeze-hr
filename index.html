@@ -357,7 +357,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-toggle { font-size: 13px; color: #8A94A6; text-align: center; margin-top: 20px; }
 .login-toggle a { color: #0066CC; text-decoration: none; font-weight: 600; cursor: pointer; }
 .login-toggle a:hover { text-decoration: underline; }
-@media (max-width: 700px) { .login-left { display: none; } .login-screen { background: white; } .login-right { flex: 1; width: 100%; padding: 40px 24px; display: flex; align-items: center; justify-content: center; min-height: 100vh; } .login-box { width: 100%; max-width: 420px; } .login-input { font-size: 16px; } }
+@media (max-width: 700px) { .login-left { display: none; } .login-screen { background: white; } .login-right { flex: 1; width: 100%; padding: 40px 24px; display: flex; align-items: center; justify-content: center; min-height: 100vh; } .login-box { width: 100%; max-width: 420px; } .login-input { font-size: 16px; } .shell { display: none !important; } #mobileBlock { display: flex !important; } }
 </style>
 </head>
 <body>
@@ -429,6 +429,18 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       </div>
     </div>
   </div>
+</div>
+
+<div id="mobileBlock" style="display:none;position:fixed;inset:0;background:#0A1628;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;z-index:9999;">
+  <svg width="160" height="52" viewBox="0 0 160 52" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:32px;">
+    <rect width="52" height="52" rx="10" fill="#2C2C2E"/>
+    <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#3B82F6" letter-spacing="0.5">HR</text>
+    <text x="64" y="20" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Breeze</text>
+    <text x="65" y="43" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="rgba(255,255,255,0.5)">People operations platform</text>
+  </svg>
+  <div style="font-size:22px;font-weight:700;color:white;letter-spacing:-0.03em;margin-bottom:12px;">Built for desktop</div>
+  <div style="font-size:15px;color:rgba(255,255,255,0.6);line-height:1.7;max-width:280px;">Breeze HR is designed for desktop use. Please open it on your laptop or computer for the full experience.</div>
+  <div style="margin-top:32px;font-size:13px;color:rgba(255,255,255,0.35);">getbreeze.co.uk</div>
 </div>
 
 <div class="shell" id="appShell" style="display:none;">
@@ -882,7 +894,7 @@ async function handleAuth() {
 async function onSignedIn(user) {
   currentUser = user;
   document.getElementById('loginScreen').style.display = 'none';
-  document.getElementById('appShell').style.display = 'flex';
+  document.getElementById('appShell').style.display = 'flex'; document.getElementById('loginScreen').style.display = 'none';
   // Set email in footer (hidden element kept for compat)
   const emailEl = document.getElementById('userEmail');
   if (emailEl) emailEl.textContent = user.email;
