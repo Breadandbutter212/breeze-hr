@@ -796,7 +796,7 @@ async function submitWaitlist() {
   if (!name || !email || !company) { err.textContent = 'Please fill in all fields.'; return; }
   btn.textContent = 'Submitting...'; btn.disabled = true; err.textContent = '';
   try {
-    const res = await fetch('/api/join-waitlist', {
+    const res = await fetch('/api/waitlist?action=join', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ full_name: name, email, company_name: company })
@@ -2069,7 +2069,7 @@ async function loadWaitlist() {
   const el = document.getElementById('waitlistList'); if (!el) return;
   const { data: { session } } = await sb.auth.getSession();
   if (!session) return;
-  const res = await fetch('/api/waitlist-list', {
+  const res = await fetch('/api/waitlist?action=list', {
     headers: { 'Authorization': `Bearer ${session.access_token}` }
   });
   if (!res.ok) { el.innerHTML = '<div style="font-size:12px;color:var(--ink3);">Could not load applicants.</div>'; return; }
@@ -2091,7 +2091,7 @@ async function loadWaitlist() {
 async function approveWaitlistUser(id, email, fullName, companyName, btn) {
   btn.textContent = 'Sending...'; btn.disabled = true;
   const { data: { session } } = await sb.auth.getSession();
-  const res = await fetch('/api/invite-user', {
+  const res = await fetch('/api/waitlist?action=invite', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
     body: JSON.stringify({ waitlist_id: id, email, full_name: fullName, company_name: companyName })
