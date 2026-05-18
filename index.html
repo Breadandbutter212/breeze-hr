@@ -320,7 +320,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 /* ── LOGIN ── */
 .login-screen { position: fixed; inset: 0; display: flex; z-index: 999; }
-.login-left { width: 52%; background: linear-gradient(145deg, #0A1628 0%, #0F2044 60%, #0A2460 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 48px 56px; position: relative; overflow: hidden; }
+.login-left { width: 52%; background: linear-gradient(145deg, #0A1628 0%, #0F2044 60%, #0A2460 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 48px 56px; position: relative; overflow-y: auto; }
 .login-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 20% 50%, rgba(0,102,204,0.18) 0%, transparent 65%), radial-gradient(ellipse at 80% 20%, rgba(99,179,255,0.08) 0%, transparent 50%); pointer-events: none; }
 .login-left-logo { display: flex; align-items: center; gap: 12px; position: relative; }
 .login-left-logo-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
@@ -331,6 +331,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-left-sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.65; max-width: 340px; }
 .login-left-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 32px; }
 .login-left-pill { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.65); }
+.login-left-faq { margin-top: 28px; display: flex; flex-direction: column; gap: 0; }
+.login-faq-item { border-top: 1px solid rgba(255,255,255,0.08); padding: 12px 0; }
+.login-faq-item:last-child { border-bottom: 1px solid rgba(255,255,255,0.08); }
+.login-faq-q { font-size: 12px; font-weight: 600; color: rgba(255,255,255,0.85); margin-bottom: 4px; }
+.login-faq-a { font-size: 11.5px; color: rgba(255,255,255,0.45); line-height: 1.6; }
 .login-left-footer { display: flex; align-items: center; justify-content: space-between; position: relative; }
 .login-left-copy { font-size: 11px; color: rgba(255,255,255,0.3); }
 .login-left-insta { display: flex; align-items: center; gap: 6px; text-decoration: none; color: rgba(255,255,255,0.45); font-size: 12px; transition: color 0.15s; }
@@ -368,12 +373,27 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="login-left-hero">
       <div class="login-left-title">HR operations,<br><span>made simple.</span></div>
       <div class="login-left-sub">Draft letters, manage policies, answer employee questions and run your HR function - all in one place.</div>
-      <div class="login-left-pills">
-        <div class="login-left-pill">✦ Letters drafted in seconds</div>
-        <div class="login-left-pill">⚡ Adapts to how your team works</div>
-        <div class="login-left-pill">📋 Your policies, always on hand</div>
-        <div class="login-left-pill">✉️ Works with your inbox</div>
-        <div class="login-left-pill">📊 Instant people insights</div>
+      <div class="login-left-faq">
+        <div class="login-faq-item">
+          <div class="login-faq-q">Does it stay up to date with UK employment law?</div>
+          <div class="login-faq-a">Yes. Breeze HR is built on continuously updated AI trained on ACAS guidance, statutory rates and UK legislation - so the advice is always current.</div>
+        </div>
+        <div class="login-faq-item">
+          <div class="login-faq-q">How does it learn my writing style?</div>
+          <div class="login-faq-a">Paste a writing sample in Settings and it matches your tone and sign-off. It also adapts in real time based on how your team edits its drafts.</div>
+        </div>
+        <div class="login-faq-item">
+          <div class="login-faq-q">Can I use my own HR policies?</div>
+          <div class="login-faq-a">Yes - upload your policies and Breeze HR reads them first when answering questions, giving answers specific to your business rather than generic advice.</div>
+        </div>
+        <div class="login-faq-item">
+          <div class="login-faq-q">Is each account kept separate?</div>
+          <div class="login-faq-a">Completely. Every company has its own isolated workspace - your policies, documents and chats are never visible to other users.</div>
+        </div>
+        <div class="login-faq-item">
+          <div class="login-faq-q">What documents can it draft?</div>
+          <div class="login-faq-a">Over 25 templates - offer letters, disciplinary letters, grievance responses, redundancy letters, reference letters, flexible working decisions and more.</div>
+        </div>
       </div>
     </div>
     <div class="login-left-footer">
@@ -817,11 +837,11 @@ async function onSignedIn(user) {
 
 function showOnboardingTour() {
   const steps = [
-    { icon:'💬', title:'Chat with Breeze HR', desc:'Ask any HR question — policy queries, employee situations, what to say in a difficult conversation. Breeze HR responds like a senior HR advisor.' },
-    { icon:'📄', title:'Generate letters & documents', desc:'Go to Documents to draft offer letters, disciplinary letters, reference letters and more. Answer a few questions and the letter builds live.' },
-    { icon:'📋', title:'Upload your policies', desc:'Go to Policies and upload your company HR policies. Breeze HR reads them to give you accurate, company-specific answers.' },
-    { icon:'📊', title:'Analytics', desc:'Drop in any CSV or Excel file and get an instant dashboard. Works with employee data, absence records, payroll — anything.' },
-    { icon:'✉️', title:'Connect your email', desc:'Go to Settings - Integrations to connect Gmail or Outlook. Then you can read emails and send letters directly from Breeze HR.' },
+    { icon:'💬', title:'Chat with Breeze HR', desc:'Ask any HR question - policy queries, tricky employee situations, what to say in a difficult conversation. Breeze HR responds like a senior HR advisor with 20+ years of UK experience.' },
+    { icon:'🧠', title:'It learns how you work', desc:'Paste a writing sample in Settings and Breeze HR matches your tone, sign-off and style. It also adapts based on how your team edits its drafts over time - getting sharper the more you use it.' },
+    { icon:'⚡', title:'Always up to date', desc:'Breeze HR is built on the latest AI, updated continuously with UK employment law changes, new ACAS guidance and statutory rate updates - so you never need to check if the advice is current.' },
+    { icon:'📄', title:'Letters and documents', desc:'Go to Documents to draft offer letters, disciplinary letters, reference letters and more. Answer a few questions and the letter builds live - ready to download or send.' },
+    { icon:'📋', title:'Upload your policies', desc:'Upload your company HR policies under Policies. Breeze HR reads them and uses them first when answering questions - so answers are specific to your business, not generic advice.' },
   ];
   let step = 0;
 
