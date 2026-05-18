@@ -23,8 +23,8 @@
   --ink2: #6E6E73;
   --ink3: #AEAEB2;
   --accent: #3B82F6;
-  --accent-bg: #EBF3FF;
-  --accent-mid: #B8D4F8;
+  --accent-bg: #EFF6FF;
+  --accent-mid: #BFDBFE;
   --green: #1A7A3C;
   --green-bg: #E8F5EE;
   --amber: #7A4A0A;
@@ -66,10 +66,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .nav-label:first-child { margin-top: 4px; }
 .ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.45); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
 .ni:hover { background: rgba(255,255,255,0.07); color: rgba(255,255,255,0.85); }
-.ni.active { background: rgba(99,179,255,0.15); color: white; font-weight: 500; border-left: 2px solid #63B3FF; padding-left: 6px; }
+.ni.active { background: rgba(59,130,246,0.25); color: white; font-weight: 500; border-left: 2px solid var(--accent); padding-left: 6px; }
 .ni svg { flex-shrink: 0; opacity: 0.5; }
 .ni.active svg { opacity: 1; }
-.ni-badge { margin-left: auto; background: #63B3FF; color: #0A1628; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.ni-badge { margin-left: auto; background: var(--accent); color: #0A1628; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
 .sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.07); }
 .int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.06); font-size: 11px; color: rgba(255,255,255,0.4); }
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
@@ -267,7 +267,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
 .btn-sm { padding: 5px 11px; font-size: 11px; }
 .btn-xs { padding: 3px 8px; font-size: 10px; }
-.btn-primary { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 1px 4px rgba(0,102,204,0.3); }
+.btn-primary { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 1px 4px rgba(59,130,246,0.3); }
 .btn-primary:hover { opacity: 0.88; }
 .btn-secondary { background: var(--surface); color: var(--ink2); border-color: var(--border); }
 .btn-secondary:hover { border-color: var(--border2); color: var(--ink); }
@@ -296,7 +296,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .chat-chip { font-size: 12px; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--ink2); cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
 .chat-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .chat-input-wrap { display: flex; gap: 10px; align-items: flex-end; border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; background: white; transition: border 0.15s; }
-.chat-input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(0,102,204,0.08); }
+.chat-input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
 .chat-ta { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; line-height: 1.6; max-height: 160px; overflow-y: auto; background: transparent; }
 .chat-ta::placeholder { color: var(--ink3); }
 .chat-ta:placeholder-shown { text-align: center; }
@@ -327,7 +327,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-left-logo-name { font-size: 20px; font-weight: 600; color: white; letter-spacing: -0.02em; }
 .login-left-hero { position: relative; }
 .login-left-title { font-size: 38px; font-weight: 700; color: white; line-height: 1.15; letter-spacing: -0.03em; margin-bottom: 16px; }
-.login-left-title span { color: #63B3FF; }
+.login-left-title span { color: var(--accent); }
 .login-left-sub { font-size: 15px; color: rgba(255,255,255,0.55); line-height: 1.65; max-width: 340px; }
 .login-left-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 32px; }
 .login-left-pill { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.12); border-radius: 20px; padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.65); }
@@ -371,9 +371,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <!-- Dark rounded square icon -->
         <rect width="52" height="52" rx="10" fill="#2C2C2E"/>
         <!-- HR text in blue, bottom-left of square -->
-        <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#63B3FF" letter-spacing="0.5">HR</text>
+        <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#3B82F6" letter-spacing="0.5">HR</text>
         <!-- Breeze wordmark -->
-        <text x="64" y="34" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Breeze</text>
+        <text x="64" y="20" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Breeze</text>
       </svg>
     </div>
     <div class="login-left-hero">
@@ -437,7 +437,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="sidebar-logo">
     <svg width="160" height="30" viewBox="0 0 160 30" fill="none" xmlns="http://www.w3.org/2000/svg">
       <rect width="30" height="30" rx="6" fill="#2C2C2E"/>
-      <text x="5" y="24" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="700" fill="#63B3FF" letter-spacing="0.3">HR</text>
+      <text x="5" y="24" font-family="Inter, Arial, sans-serif" font-size="9" font-weight="700" fill="#3B82F6" letter-spacing="0.3">HR</text>
       <text x="38" y="13" font-family="Inter, Arial, sans-serif" font-size="15" font-weight="700" fill="white" letter-spacing="-0.3">Breeze</text>
       <text x="39" y="26" font-family="Inter, Arial, sans-serif" font-size="7" font-weight="400" fill="rgba(255,255,255,0.4)">people operations platform</text>
     </svg>
@@ -1834,7 +1834,7 @@ function renderProcessRow(p) {
   const isPolicy = p.badge==='From your policies';
   const isAuto = p.badge==='Auto-building';
   const accent = isPolicy ? '#1A7A3C' : isAuto ? '#0066CC' : '#4B0082';
-  const accentBg = isPolicy ? '#E8F5EE' : isAuto ? '#EBF3FF' : '#F3EEFF';
+  const accentBg = isPolicy ? '#E8F5EE' : isAuto ? '#EFF6FF' : '#F3EEFF';
   const count = Math.floor(Math.random()*8)+3;
 
   const timelineHtml = buildTimeline(p.steps, accent, accentBg);
@@ -3345,7 +3345,7 @@ function renderDashboard() {
     });
     const sorted = Object.entries(months).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).slice(-18);
     if (sorted.length > 1) charts.push({ id:'ac-date-'+col, title: col.replace(/_/g,' ')+' over time', type:'line',
-      data:{ labels:sorted.map(([k])=>k), datasets:[{data:sorted.map(([,v])=>v),borderColor:'#0066CC',backgroundColor:'rgba(0,102,204,0.08)',tension:0.3,fill:true,pointRadius:3}]},
+      data:{ labels:sorted.map(([k])=>k), datasets:[{data:sorted.map(([,v])=>v),borderColor:'#0066CC',backgroundColor:'rgba(59,130,246,0.08)',tension:0.3,fill:true,pointRadius:3}]},
       opts:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:45,font:{size:10}}},y:{grid:{color:gridC},ticks:{precision:0}}}}, span:2 });
   });
 
