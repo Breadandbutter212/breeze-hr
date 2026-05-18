@@ -396,13 +396,30 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <div class="login-box-title" id="loginTitle">Welcome back</div>
         <div class="login-box-sub" id="loginSub">Sign in to your Breeze HR account</div>
       </div>
-      <div class="login-field"><label class="login-label">Email address</label><input class="login-input" type="email" id="loginEmail" placeholder="you@company.com"></div>
-      <div class="login-field"><label class="login-label">Password</label><input class="login-input" type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()"></div>
-      <div class="login-field" id="nameField" style="display:none;"><label class="login-label">Full name</label><input class="login-input" type="text" id="loginName" placeholder="Jane Smith"></div>
-      <div class="login-field" id="companyField" style="display:none;"><label class="login-label">Company name</label><input class="login-input" type="text" id="loginCompany" placeholder="Acme Corp"></div>
-      <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
-      <div class="login-error" id="loginError"></div>
-      <div class="login-toggle" id="loginToggle">Don't have an account? <a onclick="toggleAuthMode()">Create one free</a></div>
+      <!-- Sign in form -->
+      <div id="signinForm">
+        <div class="login-field"><label class="login-label">Email address</label><input class="login-input" type="email" id="loginEmail" placeholder="you@company.com"></div>
+        <div class="login-field"><label class="login-label">Password</label><input class="login-input" type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()"></div>
+        <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
+        <div class="login-error" id="loginError"></div>
+        <div class="login-toggle">Don't have an account? <a onclick="showWaitlist()">Join the beta testing group for early access →</a></div>
+      </div>
+      <!-- Waitlist form -->
+      <div id="waitlistForm" style="display:none;">
+        <div class="login-field"><label class="login-label">Full name</label><input class="login-input" type="text" id="wlName" placeholder="Jane Smith"></div>
+        <div class="login-field"><label class="login-label">Work email</label><input class="login-input" type="email" id="wlEmail" placeholder="jane@company.com"></div>
+        <div class="login-field"><label class="login-label">Company name</label><input class="login-input" type="text" id="wlCompany" placeholder="Acme Corp"></div>
+        <button class="login-btn" onclick="submitWaitlist()" id="wlBtn">Request early access</button>
+        <div class="login-error" id="wlError"></div>
+        <div class="login-toggle"><a onclick="showSignin()">← Back to sign in</a></div>
+      </div>
+      <!-- Success state -->
+      <div id="waitlistSuccess" style="display:none;text-align:center;padding:20px 0;">
+        <div style="font-size:32px;margin-bottom:12px;">🎉</div>
+        <div style="font-size:16px;font-weight:600;color:#0A1628;margin-bottom:8px;">You're on the list</div>
+        <div style="font-size:13px;color:#8A94A6;line-height:1.6;">We'll review your request and be in touch shortly with access. Keep an eye on your inbox.</div>
+        <div style="margin-top:20px;"><a onclick="showSignin()" style="font-size:13px;color:#0066CC;cursor:pointer;">Back to sign in</a></div>
+      </div>
     </div>
   </div>
 </div>
@@ -753,6 +770,49 @@ const SUPABASE_URL = 'https://uxwmlxbsqhtwexpfcemu.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4d21seGJzcWh0d2V4cGZjZW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MDcxODAsImV4cCI6MjA5NDA4MzE4MH0.XOqSQWU4JUnIGkZSNuVVMFYvfpQW9fAVKLtLoqpUqM8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null, currentProfile = null, authMode = 'signin';
+
+function showWaitlist() {
+  document.getElementById('signinForm').style.display = 'none';
+  document.getElementById('waitlistForm').style.display = 'block';
+  document.getElementById('waitlistSuccess').style.display = 'none';
+  document.getElementById('loginTitle').textContent = 'Join the beta';
+  document.getElementById('loginSub').textContent = 'Request early access - we\'ll review and be in touch';
+}
+
+function showSignin() {
+  document.getElementById('signinForm').style.display = 'block';
+  document.getElementById('waitlistForm').style.display = 'none';
+  document.getElementById('waitlistSuccess').style.display = 'none';
+  document.getElementById('loginTitle').textContent = 'Welcome back';
+  document.getElementById('loginSub').textContent = 'Sign in to your Breeze HR account';
+}
+
+async function submitWaitlist() {
+  const name = document.getElementById('wlName').value.trim();
+  const email = document.getElementById('wlEmail').value.trim();
+  const company = document.getElementById('wlCompany').value.trim();
+  const err = document.getElementById('wlError');
+  const btn = document.getElementById('wlBtn');
+  if (!name || !email || !company) { err.textContent = 'Please fill in all fields.'; return; }
+  btn.textContent = 'Submitting...'; btn.disabled = true; err.textContent = '';
+  try {
+    const res = await fetch('/api/join-waitlist', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ full_name: name, email, company_name: company })
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      err.textContent = data.error === 'already_registered' ? 'This email is already on the list.' : (data.error || 'Something went wrong.');
+      btn.textContent = 'Request early access'; btn.disabled = false; return;
+    }
+    document.getElementById('waitlistForm').style.display = 'none';
+    document.getElementById('waitlistSuccess').style.display = 'block';
+  } catch(e) {
+    err.textContent = 'Connection error. Please try again.';
+    btn.textContent = 'Request early access'; btn.disabled = false;
+  }
+}
 
 function toggleAuthMode() {
   authMode = authMode === 'signin' ? 'signup' : 'signin';
@@ -1963,6 +2023,12 @@ function renderSettings() {
       <button class="btn btn-primary btn-sm" onclick="savePassword()">Update password</button>
       <div id="set-pw-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
     </div>
+    <div style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;">Beta applicants</div>
+    <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;" id="waitlistSection">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Access requests</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:14px;">People who have requested early access. Approve to send them an invite email.</div>
+      <div id="waitlistList"><div style="font-size:12px;color:var(--ink3);">Loading...</div></div>
+    </div>
     <div style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;">Documents & style</div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;" id="settingsDocsSection">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:6px;">Uploaded documents</div>
@@ -1996,6 +2062,43 @@ function renderSettings() {
   loadSettingsDocs();
   loadWritingStyle();
   loadIntegrations();
+  loadWaitlist();
+}
+
+async function loadWaitlist() {
+  const el = document.getElementById('waitlistList'); if (!el) return;
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return;
+  const res = await fetch('/api/waitlist-list', {
+    headers: { 'Authorization': `Bearer ${session.access_token}` }
+  });
+  if (!res.ok) { el.innerHTML = '<div style="font-size:12px;color:var(--ink3);">Could not load applicants.</div>'; return; }
+  const { data } = await res.json();
+  if (!data || !data.length) { el.innerHTML = '<div style="font-size:12px;color:var(--ink3);">No requests yet.</div>'; return; }
+  el.innerHTML = data.map(w => `
+    <div style="display:flex;align-items:center;gap:12px;padding:10px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;">
+      <div style="flex:1;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);">${escapeHtml(w.full_name)} <span style="font-size:11px;color:var(--ink3);">- ${escapeHtml(w.company_name)}</span></div>
+        <div style="font-size:11px;color:var(--ink3);">${escapeHtml(w.email)} - ${new Date(w.created_at).toLocaleDateString('en-GB')}</div>
+      </div>
+      ${w.status === 'approved'
+        ? `<span style="font-size:11px;color:var(--green);font-weight:500;">✓ Invited</span>`
+        : `<button class="btn btn-primary btn-sm" onclick="approveWaitlistUser('${w.id}','${escapeHtml(w.email)}','${escapeHtml(w.full_name)}','${escapeHtml(w.company_name)}',this)">Approve &amp; invite</button>`
+      }
+    </div>`).join('');
+}
+
+async function approveWaitlistUser(id, email, fullName, companyName, btn) {
+  btn.textContent = 'Sending...'; btn.disabled = true;
+  const { data: { session } } = await sb.auth.getSession();
+  const res = await fetch('/api/invite-user', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${session.access_token}` },
+    body: JSON.stringify({ waitlist_id: id, email, full_name: fullName, company_name: companyName })
+  });
+  const data = await res.json();
+  if (!res.ok) { alert('Failed: ' + data.error); btn.textContent = 'Approve & invite'; btn.disabled = false; return; }
+  btn.closest('div[style*="surface2"]').querySelector('button').replaceWith(Object.assign(document.createElement('span'), { style: 'font-size:11px;color:var(--green);font-weight:500;', textContent: '✓ Invited' }));
 }
 
 async function loadSettingsDocs() {
