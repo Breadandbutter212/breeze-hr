@@ -458,9 +458,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Analytics
     </div>
+    <div class="nav-label">Admin</div>
     <div class="ni" onclick="showView('settings',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
       Settings
+    </div>
+    <div class="ni" onclick="showView('faqs',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      FAQs
     </div>
   </div>
   <div style="padding:10px;">
@@ -601,6 +606,35 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="manage-title">Analytics</div><div class="manage-sub">Connect your HRIS or upload a CSV to visualise your workforce.</div></div>
   </div>
   <div class="manage-body" id="analyticsBody"></div>
+</div>
+
+<!-- FAQS -->
+<div class="view manage-view" id="view-faqs">
+  <div class="manage-topbar"><div><div class="manage-title">FAQs</div><div class="manage-sub">Common questions about Breeze HR.</div></div></div>
+  <div class="manage-body" style="max-width:680px;">
+    <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Does Breeze HR stay up to date with UK employment law?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Yes. Breeze HR is built on continuously updated AI trained on ACAS guidance, statutory rates and UK employment legislation. You do not need to manually update anything - changes to things like statutory pay rates, notice periods or new rights are reflected automatically as the underlying model is updated.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">How does Breeze HR learn my writing style?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Go to Settings and paste an example email or letter you have written. Breeze HR uses this to match your tone, sign-off and phrasing when drafting. It also adapts in real time based on how your team edits its suggestions - if you consistently shorten drafts or remove certain phrases, it picks that up over time.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Can I use my own HR policies?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Yes - go to Policies and upload your company documents as PDF, Word or text files. Breeze HR reads them and uses them as the primary reference when answering questions, so you get answers specific to your business rather than generic advice. If you have not uploaded a policy for a topic, it falls back to ACAS guidance and UK employment law.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Is each company's data kept separate?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Completely. Every company has its own isolated workspace. Your policies, chats, templates and documents are never visible to other users or companies. Row-level security in the database means even at the infrastructure level, data is separated by company.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">What types of documents can Breeze HR draft?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Over 25 templates including offer letters, promotion letters, disciplinary letters, grievance responses, redundancy letters, settlement agreement letters, reference letters, regulated references (FCA/SYSC 22), flexible working decisions, maternity and paternity leave confirmation, return to work letters, performance improvement plans and more. You can also upload your own templates and it will fill them automatically.</div>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- SETTINGS -->
