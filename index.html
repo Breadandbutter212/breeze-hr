@@ -611,27 +611,31 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- FAQS -->
 <div class="view manage-view" id="view-faqs">
   <div class="manage-topbar"><div><div class="manage-title">FAQs</div><div class="manage-sub">Common questions about Breeze HR.</div></div></div>
-  <div class="manage-body" style="max-width:680px;">
-    <div style="display:flex;flex-direction:column;gap:12px;padding:4px 0;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Does Breeze HR stay up to date with UK employment law?</div>
-        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Yes. Breeze HR is built on continuously updated AI trained on ACAS guidance, statutory rates and UK employment legislation. You do not need to manually update anything - changes to things like statutory pay rates, notice periods or new rights are reflected automatically as the underlying model is updated.</div>
+  <div class="manage-body">
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;grid-column:1/-1;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:10px;">How is Breeze HR different from just using an AI model like ChatGPT?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.8;">Most AI tools give you a generic answer based on what you typed. Breeze HR builds a picture of how your team actually works and gets more accurate the longer you use it. It reads and stores your own HR policies, so answers are based on your rules - not a generic template. It learns your writing style from samples you paste in, and tracks how your team edits its drafts over time. If you always shorten letters, remove certain sign-offs or change the tone, it picks that up and adjusts. It also knows what types of questions your team typically asks, which situations you escalate, and what language you use - so it starts to sound like your HR function, not a chatbot. On top of that, it is built specifically for UK HR - it knows ACAS codes, statutory rates, employment tribunal risk levels and the right process for grievances, disciplinaries, redundancy and more. A general AI model does not have any of that context.</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">How does Breeze HR learn my writing style?</div>
-        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Go to Settings and paste an example email or letter you have written. Breeze HR uses this to match your tone, sign-off and phrasing when drafting. It also adapts in real time based on how your team edits its suggestions - if you consistently shorten drafts or remove certain phrases, it picks that up over time.</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:10px;">Does Breeze HR stay up to date with UK employment law?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.8;">Yes. Breeze HR is built on continuously updated AI trained on ACAS guidance, statutory rates and UK employment legislation. You do not need to manually update anything - changes to statutory pay rates, notice periods or new employee rights are reflected automatically as the underlying model is updated.</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Can I use my own HR policies?</div>
-        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Yes - go to Policies and upload your company documents as PDF, Word or text files. Breeze HR reads them and uses them as the primary reference when answering questions, so you get answers specific to your business rather than generic advice. If you have not uploaded a policy for a topic, it falls back to ACAS guidance and UK employment law.</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:10px;">How does Breeze HR learn my writing style?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.8;">Go to Settings and paste an example email or letter you have written. Breeze HR uses this to match your tone, sign-off and phrasing when drafting. It also adapts based on how your team edits its suggestions over time - if you consistently shorten drafts or change certain phrases, it adjusts to match.</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Is each company's data kept separate?</div>
-        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Completely. Every company has its own isolated workspace. Your policies, chats, templates and documents are never visible to other users or companies. Row-level security in the database means even at the infrastructure level, data is separated by company.</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:10px;">Can I use my own HR policies?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.8;">Yes - upload your company documents under Policies as PDF, Word or text files. Breeze HR reads them and uses them first when answering questions, so answers reflect your specific rules rather than generic advice. If no policy exists for a topic, it falls back to ACAS guidance and UK employment law.</div>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
-        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">What types of documents can Breeze HR draft?</div>
-        <div style="font-size:13px;color:var(--ink2);line-height:1.7;">Over 25 templates including offer letters, promotion letters, disciplinary letters, grievance responses, redundancy letters, settlement agreement letters, reference letters, regulated references (FCA/SYSC 22), flexible working decisions, maternity and paternity leave confirmation, return to work letters, performance improvement plans and more. You can also upload your own templates and it will fill them automatically.</div>
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:10px;">Is each company's data kept separate?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.8;">Completely. Every company has its own isolated workspace. Your policies, chats, templates and documents are never visible to other users or companies. Row-level security at the database level means data is separated by company even at the infrastructure level.</div>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 24px;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:10px;">What types of documents can Breeze HR draft?</div>
+        <div style="font-size:13px;color:var(--ink2);line-height:1.8;">Over 25 templates - offer letters, promotion letters, disciplinary letters, grievance responses, redundancy letters, settlement agreements, reference letters, regulated references (FCA/SYSC 22), flexible working decisions, maternity and paternity leave confirmation, return to work letters, performance improvement plans and more. You can also upload your own templates and it fills them in automatically.</div>
       </div>
     </div>
   </div>
@@ -2895,7 +2899,7 @@ async function fetchEmailsForChat() {
   if (!currentUser) return;
   const status = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`).then(r=>r.json()).catch(()=>({}));
   const provider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
-  if (!provider) { sendChat('What HR emails do I have? (Note: no email account connected — go to Settings → Integrations to connect Gmail or Outlook)'); return; }
+  if (!provider) { sendChat('What HR emails do I have? (Note: no email account connected - go to Settings → Integrations to connect Gmail or Outlook)'); return; }
   const ta = document.getElementById('chatInput');
   if (ta) { ta.value = 'Summarise my most recent emails, highlighting anything that needs urgent HR attention'; ta.focus(); }
 }
@@ -2935,7 +2939,7 @@ function renderIntegrationsUI(status) {
       </div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:500;color:var(--ink);">${intg.label}</div>
-        <div style="font-size:11px;color:${connected?'var(--green)':'var(--ink3)'};margin-top:1px;">${connected?'Connected':'Not connected'} — ${intg.desc}</div>
+        <div style="font-size:11px;color:${connected?'var(--green)':'var(--ink3)'};margin-top:1px;">${connected?'Connected':'Not connected'} - ${intg.desc}</div>
       </div>
       ${intg.comingSoon
         ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink3);padding:3px 8px;border-radius:20px;border:1px solid var(--border);">Coming soon</span>`
