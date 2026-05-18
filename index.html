@@ -370,7 +370,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div class="login-left-sub">Draft letters, manage policies, answer employee questions and run your HR function - all in one place.</div>
       <div class="login-left-pills">
         <div class="login-left-pill">✦ Letters drafted in seconds</div>
-        <div class="login-left-pill">🧠 Learns your HR style</div>
+        <div class="login-left-pill">⚡ Adapts to how your team works</div>
         <div class="login-left-pill">📋 Your policies, always on hand</div>
         <div class="login-left-pill">✉️ Works with your inbox</div>
         <div class="login-left-pill">📊 Instant people insights</div>
@@ -3178,7 +3178,7 @@ function renderDashboard() {
       <button onclick="resetAnalytics()" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">Change file</button>
     </div>
     <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
-      <input id="analyticsFilter" placeholder="Filter or edit: e.g. department = Engineering, salary > 50000, status is Active..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'" onkeydown="if(event.key==='Enter')applyAnalyticsFilter()">
+      <input id="analyticsFilter" placeholder="e.g. only HR department data, all 2020 hires, female employees only, salary above 40000..."style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.borderColor='var(--accent)';this.style.background='white'" onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'" onkeydown="if(event.key==='Enter')applyAnalyticsFilter()">
       <button onclick="applyAnalyticsFilter()" class="btn btn-primary btn-sm">Apply</button>
       <button onclick="clearAnalyticsFilter()" class="btn btn-secondary btn-sm">Clear</button>
     </div>
@@ -3202,36 +3202,87 @@ function resetAnalytics() {
 
 let _analyticsRawData = null; // unfiltered original rows
 
-function applyAnalyticsFilter() {
+async function applyAnalyticsFilter() {
   const input = document.getElementById('analyticsFilter');
   if (!input || !_analyticsRawData) return;
   const expr = input.value.trim();
   if (!expr) { analyticsData = _analyticsRawData; renderDashboard(); return; }
+
+  const applyBtn = input.nextElementSibling;
+  const origText = applyBtn?.textContent;
+  if (applyBtn) { applyBtn.textContent = '...'; applyBtn.disabled = true; }
+
   try {
-    // Parse: "col operator value" - supports =, !=, >, <, >=, <=, is, contains
-    const m = expr.match(/^(.+?)\s*(>=|<=|!=|>|<|=|is|contains)\s*(.+)$/i);
-    if (!m) { alert('Format: column = value  or  column > 100  or  column contains text'); return; }
-    const [,col,op,val] = m.map(s=>s?.trim());
-    const colKey = col.toLowerCase().replace(/\s+/g,'_');
-    analyticsData = _analyticsRawData.filter(row => {
-      const rv = String(row[colKey]||'').toLowerCase();
-      const nv = parseFloat(val), nr = parseFloat(rv);
-      switch(op.toLowerCase()) {
-        case '=': case 'is': return rv === val.toLowerCase();
-        case '!=': return rv !== val.toLowerCase();
-        case '>': return nr > nv;
-        case '<': return nr < nv;
-        case '>=': return nr >= nv;
-        case '<=': return nr <= nv;
-        case 'contains': return rv.includes(val.toLowerCase());
-        default: return true;
-      }
+    // Build column context for the AI
+    const cols = Object.keys(_analyticsRawData[0] || {});
+    const samples = {};
+    cols.forEach(c => {
+      const vals = [...new Set(_analyticsRawData.map(r=>String(r[c]||'').trim()).filter(Boolean))].slice(0,8);
+      samples[c] = vals;
     });
-    if (!analyticsData.length) { alert('No rows match that filter.'); analyticsData = _analyticsRawData; return; }
+
+    const prompt = `You are a data filter assistant. Given a dataset with these columns and sample values:
+${JSON.stringify(samples, null, 2)}
+
+The user wants to filter the data with this request: "${expr}"
+
+Return ONLY a JSON array of filter conditions to AND together. Each condition:
+{"col": "exact_column_name", "op": "="|"!="|">"|"<"|">="|"<="|"contains"|"year=", "val": "value"}
+
+Use "year=" op when filtering by year in a date column (val = "2020").
+Use "contains" for partial text matches.
+Match column names exactly as shown above.
+Return [] if no filter needed (show all).
+Return only the JSON array, no explanation.`;
+
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], system: 'You are a precise data filter assistant. Return only valid JSON.' })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '[]';
+    const jsonMatch = text.match(/\[[\s\S]*\]/);
+    const conditions = jsonMatch ? JSON.parse(jsonMatch[0]) : [];
+
+    if (!conditions.length) {
+      analyticsData = _analyticsRawData;
+    } else {
+      analyticsData = _analyticsRawData.filter(row => {
+        return conditions.every(({ col, op, val }) => {
+          const rv = String(row[col] || '').trim().toLowerCase();
+          const nv = parseFloat(val);
+          switch (op) {
+            case '=': return rv === String(val).toLowerCase();
+            case '!=': return rv !== String(val).toLowerCase();
+            case '>': return parseFloat(rv) > nv;
+            case '<': return parseFloat(rv) < nv;
+            case '>=': return parseFloat(rv) >= nv;
+            case '<=': return parseFloat(rv) <= nv;
+            case 'contains': return rv.includes(String(val).toLowerCase());
+            case 'year=': { const d = new Date(row[col]); return !isNaN(d) && d.getFullYear() === parseInt(val); }
+            default: return true;
+          }
+        });
+      });
+    }
+
+    if (!analyticsData.length) {
+      analyticsData = _analyticsRawData;
+      const msg = document.createElement('div');
+      msg.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A202C;color:white;padding:10px 20px;border-radius:8px;font-size:13px;z-index:999;';
+      msg.textContent = 'No rows matched - showing all data';
+      document.body.appendChild(msg); setTimeout(()=>msg.remove(), 3000);
+    }
+
     renderDashboard();
-    // Restore filter text after re-render
-    setTimeout(()=>{ const f=document.getElementById('analyticsFilter'); if(f)f.value=expr; },80);
-  } catch(e) { alert('Filter error: ' + e.message); }
+    setTimeout(() => { const f = document.getElementById('analyticsFilter'); if (f) f.value = expr; }, 80);
+  } catch(e) {
+    alert('Filter error: ' + e.message);
+  } finally {
+    if (applyBtn) { applyBtn.textContent = origText; applyBtn.disabled = false; }
+  }
 }
 
 function clearAnalyticsFilter() {
