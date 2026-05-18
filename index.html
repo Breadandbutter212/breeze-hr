@@ -402,7 +402,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <div class="login-field"><label class="login-label">Password</label><input class="login-input" type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()"></div>
         <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
         <div class="login-error" id="loginError"></div>
-        <div class="login-toggle">Don't have an account? <a onclick="showWaitlist()">Join the beta testing group for early access →</a></div>
+        <div class="login-toggle" style="white-space:nowrap;">Don't have an account? <a onclick="showWaitlist()">Join the waitlist for early access →</a></div>
       </div>
       <!-- Waitlist form -->
       <div id="waitlistForm" style="display:none;">
