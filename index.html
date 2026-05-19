@@ -1828,6 +1828,8 @@ function toggleFaq(el) {
 
 function showTmplHintIfNew() {
   if (localStorage.getItem('tmplHintDismissed')) return;
+  if (!localStorage.getItem('breeze_tour_done')) return;
+  if (!currentUser) return;
   if (document.getElementById('tmplHintOverlay')) return;
   const ov = document.createElement('div');
   ov.id = 'tmplHintOverlay';
