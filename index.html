@@ -2257,7 +2257,17 @@ function startRecording() {
 }
 
 function stopRecording() {
-  if (recRecognition) { recRecognition.onend = null; recRecognition.stop(); recRecognition = null; }
+  if (recRecognition) {
+    // Capture any last interim result before stopping
+    recRecognition.onresult = e => {
+      for (let i = e.resultIndex; i < e.results.length; i++) {
+        recFinalTranscript += e.results[i][0].transcript + ' ';
+      }
+    };
+    recRecognition.onend = null;
+    recRecognition.stop();
+    recRecognition = null;
+  }
   clearInterval(recTimerInterval);
   recIsRecording = false;
   const btn = document.getElementById('recBtn');
@@ -2265,13 +2275,17 @@ function stopRecording() {
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Start recording';
     btn.style.background = '#EF4444';
   }
-  document.getElementById('recStatus').textContent = recFinalTranscript.trim() ? 'Recording stopped - ready to write up' : 'Recording stopped';
-  recCheckReady();
+  // Small delay to catch any final result events that fire right after stop
+  setTimeout(() => {
+    const status = document.getElementById('recStatus');
+    if (status) status.textContent = recFinalTranscript.trim() ? 'Recording stopped - ready to write up' : 'Recording stopped';
+    recCheckReady();
+  }, 200);
 }
 
 function recCheckReady() {
   const pasteVal = document.getElementById('recPasteArea')?.value?.trim() || '';
-  const hasContent = recFinalTranscript.trim().length > 20 || pasteVal.length > 20;
+  const hasContent = recFinalTranscript.trim().length > 0 || pasteVal.length > 0;
   const btn = document.getElementById('recWriteBtn');
   if (btn) { btn.disabled = !hasContent; btn.style.opacity = hasContent ? '1' : '0.4'; }
 }
