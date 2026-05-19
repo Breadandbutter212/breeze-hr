@@ -161,6 +161,19 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .dp-btns { display: flex; gap: 5px; }
 .dp-body { flex: 1; overflow-y: auto; padding: 20px; }
 .doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 48px 52px; max-width: 640px; margin: 0 auto; min-height: 480px; font-family: 'Inter', sans-serif; line-height: 1.75; }
+.mammoth-doc { font-size: 11pt; color: var(--ink); }
+.mammoth-doc p { margin: 0 0 10px; }
+.mammoth-doc h1 { font-size: 14pt; font-weight: 700; margin: 16px 0 10px; }
+.mammoth-doc h2 { font-size: 12pt; font-weight: 700; margin: 14px 0 8px; }
+.mammoth-doc h3 { font-size: 11pt; font-weight: 600; margin: 12px 0 6px; }
+.mammoth-doc h4, .mammoth-doc h5, .mammoth-doc h6 { font-weight: 600; margin: 10px 0 6px; }
+.mammoth-doc ul, .mammoth-doc ol { margin: 0 0 10px 24px; padding: 0; }
+.mammoth-doc li { margin-bottom: 4px; }
+.mammoth-doc table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11pt; }
+.mammoth-doc td, .mammoth-doc th { padding: 5px 8px; border: 1px solid var(--border); vertical-align: top; }
+.mammoth-doc strong, .mammoth-doc b { font-weight: 600; }
+.mammoth-doc em, .mammoth-doc i { font-style: italic; }
+.mammoth-doc br { display: block; margin-bottom: 4px; }
 .doc-co { font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.02em; }
 .doc-rule { height: 2px; background: var(--accent); border-radius: 1px; margin-bottom: 28px; }
 .doc-date { font-size: 12px; color: var(--ink3); margin-bottom: 20px; }
@@ -1648,7 +1661,7 @@ function updatePreview() {
     const notice = `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
     if (isHtml) {
       // Wrap mammoth HTML in doc-page with basic contract styling
-      body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;font-size:11.5pt;line-height:1.6;">${rendered}</div>`;
+      body.innerHTML = `${notice}<div class="doc-page mammoth-doc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${rendered}</div>`;
     } else {
       const paragraphs = rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
       body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
