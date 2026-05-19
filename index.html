@@ -746,6 +746,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         </div>
       </div>
 
+      <!-- Template preview note -->
+      <div id="pres-template-note" style="display:none;background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400E;margin-bottom:12px;">
+        Preview shows content only - your template's colours, fonts, images and layouts will appear when downloaded.
+      </div>
+
       <!-- Slide grid -->
       <div id="pres-slide-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
 
@@ -1910,7 +1915,7 @@ async function generatePresentation() {
   const isUpdate = !!presUploadedText;
 
   const systemPrompt = keepStructure
-    ? `You are updating an existing presentation. You MUST output exactly the same number of slides, and for each slide you MUST output exactly the same number of text items as the original (shown as item counts). Keep titles the same. Only rewrite bullet/body content to be improved and up to date. Return only valid JSON.`
+    ? `You are updating an existing presentation. Rules: (1) Output exactly the same number of slides. (2) For each slide, the bullets array must contain exactly (item count - 1) items. (3) Keep slide titles identical. (4) For rows shown with a '|' separator these are two-column layouts - output ONLY the cell value each side, never prefix with column header labels like 'Appraisal:' or 'Management:'. Example: if original is 'One-time event | Ongoing', output 'Annual review | Year-round process' not 'Appraisal: Annual review | Management: Year-round process'. (5) Keep cell values short (under 20 chars each side). Return only valid JSON.`
     : isUpdate
     ? `You are improving an existing presentation. Keep the same themes and flow but you may improve structure and quality. Draw on AI best practice. Return only valid JSON.`
     : `You are a professional presentation designer. Create a high-quality, substantive workplace presentation. Draw on your full knowledge of best practice, research and frameworks for this topic. Return only valid JSON.`;
@@ -2009,6 +2014,8 @@ function renderSlides() {
   if (titleEl) titleEl.textContent = presTitle;
   container.innerHTML = presSlides.map((s,i) => slideCardHtml(s,i)).join('');
   panel.style.display = 'block';
+  const note = document.getElementById('pres-template-note');
+  if (note) note.style.display = presUploadedBase64 ? 'block' : 'none';
 }
 
 function openSlideEdit(i) {
