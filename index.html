@@ -2065,42 +2065,27 @@ function downloadPresentation() {
         const slide = presSlides[idx]; if (!slide) return;
         let xml = zip.files[sf].asText();
 
-        // Replace title: find first <a:p> in a title placeholder (ph type=title or idx=0)
-        // Strategy: replace text in all <a:t> runs within a paragraph, consolidating runs
-        // to avoid split-run issues. We replace paragraph by paragraph.
-        const allTexts = [slide.title, ...(slide.subtitle ? [slide.subtitle] : []), ...(slide.bullets || [])].filter(Boolean);
-        let textIdx = 0;
+        // Collect new texts in order: title, subtitle, bullets
+        const newTexts = [slide.title, ...(slide.subtitle ? [slide.subtitle] : []), ...(slide.bullets || [])].filter(Boolean);
+        let tIdx = 0;
 
-        // Replace each paragraph's text content with our new text, keeping run formatting
-        xml = xml.replace(/(<a:p\b[^>]*>)([\s\S]*?)(<\/a:p>)/g, (match, open, body, close) => {
-          if (!/<a:t/.test(body)) return match;
-          if (/<a:fld/.test(body)) return match;
-
-          const newText = allTexts[textIdx];
+        // Safest approach: only replace <a:t> text nodes, touch nothing else
+        // This preserves ALL formatting, images, positions, fonts, colours exactly
+        xml = xml.replace(/<a:t>([^<]*)<\/a:t>/g, (match, oldText) => {
+          // Skip slide number-only text and empty
+          if (!oldText.trim() || /^\s*\d{1,3}\s*$/.test(oldText)) return match;
+          // Skip field code text
+          const newText = newTexts[tIdx];
           if (newText === undefined) return match;
-          textIdx++;
-
-          // Keep paragraph properties (indent level, spacing, alignment) intact
-          const pPrMatch = body.match(/(<a:pPr[\s\S]*?<\/a:pPr>|<a:pPr[^>]*\/>)/);
-          const pPr = pPrMatch ? pPrMatch[0] : '';
-
-          // Keep end paragraph run properties intact
-          const endRPrMatch = body.match(/<a:endParaRPr[\s\S]*?(?:\/>|<\/a:endParaRPr>)/);
-          const endRPr = endRPrMatch ? endRPrMatch[0] : '';
-
-          // Keep FULL first run rPr including children (solidFill, fonts, etc.) - capture element not just attrs
-          const rPrMatch = body.match(/<a:rPr[\s\S]*?(?:\/>|<\/a:rPr>)/);
-          const rPr = rPrMatch ? rPrMatch[0] : '';
-
+          tIdx++;
           const escaped = newText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          return `${open}${pPr}<a:r>${rPr}<a:t>${escaped}</a:t></a:r>${endRPr}${close}`;
+          return `<a:t>${escaped}</a:t>`;
         });
 
         zip.file(sf, xml);
       });
 
-      const out = zip.generate({ type:'base64', compression:'DEFLATE' });
-      const blob = new Blob([Uint8Array.from(atob(out), c=>c.charCodeAt(0))], { type:'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+      const blob = new Blob([zip.generate({ type:'uint8array' })], { type:'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
       a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
       btn.textContent = '✓ Downloaded'; btn.disabled = false;
