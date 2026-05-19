@@ -3,6 +3,19 @@ import Docxtemplater from 'docxtemplater';
 
 const enc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+function parseInlineRuns(line) {
+  // Split on **bold** markers; odd indices are bold segments
+  const parts = line.split(/\*\*(.*?)\*\*/g);
+  return parts.map((text, i) => ({ text, bold: i % 2 === 1 })).filter(r => r.text);
+}
+
+function runsToXml(runs) {
+  return runs.map(r => {
+    const rPr = r.bold ? '<w:rPr><w:b/></w:rPr>' : '';
+    return `<w:r>${rPr}<w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`;
+  }).join('');
+}
+
 function textToDocxBuffer(text, title) {
   const lines = (text||'').split('\n');
   let paras = '';
@@ -13,14 +26,38 @@ function textToDocxBuffer(text, title) {
       paras += `<w:p><w:pPr><w:spacing w:before="0" w:after="0"/></w:pPr></w:p>`;
       continue;
     }
-    // Detect section headings: "1. TITLE" / "1.1 Something" / short ALL-CAPS lines
-    const isSection = /^\d+\.\d*\s/.test(line.trim());
-    const isAllCaps = line.trim().length < 70 && line.trim() === line.trim().toUpperCase() && /[A-Z]{3}/.test(line);
-    const bold = isSection || isAllCaps;
-    const spaceBefore = bold ? '200' : '0';
-    const spaceAfter  = bold ? '80'  : '100';
-    const rPr = bold ? '<w:rPr><w:b/></w:rPr>' : '';
-    paras += `<w:p><w:pPr><w:spacing w:before="${spaceBefore}" w:after="${spaceAfter}"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${enc(line)}</w:t></w:r></w:p>`;
+
+    const trimmed = line.trim();
+
+    // Bullet point: line starting with •, - or * followed by a space
+    const bulletMatch = trimmed.match(/^[•\-]\s+([\s\S]*)/);
+    if (bulletMatch) {
+      const runs = parseInlineRuns(bulletMatch[1]);
+      paras += `<w:p><w:pPr><w:ind w:left="360"/><w:spacing w:before="0" w:after="80"/></w:pPr><w:r><w:t xml:space="preserve">• </w:t></w:r>${runsToXml(runs)}</w:p>`;
+      continue;
+    }
+
+    // Parse inline **bold** markers
+    const runs = parseInlineRuns(trimmed);
+    const hasBold = runs.some(r => r.bold);
+    const allBold = hasBold && runs.every(r => r.bold || !r.text.trim());
+
+    if (allBold) {
+      // Entire line bold = section heading with extra spacing
+      paras += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr>${runsToXml(runs)}</w:p>`;
+    } else if (hasBold) {
+      // Mixed inline bold (e.g. **Date:** 19 May 2026)
+      paras += `<w:p><w:pPr><w:spacing w:before="0" w:after="100"/></w:pPr>${runsToXml(runs)}</w:p>`;
+    } else {
+      // Plain text - detect numbered sections or ALL-CAPS headings
+      const isSection = /^\d+\.\d*\s/.test(trimmed);
+      const isAllCaps = trimmed.length < 70 && trimmed === trimmed.toUpperCase() && /[A-Z]{3}/.test(trimmed);
+      const bold = isSection || isAllCaps;
+      const spaceBefore = bold ? '200' : '0';
+      const spaceAfter  = bold ? '80'  : '100';
+      const rPr = bold ? '<w:rPr><w:b/></w:rPr>' : '';
+      paras += `<w:p><w:pPr><w:spacing w:before="${spaceBefore}" w:after="${spaceAfter}"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${enc(trimmed)}</w:t></w:r></w:p>`;
+    }
   }
 
   const docXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>

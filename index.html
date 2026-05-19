@@ -2231,6 +2231,7 @@ function startRecording() {
   const btn = document.getElementById('recBtn');
   btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop recording';
   btn.style.background = '#374151';
+  btn.style.borderColor = '#374151';
   document.getElementById('recTimer').style.display = 'block';
   document.getElementById('recStatus').textContent = 'Recording - speak clearly';
   recTimerInterval = setInterval(() => {
@@ -2257,13 +2258,14 @@ function stopRecording() {
   recIsRecording = false;
   const btn = document.getElementById('recBtn');
   if (btn) {
-    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Start recording';
-    btn.style.background = '#EF4444';
+    btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Record again';
+    btn.style.background = '#6B7280';
+    btn.style.borderColor = '#6B7280';
   }
   // Small delay to catch any final result events that fire right after stop
   setTimeout(() => {
     const status = document.getElementById('recStatus');
-    if (status) status.textContent = recFinalTranscript.trim() ? 'Recording stopped - ready to write up' : 'Recording stopped';
+    if (status) status.textContent = recFinalTranscript.trim() ? 'Recording complete - ready to write up' : 'Recording stopped';
     recCheckReady();
   }, 200);
 }
