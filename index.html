@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Breeze HR</title>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.js"></script>
@@ -172,7 +172,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .mammoth-doc li { margin-bottom: 4px; }
 .mammoth-doc table { width: 100%; border-collapse: collapse; margin-bottom: 12px; font-size: 11pt; }
 .mammoth-doc td, .mammoth-doc th { padding: 5px 8px; border: 1px solid var(--border); vertical-align: top; }
-.mammoth-doc strong, .mammoth-doc b { font-weight: 600; }
+.mammoth-doc strong, .mammoth-doc b { font-weight: 700; }
 .mammoth-doc em, .mammoth-doc i { font-style: italic; }
 .mammoth-doc br { display: block; margin-bottom: 4px; }
 .doc-co { font-size: 18px; font-weight: 600; color: var(--ink); margin-bottom: 8px; letter-spacing: -0.02em; }
@@ -180,6 +180,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .doc-date { font-size: 12px; color: var(--ink3); margin-bottom: 20px; }
 .doc-body-text { font-size: 13px; color: var(--ink); }
 .doc-body-text p { margin-bottom: 14px; }
+.doc-body-text strong, .doc-body-text b { font-weight: 700; }
+.doc-body-text em, .doc-body-text i { font-style: italic; }
 .doc-sig { margin-top: 40px; font-size: 13px; }
 .doc-sig-name { font-weight: 600; margin-top: 28px; }
 .ph { color: var(--ink3); background: var(--surface2); border-radius: 3px; padding: 1px 5px; font-style: italic; font-size: 12px; }
@@ -1591,7 +1593,7 @@ const TMPL_NEW_ROLE = ['t1','t3'];
 // Templates where salary = NEW salary (don't pre-fill from HRIS)
 const TMPL_NEW_SALARY = ['t1','t2','t3'];
 
-function openTmpl(t) {
+async function openTmpl(t) {
   selTmpl=t;genStep=0;
   // Pre-fill date and reset - always auto-fill letter date, never ask
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
@@ -1602,7 +1604,15 @@ function openTmpl(t) {
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
   split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
-  updatePreview(); // show skeleton with placeholders immediately
+  updatePreview(); // show initial preview immediately
+  // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
+  if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
+    try {
+      const arrBuf = Uint8Array.from(atob(t.base64), c => c.charCodeAt(0)).buffer;
+      const result = await mammoth.convertToHtml({ arrayBuffer: arrBuf });
+      if (result.value && selTmpl === t) { t.content = result.value; updatePreview(); }
+    } catch(e) {}
+  }
   askQ();
 }
 
