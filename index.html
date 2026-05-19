@@ -580,6 +580,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         Bulk generate
       </button>
       <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)"></label>
+      <label class="btn btn-secondary btn-sm" style="cursor:pointer;" title="Upload a filled document and AI will convert it into a reusable template">✦ Convert to template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="convertToTemplate(event)"></label>
     </div>
   </div>
   <div class="docs-body">
@@ -1260,6 +1261,77 @@ function policyText(content) {
     return parts.length > 1 ? parts[1] : '';
   }
   return content;
+}
+
+async function convertToTemplate(event) {
+  const file = event.target.files[0]; if (!file || !currentProfile) return;
+  const name = file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
+
+  // Show progress
+  const toast = document.createElement('div');
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A202C;color:white;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;';
+  toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> AI is converting your document into a template...';
+  document.body.appendChild(toast);
+
+  try {
+    const textContent = await readFileAsText(file);
+    if (!textContent || textContent.trim().length < 50) { toast.remove(); alert('Could not read document content.'); return; }
+
+    const prompt = `You are a template converter. The following is a completed HR document with real personal details.
+
+Convert it into a reusable template by replacing ALL personal/variable information with {field_name} placeholders.
+
+Rules:
+- Replace employee/candidate names with {employee_name}
+- Replace job titles with {job_title}
+- Replace salary figures with {salary}
+- Replace start dates with {start_date}
+- Replace end dates with {end_date}
+- Replace notice periods with {notice_period}
+- Replace probation periods with {probation_period}
+- Replace hours per week with {hours_per_week}
+- Replace work locations/addresses with {work_location}
+- Replace manager/signatory names with {manager_name}
+- Replace holiday entitlement numbers with {holiday_entitlement}
+- Replace specific monetary amounts with descriptive placeholders like {settlement_amount}
+- Replace company-specific terms, targets or individual details with appropriate {placeholder_name} fields
+- Keep all standard legal/contractual language exactly as is
+- Keep headings, structure and formatting intact
+- Return ONLY the converted template text, no explanation, no preamble
+
+Document to convert:
+${textContent.substring(0, 6000)}`;
+
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], system: 'You are a precise template converter. Return only the converted template text with {placeholder} fields. No explanations.' })
+    });
+    const data = await res.json();
+    const converted = data.content?.[0]?.text;
+    if (!converted) throw new Error('No response from AI');
+
+    // Detect fields from the converted template
+    const fields = detectTemplateFields(converted, name);
+
+    // Save as template
+    const { error } = await sb.from('policies').insert({
+      company_id: currentProfile.company_id,
+      name: `TEMPLATE: ${name}`,
+      content: converted.substring(0, 500000)
+    }).select().single();
+    if (error) throw new Error(error.message);
+
+    tmpls.unshift({ id:'t_'+Date.now(), name, emoji:'📄', type:'Your uploads', isCustom:true, isDocx:false, base64:'', content:converted, flow:fields });
+    renderTmpls();
+    toast.remove();
+    alert(`✓ "${name}" converted to template with ${fields.length} fields detected. Find it under Your Uploads.`);
+  } catch(e) {
+    toast.remove();
+    alert('Conversion failed: ' + e.message);
+  }
+  event.target.value = '';
 }
 
 async function uploadTemplate(event) {
