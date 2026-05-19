@@ -683,66 +683,56 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- PRESENTATIONS -->
 <div class="view manage-view" id="view-presentations">
   <div class="manage-topbar">
-    <div><div class="manage-title">Presentations</div><div class="manage-sub">Create and update presentations using your SharePoint, policies and intranet.</div></div>
+    <div><div class="manage-title">Presentations</div><div class="manage-sub">AI-powered slides using your company documents, SharePoint and best practice.</div></div>
     <button class="btn btn-ghost btn-sm" onclick="resetPresentation()">↺ New</button>
   </div>
   <div class="manage-body">
 
-    <!-- Mode tabs -->
-    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;width:fit-content;margin-bottom:20px;">
-      <button id="pres-tab-create" onclick="setPresMode('create')" style="padding:7px 18px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;">Create new</button>
-      <button id="pres-tab-update" onclick="setPresMode('update')" style="padding:7px 18px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--ink2);">Update existing</button>
-    </div>
+    <!-- Input panel -->
+    <div id="pres-input-panel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 26px;margin-bottom:20px;">
 
-    <!-- Create mode -->
-    <div id="pres-create">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:20px;">
-        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
-          <div style="flex:1;min-width:220px;">
-            <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">What presentation do you need?</div>
-            <input id="pres-topic" placeholder="e.g. New hire induction, Health & safety briefing..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);" onkeydown="if(event.key==='Enter')generatePresentation()">
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
+        <div style="flex:1;min-width:260px;">
+          <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:5px;">What do you need?</div>
+          <textarea id="pres-topic" rows="2" placeholder="e.g. New hire induction for a 120-person fintech, update our performance training deck, create a manager toolkit for giving feedback..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);resize:none;line-height:1.6;box-sizing:border-box;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generatePresentation()}"></textarea>
+        </div>
+        <button id="pres-gen-btn" onclick="generatePresentation()" class="btn btn-primary btn-sm" style="padding:10px 20px;">✦ Build</button>
+      </div>
+
+      <!-- Expandable extras -->
+      <div style="border-top:1px solid var(--border);padding-top:12px;">
+        <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Optional sources</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">Intranet URL <span style="color:var(--ink3);">(fetched automatically)</span></div>
+            <input id="pres-url" placeholder="https://..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);box-sizing:border-box;">
           </div>
           <div style="flex:1;min-width:200px;">
-            <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">Intranet URL <span style="font-weight:400;color:var(--ink3);">(optional)</span></div>
-            <input id="pres-url" placeholder="https://your-intranet.com/page" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);">
-          </div>
-          <div style="padding-top:18px;">
-            <button id="pres-gen-btn" onclick="generatePresentation()" class="btn btn-primary btn-sm">✦ Generate</button>
+            <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">Upload existing .pptx <span style="color:var(--ink3);">(to update or use as base)</span></div>
+            <label style="display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;cursor:pointer;font-size:12px;color:var(--ink2);background:var(--bg);">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+              <span id="pres-upload-label">Choose file</span>
+              <input type="file" accept=".pptx" style="display:none" onchange="handlePresUpload(event)">
+            </label>
           </div>
         </div>
-        <div style="margin-top:12px;">
-          <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">Or paste intranet content <span style="font-weight:400;color:var(--ink3);">if the page requires login</span></div>
-          <textarea id="pres-paste" placeholder="Paste any relevant page content here..." style="width:100%;min-height:70px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
+        <div style="margin-top:10px;">
+          <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">Paste intranet content <span style="color:var(--ink3);">(if page requires login)</span></div>
+          <textarea id="pres-paste" rows="2" placeholder="Paste page content here..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
         </div>
       </div>
     </div>
 
-    <!-- Update mode -->
-    <div id="pres-update" style="display:none;">
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:20px;">
-        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:4px;">Paste your existing presentation content</div>
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">Copy all text from your existing presentation and paste it below. Breeze HR will compare it against your current policies, handbook and any intranet URLs you provide, then suggest what needs updating.</div>
-        <textarea id="pres-existing" placeholder="Paste your existing presentation content here..." style="width:100%;min-height:140px;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
-        <div style="display:flex;gap:12px;align-items:flex-end;margin-top:12px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:200px;">
-            <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">Intranet URL to check against <span style="font-weight:400;color:var(--ink3);">(optional)</span></div>
-            <input id="pres-update-url" placeholder="https://your-intranet.com/page" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);">
-          </div>
-          <button id="pres-update-btn" onclick="updatePresentation()" class="btn btn-primary btn-sm">✦ Check for updates</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- Status / progress -->
-    <div id="pres-status" style="display:none;font-size:12px;color:var(--ink3);padding:8px 0;display:flex;align-items:center;gap:8px;">
+    <!-- Status -->
+    <div id="pres-status" style="display:none;font-size:12px;color:var(--ink3);padding:6px 0 12px;align-items:center;gap:8px;">
       <span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span>
-      <span id="pres-status-text">Generating...</span>
+      <span id="pres-status-text">Working...</span>
     </div>
 
-    <!-- Suggestions panel (update mode) -->
-    <div id="pres-suggestions" style="display:none;margin-bottom:20px;">
-      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Suggested updates</div>
-      <div id="pres-suggestions-body"></div>
+    <!-- Sources used -->
+    <div id="pres-sources" style="display:none;margin-bottom:16px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Sources used</div>
+      <div id="pres-sources-list" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
     </div>
 
     <!-- Slide preview -->
@@ -1767,93 +1757,37 @@ function getDefaultFields(name) {
 }
 
 // ── PRESENTATIONS ──
-let presSlides = [], presTitle = '';
+let presSlides = [], presTitle = '', presUploadedText = '';
 
-function initPresentations() { /* view already rendered in HTML */ }
-
-function setPresMode(mode) {
-  document.getElementById('pres-create').style.display = mode === 'create' ? 'block' : 'none';
-  document.getElementById('pres-update').style.display = mode === 'update' ? 'block' : 'none';
-  document.getElementById('pres-tab-create').style.background = mode === 'create' ? 'var(--accent)' : 'var(--surface)';
-  document.getElementById('pres-tab-create').style.color = mode === 'create' ? 'white' : 'var(--ink2)';
-  document.getElementById('pres-tab-update').style.background = mode === 'update' ? 'var(--accent)' : 'var(--surface)';
-  document.getElementById('pres-tab-update').style.color = mode === 'update' ? 'white' : 'var(--ink2)';
-}
+function initPresentations() {}
 
 function resetPresentation() {
-  presSlides = []; presTitle = '';
-  document.getElementById('pres-slides').style.display = 'none';
-  document.getElementById('pres-suggestions').style.display = 'none';
-  document.getElementById('pres-status').style.display = 'none';
-  document.getElementById('pres-topic').value = '';
-  document.getElementById('pres-url').value = '';
-  document.getElementById('pres-paste').value = '';
-  document.getElementById('pres-existing').value = '';
-  document.getElementById('pres-update-url').value = '';
+  presSlides = []; presTitle = ''; presUploadedText = '';
+  ['pres-slides','pres-status','pres-sources'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.style.display = 'none';
+  });
+  ['pres-topic','pres-url','pres-paste'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  const lbl = document.getElementById('pres-upload-label'); if (lbl) lbl.textContent = 'Choose file';
 }
 
-async function gatherPresContext(topic) {
-  let context = '';
-
-  // 1. Uploaded policies and handbook from Supabase
-  if (currentProfile) {
-    const { data: pols } = await sb.from('policies').select('name,content')
-      .eq('company_id', currentProfile.company_id)
-      .not('name','like','TEMPLATE:%').not('name','like','CHAT:%')
-      .not('name','like','MEETING:%').not('name','like','SETTING:%');
-    if (pols?.length) {
-      context += '\n\nCOMPANY DOCUMENTS:\n' + pols.map(p =>
-        `--- ${p.name} ---\n${policyText(p.content).substring(0, 1500)}`
-      ).join('\n');
-    }
-  }
-
-  // 2. SharePoint search
-  if (window._sharepointConnected && currentUser) {
-    try {
-      const token = await getAuthToken();
-      const r = await fetch('/api/sharepoint-search', {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-        body: JSON.stringify({ userId: currentUser.id, query: topic })
-      });
-      if (r.ok) {
-        const d = await r.json();
-        const items = d?.data?.data?.PrimaryQueryResult?.RelevantResults?.Table?.Rows?.results
-          || d?.data?.data?.value || d?.data?.results || [];
-        if (items.length) {
-          context += '\n\nSHAREPOINT FILES FOUND:\n' + items.slice(0,5).map(item => {
-            const cells = item.Cells?.results || [];
-            const get = k => cells.find(c=>c.Key===k)?.Value || item[k] || '';
-            const modified = get('LastModifiedTime') ? new Date(get('LastModifiedTime')).toLocaleDateString('en-GB') : '';
-            return `- "${get('Title')}" [${(get('FileExtension')||'').toUpperCase()}]${modified?' (modified '+modified+')':''}${get('HitHighlightedSummary')?': '+get('HitHighlightedSummary').replace(/<[^>]+>/g,'').substring(0,200):''}`;
-          }).join('\n');
-        }
-      }
-    } catch(e) {}
-  }
-
-  // 3. Intranet URL fetch
-  const urlInput = document.getElementById('pres-url')?.value?.trim()
-    || document.getElementById('pres-update-url')?.value?.trim();
-  if (urlInput) {
-    setPresStatus('Fetching intranet page...');
-    try {
-      const r = await fetch('/api/fetch-url', {
-        method: 'POST', headers: {'Content-Type':'application/json'},
-        body: JSON.stringify({ url: urlInput })
-      });
-      const d = await r.json();
-      if (d.text) context += `\n\nINTRANET PAGE (${urlInput}):\n${d.text.substring(0,4000)}`;
-      else if (d.error) context += `\n\nNote: Could not fetch ${urlInput} (${d.error}) - page may require login.`;
-    } catch(e) {}
-  }
-
-  // 4. Pasted intranet content
-  const pasted = document.getElementById('pres-paste')?.value?.trim();
-  if (pasted) context += `\n\nPASTED CONTENT:\n${pasted.substring(0,4000)}`;
-
-  return context;
+async function handlePresUpload(event) {
+  const file = event.target.files[0]; if (!file) return;
+  const lbl = document.getElementById('pres-upload-label');
+  if (lbl) lbl.textContent = file.name;
+  try {
+    const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
+    const zip = new PizZip(b64, { base64: true });
+    let text = '';
+    // Extract text from all slide XMLs
+    Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/)).sort().forEach(f => {
+      const xml = zip.files[f].asText();
+      const extracted = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
+      text += extracted + '\n';
+    });
+    presUploadedText = text.substring(0, 8000);
+  } catch(e) { presUploadedText = ''; if (lbl) lbl.textContent = 'Could not read file'; }
 }
 
 function setPresStatus(msg) {
@@ -1864,127 +1798,136 @@ function setPresStatus(msg) {
   else { el.style.display = 'none'; }
 }
 
+function showPresSources(sources) {
+  const panel = document.getElementById('pres-sources');
+  const list = document.getElementById('pres-sources-list');
+  if (!panel || !list || !sources.length) return;
+  list.innerHTML = sources.map(s => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;font-size:11px;">${escapeHtml(s)}</span>`).join('');
+  panel.style.display = 'block';
+}
+
 async function generatePresentation() {
   const topic = document.getElementById('pres-topic')?.value?.trim();
-  if (!topic) { alert('Please describe the presentation you need.'); return; }
+  if (!topic) { document.getElementById('pres-topic')?.focus(); return; }
   const btn = document.getElementById('pres-gen-btn');
   btn.disabled = true; btn.textContent = '⟳ Working...';
-  setPresStatus('Searching your policies and SharePoint...');
+
+  const sourcesUsed = ['AI best practice', 'Your writing style'];
+  let companyContext = '', spContext = '', intranetContext = '', uploadedContext = '';
+
+  // 1. Company policies and handbook
+  setPresStatus('Reading your policies and handbook...');
+  if (currentProfile) {
+    const { data: pols } = await sb.from('policies').select('name,content')
+      .eq('company_id', currentProfile.company_id)
+      .not('name','like','TEMPLATE:%').not('name','like','CHAT:%')
+      .not('name','like','MEETING:%').not('name','like','SETTING:%');
+    if (pols?.length) {
+      companyContext = '\n\nCOMPANY DOCUMENTS (use these for company-specific facts, policies and tone):\n'
+        + pols.map(p => `--- ${p.name} ---\n${policyText(p.content).substring(0,1500)}`).join('\n');
+      sourcesUsed.push(`${pols.length} company document${pols.length>1?'s':''}`);
+    }
+  }
+
+  // 2. SharePoint
+  if (window._sharepointConnected && currentUser) {
+    setPresStatus('Searching SharePoint...');
+    try {
+      const token = await getAuthToken();
+      const r = await fetch('/api/sharepoint-search', {
+        method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+        body: JSON.stringify({ userId: currentUser.id, query: topic })
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const items = d?.data?.data?.PrimaryQueryResult?.RelevantResults?.Table?.Rows?.results
+          || d?.data?.data?.value || d?.data?.results || [];
+        if (items.length) {
+          spContext = '\n\nSHAREPOINT FILES (use format, structure and facts from relevant files):\n'
+            + items.slice(0,6).map(item => {
+              const cells = item.Cells?.results || [];
+              const get = k => cells.find(c=>c.Key===k)?.Value || item[k] || '';
+              const modified = get('LastModifiedTime') ? new Date(get('LastModifiedTime')).toLocaleDateString('en-GB') : '';
+              return `- "${get('Title')}" [${(get('FileExtension')||'').toUpperCase()}]${modified?' modified '+modified:''}${get('HitHighlightedSummary')?': '+get('HitHighlightedSummary').replace(/<[^>]+>/g,'').substring(0,250):''}`;
+            }).join('\n');
+          sourcesUsed.push(`${items.length} SharePoint file${items.length>1?'s':''}`);
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 3. Uploaded existing .pptx
+  if (presUploadedText) {
+    uploadedContext = `\n\nUPLOADED PRESENTATION CONTENT (use this as the structural base - update, improve and expand it):\n${presUploadedText}`;
+    sourcesUsed.push('Uploaded presentation');
+  }
+
+  // 4. Intranet URL
+  const urlInput = document.getElementById('pres-url')?.value?.trim();
+  if (urlInput) {
+    setPresStatus('Fetching intranet page...');
+    try {
+      const r = await fetch('/api/fetch-url', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: urlInput }) });
+      const d = await r.json();
+      if (d.text) { intranetContext = `\n\nINTRANET CONTENT (${urlInput}):\n${d.text.substring(0,4000)}`; sourcesUsed.push('Intranet page'); }
+      else { intranetContext = `\n\nNote: ${urlInput} could not be fetched (may require login).`; }
+    } catch(e) {}
+  }
+
+  // 5. Pasted content
+  const pasted = document.getElementById('pres-paste')?.value?.trim();
+  if (pasted) { intranetContext += `\n\nADDITIONAL CONTENT PROVIDED:\n${pasted.substring(0,4000)}`; sourcesUsed.push('Pasted content'); }
+
+  setPresStatus('Building slides...');
+
+  const isUpdate = !!presUploadedText;
+  const systemPrompt = isUpdate
+    ? `You are updating and improving an existing workplace presentation. Use the uploaded content as your structural base. Improve quality, update facts from company documents, and apply best practice. Return only valid JSON.`
+    : `You are a professional presentation designer creating a high-quality workplace presentation. Draw on your full knowledge of best practice, frameworks and effective communication for this topic. Blend AI best practice with company-specific facts from the provided documents. Return only valid JSON.`;
+
+  const prompt = `Create a professional, engaging presentation.
+
+REQUEST: "${topic}"
+${companyContext}${spContext}${uploadedContext}${intranetContext}
+
+Generate slides as JSON:
+{"title":"Presentation Title","slides":[
+  {"id":1,"type":"title","title":"Slide Title","subtitle":"Subtitle","bullets":[]},
+  {"id":2,"type":"content","title":"Slide Title","bullets":["Concise point","Another point"]},
+  {"id":3,"type":"section","title":"Section Break Title","bullets":[]},
+  {"id":4,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
+]}
+
+Guidelines:
+- 10-16 slides for a complete, substantive presentation
+- Draw on best practice for this topic (frameworks, models, research) - not just what was provided
+- Reference actual company facts where available (policy names, headcount, office locations etc.)
+- If updating an existing file, improve the structure and content quality, not just copy it
+- Section slides break up major themes
+- Bullets: 3-5 per slide, max 12 words each, action-oriented
+- Return ONLY the JSON object`;
 
   try {
-    const context = await gatherPresContext(topic);
-    setPresStatus('Generating slides...');
-
-    const prompt = `You are creating a professional workplace presentation. Topic: "${topic}"
-
-${context}
-
-Generate a complete presentation as JSON with this exact format:
-{"title":"Presentation Title","slides":[{"id":1,"type":"title","title":"Main Title","subtitle":"Subtitle or date","bullets":[]},{"id":2,"type":"content","title":"Slide Title","bullets":["Point 1","Point 2","Point 3"]},...]}"
-
-Rules:
-- 8-14 slides depending on topic
-- First slide is always type "title" with subtitle
-- Include a "section" type slide (just a title, no bullets) to break up major sections
-- Last slide is "close" type: title "Questions?" with a contact/next steps bullet
-- Bullets are concise (max 12 words each), 3-5 per slide
-- Use content from the company documents and SharePoint files provided - reference actual company policies, names and facts where available
-- If SharePoint files have modification dates, use the most recent content
-- Return ONLY the JSON object, no markdown, no explanation`;
-
     const token = await getAuthToken();
     const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-      body: JSON.stringify({ messages: [{ role:'user', content: prompt }], system: 'Return only valid JSON. No markdown fences.' })
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body: JSON.stringify({ messages:[{ role:'user', content: prompt }], system: systemPrompt })
     });
     const data = await res.json();
-    const text = data.content?.[0]?.text || '{}';
+    const text = (data.content?.[0]?.text || '{}').replace(/[—–]/g,'-');
     const match = text.match(/\{[\s\S]*\}/);
     if (!match) throw new Error('No JSON in response');
     const pres = JSON.parse(match[0]);
     presTitle = pres.title || topic;
     presSlides = pres.slides || [];
     renderSlides();
+    showPresSources(sourcesUsed);
     setPresStatus('');
   } catch(e) {
     setPresStatus('');
     alert('Failed to generate: ' + e.message);
   }
-  btn.disabled = false; btn.textContent = '✦ Generate';
-}
-
-async function updatePresentation() {
-  const existing = document.getElementById('pres-existing')?.value?.trim();
-  if (!existing) { alert('Please paste your existing presentation content.'); return; }
-  const btn = document.getElementById('pres-update-btn');
-  btn.disabled = true; btn.textContent = '⟳ Checking...';
-  setPresStatus('Comparing against your current policies and sources...');
-
-  try {
-    const context = await gatherPresContext('presentation update review');
-    setPresStatus('Analysing for outdated content...');
-
-    const prompt = `You are reviewing an existing workplace presentation for outdated content.
-
-EXISTING PRESENTATION:
-${existing.substring(0, 6000)}
-
-CURRENT COMPANY INFORMATION:
-${context}
-
-Identify specific content in the presentation that may be outdated or incorrect based on the current company information provided. For each issue found:
-1. Quote the specific text from the presentation that needs updating
-2. Explain why it may be outdated
-3. Suggest the updated text
-
-Also flag any sections where you cannot verify accuracy because information wasn't provided.
-
-Return as JSON: {"suggestions":[{"slide":"slide title or section","issue":"what's outdated","current_text":"exact quote","suggested_text":"updated version","confidence":"high|medium|low"},...],"summary":"2 sentence overview of findings"}
-
-Return ONLY the JSON. No markdown.`;
-
-    const token = await getAuthToken();
-    const res = await fetch('/api/chat', {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
-      body: JSON.stringify({ messages: [{ role:'user', content: prompt }], system: 'Return only valid JSON.' })
-    });
-    const data = await res.json();
-    const text = data.content?.[0]?.text || '{}';
-    const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No JSON in response');
-    const result = JSON.parse(match[0]);
-    renderSuggestions(result);
-    setPresStatus('');
-  } catch(e) {
-    setPresStatus('');
-    alert('Failed: ' + e.message);
-  }
-  btn.disabled = false; btn.textContent = '✦ Check for updates';
-}
-
-function renderSuggestions(result) {
-  const panel = document.getElementById('pres-suggestions');
-  const body = document.getElementById('pres-suggestions-body');
-  if (!panel || !body) return;
-  const items = result.suggestions || [];
-  if (!items.length) {
-    body.innerHTML = '<div style="font-size:13px;color:var(--green);padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">✓ No obvious outdated content found based on your current policies and sources.</div>';
-  } else {
-    const colours = { high:'var(--red)', medium:'#D97706', low:'var(--ink3)' };
-    body.innerHTML = (result.summary ? `<div style="font-size:13px;color:var(--ink2);margin-bottom:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">${escapeHtml(result.summary)}</div>` : '') +
-      items.map(s => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:8px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
-          <span style="font-size:10px;font-weight:600;color:${colours[s.confidence]||'var(--ink3)'};text-transform:uppercase;">${s.confidence||'?'} confidence</span>
-          <span style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(s.slide||'')}</span>
-        </div>
-        <div style="font-size:12px;color:var(--ink2);margin-bottom:6px;">${escapeHtml(s.issue||'')}</div>
-        ${s.current_text?`<div style="font-size:11px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:4px;padding:6px 10px;margin-bottom:6px;color:#92400E;"><strong>Current:</strong> ${escapeHtml(s.current_text)}</div>`:''}
-        ${s.suggested_text?`<div style="font-size:11px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:4px;padding:6px 10px;color:#166534;"><strong>Suggested:</strong> ${escapeHtml(s.suggested_text)}</div>`:''}
-      </div>`).join('');
-  }
-  panel.style.display = 'block';
+  btn.disabled = false; btn.textContent = '✦ Build';
 }
 
 function renderSlides() {
