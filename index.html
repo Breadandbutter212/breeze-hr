@@ -1796,10 +1796,18 @@ async function handlePresUpload(event) {
     let text = '';
     slideFiles.forEach((f, i) => {
       const xml = zip.files[f].asText();
-      const extracted = xml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
-      text += `--- SLIDE ${i+1} ---\n${extracted}\n\n`;
+      // Extract per-paragraph text (skipping field codes and page numbers)
+      const paras = [];
+      xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (m, inner) => {
+        if (inner.includes('<a:fld')) return;
+        let t = '';
+        inner.replace(/<a:t>([^<]*)<\/a:t>/g, (m2, txt) => { t += txt; return m2; });
+        t = t.trim();
+        if (t && !/^\d{1,3}$/.test(t)) paras.push(t);
+      });
+      text += `--- SLIDE ${i+1} (${paras.length} items) ---\n${paras.map((p,j) => `[${j+1}] ${p.substring(0,120)}`).join('\n')}\n\n`;
     });
-    presUploadedText = text.substring(0, 12000);
+    presUploadedText = text.substring(0, 14000);
     presUploadedSlideCount = slideFiles.length;
     if (keepLabel) keepLabel.style.display = 'flex';
   } catch(e) { presUploadedText = ''; if (lbl) lbl.textContent = 'Could not read file'; }
@@ -1898,13 +1906,13 @@ async function generatePresentation() {
   const isUpdate = !!presUploadedText;
 
   const systemPrompt = keepStructure
-    ? `You are updating an existing presentation. Preserve every slide exactly — same number of slides, same titles, same structure. Only improve and update the bullet point content. Return only valid JSON.`
+    ? `You are updating an existing presentation. You MUST output exactly the same number of slides, and for each slide you MUST output exactly the same number of text items as the original (shown as item counts). Keep titles the same. Only rewrite bullet/body content to be improved and up to date. Return only valid JSON.`
     : isUpdate
     ? `You are improving an existing presentation. Keep the same themes and flow but you may improve structure and quality. Draw on AI best practice. Return only valid JSON.`
     : `You are a professional presentation designer. Create a high-quality, substantive workplace presentation. Draw on your full knowledge of best practice, research and frameworks for this topic. Return only valid JSON.`;
 
   const slideCountInstruction = keepStructure && presUploadedSlideCount
-    ? `IMPORTANT: Output exactly ${presUploadedSlideCount} slides, matching the uploaded deck's structure and titles precisely. Only update the bullet content.`
+    ? `CRITICAL: Output exactly ${presUploadedSlideCount} slides. For each slide, the "bullets" array length MUST match the original item count minus 1 (for the title). The original structure is shown above with item counts per slide. Titles stay the same.`
     : isUpdate
     ? `Base the structure on the uploaded presentation but you may add, remove or reorder slides to improve quality.`
     : `Include 10-16 slides with section breaks.`;
@@ -2069,17 +2077,29 @@ function downloadPresentation() {
         const newTexts = [slide.title, ...(slide.subtitle ? [slide.subtitle] : []), ...(slide.bullets || [])].filter(Boolean);
         let tIdx = 0;
 
-        // Safest approach: only replace <a:t> text nodes, touch nothing else
-        // This preserves ALL formatting, images, positions, fonts, colours exactly
-        xml = xml.replace(/<a:t>([^<]*)<\/a:t>/g, (match, oldText) => {
-          // Skip slide number-only text and empty
-          if (!oldText.trim() || /^\s*\d{1,3}\s*$/.test(oldText)) return match;
-          // Skip field code text
+        // Replace at paragraph level: each <a:p> = one logical text item.
+        // Titles split across multiple <a:t> runs (e.g. bold word mid-sentence)
+        // all live in one <a:p> — so we replace the first <a:t> and clear the rest.
+        xml = xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
+          // Skip paragraphs containing auto-field codes (slide numbers, dates)
+          if (paraInner.includes('<a:fld')) return paraMatch;
+          // Collect full paragraph text
+          let paraText = '';
+          paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { paraText += t; return m; });
+          paraText = paraText.trim();
+          // Skip empty paragraphs
+          if (!paraText) return paraMatch;
+          // Get next new text
           const newText = newTexts[tIdx];
-          if (newText === undefined) return match;
+          if (newText === undefined) return paraMatch;
           tIdx++;
           const escaped = newText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          return `<a:t>${escaped}</a:t>`;
+          // First <a:t> gets new text, rest become empty (preserves run formatting)
+          let isFirst = true;
+          return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => {
+            if (isFirst) { isFirst = false; return `<a:t>${escaped}</a:t>`; }
+            return '<a:t></a:t>';
+          }) + '</a:p>';
         });
 
         zip.file(sf, xml);
