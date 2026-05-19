@@ -675,33 +675,30 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <div class="view manage-view" id="view-recorder">
   <div class="manage-topbar">
     <div><div class="manage-title">Meeting notes</div><div class="manage-sub">Record or paste notes and Breeze HR writes them up and saves them.</div></div>
-    <button class="btn btn-primary btn-sm" onclick="resetRecorder()">+ New meeting</button>
   </div>
   <div class="manage-body">
 
     <!-- New meeting panel -->
     <div id="recInput" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:24px 28px;margin-bottom:28px;">
 
-      <div id="recLivePanel" style="display:none;">
-        <div style="display:flex;align-items:center;gap:16px;">
-          <button id="recBtn" onclick="toggleRecording()" style="display:flex;align-items:center;gap:8px;background:#EF4444;color:white;border:none;border-radius:10px;padding:11px 22px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;transition:all 0.15s;">
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
-            Start recording
+      <!-- All controls in one row -->
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div id="recLivePanel" style="display:none;contents;">
+          <button id="recBtn" onclick="toggleRecording()" class="btn btn-primary btn-sm" style="background:#EF4444;border-color:#EF4444;display:flex;align-items:center;gap:6px;">
+            <svg width="10" height="10" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg>
+            Start
           </button>
-          <div id="recTimer" style="font-size:14px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;display:none;min-width:42px;">0:00</div>
-          <div id="recStatus" style="font-size:12px;color:var(--ink3);">Click to start - speak clearly near your microphone</div>
+          <div id="recTimer" style="font-size:13px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;display:none;min-width:36px;">0:00</div>
         </div>
+        <button class="btn btn-secondary btn-sm" onclick="resetRecorder()">↺ Reset</button>
+        <div id="recToggleHint" style="font-size:12px;color:var(--accent);cursor:pointer;padding:0 4px;" onclick="toggleRecMode()"></div>
+        <div style="flex:1;"></div>
+        <div id="recStatus" style="font-size:12px;color:var(--ink3);"></div>
+        <button id="recWriteBtn" onclick="writeUpMeeting()" disabled class="btn btn-primary btn-sm" style="opacity:0.4;">✦ Write up &amp; save</button>
       </div>
 
-      <div id="recPastePanel">
-        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:6px;">Paste your notes or transcript</div>
-        <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">Works with Teams, Zoom or Google Meet transcripts, or rough notes typed during the meeting.</div>
-        <textarea id="recPasteArea" placeholder="Paste here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);outline:none;resize:vertical;line-height:1.7;box-sizing:border-box;" oninput="recCheckReady()"></textarea>
-      </div>
-
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
-        <div id="recToggleHint" style="font-size:12px;color:var(--accent);cursor:pointer;" onclick="toggleRecMode()"></div>
-        <button id="recWriteBtn" onclick="writeUpMeeting()" disabled style="background:var(--accent);color:white;border:none;border-radius:var(--r-sm);padding:9px 20px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;opacity:0.4;transition:opacity 0.15s;">✦ Write up &amp; save</button>
+      <div id="recPastePanel" style="margin-top:16px;">
+        <textarea id="recPasteArea" placeholder="Paste transcript or rough notes here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);outline:none;resize:vertical;line-height:1.7;box-sizing:border-box;" oninput="recCheckReady()"></textarea>
       </div>
     </div>
 
@@ -1628,15 +1625,17 @@ async function initRecorder() {
   const livePanel  = document.getElementById('recLivePanel');
   const pastePanel = document.getElementById('recPastePanel');
   const hint       = document.getElementById('recToggleHint');
+  const status = document.getElementById('recStatus');
   if (recHasLive) {
-    livePanel.style.display  = 'block';
-    pastePanel.style.display = 'none';
-    hint.textContent = 'Or paste notes instead';
+    livePanel.style.display  = 'contents';
+    pastePanel.style.display = 'block';
+    if (hint) hint.textContent = '';
+    if (status) status.textContent = 'Ready to record';
   } else {
     livePanel.style.display  = 'none';
     pastePanel.style.display = 'block';
-    hint.textContent = 'Live recording requires Chrome or Edge';
-    hint.style.cursor = 'default'; hint.style.color = 'var(--ink3)';
+    if (hint) { hint.textContent = 'Live recording requires Chrome or Edge'; hint.style.cursor = 'default'; hint.style.color = 'var(--ink3)'; }
+    if (status) status.textContent = '';
   }
   document.getElementById('recWriteBtn').disabled = true;
   document.getElementById('recWriteBtn').style.opacity = '0.4';
