@@ -2275,9 +2275,8 @@ function recCheckReady() {
 }
 
 async function writeUpMeeting() {
-  const pastePanel = document.getElementById('recPastePanel');
-  const usingPaste = pastePanel && pastePanel.style.display !== 'none';
-  const transcript = usingPaste ? (document.getElementById('recPasteArea')?.value?.trim() || '') : recFinalTranscript.trim();
+  // Use recorded transcript if available, otherwise fall back to pasted text
+  const transcript = recFinalTranscript.trim() || document.getElementById('recPasteArea')?.value?.trim() || '';
   if (!transcript) return;
 
   const btn = document.getElementById('recWriteBtn');
