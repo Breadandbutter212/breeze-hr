@@ -683,73 +683,80 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- PRESENTATIONS -->
 <div class="view manage-view" id="view-presentations">
   <div class="manage-topbar">
-    <div><div class="manage-title">Presentations</div><div class="manage-sub">AI-powered slides using your company documents, SharePoint and best practice.</div></div>
+    <div><div class="manage-title">Presentations</div><div class="manage-sub">AI-powered slides built from your documents, SharePoint and best practice.</div></div>
     <button class="btn btn-ghost btn-sm" onclick="resetPresentation()">↺ New</button>
   </div>
-  <div class="manage-body">
+  <div class="manage-body" style="max-width:1000px;">
 
-    <!-- Input panel -->
-    <div id="pres-input-panel" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:22px 26px;margin-bottom:20px;">
+    <!-- Input -->
+    <div id="pres-input-panel" style="margin-bottom:24px;">
+      <textarea id="pres-topic" rows="3" placeholder="Describe what you need — e.g. 'New hire induction for our London office', 'Update our performance training deck with current best practice', 'Manager toolkit for giving feedback'..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;font-size:14px;font-family:inherit;outline:none;background:var(--surface);resize:none;line-height:1.6;box-sizing:border-box;color:var(--ink);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generatePresentation()}"></textarea>
 
-      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px;">
-        <div style="flex:1;min-width:260px;">
-          <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:5px;">What do you need?</div>
-          <textarea id="pres-topic" rows="2" placeholder="e.g. New hire induction for a 120-person fintech, update our performance training deck, create a manager toolkit for giving feedback..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);resize:none;line-height:1.6;box-sizing:border-box;" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generatePresentation()}"></textarea>
-        </div>
-        <button id="pres-gen-btn" onclick="generatePresentation()" class="btn btn-primary btn-sm" style="padding:10px 20px;">✦ Build</button>
+      <div style="display:flex;align-items:center;gap:12px;margin-top:10px;flex-wrap:wrap;">
+
+        <!-- Upload -->
+        <label style="display:flex;align-items:center;gap:7px;padding:7px 12px;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;font-size:12px;color:var(--ink2);background:var(--surface);white-space:nowrap;">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          <span id="pres-upload-label">Upload existing .pptx</span>
+          <input type="file" accept=".pptx" style="display:none" onchange="handlePresUpload(event)">
+        </label>
+
+        <!-- Keep structure checkbox -->
+        <label id="pres-keep-label" style="display:none;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--ink2);">
+          <input type="checkbox" id="pres-keep-format" style="width:13px;height:13px;accent-color:var(--accent);" checked>
+          Keep structure &amp; branding — only update content
+        </label>
+
+        <!-- URL -->
+        <input id="pres-url" placeholder="Intranet URL (optional)" style="flex:1;min-width:180px;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface);color:var(--ink);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+
+        <div style="flex:1;"></div>
+        <button id="pres-gen-btn" onclick="generatePresentation()" class="btn btn-primary btn-sm" style="padding:9px 22px;font-size:13px;white-space:nowrap;">✦ Build presentation</button>
       </div>
 
-      <!-- Expandable extras -->
-      <div style="border-top:1px solid var(--border);padding-top:12px;">
-        <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:10px;">Optional sources</div>
-        <div style="display:flex;gap:12px;flex-wrap:wrap;">
-          <div style="flex:1;min-width:200px;">
-            <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">Intranet URL <span style="color:var(--ink3);">(fetched automatically)</span></div>
-            <input id="pres-url" placeholder="https://..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);box-sizing:border-box;">
-          </div>
-          <div style="flex:1;min-width:200px;">
-            <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">Upload existing .pptx <span style="color:var(--ink3);">(to update or use as base)</span></div>
-            <label style="display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;cursor:pointer;font-size:12px;color:var(--ink2);background:var(--bg);">
-              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-              <span id="pres-upload-label">Choose file</span>
-              <input type="file" accept=".pptx" style="display:none" onchange="handlePresUpload(event)">
-            </label>
-            <label style="display:flex;align-items:center;gap:6px;margin-top:7px;cursor:pointer;font-size:11px;color:var(--ink2);">
-              <input type="checkbox" id="pres-keep-format" style="width:13px;height:13px;accent-color:var(--accent);">
-              Keep my branding &amp; colours
-            </label>
-            <div style="font-size:10px;color:var(--ink3);margin-top:2px;margin-left:19px;">Content only - no Breeze HR theme</div>
-          </div>
-        </div>
-        <div style="margin-top:10px;">
-          <div style="font-size:11px;color:var(--ink2);margin-bottom:4px;">Paste intranet content <span style="color:var(--ink3);">(if page requires login)</span></div>
-          <textarea id="pres-paste" rows="2" placeholder="Paste page content here..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
+      <!-- Paste fallback (collapsed by default) -->
+      <div style="margin-top:8px;">
+        <div style="font-size:11px;color:var(--accent);cursor:pointer;display:inline;" onclick="const t=document.getElementById('pres-paste-wrap');t.style.display=t.style.display==='none'?'block':'none'">+ Paste intranet content (if page needs login)</div>
+        <div id="pres-paste-wrap" style="display:none;margin-top:6px;">
+          <textarea id="pres-paste" rows="3" placeholder="Paste page content here..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:12px;font-family:inherit;outline:none;background:var(--surface);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
         </div>
       </div>
     </div>
 
     <!-- Status -->
-    <div id="pres-status" style="display:none;font-size:12px;color:var(--ink3);padding:6px 0 12px;align-items:center;gap:8px;">
-      <span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span>
-      <span id="pres-status-text">Working...</span>
+    <div id="pres-status" style="display:none;align-items:center;gap:10px;padding:12px 0 16px;">
+      <span style="animation:spin 1s linear infinite;display:inline-block;font-size:16px;">⟳</span>
+      <span id="pres-status-text" style="font-size:13px;color:var(--ink2);">Working...</span>
     </div>
 
-    <!-- Sources used -->
-    <div id="pres-sources" style="display:none;margin-bottom:16px;">
-      <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.07em;margin-bottom:6px;">Sources used</div>
-      <div id="pres-sources-list" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
-    </div>
-
-    <!-- Slide preview -->
+    <!-- Output header -->
     <div id="pres-slides" style="display:none;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);" id="pres-slide-title">Presentation</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;" id="pres-slide-title">Presentation</div>
+          <div id="pres-sources" style="display:flex;gap:5px;flex-wrap:wrap;margin-top:5px;"></div>
+        </div>
         <div style="display:flex;gap:8px;">
-          <button class="btn btn-secondary btn-sm" onclick="addSlide()">+ Add slide</button>
+          <button class="btn btn-secondary btn-sm" onclick="addSlide()">+ Slide</button>
+          <label style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);cursor:pointer;padding:0 8px;">
+            <input type="checkbox" id="pres-dl-keep" style="accent-color:var(--accent);">
+            Keep my branding
+          </label>
           <button class="btn btn-primary btn-sm" id="pres-download-btn" onclick="downloadPresentation()">⬇ Download .pptx</button>
         </div>
       </div>
-      <div id="pres-slide-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+
+      <!-- Slide grid -->
+      <div id="pres-slide-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
+
+      <!-- Edit panel -->
+      <div id="pres-edit-panel" style="display:none;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+          <div style="font-size:13px;font-weight:600;color:var(--ink);">Edit slide</div>
+          <button onclick="document.getElementById('pres-edit-panel').style.display='none'" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:16px;">✕</button>
+        </div>
+        <div id="pres-edit-body"></div>
+      </div>
     </div>
 
   </div>
@@ -1762,36 +1769,38 @@ function getDefaultFields(name) {
 }
 
 // ── PRESENTATIONS ──
-let presSlides = [], presTitle = '', presUploadedText = '';
+let presSlides = [], presTitle = '', presUploadedText = '', presUploadedSlideCount = 0;
 
 function initPresentations() {}
 
 function resetPresentation() {
-  presSlides = []; presTitle = ''; presUploadedText = '';
-  ['pres-slides','pres-status','pres-sources'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.style.display = 'none';
-  });
-  ['pres-topic','pres-url','pres-paste'].forEach(id => {
-    const el = document.getElementById(id); if (el) el.value = '';
-  });
-  const lbl = document.getElementById('pres-upload-label'); if (lbl) lbl.textContent = 'Choose file';
+  presSlides = []; presTitle = ''; presUploadedText = ''; presUploadedSlideCount = 0;
+  ['pres-slides','pres-status'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
+  ['pres-topic','pres-url','pres-paste'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  const lbl=document.getElementById('pres-upload-label'); if(lbl) lbl.textContent='Upload existing .pptx';
+  const kl=document.getElementById('pres-keep-label'); if(kl) kl.style.display='none';
 }
 
 async function handlePresUpload(event) {
   const file = event.target.files[0]; if (!file) return;
   const lbl = document.getElementById('pres-upload-label');
+  const keepLabel = document.getElementById('pres-keep-label');
   if (lbl) lbl.textContent = file.name;
   try {
     const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
     const zip = new PizZip(b64, { base64: true });
+    // Extract slides in order with slide numbers
+    const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
+      .sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
     let text = '';
-    // Extract text from all slide XMLs
-    Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/)).sort().forEach(f => {
+    slideFiles.forEach((f, i) => {
       const xml = zip.files[f].asText();
-      const extracted = xml.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim();
-      text += extracted + '\n';
+      const extracted = xml.replace(/<[^>]+>/g,' ').replace(/\s+/g,' ').trim();
+      text += `--- SLIDE ${i+1} ---\n${extracted}\n\n`;
     });
-    presUploadedText = text.substring(0, 8000);
+    presUploadedText = text.substring(0, 12000);
+    presUploadedSlideCount = slideFiles.length;
+    if (keepLabel) keepLabel.style.display = 'flex';
   } catch(e) { presUploadedText = ''; if (lbl) lbl.textContent = 'Could not read file'; }
 }
 
@@ -1804,11 +1813,10 @@ function setPresStatus(msg) {
 }
 
 function showPresSources(sources) {
-  const panel = document.getElementById('pres-sources');
-  const list = document.getElementById('pres-sources-list');
-  if (!panel || !list || !sources.length) return;
-  list.innerHTML = sources.map(s => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;font-size:11px;">${escapeHtml(s)}</span>`).join('');
-  panel.style.display = 'block';
+  const list = document.getElementById('pres-sources');
+  if (!list || !sources.length) return;
+  list.innerHTML = sources.map(s => `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-mid);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:500;">${escapeHtml(s)}</span>`).join('');
+  list.style.display = 'flex';
 }
 
 async function generatePresentation() {
@@ -1885,15 +1893,27 @@ async function generatePresentation() {
 
   setPresStatus('Building slides...');
 
+  const keepStructure = presUploadedText && document.getElementById('pres-keep-format')?.checked;
   const isUpdate = !!presUploadedText;
-  const systemPrompt = isUpdate
-    ? `You are updating and improving an existing workplace presentation. Use the uploaded content as your structural base. Improve quality, update facts from company documents, and apply best practice. Return only valid JSON.`
-    : `You are a professional presentation designer creating a high-quality workplace presentation. Draw on your full knowledge of best practice, frameworks and effective communication for this topic. Blend AI best practice with company-specific facts from the provided documents. Return only valid JSON.`;
+
+  const systemPrompt = keepStructure
+    ? `You are updating an existing presentation. Preserve every slide exactly — same number of slides, same titles, same structure. Only improve and update the bullet point content. Return only valid JSON.`
+    : isUpdate
+    ? `You are improving an existing presentation. Keep the same themes and flow but you may improve structure and quality. Draw on AI best practice. Return only valid JSON.`
+    : `You are a professional presentation designer. Create a high-quality, substantive workplace presentation. Draw on your full knowledge of best practice, research and frameworks for this topic. Return only valid JSON.`;
+
+  const slideCountInstruction = keepStructure && presUploadedSlideCount
+    ? `IMPORTANT: Output exactly ${presUploadedSlideCount} slides, matching the uploaded deck's structure and titles precisely. Only update the bullet content.`
+    : isUpdate
+    ? `Base the structure on the uploaded presentation but you may add, remove or reorder slides to improve quality.`
+    : `Include 10-16 slides with section breaks.`;
 
   const prompt = `Create a professional, engaging presentation.
 
 REQUEST: "${topic}"
 ${companyContext}${spContext}${uploadedContext}${intranetContext}
+
+${slideCountInstruction}
 
 Generate slides as JSON:
 {"title":"Presentation Title","slides":[
@@ -1904,13 +1924,10 @@ Generate slides as JSON:
 ]}
 
 Guidelines:
-- 10-16 slides for a complete, substantive presentation
-- Draw on best practice for this topic (frameworks, models, research) - not just what was provided
-- Reference actual company facts where available (policy names, headcount, office locations etc.)
-- If updating an existing file, improve the structure and content quality, not just copy it
-- Section slides break up major themes
-- Bullets: 3-5 per slide, max 12 words each, action-oriented
-- Return ONLY the JSON object`;
+- Draw on best practice, frameworks and real-world examples for this topic
+- Reference actual company facts where available (policy names, headcount, office locations)
+- Bullets: 3-5 per slide, max 12 words each, punchy and specific
+- Return ONLY the JSON object, nothing else`;
 
   try {
     const token = await getAuthToken();
@@ -1953,49 +1970,86 @@ Guidelines:
   btn.disabled = false; btn.textContent = '✦ Build';
 }
 
+function slideCardHtml(s, i) {
+  const isTitleType = s.type==='title';
+  const isSectionType = s.type==='section';
+  const isCloseType = s.type==='close';
+  const bg = isTitleType||isCloseType ? '#0A1628' : isSectionType ? '#3B82F6' : '#1B2D50';
+  const bodyBg = isTitleType||isSectionType||isCloseType ? bg : '#ffffff';
+  const hasBody = !isTitleType && !isSectionType && !isCloseType;
+  return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);transition:transform 0.15s,box-shadow 0.15s;aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.18)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 10px rgba(0,0,0,0.12)'">
+    <div style="background:${bg};padding:${isTitleType?'20px 16px':'8px 12px'};flex:${isTitleType||isSectionType||isCloseType?1:0};display:flex;flex-direction:column;justify-content:${isTitleType||isCloseType?'center':'flex-start'};">
+      <div style="font-size:${isTitleType?'11px':isSectionType?'10px':'8px'};font-weight:700;color:white;line-height:1.3;overflow:hidden;display:-webkit-box;-webkit-line-clamp:${isTitleType?3:2};-webkit-box-orient:vertical;">${escapeHtml(s.title||'')}</div>
+      ${s.subtitle&&isTitleType?`<div style="font-size:7px;color:rgba(255,255,255,0.6);margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(s.subtitle)}</div>`:''}
+      ${isCloseType&&s.bullets?.[0]?`<div style="font-size:7px;color:rgba(255,255,255,0.6);margin-top:4px;">${escapeHtml(s.bullets[0])}</div>`:''}
+    </div>
+    ${hasBody?`<div style="background:#ffffff;flex:1;padding:6px 10px;overflow:hidden;">${(s.bullets||[]).slice(0,4).map(b=>`<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:2px;"><span style="color:#3B82F6;font-size:7px;margin-top:1px;flex-shrink:0;">•</span><span style="font-size:6.5px;color:#374151;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">${escapeHtml(b)}</span></div>`).join('')}</div>`:''}
+    <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
+  </div>`;
+}
+
 function renderSlides() {
   const container = document.getElementById('pres-slide-list');
   const panel = document.getElementById('pres-slides');
   const titleEl = document.getElementById('pres-slide-title');
   if (!container || !panel) return;
   if (titleEl) titleEl.textContent = presTitle;
-  container.innerHTML = presSlides.map((s, i) => `
-    <div class="pres-slide" id="pslide-${i}" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 22px;display:flex;gap:16px;align-items:flex-start;">
-      <div style="width:28px;height:28px;background:var(--accent-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;">${i+1}</div>
-      <div style="flex:1;">
-        <input value="${escapeHtml(s.title||'')}" oninput="presSlides[${i}].title=this.value" style="width:100%;border:none;outline:none;font-size:14px;font-weight:600;color:var(--ink);background:transparent;font-family:inherit;margin-bottom:${s.bullets?.length?'8px':'0'};">
-        ${s.subtitle?`<input value="${escapeHtml(s.subtitle)}" oninput="presSlides[${i}].subtitle=this.value" style="width:100%;border:none;outline:none;font-size:12px;color:var(--ink2);background:transparent;font-family:inherit;margin-bottom:8px;">`:''}
-        ${(s.bullets||[]).map((b,j)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="color:var(--accent);font-size:10px;">•</span><input value="${escapeHtml(b)}" oninput="presSlides[${i}].bullets[${j}]=this.value" style="flex:1;border:none;border-bottom:1px solid transparent;outline:none;font-size:13px;color:var(--ink2);background:transparent;font-family:inherit;" onfocus="this.style.borderColor='var(--border)'" onblur="this.style.borderColor='transparent'"></div>`).join('')}
-        ${s.bullets?.length?`<div style="margin-top:6px;"><button onclick="addBullet(${i})" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;">+ add bullet</button></div>`:''}
-      </div>
-      <div style="display:flex;gap:4px;flex-shrink:0;">
-        <button onclick="moveSlide(${i},-1)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;" ${i===0?'disabled':''}>↑</button>
-        <button onclick="moveSlide(${i},1)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;" ${i===presSlides.length-1?'disabled':''}>↓</button>
-        <button onclick="deleteSlide(${i})" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;color:var(--red);">✕</button>
-      </div>
-    </div>`).join('');
+  container.innerHTML = presSlides.map((s,i) => slideCardHtml(s,i)).join('');
   panel.style.display = 'block';
 }
 
-function addBullet(i) { presSlides[i].bullets = [...(presSlides[i].bullets||[]), '']; renderSlides(); }
-function deleteSlide(i) { presSlides.splice(i,1); renderSlides(); }
+function openSlideEdit(i) {
+  const s = presSlides[i];
+  const panel = document.getElementById('pres-edit-panel');
+  const body = document.getElementById('pres-edit-body');
+  if (!panel || !body || !s) return;
+  body.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Title</div>
+      <input id="edit-title-${i}" value="${escapeHtml(s.title||'')}" oninput="presSlides[${i}].title=this.value;renderSlides();openSlideEdit(${i})" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:14px;font-weight:600;font-family:inherit;outline:none;background:var(--bg);">
+    </div>
+    ${s.subtitle!==undefined?`<div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Subtitle</div><input id="edit-sub-${i}" value="${escapeHtml(s.subtitle||'')}" oninput="presSlides[${i}].subtitle=this.value" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);"></div>`:''}
+    ${s.bullets?.length||s.type==='content'?`<div style="margin-bottom:8px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:6px;">Bullets</div>
+      <div id="edit-bullets-${i}">${(s.bullets||[]).map((b,j)=>`<div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+        <span style="color:var(--accent);font-size:12px;">•</span>
+        <input value="${escapeHtml(b)}" oninput="presSlides[${i}].bullets[${j}]=this.value" style="flex:1;border:1px solid var(--border);border-radius:4px;padding:6px 9px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);">
+        <button onclick="presSlides[${i}].bullets.splice(${j},1);renderSlides();openSlideEdit(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;">✕</button>
+      </div>`).join('')}</div>
+      <button onclick="presSlides[${i}].bullets.push('');renderSlides();openSlideEdit(${i})" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Add bullet</button>
+    </div>`:''}
+    <div style="display:flex;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);">
+      <button onclick="moveSlide(${i},-1)" class="btn btn-secondary btn-sm" ${i===0?'disabled':''}>↑ Move up</button>
+      <button onclick="moveSlide(${i},1)" class="btn btn-secondary btn-sm" ${i===presSlides.length-1?'disabled':''}>↓ Move down</button>
+      <div style="flex:1;"></div>
+      <button onclick="deleteSlide(${i})" class="btn btn-ghost btn-sm" style="color:var(--red);">Delete slide</button>
+    </div>`;
+  panel.style.display = 'block';
+  panel.scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+
+function deleteSlide(i) {
+  presSlides.splice(i,1);
+  renderSlides();
+  document.getElementById('pres-edit-panel').style.display='none';
+}
 function moveSlide(i, dir) {
   const j = i + dir;
   if (j < 0 || j >= presSlides.length) return;
   [presSlides[i], presSlides[j]] = [presSlides[j], presSlides[i]];
   renderSlides();
+  openSlideEdit(j);
 }
 function addSlide() {
-  presSlides.push({ id: presSlides.length+1, type:'content', title:'New slide', bullets:['Point 1','Point 2','Point 3'] });
+  presSlides.push({ id:presSlides.length+1, type:'content', title:'New slide', bullets:['Point 1','Point 2','Point 3'] });
   renderSlides();
-  document.getElementById(`pslide-${presSlides.length-1}`)?.scrollIntoView({ behavior:'smooth' });
+  openSlideEdit(presSlides.length-1);
 }
 
 function downloadPresentation() {
   if (!presSlides.length) return;
   const btn = document.getElementById('pres-download-btn');
   btn.textContent = 'Generating...'; btn.disabled = true;
-  const keepFormat = document.getElementById('pres-keep-format')?.checked;
+  const keepFormat = document.getElementById('pres-dl-keep')?.checked;
   try {
     const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_WIDE';
