@@ -508,14 +508,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
       Policies
     </div>
-    <div class="ni" onclick="showView('processmaps',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M5 8v6l7 6 7-6V8"/></svg>
-      Process maps <span style="font-size:9px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:1px 5px;border-radius:8px;margin-left:2px;">Beta</span>
-    </div>
-    <div class="ni" onclick="showView('analytics',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-      Analytics
-    </div>
     <div class="ni" onclick="showView('presentations',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
       Presentations
@@ -523,6 +515,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="ni" onclick="showView('recorder',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       Meeting notes
+    </div>
+    <div class="ni" onclick="showView('processmaps',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="5" cy="6" r="2"/><circle cx="19" cy="6" r="2"/><circle cx="12" cy="18" r="2"/><path d="M7 6h10M5 8v6l7 6 7-6V8"/></svg>
+      Process maps <span style="font-size:9px;background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.5);padding:1px 5px;border-radius:8px;margin-left:2px;">Beta</span>
+    </div>
+    <div class="ni" onclick="showView('analytics',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+      Analytics
     </div>
     <div class="nav-label">Admin</div>
     <div class="ni" onclick="showView('settings',this)">
@@ -2073,25 +2073,27 @@ function downloadPresentation() {
 
         // Replace each paragraph's text content with our new text, keeping run formatting
         xml = xml.replace(/(<a:p\b[^>]*>)([\s\S]*?)(<\/a:p>)/g, (match, open, body, close) => {
-          // Skip empty paragraphs (no text runs at all)
           if (!/<a:t/.test(body)) return match;
-          // Skip paragraphs that are just slide numbers or field codes
           if (/<a:fld/.test(body)) return match;
 
           const newText = allTexts[textIdx];
           if (newText === undefined) return match;
           textIdx++;
 
-          // Extract the first run's rPr (formatting) to apply to replacement
-          const rPrMatch = body.match(/<a:rPr([^>]*)\/?>(?:<\/a:rPr>)?/);
-          const rPr = rPrMatch ? `<a:rPr${rPrMatch[1]}/>` : '';
-
-          // Extract paragraph-level properties (pPr) - keep them
+          // Keep paragraph properties (indent level, spacing, alignment) intact
           const pPrMatch = body.match(/(<a:pPr[\s\S]*?<\/a:pPr>|<a:pPr[^>]*\/>)/);
           const pPr = pPrMatch ? pPrMatch[0] : '';
 
+          // Keep end paragraph run properties intact
+          const endRPrMatch = body.match(/<a:endParaRPr[\s\S]*?(?:\/>|<\/a:endParaRPr>)/);
+          const endRPr = endRPrMatch ? endRPrMatch[0] : '';
+
+          // Keep FULL first run rPr including children (solidFill, fonts, etc.) - capture element not just attrs
+          const rPrMatch = body.match(/<a:rPr[\s\S]*?(?:\/>|<\/a:rPr>)/);
+          const rPr = rPrMatch ? rPrMatch[0] : '';
+
           const escaped = newText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-          return `${open}${pPr}<a:r>${rPr}<a:t>${escaped}</a:t></a:r>${close}`;
+          return `${open}${pPr}<a:r>${rPr}<a:t>${escaped}</a:t></a:r>${endRPr}${close}`;
         });
 
         zip.file(sf, xml);
