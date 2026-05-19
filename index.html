@@ -1328,19 +1328,12 @@ ${textContent.substring(0, 5000)}`;
     let storageContent, templateText, docxBase64 = null;
 
     if (isDocx) {
-      // For .docx: replace directly in the XML to preserve all formatting
+      // For .docx: load with PizZip using base64 directly, replace in XML
       const base64 = await readBase64(file);
-      const binary = atob(base64);
-      const bytes = new Uint8Array(binary.length);
-      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-
-      const zip = new PizZip(bytes.buffer);
+      const zip = new PizZip(base64, { base64: true }); // correct PizZip base64 loading
       let xml = zip.file('word/document.xml').asText();
 
-      // Normalise XML: collapse adjacent text runs so replacements work even when text is split
-      xml = xml.replace(/<\/w:t>(<\/w:r>\s*<w:r(?:\s[^>]*)?>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t(?:\s[^>]*)?>)/g, '');
-
-      // Apply each mapping replacement
+      // Apply each replacement directly in the XML text (works when text isn't split across runs)
       for (const [oldVal, fieldName] of Object.entries(mapping)) {
         if (oldVal && fieldName) {
           const escaped = oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -1351,11 +1344,16 @@ ${textContent.substring(0, 5000)}`;
       zip.file('word/document.xml', xml);
       const out = zip.generate({ type: 'base64', compression: 'DEFLATE' });
       docxBase64 = out;
-      templateText = textContent; // keep text for field detection
-      storageContent = `DOCX_BASE64:${out}|||TEXT:${templateText.substring(0, 10000)}`;
+
+      // Get HTML preview from mammoth for formatted preview
+      const arrBuf = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+      let previewHtml = '';
+      try { const r = await mammoth.convertToHtml({ arrayBuffer: arrBuf }); previewHtml = r.value; } catch(e) {}
+      templateText = previewHtml || textContent;
+      storageContent = `DOCX_BASE64:${out}|||TEXT:${textContent.substring(0, 10000)}`;
 
     } else {
-      // For PDF and txt: apply replacements to the plain text
+      // For PDF and txt: apply replacements to plain text, generate .docx on download
       let converted = textContent;
       for (const [oldVal, fieldName] of Object.entries(mapping)) {
         if (oldVal && fieldName) {
@@ -1363,13 +1361,7 @@ ${textContent.substring(0, 5000)}`;
           converted = converted.replace(new RegExp(escaped, 'g'), `{${fieldName}}`);
         }
       }
-      if (isPdf) {
-        // Store as PDF_CONVERTED so download generates a proper .docx
-        const pdfBase64 = await readBase64(file);
-        storageContent = `DOCX_BASE64:${pdfBase64}|||TEXT:${converted.substring(0, 10000)}`;
-      } else {
-        storageContent = converted;
-      }
+      storageContent = converted;
       templateText = converted;
     }
 
@@ -1632,11 +1624,22 @@ function updatePreview() {
 
   if(t.isCustom&&t.content){
     body.dataset.customNote = '1';
-    let rendered=t.content;
-    Object.keys(vals).forEach(f=>{const esc=f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');rendered=rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'),`<span class="filled">${vals[f]}</span>`);});
-    rendered=rendered.replace(/\{([^}]{1,40})\}/g,'<span class="ph">[$1]</span>');
-    const paragraphs=rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
-    body.innerHTML=`<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview shows text only - your logo, header and footer will appear in the downloaded Word doc.</div><div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
+    let rendered = t.content;
+    // If content is HTML (from mammoth conversion), apply field replacements within HTML
+    const isHtml = rendered.trim().startsWith('<');
+    Object.keys(vals).forEach(f => {
+      const esc = f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      rendered = rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'), `<span class="filled">${vals[f]}</span>`);
+    });
+    rendered = rendered.replace(/\{([^}]{1,60})\}/g,'<span class="ph">[$1]</span>');
+    const notice = `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
+    if (isHtml) {
+      // Wrap mammoth HTML in doc-page with basic contract styling
+      body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;font-size:11.5pt;line-height:1.6;">${rendered}</div>`;
+    } else {
+      const paragraphs = rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
+      body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
+    }
     return;
   }
 
