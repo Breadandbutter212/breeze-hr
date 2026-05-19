@@ -3172,6 +3172,55 @@ function clearChatAttachment() {
   if (preview) preview.style.display = 'none';
 }
 
+function isDocumentRequest(msg) {
+  const lower = msg.toLowerCase();
+  if (lower.includes('sharepoint') || lower.includes('share point')) return true;
+  const actions = ['create','write','draft','generate','make','build','new','need a','need an','help me write','help with'];
+  const docs = ['job description','jd','job spec','job role','position description','person spec','policy','procedure','template','offer letter','specification','spec'];
+  return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
+}
+
+function extractSharePointQuery(msg) {
+  let m;
+  m = msg.match(/(?:job description|job spec|jd|position description) for (?:a |an |the )?([a-zA-Z &,()-]{3,50})/i);
+  if (m) return m[1].trim() + ' job description';
+  m = msg.match(/(?:create|write|draft|new|need) (?:a |an |the )?([a-zA-Z &()-]{3,40}) (?:job description|jd|job spec|position|role)/i);
+  if (m) return m[1].trim() + ' job description';
+  m = msg.match(/(?:create|write|draft|new|need) (?:a |an |the )?([a-zA-Z ]{3,50}) policy/i);
+  if (m) return m[1].trim() + ' policy';
+  m = msg.match(/for (?:a |an |the )?([a-zA-Z &()-]{3,40}) (?:role|position|post|job)/i);
+  if (m) return m[1].trim() + ' job description';
+  const stop = new Set(['create','write','draft','generate','make','a','an','the','for','me','my','our','new','can','you','please','i','need','help','with','on','in','to']);
+  return msg.toLowerCase().split(/\s+/).filter(w => w.length > 2 && !stop.has(w)).slice(0,4).join(' ');
+}
+
+async function searchSharePointForChat(msg) {
+  try {
+    const query = extractSharePointQuery(msg);
+    const token = await getAuthToken();
+    const res = await fetch('/api/sharepoint-search', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ userId: currentUser.id, query })
+    });
+    if (!res.ok) return '';
+    const spData = await res.json();
+    const items = spData?.data?.data?.PrimaryQueryResult?.RelevantResults?.Table?.Rows?.results
+      || spData?.data?.data?.value || spData?.data?.results || [];
+    if (!items.length) return '';
+    const docs = items.slice(0, 5).map(item => {
+      const cells = item.Cells?.results || [];
+      const get = k => cells.find(c => c.Key === k)?.Value || item[k] || '';
+      const title = get('Title') || 'Untitled';
+      const ext = (get('FileExtension') || 'doc').toUpperCase();
+      const modified = get('LastModifiedTime') ? new Date(get('LastModifiedTime')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      const snippet = (get('HitHighlightedSummary') || '').replace(/<[^>]+>/g,'').substring(0, 200);
+      return `- "${title}" [${ext}]${modified?' (modified '+modified+')':''}${snippet?' - '+snippet:''}`;
+    }).join('\n');
+    return `\n\nSHAREPOINT CONTEXT - relevant documents found on the user's SharePoint:\n${docs}\n\nInstruction: Mention specifically which documents you found on their SharePoint. Ask if they want to use the format/structure of the most relevant one. If yes, base your output on that document's style.`;
+  } catch(e) { return ''; }
+}
+
 async function sendChat(overrideMsg) {
   const ta = document.getElementById('chatInput');
   const msg = overrideMsg || ta.value.trim();
@@ -3185,9 +3234,20 @@ async function sendChat(overrideMsg) {
   chatMessages.push({role:'user', content: fullMsg});
   renderChatHistory();
   if (!chatSystemPrompt) chatSystemPrompt = await buildChatSystemPrompt();
+
+  // Search SharePoint for document creation requests
+  let spContext = '';
+  if (window._sharepointConnected && isDocumentRequest(msg)) {
+    window._spSearchingForChat = true;
+    renderChatHistory();
+    spContext = await searchSharePointForChat(msg);
+    window._spSearchingForChat = false;
+  }
+
   const apiMessages = chatMessages.map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
-  const reply = await callClaude(apiMessages, chatSystemPrompt);
+  const reply = await callClaude(apiMessages, chatSystemPrompt + spContext);
   chatLoading = false;
+  window._spSearchingForChat = false;
   if (btn) btn.disabled = false;
   chatMessages.push({role:'assistant', content: reply || 'Sorry, connection issue. Please check your API connection and try again.'});
   renderChatHistory();
@@ -3248,7 +3308,7 @@ function renderChatHistory() {
   }).join('');
   if (chatLoading) {
     const labels = ['Thinking...','Checking your policies...','Applying UK employment law...','Drafting response...','Reviewing ACAS guidance...'];
-    const label = labels[Math.floor(Date.now() / 2000) % labels.length];
+    const label = window._spSearchingForChat ? 'Searching your SharePoint...' : labels[Math.floor(Date.now() / 2000) % labels.length];
     html += `<div class="chat-msg"><div class="chat-av ai-av">◈</div><div class="chat-bubble ai-bubble"><div class="thinking-block"><div class="thinking-label">${label}</div><div class="thinking-bar"><div class="thinking-bar-fill"></div></div></div></div></div>`;
   }
   el.innerHTML = html;
