@@ -975,11 +975,11 @@ async function onSignedIn(user) {
 
 function showOnboardingTour() {
   const steps = [
-    { icon:'◈', title:'Your AI-powered HR advisor', desc:'Ask Breeze HR anything - policy queries, difficult employee situations, what to say in a tricky conversation. You get precise, referenced responses grounded in current UK employment law, not generic chatbot answers.', nav:'chat' },
-    { icon:'📄', title:'Contracts, letters and documents', desc:'Draft offer letters, fixed term contracts, disciplinary letters, references and more in seconds. Answer a few questions and the document builds live on screen - legally sound, formatted and ready to download as a Word file.', nav:'docs' },
-    { icon:'⚡', title:'Always current, always compliant', desc:'Breeze HR is continuously updated with UK employment law changes, new ACAS guidance and statutory rate adjustments. Every answer reflects current legislation - you never need to cross-check whether the advice is still valid.', nav:null },
-    { icon:'📋', title:'Built around your policies', desc:'Upload your company HR policies and handbook under Policies. Breeze HR reads them and references them first when answering questions - so every response is specific to your business, not off-the-shelf guidance.', nav:'manage' },
-    { icon:'👥', title:'Built for your whole team', desc:'Every team member gets their own secure login. Responses are consistent, auditable and anchored to your company policies - so your HR function operates at a higher standard without adding headcount.', nav:null },
+    { icon:'◈', title:'It learns how your team works', desc:'Breeze HR adapts to your business over time. It learns from every conversation, picks up your writing style and tone, and gets sharper the more your team uses it - so responses feel like they came from someone who already knows your company.', nav:'chat' },
+    { icon:'🗂️', title:'Connected to your documents', desc:'Connect SharePoint and Breeze HR reads your actual files - job descriptions, policies, contracts, handbooks. Ask it to create a new JD and it finds your existing ones first, then matches your format and structure automatically.', nav:'chat' },
+    { icon:'📄', title:'Contracts, letters and documents', desc:'Draft offer letters, contracts, disciplinary letters, references and more in seconds. Answer a few questions and the document builds live - formatted, ready to download as a Word file and matched to how your company writes.', nav:'docs' },
+    { icon:'📋', title:'Knows your business, not just the rules', desc:'Upload your HR policies, handbook and templates. Breeze HR uses them first when answering questions - so advice reflects your actual policies, your tone and your way of doing things, not generic guidance.', nav:'manage' },
+    { icon:'👥', title:'The more you use it, the better it gets', desc:'Every edited draft, every thumbs up or down, every new document you create teaches Breeze HR more about how your team operates. Over time it anticipates what you need and produces first drafts you barely need to touch.', nav:null },
   ];
   let step = 0;
 
