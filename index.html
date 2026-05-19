@@ -520,10 +520,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       Meeting notes
     </div>
-    <div class="ni" onclick="showView('privacy',this)">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
-      Privacy
-    </div>
     <div class="nav-label">Admin</div>
     <div class="ni" onclick="showView('settings',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14M4.93 4.93a10 10 0 0 0 0 14.14"/></svg>
@@ -551,7 +547,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div style="width:24px;height:24px;border-radius:50%;background:rgba(255,255,255,0.15);color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;" id="userInitials">DG</div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:11px;font-weight:500;color:rgba(255,255,255,0.6);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" id="userDisplayName">Dougie Gordon</div>
-        <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="signOut()">Sign out</div>
+        <div style="display:flex;gap:8px;">
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="signOut()">Sign out</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.2);">·</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="showView('privacy')">Privacy</div>
+        </div>
       </div>
     </div>
   </div>
