@@ -516,6 +516,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Analytics
     </div>
+    <div class="ni" onclick="showView('presentations',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+      Presentations
+    </div>
     <div class="ni" onclick="showView('recorder',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/><line x1="8" y1="23" x2="16" y2="23"/></svg>
       Meeting notes
@@ -674,6 +678,86 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="manage-title">Analytics</div><div class="manage-sub">Connect your HRIS or upload a CSV to visualise your workforce.</div></div>
   </div>
   <div class="manage-body" id="analyticsBody"></div>
+</div>
+
+<!-- PRESENTATIONS -->
+<div class="view manage-view" id="view-presentations">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Presentations</div><div class="manage-sub">Create and update presentations using your SharePoint, policies and intranet.</div></div>
+    <button class="btn btn-ghost btn-sm" onclick="resetPresentation()">↺ New</button>
+  </div>
+  <div class="manage-body">
+
+    <!-- Mode tabs -->
+    <div style="display:flex;gap:0;border:1px solid var(--border);border-radius:var(--r-sm);overflow:hidden;width:fit-content;margin-bottom:20px;">
+      <button id="pres-tab-create" onclick="setPresMode('create')" style="padding:7px 18px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;">Create new</button>
+      <button id="pres-tab-update" onclick="setPresMode('update')" style="padding:7px 18px;font-size:12px;font-weight:500;border:none;cursor:pointer;font-family:inherit;background:var(--surface);color:var(--ink2);">Update existing</button>
+    </div>
+
+    <!-- Create mode -->
+    <div id="pres-create">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:20px;">
+        <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap;">
+          <div style="flex:1;min-width:220px;">
+            <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">What presentation do you need?</div>
+            <input id="pres-topic" placeholder="e.g. New hire induction, Health & safety briefing..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);" onkeydown="if(event.key==='Enter')generatePresentation()">
+          </div>
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">Intranet URL <span style="font-weight:400;color:var(--ink3);">(optional)</span></div>
+            <input id="pres-url" placeholder="https://your-intranet.com/page" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);">
+          </div>
+          <div style="padding-top:18px;">
+            <button id="pres-gen-btn" onclick="generatePresentation()" class="btn btn-primary btn-sm">✦ Generate</button>
+          </div>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">Or paste intranet content <span style="font-weight:400;color:var(--ink3);">if the page requires login</span></div>
+          <textarea id="pres-paste" placeholder="Paste any relevant page content here..." style="width:100%;min-height:70px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
+        </div>
+      </div>
+    </div>
+
+    <!-- Update mode -->
+    <div id="pres-update" style="display:none;">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;margin-bottom:20px;">
+        <div style="font-size:13px;font-weight:500;color:var(--ink);margin-bottom:4px;">Paste your existing presentation content</div>
+        <div style="font-size:12px;color:var(--ink3);margin-bottom:10px;">Copy all text from your existing presentation and paste it below. Breeze HR will compare it against your current policies, handbook and any intranet URLs you provide, then suggest what needs updating.</div>
+        <textarea id="pres-existing" placeholder="Paste your existing presentation content here..." style="width:100%;min-height:140px;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);resize:vertical;line-height:1.6;box-sizing:border-box;"></textarea>
+        <div style="display:flex;gap:12px;align-items:flex-end;margin-top:12px;flex-wrap:wrap;">
+          <div style="flex:1;min-width:200px;">
+            <div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:5px;">Intranet URL to check against <span style="font-weight:400;color:var(--ink3);">(optional)</span></div>
+            <input id="pres-update-url" placeholder="https://your-intranet.com/page" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);">
+          </div>
+          <button id="pres-update-btn" onclick="updatePresentation()" class="btn btn-primary btn-sm">✦ Check for updates</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Status / progress -->
+    <div id="pres-status" style="display:none;font-size:12px;color:var(--ink3);padding:8px 0;display:flex;align-items:center;gap:8px;">
+      <span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span>
+      <span id="pres-status-text">Generating...</span>
+    </div>
+
+    <!-- Suggestions panel (update mode) -->
+    <div id="pres-suggestions" style="display:none;margin-bottom:20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Suggested updates</div>
+      <div id="pres-suggestions-body"></div>
+    </div>
+
+    <!-- Slide preview -->
+    <div id="pres-slides" style="display:none;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);" id="pres-slide-title">Presentation</div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-secondary btn-sm" onclick="addSlide()">+ Add slide</button>
+          <button class="btn btn-primary btn-sm" id="pres-download-btn" onclick="downloadPresentation()">⬇ Download .pptx</button>
+        </div>
+      </div>
+      <div id="pres-slide-list" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+
+  </div>
 </div>
 
 <!-- MEETING RECORDER -->
@@ -1115,7 +1199,7 @@ async function onSignedIn(user) {
   loadChatList();
   renderChatHistory();
   // Check email connection and show chip if connected
-  fetch(`/api/composio-status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(st=>{
+  fetch(`/api/composio?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(st=>{
     window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
     window._sharepointConnected = !!st.sharepoint;
     const btn = document.getElementById('emailChip');
@@ -1680,6 +1764,305 @@ function getDefaultFields(name) {
   if(n.includes('promotion'))return[{q:"Employee's full name?",f:'employee_name'},{q:"New job title?",f:'job_title'},{q:"Effective date?",f:'effective_date'},{q:"New annual salary?",f:'new_salary'},{q:"Manager's name?",f:'manager_name'},{q:"Letter date?",f:'date'}];
   if(n.includes('offer'))return[{q:"Candidate's full name?",f:'employee_name'},{q:"Job title?",f:'job_title'},{q:"Start date?",f:'effective_date'},{q:"Salary?",f:'new_salary'},{q:"Manager's name?",f:'manager_name'}];
   return[{q:"Employee's full name?",f:'employee_name'},{q:"Date?",f:'date'},{q:"Details?",f:'details'}];
+}
+
+// ── PRESENTATIONS ──
+let presSlides = [], presTitle = '';
+
+function initPresentations() { /* view already rendered in HTML */ }
+
+function setPresMode(mode) {
+  document.getElementById('pres-create').style.display = mode === 'create' ? 'block' : 'none';
+  document.getElementById('pres-update').style.display = mode === 'update' ? 'block' : 'none';
+  document.getElementById('pres-tab-create').style.background = mode === 'create' ? 'var(--accent)' : 'var(--surface)';
+  document.getElementById('pres-tab-create').style.color = mode === 'create' ? 'white' : 'var(--ink2)';
+  document.getElementById('pres-tab-update').style.background = mode === 'update' ? 'var(--accent)' : 'var(--surface)';
+  document.getElementById('pres-tab-update').style.color = mode === 'update' ? 'white' : 'var(--ink2)';
+}
+
+function resetPresentation() {
+  presSlides = []; presTitle = '';
+  document.getElementById('pres-slides').style.display = 'none';
+  document.getElementById('pres-suggestions').style.display = 'none';
+  document.getElementById('pres-status').style.display = 'none';
+  document.getElementById('pres-topic').value = '';
+  document.getElementById('pres-url').value = '';
+  document.getElementById('pres-paste').value = '';
+  document.getElementById('pres-existing').value = '';
+  document.getElementById('pres-update-url').value = '';
+}
+
+async function gatherPresContext(topic) {
+  let context = '';
+
+  // 1. Uploaded policies and handbook from Supabase
+  if (currentProfile) {
+    const { data: pols } = await sb.from('policies').select('name,content')
+      .eq('company_id', currentProfile.company_id)
+      .not('name','like','TEMPLATE:%').not('name','like','CHAT:%')
+      .not('name','like','MEETING:%').not('name','like','SETTING:%');
+    if (pols?.length) {
+      context += '\n\nCOMPANY DOCUMENTS:\n' + pols.map(p =>
+        `--- ${p.name} ---\n${policyText(p.content).substring(0, 1500)}`
+      ).join('\n');
+    }
+  }
+
+  // 2. SharePoint search
+  if (window._sharepointConnected && currentUser) {
+    try {
+      const token = await getAuthToken();
+      const r = await fetch('/api/sharepoint-search', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+        body: JSON.stringify({ userId: currentUser.id, query: topic })
+      });
+      if (r.ok) {
+        const d = await r.json();
+        const items = d?.data?.data?.PrimaryQueryResult?.RelevantResults?.Table?.Rows?.results
+          || d?.data?.data?.value || d?.data?.results || [];
+        if (items.length) {
+          context += '\n\nSHAREPOINT FILES FOUND:\n' + items.slice(0,5).map(item => {
+            const cells = item.Cells?.results || [];
+            const get = k => cells.find(c=>c.Key===k)?.Value || item[k] || '';
+            const modified = get('LastModifiedTime') ? new Date(get('LastModifiedTime')).toLocaleDateString('en-GB') : '';
+            return `- "${get('Title')}" [${(get('FileExtension')||'').toUpperCase()}]${modified?' (modified '+modified+')':''}${get('HitHighlightedSummary')?': '+get('HitHighlightedSummary').replace(/<[^>]+>/g,'').substring(0,200):''}`;
+          }).join('\n');
+        }
+      }
+    } catch(e) {}
+  }
+
+  // 3. Intranet URL fetch
+  const urlInput = document.getElementById('pres-url')?.value?.trim()
+    || document.getElementById('pres-update-url')?.value?.trim();
+  if (urlInput) {
+    setPresStatus('Fetching intranet page...');
+    try {
+      const r = await fetch('/api/fetch-url', {
+        method: 'POST', headers: {'Content-Type':'application/json'},
+        body: JSON.stringify({ url: urlInput })
+      });
+      const d = await r.json();
+      if (d.text) context += `\n\nINTRANET PAGE (${urlInput}):\n${d.text.substring(0,4000)}`;
+      else if (d.error) context += `\n\nNote: Could not fetch ${urlInput} (${d.error}) - page may require login.`;
+    } catch(e) {}
+  }
+
+  // 4. Pasted intranet content
+  const pasted = document.getElementById('pres-paste')?.value?.trim();
+  if (pasted) context += `\n\nPASTED CONTENT:\n${pasted.substring(0,4000)}`;
+
+  return context;
+}
+
+function setPresStatus(msg) {
+  const el = document.getElementById('pres-status');
+  const txt = document.getElementById('pres-status-text');
+  if (!el || !txt) return;
+  if (msg) { el.style.display = 'flex'; txt.textContent = msg; }
+  else { el.style.display = 'none'; }
+}
+
+async function generatePresentation() {
+  const topic = document.getElementById('pres-topic')?.value?.trim();
+  if (!topic) { alert('Please describe the presentation you need.'); return; }
+  const btn = document.getElementById('pres-gen-btn');
+  btn.disabled = true; btn.textContent = '⟳ Working...';
+  setPresStatus('Searching your policies and SharePoint...');
+
+  try {
+    const context = await gatherPresContext(topic);
+    setPresStatus('Generating slides...');
+
+    const prompt = `You are creating a professional workplace presentation. Topic: "${topic}"
+
+${context}
+
+Generate a complete presentation as JSON with this exact format:
+{"title":"Presentation Title","slides":[{"id":1,"type":"title","title":"Main Title","subtitle":"Subtitle or date","bullets":[]},{"id":2,"type":"content","title":"Slide Title","bullets":["Point 1","Point 2","Point 3"]},...]}"
+
+Rules:
+- 8-14 slides depending on topic
+- First slide is always type "title" with subtitle
+- Include a "section" type slide (just a title, no bullets) to break up major sections
+- Last slide is "close" type: title "Questions?" with a contact/next steps bullet
+- Bullets are concise (max 12 words each), 3-5 per slide
+- Use content from the company documents and SharePoint files provided - reference actual company policies, names and facts where available
+- If SharePoint files have modification dates, use the most recent content
+- Return ONLY the JSON object, no markdown, no explanation`;
+
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ messages: [{ role:'user', content: prompt }], system: 'Return only valid JSON. No markdown fences.' })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '{}';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    const pres = JSON.parse(match[0]);
+    presTitle = pres.title || topic;
+    presSlides = pres.slides || [];
+    renderSlides();
+    setPresStatus('');
+  } catch(e) {
+    setPresStatus('');
+    alert('Failed to generate: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '✦ Generate';
+}
+
+async function updatePresentation() {
+  const existing = document.getElementById('pres-existing')?.value?.trim();
+  if (!existing) { alert('Please paste your existing presentation content.'); return; }
+  const btn = document.getElementById('pres-update-btn');
+  btn.disabled = true; btn.textContent = '⟳ Checking...';
+  setPresStatus('Comparing against your current policies and sources...');
+
+  try {
+    const context = await gatherPresContext('presentation update review');
+    setPresStatus('Analysing for outdated content...');
+
+    const prompt = `You are reviewing an existing workplace presentation for outdated content.
+
+EXISTING PRESENTATION:
+${existing.substring(0, 6000)}
+
+CURRENT COMPANY INFORMATION:
+${context}
+
+Identify specific content in the presentation that may be outdated or incorrect based on the current company information provided. For each issue found:
+1. Quote the specific text from the presentation that needs updating
+2. Explain why it may be outdated
+3. Suggest the updated text
+
+Also flag any sections where you cannot verify accuracy because information wasn't provided.
+
+Return as JSON: {"suggestions":[{"slide":"slide title or section","issue":"what's outdated","current_text":"exact quote","suggested_text":"updated version","confidence":"high|medium|low"},...],"summary":"2 sentence overview of findings"}
+
+Return ONLY the JSON. No markdown.`;
+
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'Authorization':`Bearer ${token}` },
+      body: JSON.stringify({ messages: [{ role:'user', content: prompt }], system: 'Return only valid JSON.' })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || '{}';
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    const result = JSON.parse(match[0]);
+    renderSuggestions(result);
+    setPresStatus('');
+  } catch(e) {
+    setPresStatus('');
+    alert('Failed: ' + e.message);
+  }
+  btn.disabled = false; btn.textContent = '✦ Check for updates';
+}
+
+function renderSuggestions(result) {
+  const panel = document.getElementById('pres-suggestions');
+  const body = document.getElementById('pres-suggestions-body');
+  if (!panel || !body) return;
+  const items = result.suggestions || [];
+  if (!items.length) {
+    body.innerHTML = '<div style="font-size:13px;color:var(--green);padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">✓ No obvious outdated content found based on your current policies and sources.</div>';
+  } else {
+    const colours = { high:'var(--red)', medium:'#D97706', low:'var(--ink3)' };
+    body.innerHTML = (result.summary ? `<div style="font-size:13px;color:var(--ink2);margin-bottom:12px;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);">${escapeHtml(result.summary)}</div>` : '') +
+      items.map(s => `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:14px 16px;margin-bottom:8px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+          <span style="font-size:10px;font-weight:600;color:${colours[s.confidence]||'var(--ink3)'};text-transform:uppercase;">${s.confidence||'?'} confidence</span>
+          <span style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(s.slide||'')}</span>
+        </div>
+        <div style="font-size:12px;color:var(--ink2);margin-bottom:6px;">${escapeHtml(s.issue||'')}</div>
+        ${s.current_text?`<div style="font-size:11px;background:#FFF7ED;border:1px solid #FED7AA;border-radius:4px;padding:6px 10px;margin-bottom:6px;color:#92400E;"><strong>Current:</strong> ${escapeHtml(s.current_text)}</div>`:''}
+        ${s.suggested_text?`<div style="font-size:11px;background:#F0FDF4;border:1px solid #BBF7D0;border-radius:4px;padding:6px 10px;color:#166534;"><strong>Suggested:</strong> ${escapeHtml(s.suggested_text)}</div>`:''}
+      </div>`).join('');
+  }
+  panel.style.display = 'block';
+}
+
+function renderSlides() {
+  const container = document.getElementById('pres-slide-list');
+  const panel = document.getElementById('pres-slides');
+  const titleEl = document.getElementById('pres-slide-title');
+  if (!container || !panel) return;
+  if (titleEl) titleEl.textContent = presTitle;
+  container.innerHTML = presSlides.map((s, i) => `
+    <div class="pres-slide" id="pslide-${i}" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px 22px;display:flex;gap:16px;align-items:flex-start;">
+      <div style="width:28px;height:28px;background:var(--accent-bg);border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--accent);flex-shrink:0;">${i+1}</div>
+      <div style="flex:1;">
+        <input value="${escapeHtml(s.title||'')}" oninput="presSlides[${i}].title=this.value" style="width:100%;border:none;outline:none;font-size:14px;font-weight:600;color:var(--ink);background:transparent;font-family:inherit;margin-bottom:${s.bullets?.length?'8px':'0'};">
+        ${s.subtitle?`<input value="${escapeHtml(s.subtitle)}" oninput="presSlides[${i}].subtitle=this.value" style="width:100%;border:none;outline:none;font-size:12px;color:var(--ink2);background:transparent;font-family:inherit;margin-bottom:8px;">`:''}
+        ${(s.bullets||[]).map((b,j)=>`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;"><span style="color:var(--accent);font-size:10px;">•</span><input value="${escapeHtml(b)}" oninput="presSlides[${i}].bullets[${j}]=this.value" style="flex:1;border:none;border-bottom:1px solid transparent;outline:none;font-size:13px;color:var(--ink2);background:transparent;font-family:inherit;" onfocus="this.style.borderColor='var(--border)'" onblur="this.style.borderColor='transparent'"></div>`).join('')}
+        ${s.bullets?.length?`<div style="margin-top:6px;"><button onclick="addBullet(${i})" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;">+ add bullet</button></div>`:''}
+      </div>
+      <div style="display:flex;gap:4px;flex-shrink:0;">
+        <button onclick="moveSlide(${i},-1)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;" ${i===0?'disabled':''}>↑</button>
+        <button onclick="moveSlide(${i},1)" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;" ${i===presSlides.length-1?'disabled':''}>↓</button>
+        <button onclick="deleteSlide(${i})" style="background:none;border:1px solid var(--border);border-radius:4px;padding:3px 7px;cursor:pointer;font-size:11px;color:var(--red);">✕</button>
+      </div>
+    </div>`).join('');
+  panel.style.display = 'block';
+}
+
+function addBullet(i) { presSlides[i].bullets = [...(presSlides[i].bullets||[]), '']; renderSlides(); }
+function deleteSlide(i) { presSlides.splice(i,1); renderSlides(); }
+function moveSlide(i, dir) {
+  const j = i + dir;
+  if (j < 0 || j >= presSlides.length) return;
+  [presSlides[i], presSlides[j]] = [presSlides[j], presSlides[i]];
+  renderSlides();
+}
+function addSlide() {
+  presSlides.push({ id: presSlides.length+1, type:'content', title:'New slide', bullets:['Point 1','Point 2','Point 3'] });
+  renderSlides();
+  document.getElementById(`pslide-${presSlides.length-1}`)?.scrollIntoView({ behavior:'smooth' });
+}
+
+function downloadPresentation() {
+  if (!presSlides.length) return;
+  const btn = document.getElementById('pres-download-btn');
+  btn.textContent = 'Generating...'; btn.disabled = true;
+  try {
+    const pptx = new PptxGenJS();
+    pptx.layout = 'LAYOUT_WIDE';
+    const DARK = '0A1628', ACCENT = '3B82F6', WHITE = 'FFFFFF', LIGHT = 'F5F5F7', GREY = '6B7280';
+
+    presSlides.forEach(s => {
+      const slide = pptx.addSlide();
+      if (s.type === 'title') {
+        slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
+        slide.addText(s.title||'', { x:0.6, y:2.2, w:11, h:1.4, fontSize:40, bold:true, color:WHITE, fontFace:'Calibri' });
+        if (s.subtitle) slide.addText(s.subtitle, { x:0.6, y:3.7, w:9, h:0.6, fontSize:20, color:'93C5FD', fontFace:'Calibri' });
+        slide.addShape(pptx.ShapeType.rect, { x:0.6, y:5, w:1.2, h:0.08, fill:{ color: ACCENT } });
+      } else if (s.type === 'section') {
+        slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: ACCENT } });
+        slide.addText(s.title||'', { x:0.6, y:2.5, w:11, h:1.2, fontSize:36, bold:true, color:WHITE, fontFace:'Calibri', align:'left' });
+      } else if (s.type === 'close') {
+        slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
+        slide.addText(s.title||'Questions?', { x:0.6, y:2, w:11, h:1.2, fontSize:40, bold:true, color:WHITE, fontFace:'Calibri' });
+        if (s.bullets?.[0]) slide.addText(s.bullets[0], { x:0.6, y:3.4, w:9, h:0.6, fontSize:18, color:'93C5FD', fontFace:'Calibri' });
+      } else {
+        slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color: DARK } });
+        slide.addText(s.title||'', { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
+        const bullets = (s.bullets||[]).map(b => ({ text: b, options:{ bullet:{ code:'2022' }, fontSize:16, color:'374151', fontFace:'Calibri', paraSpaceAfter:6 } }));
+        if (bullets.length) slide.addText(bullets, { x:0.5, y:1.3, w:11.2, h:4.5, valign:'top' });
+      }
+    });
+
+    pptx.writeFile({ fileName: `${presTitle || 'presentation'}.pptx` });
+    btn.textContent = '✓ Downloaded'; btn.disabled = false;
+    setTimeout(() => { btn.textContent = '⬇ Download .pptx'; }, 2500);
+  } catch(e) {
+    alert('Download failed: ' + e.message);
+    btn.textContent = '⬇ Download .pptx'; btn.disabled = false;
+  }
 }
 
 // ── MEETING RECORDER ──
@@ -3075,6 +3458,7 @@ function showView(v,el) {
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
   if(v==='recorder')initRecorder();
+  if(v==='presentations')initPresentations();
 }
 
 // ── BULK MAIL MERGE ──
@@ -3238,7 +3622,7 @@ function toggleSharePoint() {
   overlay.classList.toggle('open', !isOpen);
   if (!isOpen) {
     // Check SharePoint connection status and update panel
-    fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser?.id||'')}`)
+    fetch(`/api/composio?userId=${encodeURIComponent(currentUser?.id||'')}`)
       .then(r=>r.json()).then(st=>{
         const results = document.getElementById('spResults');
         if (!results) return;
@@ -3258,7 +3642,7 @@ async function connectSharePointFromPanel() {
   const btn = event.target;
   btn.textContent = 'Connecting...'; btn.disabled = true;
   try {
-    const res = await fetch('/api/composio-connect', {
+    const res = await fetch('/api/composio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id, app: 'sharepoint' })
@@ -4093,7 +4477,7 @@ async function submitSendEmail(provider) {
 
 async function fetchEmailsForChat() {
   if (!currentUser) return;
-  const status = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`).then(r=>r.json()).catch(()=>({}));
+  const status = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`).then(r=>r.json()).catch(()=>({}));
   const provider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
   if (!provider) { sendChat('What HR emails do I have? (Note: no email account connected - go to Settings → Integrations to connect Gmail or Outlook)'); return; }
   const ta = document.getElementById('chatInput');
@@ -4106,7 +4490,7 @@ async function loadIntegrations() {
   el.innerHTML = '<div style="font-size:11px;color:var(--ink3);">Checking connections...</div>';
   let status = { gmail: false, outlook: false };
   try {
-    const res = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`);
     if (res.ok) {
       status = await res.json();
       // Store provider globally so artifact panel can show Send button
@@ -4153,7 +4537,7 @@ async function connectIntegration(app) {
   const btn = event.target;
   btn.textContent = 'Connecting...'; btn.disabled = true;
   try {
-    const res = await fetch('/api/composio-connect', {
+    const res = await fetch('/api/composio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id, app })
@@ -4169,7 +4553,7 @@ async function connectIntegration(app) {
       const poll = setInterval(async () => {
         attempts++;
         try {
-          const sr = await fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser.id)}`);
+          const sr = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`);
           if (sr.ok) {
             const st = await sr.json();
             if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
@@ -4190,7 +4574,7 @@ async function disconnectIntegration(app, connectedAccountId) {
   const btn = event.target;
   btn.textContent = 'Disconnecting...'; btn.disabled = true;
   try {
-    await fetch('/api/composio-connect', {
+    await fetch('/api/composio', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ userId: currentUser.id, app, action: 'disconnect', connectedAccountId })
