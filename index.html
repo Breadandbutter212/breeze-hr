@@ -1799,9 +1799,13 @@ async function handlePresUpload(event) {
     const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
       .sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
     let text = '';
-    slideFiles.forEach((f, i) => {
-      const xml = zip.files[f].asText();
-      // Extract per-paragraph text (skipping field codes and page numbers)
+    // Resolve a relative path: resolvePptPath('ppt/slides/slide6.xml', '../diagrams/data1.xml') -> 'ppt/diagrams/data1.xml'
+    const resolvePptPath = (base, rel) => {
+      const parts = base.split('/'); parts.pop();
+      rel.split('/').forEach(p => p === '..' ? parts.pop() : parts.push(p));
+      return parts.join('/');
+    };
+    const extractParas = xml => {
       const paras = [];
       xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (m, inner) => {
         if (inner.includes('<a:fld')) return;
@@ -1814,6 +1818,20 @@ async function handlePresUpload(event) {
           : joined.replace(/\t+/g, ' | ').trim();
         if (t && !/^\d{1,3}$/.test(t)) paras.push(t);
       });
+      return paras;
+    };
+    slideFiles.forEach((f, i) => {
+      const xml = zip.files[f].asText();
+      const paras = extractParas(xml);
+      // Also extract text from linked SmartArt/diagram data files
+      const relsPath = f.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+      if (zip.files[relsPath]) {
+        const relsXml = zip.files[relsPath].asText();
+        [...relsXml.matchAll(/Type="[^"]*diagramData[^"]*"\s+Target="([^"]+)"/g)].forEach(rel => {
+          const diagPath = resolvePptPath(f, rel[1]);
+          if (zip.files[diagPath]) paras.push(...extractParas(zip.files[diagPath].asText()));
+        });
+      }
       text += `--- SLIDE ${i+1} (${paras.length} items) ---\n${paras.map((p,j) => `[${j+1}] ${p.substring(0,120)}`).join('\n')}\n\n`;
     });
     presUploadedText = text.substring(0, 14000);
@@ -2173,6 +2191,38 @@ function downloadPresentation() {
         });
 
         zip.file(sf, xml);
+
+        // Also replace text in linked SmartArt/diagram data files (tIdx continues)
+        const resolvePath = (base, rel) => {
+          const parts = base.split('/'); parts.pop();
+          rel.split('/').forEach(p => p === '..' ? parts.pop() : parts.push(p));
+          return parts.join('/');
+        };
+        const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+        if (zip.files[relsPath]) {
+          const relsXml = zip.files[relsPath].asText();
+          [...relsXml.matchAll(/Type="[^"]*diagramData[^"]*"\s+Target="([^"]+)"/g)].forEach(rel => {
+            const diagPath = resolvePath(sf, rel[1]);
+            if (!zip.files[diagPath]) return;
+            let diagXml = zip.files[diagPath].asText();
+            diagXml = diagXml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
+              if (paraInner.includes('<a:fld')) return paraMatch;
+              const runs = [];
+              paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
+              const paraText = runs.join('').trim();
+              if (!paraText) return paraMatch;
+              const newText = newTexts[tIdx];
+              if (newText === undefined) return paraMatch;
+              tIdx++;
+              let isFirst = true;
+              return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => {
+                if (isFirst) { isFirst = false; return `<a:t>${escXml(newText)}</a:t>`; }
+                return '<a:t></a:t>';
+              }) + '</a:p>';
+            });
+            zip.file(diagPath, diagXml);
+          });
+        }
       });
 
       const blob = new Blob([zip.generate({ type:'uint8array' })], { type:'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
