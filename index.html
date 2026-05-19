@@ -2922,12 +2922,13 @@ async function buildChatSystemPrompt() {
   let policyContext = '', learningContext = '', ratingContext = '';
   if (currentProfile) {
     const cid = currentProfile.company_id;
-    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes, styleRes] = await Promise.all([
+    const [polsRes, responsesRes, goodRatingsRes, badRatingsRes, styleRes, recentChatsRes] = await Promise.all([
       sb.from('policies').select('name,content').eq('company_id', cid).not('name','like','TEMPLATE:%').not('name','like','STYLE:%').not('name','like','CHAT:%'),
-      sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at',{ascending:false}).limit(30),
-      sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating',1).order('created_at',{ascending:false}).limit(3),
-      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(1),
-      sb.from('policies').select('content').eq('company_id', cid).eq('name','STYLE:WritingSample').maybeSingle()
+      sb.from('responses').select('ai_draft,hr_sent,was_edited,created_at').eq('company_id', cid).order('created_at',{ascending:false}).limit(50),
+      sb.from('ratings').select('ai_draft,message_type').eq('company_id', cid).eq('rating',1).order('created_at',{ascending:false}).limit(5),
+      sb.from('ratings').select('ai_draft').eq('company_id', cid).eq('rating',-1).order('created_at',{ascending:false}).limit(3),
+      sb.from('policies').select('content').eq('company_id', cid).eq('name','STYLE:WritingSample').maybeSingle(),
+      sb.from('policies').select('content').eq('company_id', cid).like('name','CHAT:%').order('created_at',{ascending:false}).limit(5)
     ]);
     const pols = polsRes.data;
     if (pols && pols.length) {
@@ -2941,34 +2942,6 @@ async function buildChatSystemPrompt() {
     } else {
       policyContext = `\n\nNO COMPANY POLICIES UPLOADED YET - use ACAS guidance and UK employment law. Recommend HR uploads their policies.`;
     }
-    const responses = responsesRes.data;
-    if (responses && responses.length) {
-      const total = responses.length, edited = responses.filter(r=>r.was_edited);
-      const editRate = Math.round((edited.length/total)*100), editPatterns = [];
-      if (edited.length >= 3) {
-        const aiAvgLen = edited.reduce((s,r)=>s+(r.ai_draft?.length||0),0)/edited.length;
-        const hrAvgLen = edited.reduce((s,r)=>s+(r.hr_sent?.length||0),0)/edited.length;
-        if (hrAvgLen < aiAvgLen*0.7) editPatterns.push('This team consistently shortens AI drafts - be more concise');
-        if (hrAvgLen > aiAvgLen*1.3) editPatterns.push('This team tends to add more detail - be more thorough');
-        const removedAcas = edited.filter(r=>r.ai_draft?.includes('ACAS')&&!r.hr_sent?.includes('ACAS')).length;
-        if (removedAcas > edited.length*0.4) editPatterns.push('This team removes ACAS references from employee drafts');
-        const infSigs = ['Hi ','Thanks','Cheers'];
-        const hrInf = edited.filter(r=>infSigs.some(s=>r.hr_sent?.includes(s))).length;
-        const aiInf = edited.filter(r=>infSigs.some(s=>r.ai_draft?.includes(s))).length;
-        if (hrInf > aiInf) editPatterns.push('This team uses a more informal/friendly tone');
-        if (hrInf < aiInf*0.5) editPatterns.push('This team prefers a formal tone');
-        const sinc = edited.filter(r=>r.hr_sent?.includes('Yours sincerely')).length;
-        const best = edited.filter(r=>r.hr_sent?.includes('Best')).length;
-        const thanks = edited.filter(r=>r.hr_sent?.includes('Thanks')).length;
-        if (sinc > best && sinc > thanks) editPatterns.push('This team signs off with "Yours sincerely"');
-        else if (best > thanks) editPatterns.push('This team signs off with "Best regards" or "Best"');
-        else if (thanks > 0) editPatterns.push('This team signs off with "Thanks" or "Many thanks"');
-      }
-      learningContext = `\n\nLEARNING FROM ${total} PREVIOUS RESPONSES (edit rate: ${editRate}%):`;
-      if (editPatterns.length) learningContext += `\nStyle patterns detected:\n${editPatterns.map(p=>`- ${p}`).join('\n')}`;
-      else if (editRate < 20) learningContext += `\nHR edits very few drafts (${editRate}%) - current style is working well.`;
-      else learningContext += `\nHR edits ${editRate}% of drafts. Use standard best practice.`;
-    }
     const goodRatings = goodRatingsRes.data, badRatings = badRatingsRes.data;
     if (goodRatings && goodRatings.length) {
       ratingContext = `\n\nHIGHLY-RATED PAST RESPONSES - match this style:\n${goodRatings.map((r,i)=>`\nApproved example ${i+1}:\n${r.ai_draft.substring(0,800)}`).join('\n')}`;
@@ -2980,6 +2953,50 @@ async function buildChatSystemPrompt() {
     const styleData = styleRes?.data;
     if (styleData?.content) {
       ratingContext += `\n\nHR WRITING STYLE SAMPLE - match this tone, vocabulary and sign-off in all drafts:\n${styleData.content.substring(0,1500)}`;
+    }
+
+    // Scan recent conversations for explicit style/preference signals
+    const recentChats = recentChatsRes?.data;
+    if (recentChats && recentChats.length) {
+      const chatText = recentChats.map(c => c.content || '').join('\n').toLowerCase();
+      const convPrefs = [];
+      if (/too long|make it shorter|be more concise|shorten|brief(er)?/.test(chatText)) convPrefs.push('Keep responses concise - this team has asked for shorter outputs');
+      if (/too short|more detail|expand|elaborate|add more/.test(chatText)) convPrefs.push('Provide more detail - this team has asked for thorough responses');
+      if (/too formal|less formal|more casual|friendl(y|ier)|informal/.test(chatText)) convPrefs.push('Use a warmer, less formal tone');
+      if (/more formal|too casual|professional(ly)?/.test(chatText)) convPrefs.push('Use a more formal, professional tone');
+      if (/bullet(s| points)|list(s)?|numbered/.test(chatText)) convPrefs.push('This team prefers bullet-point lists over prose where possible');
+      if (/no bullets|paragraph|prose/.test(chatText)) convPrefs.push('This team prefers prose over bullet points');
+      if (/remove acas|don.t mention acas|no acas/.test(chatText)) convPrefs.push('Do not reference ACAS in employee-facing drafts for this team');
+      if (convPrefs.length) learningContext += `\n\nPREFERENCES FROM RECENT CONVERSATIONS:\n${convPrefs.map(p=>`- ${p}`).join('\n')}`;
+    }
+
+    // Build edit pattern context from responses (increase threshold - now have more data)
+    const responses = responsesRes.data;
+    if (responses && responses.length) {
+      const edited = responses.filter(r => r.was_edited && r.hr_sent && r.hr_sent !== r.ai_draft);
+      if (edited.length >= 2) {
+        const editPats = [];
+        const aiAvg = edited.reduce((s,r)=>s+(r.ai_draft?.length||0),0)/edited.length;
+        const hrAvg = edited.reduce((s,r)=>s+(r.hr_sent?.length||0),0)/edited.length;
+        if (hrAvg < aiAvg * 0.7) editPats.push('This team consistently shortens AI drafts - be more concise');
+        if (hrAvg > aiAvg * 1.3) editPats.push('This team adds more detail to AI drafts - be more thorough');
+        const removedAcas = edited.filter(r=>r.ai_draft?.includes('ACAS')&&!r.hr_sent?.includes('ACAS')).length;
+        if (removedAcas > edited.length*0.3) editPats.push('This team removes ACAS references from employee drafts');
+        const infSigs = ['Hi ','Thanks','Cheers'];
+        const hrInf = edited.filter(r=>infSigs.some(s=>r.hr_sent?.includes(s))).length;
+        const aiInf = edited.filter(r=>infSigs.some(s=>r.ai_draft?.includes(s))).length;
+        if (hrInf > aiInf) editPats.push('This team uses a more informal/friendly tone than the AI defaults');
+        if (hrInf < aiInf*0.5) editPats.push('This team prefers a formal tone');
+        const sinc=edited.filter(r=>r.hr_sent?.includes('Yours sincerely')).length;
+        const best=edited.filter(r=>r.hr_sent?.includes('Best')).length;
+        const thanks=edited.filter(r=>r.hr_sent?.includes('Thanks')).length;
+        if (sinc>best&&sinc>thanks) editPats.push('Sign off with "Yours sincerely"');
+        else if (best>thanks) editPats.push('Sign off with "Best regards"');
+        else if (thanks>0) editPats.push('Sign off with "Many thanks"');
+        if (editPats.length) learningContext += `\n\nEDIT PATTERNS (from ${edited.length} edited responses):\n${editPats.map(p=>`- ${p}`).join('\n')}`;
+      } else if (responses.length >= 5) {
+        learningContext += `\n\nLEARNING: ${responses.length} responses logged. Style preferences will emerge as more drafts are edited.`;
+      }
     }
   }
   return `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You are chatting with an HR professional.
@@ -3249,7 +3266,18 @@ async function sendChat(overrideMsg) {
   chatLoading = false;
   window._spSearchingForChat = false;
   if (btn) btn.disabled = false;
-  chatMessages.push({role:'assistant', content: reply || 'Sorry, connection issue. Please check your API connection and try again.'});
+  // Save AI response immediately so learning model has data from every conversation
+  let responseDbId = null;
+  if (currentProfile && reply) {
+    const { data: savedResp } = await sb.from('responses').insert({
+      company_id: currentProfile.company_id,
+      ai_draft: reply,
+      hr_sent: reply,
+      was_edited: false
+    }).select('id').single();
+    responseDbId = savedResp?.id || null;
+  }
+  chatMessages.push({role:'assistant', content: reply || 'Sorry, connection issue. Please check your API connection and try again.', _responseId: responseDbId});
   renderChatHistory();
   saveCurrentChat();
 }
@@ -3296,7 +3324,9 @@ function renderChatHistory() {
     return `<div class="chat-msg">
       <div class="chat-av ai-av">◈</div>
       <div style="flex:1;min-width:0;">
-        <div class="chat-bubble ai-bubble">${formatChatResponse(bubbleText)}</div>
+        <div class="chat-bubble ai-bubble" id="bubble-${i}" contenteditable="true" spellcheck="true"
+          style="outline:none;cursor:text;" title="Click to edit before copying"
+          oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent?escapeHtml(m._editedContent).replace(/\n/g,'<br>'):bubbleText)}</div>
         ${artifact ? `<div style="margin:7px 0 4px 44px;"><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick='showArtifact(${JSON.stringify(artifact).replace(/'/g,"&#39;")},${i})'>📄 View draft</button></div>` : ''}
         <div class="chat-actions">
           <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
@@ -3317,10 +3347,24 @@ function renderChatHistory() {
 
 async function copyChatMsg(idx) {
   const msg = chatMessages[idx]; if (!msg) return;
-  try { await navigator.clipboard.writeText(msg.content); } catch(e) {}
+  // Read from the editable bubble - captures any inline edits the user made
+  const bubble = document.getElementById(`bubble-${idx}`);
+  const copiedText = bubble ? bubble.innerText.trim() : msg.content;
+  try { await navigator.clipboard.writeText(copiedText); } catch(e) {}
   const btn = document.getElementById(`copy-${idx}`);
   if (btn) { btn.textContent = '✓ Copied'; setTimeout(()=>{const b=document.getElementById(`copy-${idx}`);if(b)b.textContent='Copy';},2000); }
-  if (currentProfile) await saveResponse(null, msg.content, msg.content);
+  if (!currentProfile) return;
+  const wasEdited = copiedText.trim() !== msg.content.trim();
+  if (wasEdited) {
+    // Update the existing response record with what HR actually used
+    if (msg._responseId) {
+      await sb.from('responses').update({ hr_sent: copiedText, was_edited: true }).eq('id', msg._responseId);
+    } else {
+      await saveResponse(null, msg.content, copiedText);
+    }
+    // Invalidate system prompt so next message learns from this edit
+    chatSystemPrompt = null;
+  }
 }
 
 async function rateChatMsg(idx, rating) {
