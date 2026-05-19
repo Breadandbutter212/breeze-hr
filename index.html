@@ -617,10 +617,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         Upload template (.docx, .txt or .pdf)
         <input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)">
       </label>
-      <div id="tmplHintCallout" style="display:none;" class="tmpl-hint-callout">
-        <div><strong>Tip:</strong> Mark fields with <strong>{curly}</strong>, <strong>[square]</strong> or <strong>&lt;&lt;angle&gt;&gt;</strong> brackets before uploading — e.g. <strong>[Employee Name]</strong> or <strong>{salary}</strong></div>
-        <span class="tmpl-hint-dismiss" onclick="dismissTmplHint()" title="Dismiss">✕</span>
-      </div>
     </div>
     <div class="gen-area">
       <div class="gen-empty" id="genEmpty">
@@ -978,35 +974,36 @@ async function onSignedIn(user) {
 
 function showOnboardingTour() {
   const steps = [
-    { icon:'💬', title:'Chat with Breeze HR', desc:'Ask any HR question - policy queries, tricky employee situations, what to say in a difficult conversation. Breeze HR responds like a senior HR advisor with 20+ years of UK experience.' },
-    { icon:'🧠', title:'It learns how you work', desc:'Paste a writing sample in Settings and Breeze HR matches your tone, sign-off and style. It also adapts based on how your team edits its drafts over time - getting sharper the more you use it.' },
-    { icon:'⚡', title:'Always up to date', desc:'Breeze HR is built on the latest AI, updated continuously with UK employment law changes, new ACAS guidance and statutory rate updates - so you never need to check if the advice is current.' },
-    { icon:'📄', title:'Letters and documents', desc:'Go to Documents to draft offer letters, disciplinary letters, reference letters and more. Answer a few questions and the letter builds live - ready to download or send.' },
-    { icon:'📋', title:'Upload your policies', desc:'Upload your company HR policies under Policies. Breeze HR reads them and uses them first when answering questions - so answers are specific to your business, not generic advice.' },
+    { icon:'◈', title:'Your AI-powered HR advisor', desc:'Ask Breeze HR anything - policy queries, difficult employee situations, what to say in a tricky conversation. You get precise, referenced responses grounded in current UK employment law, not generic chatbot answers.', nav:'chat' },
+    { icon:'📄', title:'Contracts, letters and documents', desc:'Draft offer letters, fixed term contracts, disciplinary letters, references and more in seconds. Answer a few questions and the document builds live on screen - legally sound, formatted and ready to download as a Word file.', nav:'docs' },
+    { icon:'⚡', title:'Always current, always compliant', desc:'Breeze HR is continuously updated with UK employment law changes, new ACAS guidance and statutory rate adjustments. Every answer reflects current legislation - you never need to cross-check whether the advice is still valid.', nav:null },
+    { icon:'📋', title:'Built around your policies', desc:'Upload your company HR policies and handbook under Policies. Breeze HR reads them and references them first when answering questions - so every response is specific to your business, not off-the-shelf guidance.', nav:'manage' },
+    { icon:'👥', title:'Built for your whole team', desc:'Every team member gets their own secure login. Responses are consistent, auditable and anchored to your company policies - so your HR function operates at a higher standard without adding headcount.', nav:null },
   ];
   let step = 0;
 
   const overlay = document.createElement('div');
   overlay.id = 'tourOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.7);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.72);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
 
   function render() {
     const s = steps[step];
     const isLast = step === steps.length - 1;
+    if (s.nav) showView(s.nav);
     overlay.innerHTML = `
       <div style="background:white;border-radius:16px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden;">
         <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:32px 32px 24px;">
-          <div style="font-size:40px;margin-bottom:12px;">${s.icon}</div>
+          <div style="font-size:36px;margin-bottom:12px;">${s.icon}</div>
           <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
-          <div style="font-size:13px;color:rgba(255,255,255,0.6);margin-top:4px;">Step ${step+1} of ${steps.length}</div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">${step+1} of ${steps.length}</div>
         </div>
         <div style="padding:24px 32px;">
-          <div style="font-size:14px;color:#4A5568;line-height:1.7;">${s.desc}</div>
+          <div style="font-size:14px;color:#4A5568;line-height:1.75;">${s.desc}</div>
           <div style="display:flex;gap:6px;margin-top:20px;margin-bottom:4px;">
             ${steps.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<=step?'#0A1628':'#E2E8F0'};transition:background 0.2s;"></div>`).join('')}
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
-            <button onclick="document.getElementById('tourOverlay').remove();localStorage.setItem('breeze_tour_done','1')" style="font-size:12px;color:#8A94A6;background:none;border:none;cursor:pointer;font-family:inherit;">Skip tour</button>
+            <button onclick="document.getElementById('tourOverlay').remove();localStorage.setItem('breeze_tour_done','1')" style="font-size:12px;color:#8A94A6;background:none;border:none;cursor:pointer;font-family:inherit;">Skip</button>
             <button onclick="tourNext()" style="background:#0A1628;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">${isLast?'Get started':'Next'}</button>
           </div>
         </div>
@@ -1530,13 +1527,30 @@ function getDefaultFields(name) {
   return[{q:"Employee's full name?",f:'employee_name'},{q:"Date?",f:'date'},{q:"Details?",f:'details'}];
 }
 
-function dismissTmplHint() {
-  localStorage.setItem('tmplHintDismissed','1');
-  const el=document.getElementById('tmplHintCallout'); if(el) el.style.display='none';
-}
 function showTmplHintIfNew() {
-  const el=document.getElementById('tmplHintCallout'); if(!el) return;
-  el.style.display = localStorage.getItem('tmplHintDismissed') ? 'none' : 'flex';
+  if (localStorage.getItem('tmplHintDismissed')) return;
+  if (document.getElementById('tmplHintOverlay')) return;
+  const ov = document.createElement('div');
+  ov.id = 'tmplHintOverlay';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.55);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);';
+  ov.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
+    <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:24px 28px 20px;">
+      <div style="font-size:22px;margin-bottom:10px;">📂</div>
+      <div style="font-size:17px;font-weight:700;color:white;letter-spacing:-0.02em;">Preparing your template</div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:3px;">Before you upload</div>
+    </div>
+    <div style="padding:20px 28px 24px;">
+      <p style="font-size:13px;color:#4A5568;line-height:1.7;margin:0 0 14px;">Mark any fields you want to fill in later using one of these formats:</p>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:20px;">
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:9px 13px;font-size:12px;color:#1A202C;font-family:monospace;">{employee_name} &nbsp; {salary} &nbsp; {start_date}</div>
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:9px 13px;font-size:12px;color:#1A202C;font-family:monospace;">[Employee Name] &nbsp; [Job Title]</div>
+        <div style="background:#F8FAFC;border:1px solid #E2E8F0;border-radius:8px;padding:9px 13px;font-size:12px;color:#1A202C;font-family:monospace;">&lt;&lt;salary&gt;&gt; &nbsp; &lt;&lt;notice_period&gt;&gt;</div>
+      </div>
+      <p style="font-size:12px;color:#718096;margin:0 0 20px;">Breeze HR detects these automatically and turns them into questions when you generate a document.</p>
+      <button onclick="localStorage.setItem('tmplHintDismissed','1');document.getElementById('tmplHintOverlay').remove();" style="width:100%;background:#0A1628;color:white;border:none;border-radius:8px;padding:11px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Got it</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
 }
 
 async function renderTmpls(filter) {
@@ -1566,16 +1580,17 @@ async function renderTmpls(filter) {
   // Track which groups are collapsed - default built-ins open, custom open
   // Default: Your templates open, all built-in groups collapsed
   if (!window._tmplCollapsed) {
-    window._tmplCollapsed = { 'Letters': true, 'Disciplinary': true, 'Redundancy': true, 'Contracts': true, 'References': true };
+    window._tmplCollapsed = { 'Contracts': true, 'References': true, 'Letters': true, 'Redundancy': true, 'Disciplinary': true };
   }
   const collapsed = window._tmplCollapsed;
-  const builtInGroups = ['Letters','Disciplinary','Redundancy','Contracts','References'];
+  const builtInGroups = ['Contracts','References','Letters','Redundancy','Disciplinary'];
   const hasBuiltIns = builtInGroups.some(g => groups[g]?.length);
   let shownBuiltInSep = false;
+  const UPLOADS_PREVIEW = 5; // max shown before "show more"
+  if (!window._tmplUploadsExpanded) window._tmplUploadsExpanded = false;
 
-  ['Your uploads','Letters','Disciplinary','Redundancy','Contracts','References'].forEach(grp=>{
+  ['Your uploads','Contracts','References','Letters','Redundancy','Disciplinary'].forEach(grp=>{
     const ts=groups[grp]; if(!ts||!ts.length)return;
-    // Add separator before first built-in group
     if (builtInGroups.includes(grp) && !shownBuiltInSep && hasBuiltIns) {
       shownBuiltInSep = true;
       const sep = document.createElement('div');
@@ -1587,17 +1602,24 @@ async function renderTmpls(filter) {
     const lbl=document.createElement('div');
     lbl.style.cssText='font-size:9px;font-weight:600;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:10px 12px 4px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;user-select:none;';
     lbl.innerHTML=`<span>${grp}</span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;transform:rotate(${isCollapsed?'0':'90'}deg)"><polyline points="9 18 15 12 9 6"/></svg>`;
-    lbl.onclick=()=>{
-      window._tmplCollapsed[grp]=!window._tmplCollapsed[grp];
-      renderTmpls(document.getElementById('tmplSearch')?.value||'');
-    };
+    lbl.onclick=()=>{ window._tmplCollapsed[grp]=!window._tmplCollapsed[grp]; renderTmpls(document.getElementById('tmplSearch')?.value||''); };
     list.appendChild(lbl);
     if(!isCollapsed){
-      ts.forEach(t=>{
+      const isUploads = grp==='Your uploads';
+      const showAll = !isUploads || window._tmplUploadsExpanded || ts.length<=UPLOADS_PREVIEW;
+      const visible = showAll ? ts : ts.slice(0,UPLOADS_PREVIEW);
+      visible.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
         div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
+      if(isUploads && ts.length>UPLOADS_PREVIEW){
+        const more=document.createElement('div');
+        more.style.cssText='font-size:11px;color:var(--accent);padding:5px 12px 6px;cursor:pointer;';
+        more.textContent=window._tmplUploadsExpanded?'Show less':'+ '+( ts.length-UPLOADS_PREVIEW)+' more';
+        more.onclick=()=>{ window._tmplUploadsExpanded=!window._tmplUploadsExpanded; renderTmpls(document.getElementById('tmplSearch')?.value||''); };
+        list.appendChild(more);
+      }
     }
   });
 }
@@ -1678,7 +1700,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isDocx?'downloadDocx()':'downloadTxt()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
