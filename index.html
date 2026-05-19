@@ -754,6 +754,16 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <!-- Slide grid -->
       <div id="pres-slide-list" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px;"></div>
 
+      <!-- AI edit chat -->
+      <div style="margin-top:16px;display:flex;gap:8px;align-items:center;">
+        <input id="pres-chat-input" placeholder='Ask AI to edit, e.g. "translate to French" or "make slide 3 shorter"'
+          style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 13px;font-size:13px;font-family:inherit;outline:none;background:var(--surface);color:var(--ink);"
+          onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+          onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();presAiEdit();}">
+        <button id="pres-chat-btn" onclick="presAiEdit()" class="btn btn-primary btn-sm" style="white-space:nowrap;padding:9px 18px;">✦ Apply</button>
+      </div>
+      <div id="pres-chat-status" style="display:none;font-size:12px;color:var(--ink3);margin-top:6px;padding-left:2px;"></div>
+
       <!-- Edit panel -->
       <div id="pres-edit-panel" style="display:none;margin-top:20px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
@@ -2081,6 +2091,58 @@ function addSlide() {
   presSlides.push({ id:presSlides.length+1, type:'content', title:'New slide', bullets:['Point 1','Point 2','Point 3'] });
   renderSlides();
   openSlideEdit(presSlides.length-1);
+}
+
+async function presAiEdit() {
+  const input = document.getElementById('pres-chat-input');
+  const btn = document.getElementById('pres-chat-btn');
+  const status = document.getElementById('pres-chat-status');
+  const instruction = input?.value?.trim();
+  if (!instruction || !presSlides.length) return;
+
+  btn.disabled = true; btn.textContent = '⟳ Applying...';
+  status.style.display = 'block'; status.textContent = 'Thinking...';
+
+  try {
+    const token = await getAuthToken();
+    const currentJson = JSON.stringify({ title: presTitle, slides: presSlides });
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        messages: [{ role: 'user', content: `Here is the current presentation JSON:\n${currentJson}\n\nInstruction: ${instruction}\n\nReturn the full updated presentation as JSON in exactly the same format. Only change what the instruction asks for.` }],
+        system: 'You are editing a presentation. Apply the instruction precisely. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
+      })
+    });
+    const data = await res.json();
+    let text = data.content?.[0]?.text || '';
+    // Extract JSON
+    text = text.replace(/[—–]/g, '-');
+    const match = text.match(/\{[\s\S]*\}/);
+    if (!match) throw new Error('No JSON in response');
+    let pres;
+    try { pres = JSON.parse(match[0].replace(/,(\s*[}\]])/g, '$1')); }
+    catch(e) {
+      // Ask Claude to fix it
+      const fix = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ messages: [{ role: 'user', content: `Fix this broken JSON and return only valid JSON:\n${match[0].substring(0,8000)}` }], system: 'Return only valid JSON. No explanation.' })
+      });
+      const fd = await fix.json();
+      const ft = (fd.content?.[0]?.text || '{}').match(/\{[\s\S]*\}/);
+      pres = JSON.parse(ft ? ft[0] : '{}');
+    }
+    if (pres.title) presTitle = pres.title;
+    if (pres.slides?.length) presSlides = pres.slides;
+    renderSlides();
+    input.value = '';
+    status.textContent = 'Done.';
+    setTimeout(() => { status.style.display = 'none'; }, 2000);
+  } catch(e) {
+    status.textContent = 'Failed: ' + e.message;
+  }
+  btn.disabled = false; btn.textContent = '✦ Apply';
 }
 
 function downloadPresentation() {
