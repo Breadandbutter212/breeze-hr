@@ -1415,47 +1415,99 @@ ${textContent.substring(0, 5000)}`;
 async function uploadTemplate(event) {
   const file=event.target.files[0]; if(!file||!currentProfile)return;
   const name=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
-  const isDocx=file.name.endsWith('.docx');
+  const isDocx=file.name.toLowerCase().endsWith('.docx');
   const readBase64=(f)=>new Promise(resolve=>{const r=new FileReader();r.onload=e=>resolve(e.target.result.split(',')[1]);r.readAsDataURL(f);});
   const [base64,textContent]=await Promise.all([readBase64(file),readFileAsText(file)]);
-  const fields=detectTemplateFields(textContent,name);
-  const storageContent=isDocx?`DOCX_BASE64:${base64}|||TEXT:${textContent.substring(0,10000)}`:textContent;
+
+  // Normalize placeholders to {field_name} format in text
+  const { normalized: normalizedText, fields } = normalizeTemplateContent(textContent);
+
+  let finalBase64 = base64;
+  let previewHtml = '';
+  if (isDocx) {
+    // Also normalize in the DOCX XML so Docxtemplater can fill it
+    try {
+      const zip = new PizZip(base64, { base64: true });
+      let xml = zip.file('word/document.xml').asText();
+      // Apply same replacements to XML
+      const { normalized: normalizedXml } = normalizeTemplateContent(xml);
+      zip.file('word/document.xml', normalizedXml);
+      finalBase64 = zip.generate({ type: 'base64', compression: 'DEFLATE' });
+    } catch(e) { finalBase64 = base64; }
+    // Generate HTML preview via mammoth from original base64
+    try {
+      const arrBuf = Uint8Array.from(atob(base64), c => c.charCodeAt(0)).buffer;
+      const r = await mammoth.convertToHtml({ arrayBuffer: arrBuf });
+      if (r.value) { const { normalized } = normalizeTemplateContent(r.value); previewHtml = normalized; }
+    } catch(e) {}
+  }
+
+  const displayContent = previewHtml || normalizedText;
+  const storageContent = isDocx ? `DOCX_BASE64:${finalBase64}|||TEXT:${displayContent.substring(0,50000)}` : `TEMPLATE_TEXT:${normalizedText}`;
   const {error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name:`TEMPLATE: ${name}`,content:storageContent.substring(0,500000)}).select().single();
   if(error){alert('Upload failed: '+error.message);return;}
-  tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx,base64,content:textContent,flow:fields});
+  tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx:true,base64:finalBase64,content:displayContent,flow:fields});
   renderTmpls();
-  alert(`✓ "${name}" uploaded.`);
+  alert(`✓ "${name}" uploaded — ${fields.length} fields detected.`);
   event.target.value='';
+}
+
+function toFieldName(raw) {
+  // Take only the part before a comma (e.g. "PROBATION PERIOD, e.g. 3 months" → "probation_period")
+  return raw.split(',')[0].trim().toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').replace(/^_+|_+$/g,'');
 }
 
 function detectTemplateFields(content, name) {
   if (!content) return getDefaultFields(name);
-  // Detect common placeholder styles: {field}, [FIELD], (Field), <<field>>, «field», *field*, __field__
+  const found = new Map(); // field_name → original matched text (first occurrence)
   const patterns = [
-    /\{([^}]{1,60})\}/g,                          // {field_name}
-    /\[([A-Za-z][A-Za-z0-9 _/]{1,60})\]/g,        // [Field Name]
-    /\(([A-Z][A-Z0-9 _]{2,50})\)/g,               // (FIELD NAME) - all caps in parens
-    /<<([^>]{1,60})>>/g,                           // <<field>>
-    /«([^»]{1,60})»/g,                             // «field» Word mail merge
-    /__([A-Za-z][A-Za-z0-9 _]{1,50})__/g,          // __field__
+    /\{([^}]{1,80})\}/g,          // {field_name} or {FIELD NAME}
+    /\[([A-Za-z][^\]]{1,80})\]/g, // [Field Name] or [FIELD, e.g. example]
+    /<<([^>]{1,60})>>/g,           // <<field>>
+    /«([^»]{1,60})»/g,             // «field»
+    /__([A-Za-z][A-Za-z0-9 _]{1,50})__/g, // __field__
   ];
-  const found = new Set();
   for (const rx of patterns) {
     for (const m of content.matchAll(rx)) {
-      const val = m[1].trim();
-      if (val && val.length > 1) found.add(val);
+      const raw = m[1].trim();
+      if (!raw || raw.length < 2) continue;
+      const f = toFieldName(raw);
+      if (f && f.length > 1 && !found.has(f)) found.set(f, m[0]);
     }
   }
-  // Also detect CAPITALISED_WORDS that look like placeholders (e.g. EMPLOYEE_NAME, JOB TITLE)
-  for (const m of content.matchAll(/\b([A-Z][A-Z_]{2,}(?:\s[A-Z_]{2,})?)\b/g)) {
-    const val = m[1].trim();
-    // Exclude common all-caps words that aren't placeholders
-    const skip = ['UK','HR','ACAS','SMP','SSP','SPP','PILON','TUPE','PIP','EAP','OH','CEO','CFO','COO','CTO','IT','KIT','CV','DBS'];
-    if (!skip.includes(val) && val.length > 3) found.add(val);
+  if (found.size > 0) {
+    return [...found.keys()].map(f => ({ q: `What is the ${f.replace(/_/g,' ')}?`, f }));
   }
-  const all = [...found];
-  if (all.length > 0) return all.map(f => ({ q: `What is the ${f.replace(/_/g,' ').toLowerCase()}?`, f: f.toLowerCase().replace(/\s+/g,'_') }));
   return getDefaultFields(name);
+}
+
+// Normalize detected placeholders in content to {field_name} format for consistent preview/download
+function normalizeTemplateContent(content) {
+  if (!content) return { normalized: content, fields: [] };
+  const replacements = []; // { search: RegExp, field: string }
+  const patterns = [
+    /\{([^}]{1,80})\}/g,
+    /\[([A-Za-z][^\]]{1,80})\]/g,
+    /<<([^>]{1,60})>>/g,
+    /«([^»]{1,60})»/g,
+    /__([A-Za-z][A-Za-z0-9 _]{1,50})__/g,
+  ];
+  const seen = new Set();
+  for (const rx of patterns) {
+    for (const m of content.matchAll(rx)) {
+      const raw = m[1].trim(); if (!raw || raw.length < 2) continue;
+      const f = toFieldName(raw); if (!f || f.length < 2) continue;
+      const escaped = m[0].replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      replacements.push({ search: new RegExp(escaped, 'g'), field: f, original: m[0] });
+      if (!seen.has(f)) seen.add(f);
+    }
+  }
+  let normalized = content;
+  for (const { search, field } of replacements) {
+    normalized = normalized.replace(search, `{${field}}`);
+  }
+  const fields = [...seen].map(f => ({ q: `What is the ${f.replace(/_/g,' ')}?`, f }));
+  return { normalized, fields };
 }
 
 function getDefaultFields(name) {
