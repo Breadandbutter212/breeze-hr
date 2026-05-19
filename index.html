@@ -2423,21 +2423,68 @@ function spDisconnect() {
   document.getElementById('spConnected').style.display = 'none';
 }
 
-function spSearch() {
+async function spSearch() {
   const query = document.getElementById('spSearchInput')?.value?.trim();
   if (!query) return;
   const results = document.getElementById('spResults');
   results.innerHTML = `<div style="text-align:center;padding:20px;color:var(--ink3);font-size:12px;">Searching SharePoint...</div>`;
 
-  // Simulate search delay then show demo results
+  // If Outlook is connected, use real SharePoint search via Composio
+  if (currentUser && window._emailProvider === 'outlook') {
+    try {
+      const token = await getAuthToken();
+      const res = await fetch('/api/sharepoint-search', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ userId: currentUser.id, query })
+      });
+      const data = await res.json();
+      if (res.ok && data.data) {
+        const items = data.data?.data?.PrimaryQueryResult?.RelevantResults?.Table?.Rows?.results
+          || data.data?.data?.value
+          || data.data?.results
+          || [];
+        if (!items.length) {
+          results.innerHTML = `<div class="sp-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>No documents found for "${escapeHtml(query)}"</div>`;
+          return;
+        }
+        results.innerHTML = `<div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">${items.length} results for "${escapeHtml(query)}"</div>` +
+          items.map(item => {
+            const cells = item.Cells?.results || [];
+            const get = (k) => cells.find(c=>c.Key===k)?.Value || item[k] || '';
+            const title = get('Title') || get('name') || 'Untitled';
+            const url = get('Path') || get('webUrl') || '#';
+            const author = get('Author') || get('createdBy') || '';
+            const modified = get('LastModifiedTime') ? new Date(get('LastModifiedTime')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+            const snippet = get('HitHighlightedSummary')?.replace(/<[^>]+>/g,'') || get('summary') || '';
+            const ext = (get('FileExtension') || url.split('.').pop() || 'doc').toLowerCase();
+            const tag = ext==='pptx'||ext==='ppt'?'sp-tag-ppt':ext==='xlsx'||ext==='xls'?'sp-tag-xls':'sp-tag-doc';
+            const safeUrl = url.replace(/'/g,"\\'");
+            const safeTitle = title.replace(/'/g,"\\'");
+            return `<div class="sp-result" onclick="spOpenResult('${safeUrl}')">
+              <div class="sp-result-title"><span class="sp-tag ${tag}">${ext.toUpperCase()}</span>${escapeHtml(title)}</div>
+              ${author||modified ? `<div class="sp-result-meta">${author?escapeHtml(author):''}${author&&modified?' · ':''}${modified?'Modified '+modified:''}</div>` : ''}
+              ${snippet ? `<div class="sp-result-snippet">${escapeHtml(snippet.substring(0,200))}</div>` : ''}
+              <div class="sp-result-actions">
+                <button onclick="event.stopPropagation();spOpenResult('${safeUrl}')" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Open link</button>
+                <button onclick="event.stopPropagation();spInsertToReply('${safeTitle}','${safeUrl}')" style="font-size:11px;color:var(--green);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Add to chat</button>
+              </div>
+            </div>`;
+          }).join('');
+        return;
+      }
+    } catch(e) { console.error('SharePoint search error:', e); }
+  }
+
+  // Fallback: demo results (no Outlook connected or search failed)
   setTimeout(() => {
     const demoResults = getDemoResults(query);
     if (!demoResults.length) {
-      results.innerHTML = `<div class="sp-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>No documents found for "${query}"</div>`;
+      results.innerHTML = `<div class="sp-empty"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>No documents found for "${escapeHtml(query)}"${window._emailProvider !== 'outlook' ? '<br><span style="font-size:11px;margin-top:6px;display:block;">Connect Outlook in Settings to search your real SharePoint</span>' : ''}</div>`;
       return;
     }
     results.innerHTML = `
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">${demoResults.length} results for "${query}"</div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">${demoResults.length} results for "${escapeHtml(query)}" <span style="color:var(--accent);">(demo data - connect Outlook for real results)</span></div>
       ${demoResults.map(r => `
         <div class="sp-result" onclick="spOpenResult('${r.url}')">
           <div class="sp-result-title">
@@ -2451,7 +2498,7 @@ function spSearch() {
             <button onclick="event.stopPropagation();spInsertToReply('${r.title}','${r.url}')" style="font-size:11px;color:var(--green);background:none;border:1px solid var(--border);border-radius:4px;padding:3px 8px;cursor:pointer;font-family:inherit;">Add to chat</button>
           </div>
         </div>`).join('')}`;
-  }, 800);
+  }, 400);
 }
 
 function getDemoResults(query) {

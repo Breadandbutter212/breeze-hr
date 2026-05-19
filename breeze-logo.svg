@@ -1,0 +1,7 @@
+<svg width="500" height="200" viewBox="0 0 500 200" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="500" height="200" fill="white"/>
+  <rect x="100" y="60" width="80" height="80" rx="14" fill="#2C2C2E"/>
+  <text x="113" y="122" font-family="Inter, Arial, sans-serif" font-size="20" font-weight="700" fill="#3B82F6" letter-spacing="0.5">HR</text>
+  <text x="198" y="96" font-family="Inter, Arial, sans-serif" font-size="38" font-weight="700" fill="#1B3A5C" letter-spacing="-1">Breeze</text>
+  <text x="200" y="120" font-family="Inter, Arial, sans-serif" font-size="16" font-weight="400" fill="#6B7280" letter-spacing="0.2">People operations platform</text>
+</svg>
