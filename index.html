@@ -3297,7 +3297,7 @@ async function uploadHandbook(event, existingId) {
     const readBase64 = f => new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(f); });
     const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(()=>r(''), ms))]);
     const [b64, txt] = await Promise.all([readBase64(file), withTimeout(readFileAsText(file), 5000)]);
-    storageContent = `PDF_BASE64:${b64}|||TEXT:${txt.substring(0, 10000)}`;
+    storageContent = `PDF_BASE64:${b64}|||TEXT:${txt.substring(0, 50000)}`;
   } else {
     storageContent = await readFileAsText(file);
     if (!storageContent) { alert('Could not read file'); return; }
@@ -3337,7 +3337,7 @@ async function uploadPolicy(event) {
   if(isPdf){
     const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
     const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
-    storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,10000)}`;
+    storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
   } else {
     storageContent=await readFileAsText(file);
     if(!storageContent){alert('Could not read file. Try saving as .txt first.');return;}
@@ -3357,7 +3357,7 @@ async function uploadNamedPolicy(event,policyName,existingId) {
     // Timeout pdf.js text extraction — it can hang if CDN worker fails
     const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(''),ms))]);
     const [b64,txt]=await Promise.all([readBase64(file),withTimeout(readFileAsText(file),5000)]);
-    storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,10000)}`;
+    storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
   } else {
     storageContent=await readFileAsText(file);
     if(!storageContent){alert('Could not read file');return;}
@@ -4298,9 +4298,9 @@ async function buildChatSystemPrompt() {
     if (pols && pols.length) {
       const handbook = pols.find(p=>p.name.startsWith('HANDBOOK:'));
       const regularPols = pols.filter(p=>!p.name.startsWith('HANDBOOK:'));
-      const handbookSection = handbook ? `\n\nCOMPANY HANDBOOK:\n${policyText(handbook.content).substring(0,3000)}` : '';
+      const handbookSection = handbook ? `\n\nCOMPANY HANDBOOK:\n${policyText(handbook.content).substring(0,8000)}` : '';
       const policiesSection = regularPols.length
-        ? `\n\nCOMPANY POLICIES (use these first - they override generic advice):\n` + regularPols.map(p=>`\n--- ${p.name} ---\n${policyText(p.content).substring(0,2000)}`).join('\n')
+        ? `\n\nCOMPANY POLICIES (use these first - they override generic advice):\n` + regularPols.map(p=>`\n--- ${p.name} ---\n${policyText(p.content).substring(0,8000)}`).join('\n')
         : `\n\nNO COMPANY POLICIES UPLOADED YET - use ACAS guidance and UK employment law.`;
       policyContext = handbookSection + policiesSection;
     } else {
