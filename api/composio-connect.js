@@ -2,26 +2,15 @@ const BASE = 'https://backend.composio.dev/api/v3';
 
 // Known auth config IDs (set env vars to override)
 const AUTH_CONFIGS = {
-  gmail:   process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID   || 'ac_c2wnUZ4TgV8S',
-  outlook: process.env.COMPOSIO_OUTLOOK_AUTH_CONFIG_ID || 'ac_XCYlyd6APE7n',
+  gmail:      process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID      || 'ac_c2wnUZ4TgV8S',
+  outlook:    process.env.COMPOSIO_OUTLOOK_AUTH_CONFIG_ID    || 'ac_XCYlyd6APE7n',
+  sharepoint: process.env.COMPOSIO_SHAREPOINT_AUTH_CONFIG_ID || 'ac_bPiGL8wDFTPw',
 };
 
-// Fallback: look up auth config from Composio API by toolkit slug
-async function lookupAuthConfig(slug, headers) {
-  try {
-    const r = await fetch(`${BASE}/auth_configs?toolkit_slug=${slug}&limit=10`, { headers });
-    if (r.ok) {
-      const d = await r.json();
-      const items = d.items || d.auth_configs || [];
-      if (items.length) return items[0].id;
-    }
-  } catch(e) {}
-  return null;
-}
-
 const APP_SLUG = {
-  gmail:   'gmail',
-  outlook: 'microsoft-outlook',
+  gmail:      'gmail',
+  outlook:    'microsoft-outlook',
+  sharepoint: 'share_point',
 };
 
 export default async function handler(req, res) {

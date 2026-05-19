@@ -23,13 +23,11 @@ export default async function handler(req, res) {
     let data;
     try { data = JSON.parse(raw); } catch(e) { data = {}; }
 
-    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, _debug: data });
+    if (!r.ok) return res.status(200).json({ gmail: false, outlook: false, sharepoint: false, _debug: data });
 
     const items = data.items || data.connected_accounts || data.connectedAccounts || [];
 
-    // Use String() to safely convert any field type before .toLowerCase()
     const findApp = (keyword) => items.find(c => {
-      // toolkit is an object { slug: "gmail" } in v3 API
       const slug = c.toolkit?.slug || c.toolkit;
       const candidates = [slug, c.appName, c.app_name, c.appUniqueId, c.app];
       return candidates.some(f => f && String(f).toLowerCase().includes(keyword));
@@ -37,16 +35,19 @@ export default async function handler(req, res) {
 
     const isActive = (c) => !c || c.status === 'ACTIVE' || c.isActive === true || c.status === 'active';
 
-    const gmail   = findApp('gmail');
-    const outlook = findApp('outlook');
+    const gmail      = findApp('gmail');
+    const outlook    = findApp('outlook');
+    const sharepoint = findApp('share_point') || findApp('sharepoint');
 
     return res.status(200).json({
-      gmail:            !!(gmail && isActive(gmail)),
-      outlook:          !!(outlook && isActive(outlook)),
-      gmailAccountId:   gmail?.id   || null,
-      outlookAccountId: outlook?.id || null,
+      gmail:              !!(gmail && isActive(gmail)),
+      outlook:            !!(outlook && isActive(outlook)),
+      sharepoint:         !!(sharepoint && isActive(sharepoint)),
+      gmailAccountId:     gmail?.id      || null,
+      outlookAccountId:   outlook?.id    || null,
+      sharepointAccountId: sharepoint?.id || null,
     });
   } catch(e) {
-    return res.status(200).json({ gmail: false, outlook: false, error: e.message });
+    return res.status(200).json({ gmail: false, outlook: false, sharepoint: false, error: e.message });
   }
 }

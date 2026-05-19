@@ -938,6 +938,7 @@ async function onSignedIn(user) {
   // Check email connection and show chip if connected
   fetch(`/api/composio-status?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(st=>{
     window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
+    window._sharepointConnected = !!st.sharepoint;
     const btn = document.getElementById('emailChip');
     if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
   }).catch(()=>{});
@@ -996,7 +997,7 @@ async function signOut() {
   currentUser = null; currentProfile = null;
   chatMessages = []; chatSystemPrompt = null; chatList = []; currentChatId = null;
   analyticsData = null; analyticsSource = ''; analyticsCharts = {};
-  window._emailProvider = null; window._emailAccountId = null; _allEmails = [];
+  window._emailProvider = null; window._emailAccountId = null; _allEmails = []; window._sharepointConnected = false;
   mergeEmployeeCache = null; selTmpl = null; genVals = {};
   document.getElementById('appShell').style.display = 'none';
   document.getElementById('loginScreen').style.display = 'flex';
@@ -2404,6 +2405,43 @@ function toggleSharePoint() {
   const isOpen = panel.classList.contains('open');
   panel.classList.toggle('open', !isOpen);
   overlay.classList.toggle('open', !isOpen);
+  if (!isOpen) {
+    // Check SharePoint connection status and update panel
+    fetch(`/api/composio-status?userId=${encodeURIComponent(currentUser?.id||'')}`)
+      .then(r=>r.json()).then(st=>{
+        const results = document.getElementById('spResults');
+        if (!results) return;
+        if (!st.sharepoint) {
+          results.innerHTML = `<div style="padding:32px 20px;text-align:center;">
+            <div style="font-size:32px;margin-bottom:12px;">📁</div>
+            <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:8px;">Connect SharePoint</div>
+            <div style="font-size:12px;color:var(--ink3);line-height:1.6;margin-bottom:16px;">Search your SharePoint documents and files directly from Breeze HR.</div>
+            <button class="btn btn-primary btn-sm" onclick="connectSharePointFromPanel()">Connect SharePoint</button>
+          </div>`;
+        }
+      }).catch(()=>{});
+  }
+}
+
+async function connectSharePointFromPanel() {
+  const btn = event.target;
+  btn.textContent = 'Connecting...'; btn.disabled = true;
+  try {
+    const res = await fetch('/api/composio-connect', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userId: currentUser.id, app: 'sharepoint' })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Could not connect');
+    if (data.authUrl) {
+      window.open(data.authUrl, '_blank', 'width=600,height=700,noopener');
+      btn.textContent = 'Waiting...'; btn.disabled = false;
+    }
+  } catch(e) {
+    alert('Could not connect: ' + e.message);
+    btn.textContent = 'Connect SharePoint'; btn.disabled = false;
+  }
 }
 
 function spConnectDemo() {
@@ -3149,16 +3187,17 @@ async function loadIntegrations() {
 function renderIntegrationsUI(status) {
   const el = document.getElementById('integrationsBody'); if (!el) return;
   const integrations = [
-    { id:'gmail',   label:'Gmail',   color:'#EA4335', bg:'#FEF2F2', desc:'Send and read HR emails via Gmail' },
-    { id:'outlook', label:'Outlook', color:'#0078D4', bg:'#EBF5FB', desc:'Send and read HR emails via Outlook' },
-    { id:'slack',   label:'Slack',   color:'#4A154B', bg:'#F9F0FF', desc:'HR alerts to your Slack channel', comingSoon: true },
+    { id:'gmail',      label:'Gmail',      color:'#EA4335', bg:'#FEF2F2', desc:'Send and read HR emails via Gmail' },
+    { id:'outlook',    label:'Outlook',    color:'#0078D4', bg:'#EBF5FB', desc:'Send and read HR emails via Outlook' },
+    { id:'sharepoint', label:'SharePoint', color:'#038387', bg:'#E6F7F8', desc:'Search your SharePoint documents and files' },
+    { id:'slack',      label:'Slack',      color:'#4A154B', bg:'#F9F0FF', desc:'HR alerts to your Slack channel', comingSoon: true },
   ];
   el.innerHTML = integrations.map(intg => {
     const connected = status[intg.id];
     const accountId = status[`${intg.id}AccountId`] || '';
     return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid ${connected?'var(--green)':'var(--border)'};border-radius:var(--r);background:${connected?'var(--green-bg)':'var(--surface)'};">
       <div style="width:36px;height:36px;background:${intg.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">
-        ${intg.id==='gmail'?'✉️':intg.id==='outlook'?'📧':'💬'}
+        ${intg.id==='gmail'?'✉️':intg.id==='outlook'?'📧':intg.id==='sharepoint'?'📁':'💬'}
       </div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:500;color:var(--ink);">${intg.label}</div>
