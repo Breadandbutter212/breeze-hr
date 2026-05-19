@@ -1266,67 +1266,127 @@ function policyText(content) {
 async function convertToTemplate(event) {
   const file = event.target.files[0]; if (!file || !currentProfile) return;
   const name = file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
+  const isDocx = file.name.toLowerCase().endsWith('.docx');
+  const isPdf  = file.name.toLowerCase().endsWith('.pdf');
 
-  // Show progress
   const toast = document.createElement('div');
-  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A202C;color:white;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;';
-  toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> AI is converting your document into a template...';
+  toast.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#1A202C;color:white;padding:12px 20px;border-radius:8px;font-size:13px;z-index:9999;display:flex;align-items:center;gap:10px;min-width:320px;';
+  toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> Reading document...';
   document.body.appendChild(toast);
 
   try {
-    const textContent = await readFileAsText(file);
+    const readBase64 = f => new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(f); });
+    const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(''), ms))]);
+
+    const textContent = await withTimeout(readFileAsText(file), 8000);
     if (!textContent || textContent.trim().length < 50) { toast.remove(); alert('Could not read document content.'); return; }
 
-    const prompt = `You are a template converter. The following is a completed HR document with real personal details.
+    toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> AI is identifying fields to replace...';
 
-Convert it into a reusable template by replacing ALL personal/variable information with {field_name} placeholders.
+    // Ask AI for a JSON mapping of actual values → placeholder names
+    const mappingPrompt = `You are a template field extractor. The following is a completed HR document.
 
-Rules:
-- Replace employee/candidate names with {employee_name}
-- Replace job titles with {job_title}
-- Replace salary figures with {salary}
-- Replace start dates with {start_date}
-- Replace end dates with {end_date}
-- Replace notice periods with {notice_period}
-- Replace probation periods with {probation_period}
-- Replace hours per week with {hours_per_week}
-- Replace work locations/addresses with {work_location}
-- Replace manager/signatory names with {manager_name}
-- Replace holiday entitlement numbers with {holiday_entitlement}
-- Replace specific monetary amounts with descriptive placeholders like {settlement_amount}
-- Replace company-specific terms, targets or individual details with appropriate {placeholder_name} fields
-- Keep all standard legal/contractual language exactly as is
-- Keep headings, structure and formatting intact
-- Return ONLY the converted template text, no explanation, no preamble
+Identify every piece of personal/variable information that should become a template field.
+Return ONLY a JSON object mapping exact text values to snake_case placeholder names.
 
-Document to convert:
-${textContent.substring(0, 6000)}`;
+Common mappings:
+- Person's full name → "employee_name"
+- Job title → "job_title"
+- Salary figure (e.g. "£45,000") → "salary"
+- Start date → "start_date"
+- End date → "end_date"
+- Notice period (e.g. "3 months") → "notice_period"
+- Probation period → "probation_period"
+- Hours per week → "hours_per_week"
+- Work location/address → "work_location"
+- Holiday days (e.g. "28 days") → "holiday_entitlement"
+- Manager or signatory name → "manager_name"
+- Company name → "company_name"
+- Any other specific personal detail → descriptive_field_name
+
+Return ONLY valid JSON like: {"John Smith": "employee_name", "£45,000 per annum": "salary", ...}
+No explanation. No markdown. Just the JSON object.
+
+Document:
+${textContent.substring(0, 5000)}`;
 
     const token = await getAuthToken();
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ messages: [{ role: 'user', content: prompt }], system: 'You are a precise template converter. Return only the converted template text with {placeholder} fields. No explanations.' })
+      body: JSON.stringify({ messages: [{ role: 'user', content: mappingPrompt }], system: 'Return only a valid JSON object. No markdown, no explanation.' })
     });
-    const data = await res.json();
-    const converted = data.content?.[0]?.text;
-    if (!converted) throw new Error('No response from AI');
+    const aiData = await res.json();
+    const aiText = aiData.content?.[0]?.text || '{}';
+    const jsonMatch = aiText.match(/\{[\s\S]*\}/);
+    const mapping = jsonMatch ? JSON.parse(jsonMatch[0]) : {};
 
-    // Detect fields from the converted template
-    const fields = detectTemplateFields(converted, name);
+    if (!Object.keys(mapping).length) throw new Error('AI could not identify any fields to replace.');
 
-    // Save as template
+    toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> Applying replacements...';
+
+    let storageContent, templateText, docxBase64 = null;
+
+    if (isDocx) {
+      // For .docx: replace directly in the XML to preserve all formatting
+      const base64 = await readBase64(file);
+      const binary = atob(base64);
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+
+      const zip = new PizZip(bytes.buffer);
+      let xml = zip.file('word/document.xml').asText();
+
+      // Normalise XML: collapse adjacent text runs so replacements work even when text is split
+      xml = xml.replace(/<\/w:t>(<\/w:r>\s*<w:r(?:\s[^>]*)?>(?:<w:rPr>[\s\S]*?<\/w:rPr>)?<w:t(?:\s[^>]*)?>)/g, '');
+
+      // Apply each mapping replacement
+      for (const [oldVal, fieldName] of Object.entries(mapping)) {
+        if (oldVal && fieldName) {
+          const escaped = oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          xml = xml.replace(new RegExp(escaped, 'g'), `{${fieldName}}`);
+        }
+      }
+
+      zip.file('word/document.xml', xml);
+      const out = zip.generate({ type: 'base64', compression: 'DEFLATE' });
+      docxBase64 = out;
+      templateText = textContent; // keep text for field detection
+      storageContent = `DOCX_BASE64:${out}|||TEXT:${templateText.substring(0, 10000)}`;
+
+    } else {
+      // For PDF and txt: apply replacements to the plain text
+      let converted = textContent;
+      for (const [oldVal, fieldName] of Object.entries(mapping)) {
+        if (oldVal && fieldName) {
+          const escaped = oldVal.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          converted = converted.replace(new RegExp(escaped, 'g'), `{${fieldName}}`);
+        }
+      }
+      if (isPdf) {
+        // Store as PDF_CONVERTED so download generates a proper .docx
+        const pdfBase64 = await readBase64(file);
+        storageContent = `DOCX_BASE64:${pdfBase64}|||TEXT:${converted.substring(0, 10000)}`;
+      } else {
+        storageContent = converted;
+      }
+      templateText = converted;
+    }
+
+    const fields = Object.values(mapping).filter(Boolean).map(f => ({ q: `What is the ${f.replace(/_/g,' ')}?`, f }));
+    const uniqueFields = [...new Map(fields.map(f => [f.f, f])).values()];
+
     const { error } = await sb.from('policies').insert({
       company_id: currentProfile.company_id,
       name: `TEMPLATE: ${name}`,
-      content: converted.substring(0, 500000)
+      content: storageContent.substring(0, 500000)
     }).select().single();
     if (error) throw new Error(error.message);
 
-    tmpls.unshift({ id:'t_'+Date.now(), name, emoji:'📄', type:'Your uploads', isCustom:true, isDocx:false, base64:'', content:converted, flow:fields });
+    tmpls.unshift({ id:'t_'+Date.now(), name, emoji:'📄', type:'Your uploads', isCustom:true, isDocx: true, base64: docxBase64||'', content: templateText, flow: uniqueFields });
     renderTmpls();
     toast.remove();
-    alert(`✓ "${name}" converted to template with ${fields.length} fields detected. Find it under Your Uploads.`);
+    alert(`✓ "${name}" converted — ${uniqueFields.length} fields detected. Downloads as .docx with original formatting preserved.`);
   } catch(e) {
     toast.remove();
     alert('Conversion failed: ' + e.message);
