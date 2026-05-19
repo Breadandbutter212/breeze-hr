@@ -2083,9 +2083,35 @@ function downloadPresentation() {
 
         // Replace at paragraph level: each <a:p> = one logical text item.
         const escXml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+        // Calibrate tab-column alignment from original two-column paragraphs.
+        // Original authors tune tab counts per row to compensate for text length,
+        // so right column always lands at the same tab stop. We derive that target
+        // from the original data and recalculate tabs for new (different-length) text.
+        const TAB_WEIGHT = 5; // empirical: each tab ≈ 5 character-widths
+        const twoColSamples = [];
+        xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (m, inner) => {
+          if (inner.includes('<a:fld')) return;
+          const rs = []; inner.replace(/<a:t>([^<]*)<\/a:t>/g, (m2, t) => { rs.push(t); return m2; });
+          const tabRun = rs.find(r => /^\t+$/.test(r));
+          if (tabRun) {
+            const left = rs.filter(r => !/^\t+$/.test(r))[0] || '';
+            twoColSamples.push(left.trim().length + tabRun.length * TAB_WEIGHT);
+          } else {
+            const inlineTabSrc = rs.find(r => r.includes('\t') && !(/^\t+$/.test(r)));
+            if (inlineTabSrc) {
+              const m2 = inlineTabSrc.match(/^([^\t]*?)(\t+)/);
+              if (m2) twoColSamples.push(m2[1].trim().length + m2[2].length * TAB_WEIGHT);
+            }
+          }
+        });
+        const tabTarget = twoColSamples.length
+          ? Math.round(twoColSamples.reduce((a, b) => a + b, 0) / twoColSamples.length)
+          : 29;
+        const calcTabs = leftLen => Math.max(1, Math.round((tabTarget - leftLen) / TAB_WEIGHT));
+
         xml = xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
           if (paraInner.includes('<a:fld')) return paraMatch;
-          // Collect all runs as array
           const runs = [];
           paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
           const paraText = runs.join('').trim();
@@ -2096,19 +2122,21 @@ function downloadPresentation() {
 
           // Two-column tab layout detection:
           // Style A: separate tab-only run e.g. ['Appraisal', '\t\t\t\t', 'Management']
-          // Style B: inline tabs       e.g. ['One-time event\t\t\tOngoing']
+          // Style B: inline tabs           e.g. ['One-time event\t\t\tOngoing']
           const hasTabRun = runs.some(t => /^\t+$/.test(t));
           const hasInlineTabs = !hasTabRun && runs.some(t => t.includes('\t'));
 
           if (hasTabRun) {
-            // Split AI text on ' | ' for left/right columns
             const parts = newText.split(/\s*\|\s*/);
+            const newLeft = (parts[0] || '').trim();
+            const newRight = (parts[1] || parts[0] || '').trim();
+            const newTabStr = '\t'.repeat(calcTabs(newLeft.length));
             let colIdx = 0;
             const newRuns = runs.map(t => {
-              if (/^\t+$/.test(t)) return t; // keep tab spacer unchanged
-              const replacement = parts[colIdx] !== undefined ? parts[colIdx].trim() : t;
+              if (/^\t+$/.test(t)) return newTabStr;
+              const repl = colIdx === 0 ? newLeft : newRight;
               colIdx++;
-              return replacement;
+              return repl;
             });
             let rIdx = 0;
             return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () =>
@@ -2117,13 +2145,11 @@ function downloadPresentation() {
           }
 
           if (hasInlineTabs) {
-            // Preserve original tab sequence, replace text either side
-            const src = runs.find(t => t.includes('\t')) || '';
-            const tabSeq = (src.match(/\t+/) || ['\t'])[0];
             const parts = newText.split(/\s*\|\s*/);
-            const reconstructed = parts.length >= 2
-              ? parts[0].trim() + tabSeq + parts[1].trim()
-              : newText;
+            const newLeft = (parts[0] || '').trim();
+            const newRight = (parts[1] || parts[0] || '').trim();
+            const newTabStr = '\t'.repeat(calcTabs(newLeft.length));
+            const reconstructed = parts.length >= 2 ? newLeft + newTabStr + newRight : newText;
             let isFirst = true;
             return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => {
               if (isFirst) { isFirst = false; return `<a:t>${escXml(reconstructed)}</a:t>`; }
