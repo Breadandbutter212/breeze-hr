@@ -686,7 +686,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="manage-title">Presentations</div><div class="manage-sub">AI-powered slides built from your documents, SharePoint and best practice.</div></div>
     <button class="btn btn-ghost btn-sm" onclick="resetPresentation()">↺ New</button>
   </div>
-  <div class="manage-body" style="max-width:1000px;">
+  <div class="manage-body">
 
     <!-- Input -->
     <div id="pres-input-panel" style="margin-bottom:24px;">
@@ -1769,12 +1769,12 @@ function getDefaultFields(name) {
 }
 
 // ── PRESENTATIONS ──
-let presSlides = [], presTitle = '', presUploadedText = '', presUploadedSlideCount = 0;
+let presSlides = [], presTitle = '', presUploadedText = '', presUploadedSlideCount = 0, presUploadedBase64 = '';
 
 function initPresentations() {}
 
 function resetPresentation() {
-  presSlides = []; presTitle = ''; presUploadedText = ''; presUploadedSlideCount = 0;
+  presSlides = []; presTitle = ''; presUploadedText = ''; presUploadedSlideCount = 0; presUploadedBase64 = '';
   ['pres-slides','pres-status'].forEach(id => { const el=document.getElementById(id); if(el) el.style.display='none'; });
   ['pres-topic','pres-url','pres-paste'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
   const lbl=document.getElementById('pres-upload-label'); if(lbl) lbl.textContent='Upload existing .pptx';
@@ -1788,6 +1788,7 @@ async function handlePresUpload(event) {
   if (lbl) lbl.textContent = file.name;
   try {
     const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
+    presUploadedBase64 = b64;
     const zip = new PizZip(b64, { base64: true });
     // Extract slides in order with slide numbers
     const slideFiles = Object.keys(zip.files).filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
@@ -2050,6 +2051,63 @@ function downloadPresentation() {
   const btn = document.getElementById('pres-download-btn');
   btn.textContent = 'Generating...'; btn.disabled = true;
   const keepFormat = document.getElementById('pres-dl-keep')?.checked;
+  const keepStructure = document.getElementById('pres-keep-format')?.checked;
+
+  // If original pptx uploaded + keep structure: inject text into original file, preserving all formatting/images
+  if (presUploadedBase64 && keepStructure) {
+    try {
+      const zip = new PizZip(presUploadedBase64, { base64: true });
+      const slideFiles = Object.keys(zip.files)
+        .filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
+        .sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
+
+      slideFiles.forEach((sf, idx) => {
+        const slide = presSlides[idx]; if (!slide) return;
+        let xml = zip.files[sf].asText();
+
+        // Replace title: find first <a:p> in a title placeholder (ph type=title or idx=0)
+        // Strategy: replace text in all <a:t> runs within a paragraph, consolidating runs
+        // to avoid split-run issues. We replace paragraph by paragraph.
+        const allTexts = [slide.title, ...(slide.subtitle ? [slide.subtitle] : []), ...(slide.bullets || [])].filter(Boolean);
+        let textIdx = 0;
+
+        // Replace each paragraph's text content with our new text, keeping run formatting
+        xml = xml.replace(/(<a:p\b[^>]*>)([\s\S]*?)(<\/a:p>)/g, (match, open, body, close) => {
+          // Skip empty paragraphs (no text runs at all)
+          if (!/<a:t/.test(body)) return match;
+          // Skip paragraphs that are just slide numbers or field codes
+          if (/<a:fld/.test(body)) return match;
+
+          const newText = allTexts[textIdx];
+          if (newText === undefined) return match;
+          textIdx++;
+
+          // Extract the first run's rPr (formatting) to apply to replacement
+          const rPrMatch = body.match(/<a:rPr([^>]*)\/?>(?:<\/a:rPr>)?/);
+          const rPr = rPrMatch ? `<a:rPr${rPrMatch[1]}/>` : '';
+
+          // Extract paragraph-level properties (pPr) - keep them
+          const pPrMatch = body.match(/(<a:pPr[\s\S]*?<\/a:pPr>|<a:pPr[^>]*\/>)/);
+          const pPr = pPrMatch ? pPrMatch[0] : '';
+
+          const escaped = newText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+          return `${open}${pPr}<a:r>${rPr}<a:t>${escaped}</a:t></a:r>${close}`;
+        });
+
+        zip.file(sf, xml);
+      });
+
+      const out = zip.generate({ type:'base64', compression:'DEFLATE' });
+      const blob = new Blob([Uint8Array.from(atob(out), c=>c.charCodeAt(0))], { type:'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+      a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+      btn.textContent = '✓ Downloaded'; btn.disabled = false;
+      setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
+      return;
+    } catch(e) {
+      console.warn('Direct pptx injection failed, falling back:', e.message);
+    }
+  }
   try {
     const pptx = new PptxGenJS();
     pptx.layout = 'LAYOUT_WIDE';
