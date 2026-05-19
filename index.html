@@ -1995,14 +1995,18 @@ Generate slides as JSON:
   {"id":1,"type":"title","title":"Slide Title","subtitle":"Subtitle","bullets":[]},
   {"id":2,"type":"content","title":"Slide Title","bullets":["Concise point","Another point"]},
   {"id":3,"type":"section","title":"Section Break Title","bullets":[]},
-  {"id":4,"type":"orgchart","title":"Organisation Chart","nodes":[{"id":"1","name":"Jane Smith","title":"CEO"},{"id":"2","name":"Tom Brown","title":"CFO","parent":"1"},{"id":"3","name":"Sue Jones","title":"CTO","parent":"1"}]},
-  {"id":5,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
+  {"id":4,"type":"chart","title":"Headcount by Department","chartType":"bar","labels":["Engineering","Sales","HR","Finance"],"series":[{"name":"Headcount","values":[45,30,12,18]}],"note":"Source: HRIS Q1 2025"},
+  {"id":5,"type":"orgchart","title":"Organisation Chart","nodes":[{"id":"1","name":"Jane Smith","title":"CEO"},{"id":"2","name":"Tom Brown","title":"CFO","parent":"1"},{"id":"3","name":"Sue Jones","title":"CTO","parent":"1"}]},
+  {"id":6,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
 ]}
 
 Guidelines:
 - Draw on best practice, frameworks and real-world examples for this topic
 - Reference actual company facts where available (policy names, headcount, office locations)
 - Bullets: 3-5 per slide, max 12 words each, punchy and specific
+- Use chart slides for data (headcount, survey scores, trends) with realistic plausible values if real data not provided
+- Use orgchart slides when org structure is relevant
+- chartType options: bar, barh, line, pie, doughnut
 - Return ONLY the JSON object, nothing else`;
 
   try {
@@ -2044,6 +2048,40 @@ Guidelines:
     alert('Failed to generate: ' + e.message);
   }
   btn.disabled = false; btn.textContent = '✦ Build';
+}
+
+// Draws a chart slide using pptxgenjs native chart engine
+function drawChart(pptx, slide, s, theme) {
+  const branded = theme === 'branded';
+  const DARK = '0A1628', WHITE = 'FFFFFF';
+  if (branded) {
+    slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color:DARK } });
+    slide.addText(s.title||'', { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
+  } else {
+    slide.addShape(pptx.ShapeType.line, { x:0, y:1.05, w:'100%', h:0, line:{ color:'E5E7EB', width:1 } });
+    slide.addText(s.title||'', { x:0.4, y:0.18, w:11.4, h:0.76, fontSize:22, bold:true, color:'1A202C', fontFace:'Calibri' });
+  }
+  const labels = s.labels || [], series = s.series || [];
+  if (!labels.length || !series.length) return;
+  const COLORS = ['3B82F6','10B981','F59E0B','EF4444','8B5CF6','F97316','06B6D4'];
+  const chartData = series.map(ser => ({ name: ser.name||'', labels, values: ser.values||[] }));
+  const chartColors = series.map((_,i) => COLORS[i % COLORS.length]);
+  const ct = s.chartType || 'bar';
+  const typeMap = { line: pptx.ChartType.line, pie: pptx.ChartType.pie, doughnut: pptx.ChartType.doughnut, area: pptx.ChartType.area };
+  const pptxType = typeMap[ct] || pptx.ChartType.bar;
+  const opts = {
+    x:0.5, y:1.25, w:12.3, h:5.5,
+    chartColors,
+    showLegend: series.length > 1, legendPos:'b', legendFontSize:11,
+    showValue: ct !== 'line', dataLabelFontSize:10,
+    dataLabelColor: (ct==='pie'||ct==='doughnut') ? 'FFFFFF' : '374151',
+    catAxisLabelFontSize:11, valAxisLabelFontSize:10,
+    valGridLine:{ color:'E5E7EB', style:'solid', size:0.5 },
+    catGridLine:{ style:'none' },
+  };
+  if (ct === 'bar' || ct === 'barh') { opts.barDir = ct==='barh'?'bar':'col'; opts.barGrouping='clustered'; opts.barGapWidthPct=50; }
+  slide.addChart(pptxType, chartData, opts);
+  if (s.note) slide.addText(s.note, { x:0.5, y:6.9, w:12, h:0.3, fontSize:9, color:'9CA3AF', fontFace:'Calibri' });
 }
 
 // Draws an org chart onto a pptxgenjs slide using boxes + elbow connectors
@@ -2096,6 +2134,25 @@ function drawOrgChart(pptx, slide, s, theme) {
 }
 
 function slideCardHtml(s, i) {
+  if (s.type === 'chart') {
+    const vals = s.series?.[0]?.values || [];
+    const maxV = Math.max(...vals, 1);
+    const labels = s.labels || [];
+    const ct = s.chartType || 'bar';
+    const barPreview = vals.slice(0,7).map((v,i) => {
+      const pct = Math.round((v/maxV)*85);
+      return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
+        <div style="font-size:5px;color:#6B7280;width:28px;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(String(labels[i]||''))}</div>
+        <div style="flex:1;background:#E5E7EB;border-radius:2px;height:8px;"><div style="width:${pct}%;height:100%;background:#3B82F6;border-radius:2px;"></div></div>
+        <div style="font-size:5px;color:#374151;width:14px;">${v}</div>
+      </div>`;
+    }).join('');
+    return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;background:#fff;">
+      <div style="background:#0A1628;padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Chart')} <span style="font-size:6px;opacity:0.6;text-transform:uppercase;">${ct}</span></div></div>
+      <div style="flex:1;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">${barPreview}</div>
+      <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
+    </div>`;
+  }
   if (s.type === 'orgchart') {
     const nodes = s.nodes || [];
     const root = nodes.find(n => !n.parent);
@@ -2203,7 +2260,7 @@ async function presAiEdit() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         messages: [{ role: 'user', content: `Here is the current presentation JSON:\n${currentJson}\n\nInstruction: ${instruction}\n\nReturn the full updated presentation as JSON in exactly the same format. Only change what the instruction asks for.` }],
-        system: 'You are editing a presentation. Apply the instruction precisely. Slide types: title, section, content, close, orgchart. For orgchart slides use format: {"id":N,"type":"orgchart","title":"Org Chart","nodes":[{"id":"1","name":"Full Name","title":"Job Title"},{"id":"2","name":"Full Name","title":"Job Title","parent":"1"}]}. Root node has no parent field. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
+        system: 'You are editing a presentation. Apply the instruction precisely. Slide types: title, section, content, close, orgchart, chart. Chart format: {"type":"chart","title":"...","chartType":"bar|barh|line|pie|doughnut","labels":[...],"series":[{"name":"...","values":[...]}],"note":"optional source"}. Orgchart format: {"type":"orgchart","title":"...","nodes":[{"id":"1","name":"Full Name","title":"Job Title"},{"id":"2","name":"...","title":"...","parent":"1"}]}. Use realistic plausible data for charts if not specified. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
       })
     });
     const data = await res.json();
@@ -2397,7 +2454,9 @@ function downloadPresentation() {
       // Neutral theme - clean white, no branding colours so it slots into any template
       presSlides.forEach(s => {
         const slide = pptx.addSlide();
-        if (s.type === 'orgchart') {
+        if (s.type === 'chart') {
+          drawChart(pptx, slide, s, 'neutral');
+        } else if (s.type === 'orgchart') {
           drawOrgChart(pptx, slide, s, 'neutral');
         } else if (s.type === 'title') {
           slide.addText(s.title||'', { x:0.6, y:2.0, w:11.2, h:1.4, fontSize:40, bold:true, color:'1A202C', fontFace:'Calibri', align:'left' });
@@ -2421,7 +2480,9 @@ function downloadPresentation() {
       const DARK = '0A1628', ACCENT = '3B82F6', WHITE = 'FFFFFF';
       presSlides.forEach(s => {
         const slide = pptx.addSlide();
-        if (s.type === 'orgchart') {
+        if (s.type === 'chart') {
+          drawChart(pptx, slide, s, 'branded');
+        } else if (s.type === 'orgchart') {
           drawOrgChart(pptx, slide, s, 'branded');
         } else if (s.type === 'title') {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
