@@ -1995,7 +1995,8 @@ Generate slides as JSON:
   {"id":1,"type":"title","title":"Slide Title","subtitle":"Subtitle","bullets":[]},
   {"id":2,"type":"content","title":"Slide Title","bullets":["Concise point","Another point"]},
   {"id":3,"type":"section","title":"Section Break Title","bullets":[]},
-  {"id":4,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
+  {"id":4,"type":"orgchart","title":"Organisation Chart","nodes":[{"id":"1","name":"Jane Smith","title":"CEO"},{"id":"2","name":"Tom Brown","title":"CFO","parent":"1"},{"id":"3","name":"Sue Jones","title":"CTO","parent":"1"}]},
+  {"id":5,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
 ]}
 
 Guidelines:
@@ -2045,12 +2046,72 @@ Guidelines:
   btn.disabled = false; btn.textContent = '✦ Build';
 }
 
+// Draws an org chart onto a pptxgenjs slide using boxes + elbow connectors
+function drawOrgChart(pptx, slide, s, theme) {
+  const branded = theme === 'branded';
+  const DARK = '0A1628', ACCENT = '3B82F6', WHITE = 'FFFFFF', LINE = 'CBD5E1';
+  const title = s.title || 'Organisation Chart';
+  if (branded) {
+    slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color:DARK } });
+    slide.addText(title, { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
+  } else {
+    slide.addShape(pptx.ShapeType.line, { x:0, y:1.05, w:'100%', h:0, line:{ color:'E5E7EB', width:1 } });
+    slide.addText(title, { x:0.4, y:0.18, w:11.4, h:0.76, fontSize:22, bold:true, color:'1A202C', fontFace:'Calibri' });
+  }
+  const nodes = s.nodes || []; if (!nodes.length) return;
+  // Build tree
+  const nodeMap = {}, childrenMap = {};
+  nodes.forEach(n => { nodeMap[n.id] = n; if (n.parent) { (childrenMap[n.parent] = childrenMap[n.parent]||[]).push(n.id); } });
+  // BFS: assign level
+  const levels = {}, nodeLevel = {};
+  const q = nodes.filter(n => !n.parent).map(n => ({ id:n.id, lv:0 }));
+  while (q.length) {
+    const { id, lv } = q.shift();
+    nodeLevel[id] = lv; (levels[lv] = levels[lv]||[]).push(id);
+    (childrenMap[id]||[]).forEach(c => q.push({ id:c, lv:lv+1 }));
+  }
+  // Position nodes
+  const BOX_W=1.9, BOX_H=0.72, H_GAP=0.25, V_GAP=0.7, TOP_Y=branded?1.3:1.25, SLIDE_W=13.33;
+  const pos = {};
+  Object.keys(levels).sort((a,b)=>a-b).forEach(lv => {
+    const ids = levels[lv], tw = ids.length*BOX_W + (ids.length-1)*H_GAP, sx = (SLIDE_W-tw)/2;
+    ids.forEach((id,i) => { pos[id] = { x: sx+i*(BOX_W+H_GAP), y: TOP_Y+lv*(BOX_H+V_GAP) }; });
+  });
+  // Draw connectors (behind boxes)
+  nodes.forEach(n => {
+    if (!n.parent || !pos[n.id] || !pos[n.parent]) return;
+    const p=pos[n.parent], c=pos[n.id], pCx=p.x+BOX_W/2, cCx=c.x+BOX_W/2, pBtm=p.y+BOX_H, cTop=c.y, midY=(pBtm+cTop)/2;
+    slide.addShape(pptx.ShapeType.line, { x:pCx, y:pBtm, w:0, h:midY-pBtm, line:{ color:LINE, width:1.2 } });
+    if (Math.abs(pCx-cCx)>0.01) { const x1=Math.min(pCx,cCx); slide.addShape(pptx.ShapeType.line, { x:x1, y:midY, w:Math.abs(pCx-cCx), h:0, line:{ color:LINE, width:1.2 } }); }
+    slide.addShape(pptx.ShapeType.line, { x:cCx, y:midY, w:0, h:cTop-midY, line:{ color:LINE, width:1.2 } });
+  });
+  // Draw boxes
+  nodes.forEach(n => {
+    const p=pos[n.id]; if (!p) return;
+    const fill = n.parent ? ACCENT : DARK;
+    slide.addShape(pptx.ShapeType.roundRect, { x:p.x, y:p.y, w:BOX_W, h:BOX_H, fill:{ color:fill }, line:{ color:fill }, rectRadius:0.08 });
+    slide.addText(n.name||'', { x:p.x+0.06, y:p.y+0.05, w:BOX_W-0.12, h:BOX_H*0.52, fontSize:9, bold:true, color:WHITE, fontFace:'Calibri', align:'center', valign:'bottom' });
+    if (n.title) slide.addText(n.title, { x:p.x+0.06, y:p.y+BOX_H*0.5, w:BOX_W-0.12, h:BOX_H*0.45, fontSize:7.5, color:'BFDBFE', fontFace:'Calibri', align:'center', valign:'top' });
+  });
+}
+
 function slideCardHtml(s, i) {
+  if (s.type === 'orgchart') {
+    const nodes = s.nodes || [];
+    const root = nodes.find(n => !n.parent);
+    const reports = nodes.filter(n => n.parent === root?.id);
+    return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;background:#F8FAFC;">
+      <div style="background:#0A1628;padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Org Chart')}</div></div>
+      <div style="flex:1;padding:6px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
+        ${root?`<div style="background:#0A1628;color:white;border-radius:4px;padding:2px 8px;font-size:6.5px;font-weight:700;">${escapeHtml(root.name||'')} - ${escapeHtml(root.title||'')}</div><div style="width:1px;height:6px;background:#CBD5E1;"></div><div style="display:flex;gap:4px;">${reports.slice(0,4).map(r=>`<div style="background:#3B82F6;color:white;border-radius:3px;padding:2px 5px;font-size:5.5px;">${escapeHtml(r.name||'')}</div>`).join('')}${nodes.length>5?`<div style="color:#9CA3AF;font-size:5.5px;padding:2px;">+${nodes.length-1-reports.length} more</div>`:''}</div>`:'<div style="color:#9CA3AF;font-size:7px;">No nodes</div>'}
+      </div>
+      <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
+    </div>`;
+  }
   const isTitleType = s.type==='title';
   const isSectionType = s.type==='section';
   const isCloseType = s.type==='close';
   const bg = isTitleType||isCloseType ? '#0A1628' : isSectionType ? '#3B82F6' : '#1B2D50';
-  const bodyBg = isTitleType||isSectionType||isCloseType ? bg : '#ffffff';
   const hasBody = !isTitleType && !isSectionType && !isCloseType;
   return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);transition:transform 0.15s,box-shadow 0.15s;aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.18)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 10px rgba(0,0,0,0.12)'">
     <div style="background:${bg};padding:${isTitleType?'20px 16px':'8px 12px'};flex:${isTitleType||isSectionType||isCloseType?1:0};display:flex;flex-direction:column;justify-content:${isTitleType||isCloseType?'center':'flex-start'};">
@@ -2142,7 +2203,7 @@ async function presAiEdit() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         messages: [{ role: 'user', content: `Here is the current presentation JSON:\n${currentJson}\n\nInstruction: ${instruction}\n\nReturn the full updated presentation as JSON in exactly the same format. Only change what the instruction asks for.` }],
-        system: 'You are editing a presentation. Apply the instruction precisely. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
+        system: 'You are editing a presentation. Apply the instruction precisely. Slide types: title, section, content, close, orgchart. For orgchart slides use format: {"id":N,"type":"orgchart","title":"Org Chart","nodes":[{"id":"1","name":"Full Name","title":"Job Title"},{"id":"2","name":"Full Name","title":"Job Title","parent":"1"}]}. Root node has no parent field. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
       })
     });
     const data = await res.json();
@@ -2336,7 +2397,9 @@ function downloadPresentation() {
       // Neutral theme - clean white, no branding colours so it slots into any template
       presSlides.forEach(s => {
         const slide = pptx.addSlide();
-        if (s.type === 'title') {
+        if (s.type === 'orgchart') {
+          drawOrgChart(pptx, slide, s, 'neutral');
+        } else if (s.type === 'title') {
           slide.addText(s.title||'', { x:0.6, y:2.0, w:11.2, h:1.4, fontSize:40, bold:true, color:'1A202C', fontFace:'Calibri', align:'left' });
           if (s.subtitle) slide.addText(s.subtitle, { x:0.6, y:3.5, w:9, h:0.7, fontSize:20, color:'6B7280', fontFace:'Calibri' });
           slide.addShape(pptx.ShapeType.line, { x:0.6, y:4.4, w:5, h:0, line:{ color:'D1D5DB', width:1 } });
@@ -2358,7 +2421,9 @@ function downloadPresentation() {
       const DARK = '0A1628', ACCENT = '3B82F6', WHITE = 'FFFFFF';
       presSlides.forEach(s => {
         const slide = pptx.addSlide();
-        if (s.type === 'title') {
+        if (s.type === 'orgchart') {
+          drawOrgChart(pptx, slide, s, 'branded');
+        } else if (s.type === 'title') {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
           slide.addText(s.title||'', { x:0.6, y:2.2, w:11, h:1.4, fontSize:40, bold:true, color:WHITE, fontFace:'Calibri' });
           if (s.subtitle) slide.addText(s.subtitle, { x:0.6, y:3.7, w:9, h:0.6, fontSize:20, color:'93C5FD', fontFace:'Calibri' });
