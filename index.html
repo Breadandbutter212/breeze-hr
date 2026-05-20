@@ -573,7 +573,6 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input-area">
           <div class="chat-chips" id="chatChips">
-            <button class="chat-chip" id="emailChip" onclick="toggleEmailPanel()" style="display:none;background:var(--accent-bg);border-color:var(--accent-mid);color:var(--accent);">📧 Emails</button>
             <button class="chat-chip" onclick="useChip('Draft a letter for me')">Draft a letter</button>
             <button class="chat-chip" onclick="useChip('What does ACAS guidance say about ')">ACAS guidance</button>
             <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
@@ -589,6 +588,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
               <input type="file" accept=".pdf,.docx,.txt,.png,.jpg,.jpeg" style="display:none" onchange="handleChatAttachment(event)">
             </label>
+            <button id="emailChip" onclick="toggleEmailPanel()" title="Paste email" style="display:none;cursor:pointer;background:none;border:none;padding:0 4px;color:var(--ink3);flex-shrink:0;line-height:1;" >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+            </button>
             <textarea class="chat-ta" id="chatInput" placeholder="Paste an email, ask a policy question, or request a letter..." rows="1"
               onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendChat()}"
               oninput="this.style.height='auto';this.style.height=Math.min(this.scrollHeight,160)+'px'"></textarea>
@@ -2038,8 +2040,13 @@ Guidelines:
       const fm = ft.match(/\{[\s\S]*\}/);
       pres = JSON.parse(fm ? fm[0].replace(/,(\s*[}\]])/g,'$1') : '{}');
     }
-    presTitle = pres.title || topic;
-    presSlides = pres.slides || [];
+    presTitle = (pres.title || topic).replace(/[—–]/g,'-');
+    presSlides = (pres.slides || []).map(s => ({
+      ...s,
+      title: (s.title||'').replace(/[—–]/g,'-'),
+      subtitle: s.subtitle ? s.subtitle.replace(/[—–]/g,'-') : s.subtitle,
+      bullets: (s.bullets||[]).map(b => b.replace(/[—–]/g,'-'))
+    }));
     renderSlides();
     showPresSources(sourcesUsed);
     setPresStatus('');
@@ -2282,8 +2289,13 @@ async function presAiEdit() {
       const ft = (fd.content?.[0]?.text || '{}').match(/\{[\s\S]*\}/);
       pres = JSON.parse(ft ? ft[0] : '{}');
     }
-    if (pres.title) presTitle = pres.title;
-    if (pres.slides?.length) presSlides = pres.slides;
+    if (pres.title) presTitle = pres.title.replace(/[—–]/g,'-');
+    if (pres.slides?.length) presSlides = pres.slides.map(s => ({
+      ...s,
+      title: (s.title||'').replace(/[—–]/g,'-'),
+      subtitle: s.subtitle ? s.subtitle.replace(/[—–]/g,'-') : s.subtitle,
+      bullets: (s.bullets||[]).map(b => b.replace(/[—–]/g,'-'))
+    }));
     renderSlides();
     input.value = '';
     status.textContent = 'Done.';
@@ -2686,8 +2698,10 @@ ${transcript.substring(0, 8000)}`;
     const data = await res.json();
     const notes = data.content?.[0]?.text?.replace(/[—–]/g,'-') || 'Could not generate notes.';
 
-    // Auto-save to Supabase
-    const meetingName = `MEETING: ${dateStr} ${timeStr}`;
+    // Auto-save to Supabase — name: "19 May - Meeting Type"
+    const shortDate = now.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const meetingType = notes.match(/\*\*Meeting type:\*\*\s*([^\n*]+)/)?.[1]?.trim() || 'Meeting Notes';
+    const meetingName = `MEETING: ${shortDate} - ${meetingType}`;
     if (currentProfile) {
       await sb.from('policies').insert({ company_id: currentProfile.company_id, name: meetingName, content: notes });
     }
@@ -5407,18 +5421,49 @@ async function downloadAnalyticsPPT() {
   title.addText(`Source: ${analyticsSource}  |  ${analyticsData.length} rows`, { x:0.8,y:3.9,w:11,h:0.5, fontSize:14, color:'63B3FF', fontFace:'Inter' });
   title.addText('Breeze HR', { x:0.8,y:6.7,w:4,h:0.4, fontSize:11, color:'FFFFFF', fontFace:'Inter', transparency:50 });
 
-  // One chart per slide
+  // One chart per slide — use native pptxgenjs charts (not canvas screenshots)
+  const typeMap = { bar:'bar', horizontalBar:'bar', line:'line', pie:'pie', doughnut:'doughnut' };
+  const COLORS = ['3B82F6','10B981','F59E0B','EF4444','8B5CF6','F97316','06B6D4','EC4899'];
   const entries = Object.entries(analyticsCharts);
-  for (const [id, chart] of entries) {
+  for (const [id, chartInst] of entries) {
     const canvas = document.getElementById(id);
-    if (!canvas) continue;
-    const imgData = canvas.toDataURL('image/png');
     const slide = pptx.addSlide();
     slide.addShape(pptx.ShapeType.rect, { x:0,y:0,w:'100%',h:0.7, fill:{color:'0A1628'} });
-    const titleEl = canvas.closest('div')?.querySelector('div[style*="font-weight:600"]');
+    const titleEl = canvas?.closest('div')?.querySelector('div[style*="font-weight:600"]');
     const chartTitle = titleEl?.textContent || id.replace('ac-','').replace(/-/g,' ');
     slide.addText(chartTitle.charAt(0).toUpperCase()+chartTitle.slice(1), { x:0.4,y:0.12,w:12,h:0.45, fontSize:16, bold:true, color:'FFFFFF', fontFace:'Inter' });
-    slide.addImage({ data: imgData, x:0.5, y:0.9, w:12, h:6.0 });
+    try {
+      const cjsData = chartInst.data;
+      const cjsType = chartInst.config?.type || 'bar';
+      const pptxData = (cjsData.datasets||[]).map(ds => ({
+        name: ds.label || '',
+        labels: cjsData.labels || [],
+        values: (ds.data||[]).map(v => typeof v === 'number' ? v : 0)
+      }));
+      const pptxType = cjsType === 'line' ? pptx.ChartType.line
+        : (cjsType === 'pie') ? pptx.ChartType.pie
+        : (cjsType === 'doughnut') ? pptx.ChartType.doughnut
+        : pptx.ChartType.bar;
+      const colors = (cjsData.datasets?.[0]?.backgroundColor instanceof Array)
+        ? cjsData.datasets[0].backgroundColor.map(c => c.replace('#',''))
+        : COLORS;
+      const opts = {
+        x:0.5, y:0.85, w:12, h:5.9,
+        chartColors: colors,
+        showLegend: cjsData.datasets?.length > 1 || cjsType === 'pie' || cjsType === 'doughnut',
+        legendPos:'b', legendFontSize:11,
+        showValue: cjsType !== 'line',
+        dataLabelFontSize:10,
+        catAxisLabelFontSize:11, valAxisLabelFontSize:10,
+        valGridLine:{ color:'E5E7EB', style:'solid', size:0.5 },
+        catGridLine:{ style:'none' },
+      };
+      if (cjsType === 'bar' || cjsType === 'horizontalBar') { opts.barDir = cjsType === 'horizontalBar' ? 'bar' : 'col'; opts.barGapWidthPct = 50; }
+      slide.addChart(pptxType, pptxData, opts);
+    } catch(e) {
+      // fallback to image if native chart fails
+      if (canvas) slide.addImage({ data: canvas.toDataURL('image/png'), x:0.5, y:0.85, w:12, h:5.9 });
+    }
   }
 
   await pptx.writeFile({ fileName: `Breeze HR Analytics - ${analyticsSource.replace(/\.[^.]+$/,'')}.pptx` });
