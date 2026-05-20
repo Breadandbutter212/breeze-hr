@@ -3205,6 +3205,20 @@ function finishTmpl() {
 }
 
 // For built-in templates - generate a simple docx from the preview text
+function buildDocFileName() {
+  const raw = genVals?.employee_name || genVals?.candidate_name || '';
+  const docType = selTmpl?.name || 'Document';
+  const date = new Date().toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  if (raw.trim()) {
+    const parts = raw.trim().split(/\s+/);
+    const surname = parts[parts.length - 1];
+    const first = parts.slice(0, -1).join(' ');
+    const nameStr = first ? `${surname}, ${first}` : surname;
+    return `${nameStr} - ${docType} - ${date}`;
+  }
+  return `${docType} - ${date}`;
+}
+
 async function downloadAsDocx() {
   const btn=document.getElementById('dlBtn');
   if(btn){btn.textContent='Generating...';btn.disabled=true;}
@@ -3225,12 +3239,12 @@ async function downloadAsDocx() {
       // Fallback - download as .txt if docx fails
       const blob=new Blob([text],{type:'text/plain'});
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download=`${selTmpl.name}.txt`;a.click();
+      const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.txt`;a.click();
       URL.revokeObjectURL(url);
     } else {
       const blob=await res.blob();
       const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download=`${selTmpl.name}.docx`;a.click();
+      const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();
       URL.revokeObjectURL(url);
     }
     if(btn){btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Download .docx',3000);}
@@ -3256,7 +3270,7 @@ async function downloadDocx() {
     if(!res.ok){const err=await res.json();alert('Error: '+err.error);btn.textContent='⬇ Download .docx';btn.disabled=false;return;}
     const blob=await res.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
     // Server sends .doc for plainText path, .docx for template path
-    a.download=selTmpl.base64?`${selTmpl.name}.docx`:`${selTmpl.name}.doc`;
+    a.download=selTmpl.base64?`${buildDocFileName()}.docx`:`${buildDocFileName()}.doc`;
     a.click();URL.revokeObjectURL(url);
     btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Download .docx',3000);
   } catch(e){alert('Download failed');btn.textContent='⬇ Download .docx';btn.disabled=false;}
@@ -3264,7 +3278,7 @@ async function downloadDocx() {
 
 function downloadTxt() {
   const body=document.getElementById('dpBody');if(!body)return;
-  const blob=new Blob([body.innerText],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${selTmpl.name}.txt`;a.click();URL.revokeObjectURL(url);
+  const blob=new Blob([body.innerText],{type:'text/plain'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.txt`;a.click();URL.revokeObjectURL(url);
 }
 
 // ── POLICIES ──
