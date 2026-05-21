@@ -437,11 +437,13 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       </div>
       <!-- Sign in form -->
       <div id="signinForm">
+        <div class="login-field" id="nameField" style="display:none;"><label class="login-label">Full name</label><input class="login-input" type="text" id="loginName" placeholder="Jane Smith"></div>
+        <div class="login-field" id="companyField" style="display:none;"><label class="login-label">Company name</label><input class="login-input" type="text" id="loginCompany" placeholder="Acme Corp"></div>
         <div class="login-field"><label class="login-label">Email address</label><input class="login-input" type="email" id="loginEmail" placeholder="you@company.com"></div>
         <div class="login-field"><label class="login-label">Password</label><input class="login-input" type="password" id="loginPassword" placeholder="••••••••" onkeydown="if(event.key==='Enter') handleAuth()"></div>
         <button class="login-btn" onclick="handleAuth()" id="loginBtn">Sign in</button>
         <div class="login-error" id="loginError"></div>
-        <div class="login-toggle" style="white-space:nowrap;">Don't have an account? <a onclick="showWaitlist()">Join the waitlist for early access →</a></div>
+        <div class="login-toggle" style="white-space:nowrap;">Don't have an account? <a onclick="toggleAuthMode()">Create account →</a></div>
         <div style="margin-top:16px;text-align:center;font-size:11px;color:#9CA3AF;">By signing in you agree to our <a onclick="showLoginPrivacy()" style="color:#6B7280;text-decoration:underline;cursor:pointer;">Privacy Policy</a></div>
       </div>
       <!-- Waitlist form -->
