@@ -559,6 +559,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
           <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="showView('privacy')">Privacy</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.2);">·</div>
           <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="showTermsModal()">Terms</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.2);">·</div>
+          <div style="font-size:10px;color:rgba(255,255,255,0.3);cursor:pointer;" onclick="showDpaModal()">DPA</div>
         </div>
       </div>
     </div>
@@ -2789,6 +2791,198 @@ function showLoginPrivacy() {
       <p><strong>Retention:</strong> Configurable by your account administrator. Data is deleted after the configured period.</p>
       <p><strong>Your rights:</strong> You have the right to access, correct, delete and port your data. Contact your HR administrator to exercise these rights.</p>
       <p style="color:#9CA3AF;font-size:11px;">Last updated May 2026 - getbreeze.co.uk</p>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target === ov) ov.remove(); };
+}
+
+function showDpaModal() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:720px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:36px 40px;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="font-size:18px;font-weight:700;color:#0A1628;">Data Processing Agreement</div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:none;border:none;cursor:pointer;font-size:20px;color:#9CA3AF;flex-shrink:0;">✕</button>
+    </div>
+    <div style="font-size:11px;color:#9CA3AF;margin-bottom:6px;">Article 28 UK GDPR Compliant &nbsp;·&nbsp; Version 1.1 &nbsp;·&nbsp; 21 May 2026 &nbsp;·&nbsp; Breeze HR (getbreeze.co.uk)</div>
+    <div style="font-size:11px;color:#6B7280;background:#F8FAFC;border:1px solid #E5E7EB;border-radius:6px;padding:10px 14px;margin-bottom:20px;line-height:1.6;">This DPA forms part of the Breeze HR Terms and Conditions of Service. In the event of any conflict between this DPA and the Terms on data protection matters, this DPA shall prevail. By using the Breeze HR platform, the Controller agrees to the terms of this DPA. A countersigned copy is available on request from hello@getbreeze.co.uk.</div>
+    <div style="font-size:13px;color:#374151;line-height:1.85;">
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:8px;margin-bottom:8px;">Parties</p>
+      <p><strong>Data Controller ("Controller" or "Customer"):</strong> The organisation or individual identified in the Order Form or account registration who has agreed to Breeze HR's Terms and Conditions of Service.</p>
+      <p><strong>Data Processor ("Processor" or "Breeze HR"):</strong> Breeze HR, operating at getbreeze.co.uk. Contact: hello@getbreeze.co.uk.</p>
+      <p>This Data Processing Agreement (<strong>"DPA"</strong>) is entered into between the Controller and the Processor. It applies to all processing of Personal Data carried out by the Processor on behalf of the Controller in connection with the Breeze HR platform and associated services (<strong>"Services"</strong>).</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">1. Definitions</p>
+      <p><strong>"Applicable Data Protection Law"</strong> means the UK GDPR, the Data Protection Act 2018, and any subordinate legislation or guidance issued thereunder, including ICO Codes of Practice, as amended from time to time.</p>
+      <p><strong>"Controller Personal Data"</strong> means all Personal Data processed by the Processor on behalf of the Controller pursuant to or in connection with this DPA.</p>
+      <p><strong>"Data Subject"</strong> means the identified or identifiable natural person to whom Personal Data relates.</p>
+      <p><strong>"Effective Date"</strong> means the date on which the Controller first accesses the Services.</p>
+      <p><strong>"Personal Data"</strong> has the meaning given in the UK GDPR: any information relating to an identified or identifiable natural person.</p>
+      <p><strong>"Personal Data Breach"</strong> means a breach of security leading to the accidental or unlawful destruction, loss, alteration, unauthorised disclosure of, or access to, Personal Data transmitted, stored or otherwise processed.</p>
+      <p><strong>"Processing"</strong> has the meaning given in the UK GDPR and includes any operation performed on Personal Data, including collection, recording, organisation, storage, adaptation, retrieval, consultation, use, disclosure, dissemination, alignment, restriction, erasure and destruction.</p>
+      <p><strong>"Restricted Transfer"</strong> means a transfer of Personal Data to a third country or international organisation that is not subject to an adequacy decision made by the Secretary of State under the UK GDPR.</p>
+      <p><strong>"Special Category Data"</strong> has the meaning given in Article 9 UK GDPR, including data revealing racial or ethnic origin, political opinions, religious beliefs, trade union membership, genetic data, biometric data for the purpose of uniquely identifying a natural person, health data, and data concerning sex life or sexual orientation.</p>
+      <p><strong>"Sub-processor"</strong> means any third-party data processor engaged by the Processor to carry out processing activities on behalf of the Controller in connection with the Services.</p>
+      <p><strong>"Transfer Impact Assessment" or "TIA"</strong> means an assessment of the laws and practices of a third country to which Personal Data is transferred, required to determine whether appropriate safeguards for a Restricted Transfer are effective in practice.</p>
+      <p><strong>"UK GDPR"</strong> means the General Data Protection Regulation as it forms part of UK law by virtue of the European Union (Withdrawal) Act 2018, as amended by the Data Protection, Privacy and Electronic Communications (Amendments etc) (EU Exit) Regulations 2019.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">2. Scope and Nature of Processing</p>
+      <p>2.1 The Processor shall only process Controller Personal Data on behalf of the Controller for the purpose of providing the Services and as otherwise set out in this DPA. The Processor shall not process Controller Personal Data for its own purposes, for the development or training of AI models, or for any purpose other than the provision of the Services without the Controller's prior written consent.</p>
+      <p>2.2 The subject matter, duration, nature and purpose of processing, types of Personal Data and categories of Data Subjects are described in Schedule 1 to this DPA.</p>
+      <p>2.3 The Processor acknowledges that the Controller is the data controller for all Controller Personal Data and that the Processor acts solely as a data processor on the Controller's behalf. Nothing in this DPA creates any joint controller relationship between the parties.</p>
+      <p>2.4 Nothing in this DPA shall prevent the Processor from processing Personal Data where required to do so by applicable law, provided that the Processor shall, to the extent permitted by law, inform the Controller of that legal requirement before processing takes place.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">3. Controller's Obligations</p>
+      <p>The Controller warrants and undertakes that:</p>
+      <p>(a) it has and will maintain throughout the term of this DPA a valid lawful basis under Article 6 UK GDPR for processing each category of Personal Data processed through the Services, and, where applicable, a valid condition under Article 9 UK GDPR for any Special Category Data;</p>
+      <p>(b) it has provided all required privacy notices and information to Data Subjects and has complied with all transparency obligations under Applicable Data Protection Law;</p>
+      <p>(c) it will only instruct the Processor to process Personal Data in a manner consistent with Applicable Data Protection Law;</p>
+      <p>(d) it is responsible for ensuring that its use of the Services, including the nature and content of any data uploaded, is lawful and compliant with Applicable Data Protection Law;</p>
+      <p>(e) it will notify the Processor promptly of any changes to Applicable Data Protection Law or regulatory guidance that may materially affect the Processor's obligations under this DPA;</p>
+      <p>(f) it has conducted, or will conduct where required, a Data Protection Impact Assessment under Article 35 UK GDPR before engaging in any processing that is likely to result in a high risk to Data Subjects;</p>
+      <p>(g) it maintains, and will continue to maintain, a Record of Processing Activities as required under Article 30 UK GDPR covering the processing activities described in Schedule 1; and</p>
+      <p>(h) it acknowledges that AI-generated outputs produced by the Services are provided as drafting assistance only and that all employment decisions and HR communications remain the sole responsibility of the Controller.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">4. Processor's Obligations</p>
+
+      <p><strong>4.1 Processing on Instructions Only.</strong> The Processor shall only process Controller Personal Data on the documented instructions of the Controller, as set out in this DPA and the Terms. Instructions may be given orally in emergency situations but must be confirmed in writing within 5 business days. If the Processor is required by applicable law to process Controller Personal Data beyond the Controller's instructions, it shall inform the Controller as soon as practicable unless prohibited by law. The Processor shall immediately inform the Controller if, in the Processor's reasonable opinion, any instruction infringes Applicable Data Protection Law.</p>
+
+      <p><strong>4.2 Data Minimisation.</strong> The Processor shall ensure that access to Controller Personal Data is limited to what is strictly necessary for the performance of the Services. The Processor shall not process Controller Personal Data in excess of the instructions received and shall implement technical measures to minimise the Personal Data accessible to each component of the Services architecture.</p>
+
+      <p><strong>4.3 Confidentiality.</strong> The Processor shall ensure that all persons authorised to process Controller Personal Data are subject to binding obligations of confidentiality, whether contractual or statutory. The Processor shall not disclose Controller Personal Data to any person or entity except as expressly permitted under this DPA or as required by applicable law.</p>
+
+      <p><strong>4.4 Security.</strong> The Processor shall implement and maintain appropriate technical and organisational measures (<strong>"TOMs"</strong>) to protect Controller Personal Data against accidental or unlawful destruction, loss, alteration, unauthorised disclosure or access, taking into account: (a) the state of the art and costs of implementation; (b) the nature, scope, context and purposes of processing; and (c) the risks of varying likelihood and severity to the rights and freedoms of Data Subjects. The TOMs in place as at the Effective Date are described in Schedule 2. The Processor shall review and update these measures at least annually and shall notify the Controller of any material changes that may adversely affect the level of protection afforded to Controller Personal Data.</p>
+
+      <p><strong>4.5 Sub-processors.</strong> The Controller provides general written authorisation for the Processor to engage the Sub-processors listed in Schedule 3. The Processor shall:</p>
+      <p>(a) ensure that each Sub-processor is bound by data protection obligations that are equivalent to those imposed on the Processor by this DPA, by way of a written contract;</p>
+      <p>(b) remain fully liable to the Controller for the acts and omissions of each Sub-processor as if they were the Processor's own acts and omissions;</p>
+      <p>(c) give the Controller at least 30 days' prior written notice before appointing any new Sub-processor or making material changes to existing Sub-processor arrangements; and</p>
+      <p>(d) in the event of an emergency requiring immediate replacement of a Sub-processor (for example, due to a security incident or insolvency), notify the Controller as soon as reasonably practicable and in any event within 5 business days, with details of the replacement Sub-processor and the reason for the emergency change.</p>
+      <p>The Controller may object to a new Sub-processor within 14 days of receiving notice on reasonable data protection grounds. If the parties cannot resolve the objection within a further 14 days, either party may terminate the relevant Services on 30 days' written notice without penalty.</p>
+
+      <p><strong>4.6 Data Subject Rights.</strong> The Processor shall provide reasonable technical and organisational assistance to the Controller in fulfilling its obligations to respond to Data Subject requests under Applicable Data Protection Law, including requests to exercise rights of access, rectification, erasure, restriction, portability and objection. The Processor shall, promptly and in any event within 3 business days of receipt, forward to the Controller any Data Subject request received directly by the Processor, without responding to such requests directly unless authorised by the Controller. The Processor's assistance obligations under this clause take account of the nature of the processing and the information available to the Processor, and are designed to enable the Controller to meet its statutory response deadline of one calendar month.</p>
+
+      <p><strong>4.7 Data Protection Impact Assessments and Prior Consultation.</strong> Taking into account the nature of the processing and the information available to it, the Processor shall provide reasonable assistance to the Controller in: (a) carrying out data protection impact assessments under Article 35 UK GDPR in relation to the Services; and (b) consulting the ICO under Article 36 UK GDPR where such consultation is required. Such assistance shall include providing the Controller with information about the processing activities described in Schedule 2 and any relevant risk assessments undertaken by the Processor.</p>
+
+      <p><strong>4.8 Records of Processing Activities.</strong> The Processor shall maintain a record of processing activities carried out on behalf of the Controller as required under Article 30(2) UK GDPR. Such record shall be made available to the ICO on request. The Processor shall provide the Controller with a copy of the relevant portions of its Article 30(2) record on written request.</p>
+
+      <p><strong>4.9 Personal Data Breach Notification.</strong> The Processor shall notify the Controller without undue delay, and in any event within 48 hours of becoming aware of a Personal Data Breach affecting Controller Personal Data. The initial notification shall include, to the extent then available:</p>
+      <p>(a) a description of the nature of the Personal Data Breach, including the categories and approximate number of Data Subjects and Personal Data records concerned;</p>
+      <p>(b) the name and contact details of the Processor's designated data protection contact;</p>
+      <p>(c) a description of the likely consequences of the breach; and</p>
+      <p>(d) a description of the measures taken or proposed to address the breach, including measures to mitigate its possible adverse effects.</p>
+      <p>Where all required information is not available within 48 hours, the Processor shall provide an initial notification with available information and shall provide further updates as soon as reasonably practicable, and in any event within 72 hours of the initial notification. The Processor shall cooperate fully with the Controller in managing any Personal Data Breach, shall maintain a record of all breaches whether or not notified to the ICO, and shall not make any public disclosure relating to a breach affecting Controller Personal Data without the Controller's prior written consent, except where required by law. The Controller acknowledges that it is solely responsible for making any required notifications to the ICO under Article 33 UK GDPR and to Data Subjects under Article 34 UK GDPR.</p>
+
+      <p><strong>4.10 Return and Deletion of Personal Data.</strong> On termination of the Services for any reason, or on the Controller's earlier written request, the Processor shall, at the Controller's election: (a) return to the Controller all Controller Personal Data in a commonly used, machine-readable format; or (b) securely delete and destroy all Controller Personal Data and certify in writing to the Controller that such deletion has been completed, including deletion from backup systems. The Processor shall complete the return or deletion within 30 days of the termination date or written request. The Processor may retain Controller Personal Data beyond this period only to the extent required by applicable law, in which case it shall notify the Controller and shall continue to protect such data in accordance with this DPA. The Controller acknowledges that it is responsible for exporting any data it requires prior to termination.</p>
+
+      <p><strong>4.11 Audit Rights.</strong> The Processor shall make available to the Controller all information reasonably necessary to demonstrate compliance with this DPA and Applicable Data Protection Law, and shall allow for and contribute to audits and inspections by the Controller or a mandated auditor, subject to:</p>
+      <p>(a) the Controller giving at least 30 days' prior written notice, specifying the scope and purpose of the audit;</p>
+      <p>(b) audits being conducted during normal business hours, no more than once per calendar year (unless a Personal Data Breach has occurred or there is reasonable documented evidence of material non-compliance);</p>
+      <p>(c) the auditor being subject to written confidentiality obligations satisfactory to the Processor;</p>
+      <p>(d) the Controller bearing all reasonable costs of any audit, unless the audit reveals material non-compliance by the Processor, in which case the Processor shall bear the reasonable costs of that audit.</p>
+      <p>The Processor may satisfy its obligations under this clause in whole or in part by providing relevant third-party audit reports, certifications or attestations (such as SOC 2 Type II, ISO 27001, Cyber Essentials Plus or equivalent), where these adequately demonstrate compliance with the relevant obligations. The Processor shall promptly notify the Controller of any material findings in such reports that are relevant to the processing of Controller Personal Data.</p>
+
+      <p><strong>4.12 Regulatory Investigations.</strong> The Processor shall, on reasonable request, provide the Controller with reasonable cooperation and assistance in connection with any investigation, enquiry or enforcement action by the ICO or any other supervisory authority relating to the Controller's use of the Services.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">5. International Transfers</p>
+      <p>5.1 The Controller acknowledges that the Processor uses Sub-processors located in the United States of America and potentially other third countries, as listed in Schedule 3. Such transfers are Restricted Transfers for the purposes of UK GDPR Chapter V.</p>
+      <p>5.2 The Processor shall ensure that all Restricted Transfers are made only:</p>
+      <p>(a) to countries subject to UK adequacy regulations made under Section 17A of the Data Protection Act 2018;</p>
+      <p>(b) subject to appropriate safeguards, including the International Data Transfer Agreement (<strong>"IDTA"</strong>) issued by the ICO, the Addendum to the EU Standard Contractual Clauses issued by the ICO (<strong>"UK Addendum"</strong>), or such other transfer mechanism as may be recognised under Applicable Data Protection Law from time to time; or</p>
+      <p>(c) on the basis of another applicable derogation under Article 49 UK GDPR, where applicable.</p>
+      <p>5.3 The Processor shall, before making any Restricted Transfer, conduct or procure a Transfer Impact Assessment to assess whether the laws and practices of the destination country are such that the relevant safeguard is effective in practice, taking into account the guidance issued by the ICO from time to time. The Processor shall make its TIA documentation available to the Controller on written request.</p>
+      <p>5.4 The Processor represents that each Sub-processor listed in Schedule 3 that processes Controller Personal Data outside the UK has in place appropriate safeguards for the Restricted Transfer of Personal Data in accordance with this clause 5.</p>
+      <p>5.5 The Controller acknowledges that by using the Services it consents to the Restricted Transfers described in this clause 5 and in Schedule 3, subject to the safeguards described therein.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">6. Special Category Data</p>
+      <p>6.1 The Services are not designed or intended for the systematic or large-scale processing of Special Category Data. The Controller acknowledges that:</p>
+      <p>(a) it must not use the Services to process Special Category Data unless it has identified a valid condition under Article 9 UK GDPR and, where required, Schedule 1 of the Data Protection Act 2018, including the maintenance of an Appropriate Policy Document where required under Schedule 1, Part 4 DPA 2018;</p>
+      <p>(b) where it processes Special Category Data through the Services, it accepts sole responsibility for ensuring the requisite lawful basis, conditions, appropriate safeguards and Appropriate Policy Document (where required) are in place; and</p>
+      <p>(c) the Processor's general security measures described in Schedule 2 are not specifically configured to meet any enhanced requirements applicable exclusively to Special Category Data, and the Controller should assess whether additional safeguards are required for its specific processing activities.</p>
+      <p>6.2 Where the Controller uses the Services to process health data, disability data or data relating to protected characteristics in the context of disciplinary, grievance or performance management processes, it must ensure that it has complied with the additional requirements of the Employment Practices Code issued by the ICO.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">7. Term and Termination</p>
+      <p>7.1 This DPA shall come into effect on the Effective Date and shall continue for as long as the Processor processes Controller Personal Data on behalf of the Controller. This DPA shall automatically terminate on the termination or expiry of the Terms, subject to clause 4.10 (data return and deletion) continuing to apply.</p>
+      <p>7.2 Termination of this DPA does not affect any rights or obligations that have accrued prior to termination. Clauses 1, 4.3, 4.10, 5, 6, 9 and 10 shall survive termination of this DPA.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">8. Changes to this DPA</p>
+      <p>8.1 The Processor reserves the right to update this DPA from time to time to reflect changes in Applicable Data Protection Law, ICO guidance, Sub-processor arrangements or the nature of the Services.</p>
+      <p>8.2 The Processor shall give the Controller at least 30 days' prior written notice of any material changes to this DPA. Where a change is required immediately by law or regulatory order, the Processor may implement such changes without advance notice but shall notify the Controller as soon as practicable.</p>
+      <p>8.3 Continued use of the Services after the effective date of any change constitutes acceptance of the updated DPA. Where a change materially reduces the level of data protection, the Controller may terminate the Services on 30 days' written notice without penalty.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">9. Liability</p>
+      <p>9.1 Each party's liability under this DPA is subject to the limitations and exclusions set out in the Terms, save that nothing in this DPA or the Terms shall limit or exclude either party's liability for: (a) death or personal injury caused by negligence; (b) fraud or fraudulent misrepresentation; or (c) any other liability that cannot be excluded or limited by applicable law, including liability under Section 82 UK GDPR (right to compensation for breach of data protection law).</p>
+      <p>9.2 The Processor's total aggregate liability under or in connection with this DPA shall not exceed the cap set out in the Terms.</p>
+      <p>9.3 The Controller acknowledges that it is solely responsible for any regulatory fines, penalties, enforcement action or third-party claims arising from: (a) the Controller's failure to comply with its obligations as data controller under Applicable Data Protection Law; (b) the Controller's failure to obtain a lawful basis for processing; (c) any ICO enforcement action arising from the Controller's use of the Services; or (d) employment tribunal claims or employee claims arising from the Controller's use of AI Output.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">10. Governing Law and Jurisdiction</p>
+      <p>This DPA is governed by and construed in accordance with the laws of England and Wales. Any dispute arising out of or in connection with this DPA shall be subject to the exclusive jurisdiction of the courts of England and Wales.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:24px;margin-bottom:8px;">11. Contact</p>
+      <p>Data protection queries, requests for countersigned copies of this DPA, or Sub-processor list requests should be directed to:</p>
+      <p><strong>Email:</strong> hello@getbreeze.co.uk &nbsp;·&nbsp; <strong>Website:</strong> getbreeze.co.uk</p>
+      <p>The Processor does not currently have a designated Data Protection Officer. The Controller is responsible for assessing whether it requires a DPO under Article 37 UK GDPR and for making any required DPO designation.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:32px;margin-bottom:8px;">Schedule 1 - Details of Processing</p>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;width:30%;">Item</td><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Details</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Subject matter</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">HR operations, people management, document drafting, workforce administration and analytics activities of the Controller</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Duration</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">For as long as the Controller maintains a Subscription, subject to post-termination deletion in accordance with clause 4.10 and the retention period configured by the Controller in platform settings</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Nature of processing</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Collection, storage, organisation, retrieval, use, analysis, generation of AI outputs, transmission to Sub-processors, and deletion of Personal Data for the purpose of HR management and document generation</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Purpose of processing</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">To provide the Breeze HR platform including: AI-assisted HR query responses; document and letter generation; policy management and storage; meeting note transcription and summarisation; workforce analytics; email and calendar integration; SharePoint and HRIS connectivity</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Types of Personal Data</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Employee names and contact details; job titles, roles and employment history; salary and compensation data; leave and absence records; performance information; disciplinary and grievance records (where entered); demographic data (where entered); meeting transcripts (where recorded using the meeting notes feature); email content (where email integration is connected by Controller); HRIS data (where HRIS integration is connected)</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Special Category Data</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">May include health data, disability information or data relating to protected characteristics where entered by the Controller. The Controller is solely responsible for ensuring a valid Article 9 condition and, where applicable, an Appropriate Policy Document exists</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Categories of Data Subjects</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Current, former and prospective employees, workers and contractors of the Controller; other individuals whose Personal Data is entered into the platform by the Controller or its Users</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Lawful basis</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">The Controller warrants it has identified a valid lawful basis under Article 6 UK GDPR (and where applicable Article 9 and Schedule 1 DPA 2018) for each category of Personal Data processed through the Services</td></tr>
+      </table></div>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:32px;margin-bottom:8px;">Schedule 2 - Technical and Organisational Security Measures</p>
+      <p>The Processor implements and maintains the following TOMs as at the Effective Date. These measures are reviewed at least annually.</p>
+      <p><strong>Access Control:</strong> Authentication via Supabase Auth with secure, time-limited session management; row-level security (RLS) enforced at database level ensuring each Customer's data is isolated and inaccessible to other customers; all API routes require valid Bearer token authentication validated server-side; principle of least privilege applied to internal system access; access rights reviewed quarterly and promptly revoked on personnel changes.</p>
+      <p><strong>Data Isolation and Multi-Tenancy:</strong> All Customer Data is scoped to a unique company identifier enforced at the database layer; no cross-customer data access is possible through the application layer; Customer data is logically segregated within shared infrastructure with technical controls preventing unauthorised access.</p>
+      <p><strong>Encryption:</strong> All data in transit is encrypted using TLS 1.2 or higher with strong cipher suites; data at rest is encrypted by the relevant infrastructure provider using AES-256 or equivalent; encryption keys are managed by the relevant Sub-processor in accordance with their security policies.</p>
+      <p><strong>Pseudonymisation:</strong> Where technically practicable and appropriate to the risk, the Processor implements pseudonymisation of Personal Data in analytics and processing pipelines in accordance with Article 32(1)(a) UK GDPR.</p>
+      <p><strong>Infrastructure Security:</strong> Application hosted on Vercel with automatic HTTPS enforcement and DDoS protection; database hosted on Supabase with enterprise-grade security controls and SOC 2 Type II compliance; AI processing via Anthropic API with a zero data-retention policy for API calls (Anthropic does not train on API data by default); regular dependency updates and vulnerability patching.</p>
+      <p><strong>Penetration Testing and Vulnerability Management:</strong> The Processor conducts or commissions vulnerability assessments of the platform infrastructure on at least an annual basis. Critical vulnerabilities are remediated within 14 days of discovery. The Processor's Sub-processors (Supabase, Vercel, Anthropic) conduct their own penetration testing programmes, details of which are available in their respective security documentation.</p>
+      <p><strong>Backup and Recovery:</strong> Customer Data is backed up by Supabase in accordance with its standard backup policy. The Processor maintains documented incident response and business continuity procedures to ensure the availability and resilience of the Services.</p>
+      <p><strong>Personnel and Organisational Measures:</strong> Access to Customer Personal Data is restricted to personnel who require it to deliver the Services; all personnel with access to Personal Data are subject to binding confidentiality obligations; the Processor maintains internal data protection awareness measures appropriate to the size and nature of the organisation.</p>
+      <p><strong>Incident Response:</strong> The Processor maintains documented procedures for detecting, reporting, investigating and managing Personal Data Breaches; the Controller is notified within 48 hours of a confirmed or suspected breach as set out in clause 4.9; a breach log is maintained regardless of whether a breach meets the threshold for ICO notification.</p>
+      <p><strong>Data Retention:</strong> Chat history, meeting notes and AI response data are subject to configurable retention periods set by the Controller within the platform settings; uploaded policies and templates are retained until deleted by the Controller; automatic deletion of data beyond the configured retention period is enforced at the application layer.</p>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:32px;margin-bottom:8px;">Schedule 3 - Approved Sub-processors</p>
+      <p>The following Sub-processors are approved as at 21 May 2026. The Processor shall provide at least 30 days' written notice of changes in accordance with clause 4.5.</p>
+      <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Sub-processor / Location</td><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Purpose and Data Processed</td><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Transfer Safeguard</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Anthropic, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">AI processing. Chat messages, uploaded documents and policy content are transmitted to Anthropic's API to generate AI outputs. Anthropic does not use API data to train models. Zero data retention on API calls.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. anthropic.com/legal/privacy</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Supabase, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Database and authentication. All Customer Data including employee information, chat history, policies, templates and user accounts are stored in Supabase. SOC 2 Type II certified.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. supabase.com/privacy</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Vercel Inc.<br><span style="color:#9CA3AF;">United States / EU</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Application hosting and serverless functions. Processes requests and serves the application. Limited exposure to Personal Data in transit only. SOC 2 Type II certified.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. vercel.com/legal/privacy-policy</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Composio, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Email and SharePoint integration. Processes email content and SharePoint file metadata. <strong>Only activated if the Controller connects these integrations.</strong></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. composio.dev</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Merge Dev, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">HRIS integration. Processes employee data from the Controller's connected HRIS. <strong>Only activated if the Controller connects an HRIS.</strong></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. merge.dev/legal/privacy-policy</td></tr>
+      </table></div>
+
+      <p style="font-size:15px;font-weight:700;color:#0A1628;margin-top:32px;margin-bottom:8px;">Schedule 4 - Execution</p>
+      <p>Where the Controller accesses the Services electronically, acceptance of the Terms and Conditions of Service constitutes execution of this DPA and agreement to its terms. The Controller may request a separately countersigned copy of this DPA by emailing hello@getbreeze.co.uk.</p>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:16px;">
+        <div style="border:1px solid #E5E7EB;border-radius:6px;padding:16px;font-size:12px;color:#374151;">
+          <div style="font-weight:600;margin-bottom:10px;color:#0A1628;">For and on behalf of the Controller (Customer)</div>
+          <div style="margin-bottom:8px;">Signed: <span style="display:inline-block;width:120px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div style="margin-bottom:8px;">Date: <span style="display:inline-block;width:130px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div style="margin-bottom:8px;">Name: <span style="display:inline-block;width:125px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div style="margin-bottom:8px;">Title: <span style="display:inline-block;width:130px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div>Organisation: <span style="display:inline-block;width:100px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+        </div>
+        <div style="border:1px solid #E5E7EB;border-radius:6px;padding:16px;font-size:12px;color:#374151;">
+          <div style="font-weight:600;margin-bottom:10px;color:#0A1628;">For and on behalf of the Processor (Breeze HR)</div>
+          <div style="margin-bottom:8px;">Signed: <span style="display:inline-block;width:120px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div style="margin-bottom:8px;">Date: <span style="display:inline-block;width:130px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div style="margin-bottom:8px;">Name: <span style="display:inline-block;width:125px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div style="margin-bottom:8px;">Title: <span style="display:inline-block;width:130px;border-bottom:1px solid #D1D5DB;">&nbsp;</span></div>
+          <div>Organisation: Breeze HR</div>
+        </div>
+      </div>
+      <p style="color:#9CA3AF;font-size:11px;margin-top:24px;">Breeze HR DPA v1.1 &nbsp;·&nbsp; 21 May 2026 &nbsp;·&nbsp; getbreeze.co.uk &nbsp;·&nbsp; hello@getbreeze.co.uk</p>
     </div>
   </div>`;
   document.body.appendChild(ov);
