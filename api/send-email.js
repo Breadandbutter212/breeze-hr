@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { userId, to, subject, body, provider = 'gmail' } = req.body;
+  const { userId, to, cc, bcc, subject, body, provider = 'gmail' } = req.body;
   if (!userId || !to || !body) return res.status(400).json({ error: 'Missing required fields' });
   if (userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
 
@@ -30,14 +30,15 @@ export default async function handler(req, res) {
   const user_id = 'user_' + userId.replace(/-/g, '');
   const action = provider === 'outlook' ? 'MICROSOFT_OUTLOOK_SEND_EMAIL' : 'GMAIL_SEND_EMAIL';
 
+  const args = provider === 'outlook'
+    ? { to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) }
+    : { recipient_email: to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) };
+
   try {
     const r = await fetch(`${BASE}/tools/execute/${action}`, {
       method: 'POST',
       headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id,
-        arguments: { to, subject: subject || 'Letter from HR', messageBody: body }
-      })
+      body: JSON.stringify({ user_id, arguments: args })
     });
 
     const raw = await r.text();

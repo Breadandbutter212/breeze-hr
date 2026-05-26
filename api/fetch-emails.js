@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { userId, provider = 'gmail' } = req.body;
+  const { userId, provider = 'gmail', action } = req.body;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
   if (userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
 
@@ -28,6 +28,26 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'COMPOSIO_API_KEY not set' });
 
   const user_id = 'user_' + userId.replace(/-/g, '');
+
+  // Contact search action
+  if (action === 'contacts') {
+    const { query: contactQuery = '' } = req.body;
+    try {
+      const r = await fetch(`${BASE}/tools/execute/GMAIL_GET_CONTACTS`, {
+        method: 'POST',
+        headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ user_id, arguments: { query: contactQuery, max_results: 10 } })
+      });
+      const raw = await r.text();
+      let data;
+      try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
+      if (!r.ok) return res.status(200).json({ contacts: [] });
+      return res.status(200).json({ data });
+    } catch(e) {
+      return res.status(200).json({ contacts: [] });
+    }
+  }
+
   const toolSlug = provider === 'outlook' ? 'MICROSOFT_OUTLOOK_GET_EMAILS' : 'GMAIL_FETCH_EMAILS';
 
   try {

@@ -5304,6 +5304,8 @@ function openSendEmailModal() {
   let modal = document.getElementById('sendEmailModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'sendEmailModal'; document.body.appendChild(modal); }
   const provider = window._emailProvider || 'gmail';
+  const inputStyle = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
+  const labelStyle = 'font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:560px;box-shadow:var(--shadow-lg);">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
@@ -5311,14 +5313,30 @@ function openSendEmailModal() {
       <button onclick="document.getElementById('sendEmailModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--ink3);">×</button>
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">To</div>
-        <input id="sendEmailTo" placeholder="employee@company.com" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      <div style="position:relative;">
+        <div style="${labelStyle}">To</div>
+        <input id="sendEmailTo" placeholder="employee@company.com" autocomplete="off" style="${inputStyle}" oninput="emailContactSearch(this,'sendEmailToDropdown',event)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <div id="sendEmailToDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--shadow-md);z-index:100;max-height:180px;overflow-y:auto;"></div>
       </div>
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Subject</div>
-        <input id="sendEmailSubject" value="Letter from HR" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;position:relative;">
+          <div style="${labelStyle}">CC</div>
+          <input id="sendEmailCc" placeholder="Optional" autocomplete="off" style="${inputStyle}" oninput="emailContactSearch(this,'sendEmailCcDropdown',event)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <div id="sendEmailCcDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--shadow-md);z-index:100;max-height:180px;overflow-y:auto;"></div>
+        </div>
+        <div style="flex:1;position:relative;">
+          <div style="${labelStyle}">BCC</div>
+          <input id="sendEmailBcc" placeholder="Optional" autocomplete="off" style="${inputStyle}" oninput="emailContactSearch(this,'sendEmailBccDropdown',event)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+          <div id="sendEmailBccDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--shadow-md);z-index:100;max-height:180px;overflow-y:auto;"></div>
+        </div>
       </div>
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Body</div>
-        <textarea id="sendEmailBody" style="width:100%;min-height:160px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${body}</textarea>
+      <div>
+        <div style="${labelStyle}">Subject</div>
+        <input id="sendEmailSubject" value="Letter from HR" style="${inputStyle}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div>
+        <div style="${labelStyle}">Body</div>
+        <textarea id="sendEmailBody" style="width:100%;min-height:160px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${body}</textarea>
       </div>
       <div id="sendEmailMsg" style="font-size:12px;min-height:16px;"></div>
     </div>
@@ -5330,9 +5348,50 @@ function openSendEmailModal() {
   modal.onclick = e => { if (e.target === modal) modal.style.display = 'none'; };
 }
 
+let _contactSearchTimer = null;
+async function emailContactSearch(input, dropdownId, e) {
+  const q = input.value.trim();
+  const dropdown = document.getElementById(dropdownId);
+  if (!dropdown) return;
+  if (q.length < 2) { dropdown.style.display = 'none'; return; }
+  clearTimeout(_contactSearchTimer);
+  _contactSearchTimer = setTimeout(async () => {
+    if (!currentUser) return;
+    try {
+      const token = await getAuthToken();
+      const res = await fetch('/api/fetch-emails', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ userId: currentUser.id, action: 'contacts', query: q })
+      });
+      const json = await res.json();
+      const contacts = [];
+      const raw = json?.data?.data;
+      if (Array.isArray(raw)) {
+        raw.forEach(c => {
+          const name = c.name || c.displayName || '';
+          const emails = c.emailAddresses || c.emails || [];
+          (Array.isArray(emails) ? emails : [emails]).forEach(em => {
+            const addr = em?.value || em?.address || (typeof em === 'string' ? em : '');
+            if (addr && addr.includes('@')) contacts.push({ name, email: addr });
+          });
+        });
+      }
+      if (!contacts.length) { dropdown.style.display = 'none'; return; }
+      dropdown.style.display = 'block';
+      dropdown.innerHTML = contacts.slice(0, 8).map(c => {
+        const label = c.name ? `${c.name} &lt;${c.email}&gt;` : c.email;
+        return `<div style="padding:8px 12px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);" onmousedown="event.preventDefault();document.getElementById('${input.id}').value='${c.email}';document.getElementById('${dropdownId}').style.display='none';" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''">${label}</div>`;
+      }).join('');
+    } catch(err) { dropdown.style.display = 'none'; }
+  }, 300);
+}
+
 async function submitSendEmail(provider) {
   if (!currentUser) return;
   const to = document.getElementById('sendEmailTo')?.value?.trim();
+  const cc = document.getElementById('sendEmailCc')?.value?.trim() || '';
+  const bcc = document.getElementById('sendEmailBcc')?.value?.trim() || '';
   const subject = document.getElementById('sendEmailSubject')?.value?.trim();
   const body = document.getElementById('sendEmailBody')?.value?.trim();
   const msg = document.getElementById('sendEmailMsg');
@@ -5341,10 +5400,13 @@ async function submitSendEmail(provider) {
   if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
   try {
     const token = await getAuthToken();
+    const payload = { userId: currentUser.id, to, subject, body, provider };
+    if (cc) payload.cc = cc;
+    if (bcc) payload.bcc = bcc;
     const res = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ userId: currentUser.id, to, subject, body, provider })
+      body: JSON.stringify(payload)
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Send failed');
