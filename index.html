@@ -4940,16 +4940,55 @@ async function searchSharePointForChat(msg) {
     const items = spData?.data?.data?.PrimaryQueryResult?.RelevantResults?.Table?.Rows?.results
       || spData?.data?.data?.value || spData?.data?.results || [];
     if (!items.length) return '';
-    const docs = items.slice(0, 5).map(item => {
-      const cells = item.Cells?.results || [];
-      const get = k => cells.find(c => c.Key === k)?.Value || item[k] || '';
-      const title = get('Title') || 'Untitled';
-      const ext = (get('FileExtension') || 'doc').toUpperCase();
-      const modified = get('LastModifiedTime') ? new Date(get('LastModifiedTime')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
-      const snippet = (get('HitHighlightedSummary') || '').replace(/<[^>]+>/g,'').substring(0, 200);
-      return `- "${title}" [${ext}]${modified?' (modified '+modified+')':''}${snippet?' - '+snippet:''}`;
-    }).join('\n');
-    return `\n\nSHAREPOINT CONTEXT - relevant documents found on the user's SharePoint:\n${docs}\n\nInstruction: Mention specifically which documents you found on their SharePoint. Ask if they want to use the format/structure of the most relevant one. If yes, base your output on that document's style.`;
+
+    const getCell = (item, k) => { const cells = item.Cells?.results || []; return cells.find(c => c.Key === k)?.Value || item[k] || ''; };
+
+    // Try to fetch full content of the top matching document
+    const topItem = items[0];
+    const topPath = getCell(topItem, 'Path');
+    const topSite = getCell(topItem, 'SPSiteURL');
+    const topExt = (getCell(topItem, 'FileExtension') || '').toLowerCase();
+    const topTitle = getCell(topItem, 'Title') || 'Untitled';
+    let fullContent = null;
+
+    if (topPath && ['docx','doc','txt','pdf'].includes(topExt)) {
+      try {
+        const fetchRes = await fetch('/api/sharepoint-search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ userId: currentUser.id, action: 'fetch', filePath: topPath, siteUrl: topSite })
+        });
+        if (fetchRes.ok) {
+          const fd = await fetchRes.json();
+          if (fd.text) fullContent = fd.text;
+        }
+      } catch(e) {}
+    }
+
+    // Build context: full content for top file + titles for the rest
+    let context = '\n\nSHAREPOINT DOCUMENTS FOUND:\n';
+    if (fullContent) {
+      const modified = getCell(topItem, 'LastModifiedTime') ? new Date(getCell(topItem, 'LastModifiedTime')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+      context += `\nFULL CONTENT of "${topTitle}"${modified?' (modified '+modified+')':''}:\n${fullContent}\n`;
+      if (items.length > 1) {
+        context += '\nOther related files:\n' + items.slice(1, 5).map(item => {
+          const ext = (getCell(item, 'FileExtension') || 'doc').toUpperCase();
+          const modified = getCell(item, 'LastModifiedTime') ? new Date(getCell(item, 'LastModifiedTime')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+          return `- "${getCell(item,'Title') || 'Untitled'}" [${ext}]${modified?' ('+modified+')':''}`;
+        }).join('\n');
+      }
+      context += `\n\nInstruction: You have the FULL TEXT of "${topTitle}" from SharePoint above. Use its exact structure, headings, tone and format as the basis for the new document - adapt the content for the new role/purpose while replicating the format precisely.`;
+    } else {
+      // Fallback: snippets only
+      const docs = items.slice(0, 5).map(item => {
+        const ext = (getCell(item, 'FileExtension') || 'doc').toUpperCase();
+        const modified = getCell(item, 'LastModifiedTime') ? new Date(getCell(item, 'LastModifiedTime')).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+        const snippet = (getCell(item, 'HitHighlightedSummary') || '').replace(/<[^>]+>/g,'').substring(0, 200);
+        return `- "${getCell(item,'Title') || 'Untitled'}" [${ext}]${modified?' ('+modified+')':''}${snippet?' - '+snippet:''}`;
+      }).join('\n');
+      context += docs + '\n\nInstruction: Reference these documents from SharePoint by name. Use the most relevant one as a structural guide.';
+    }
+    return context;
   } catch(e) { return ''; }
 }
 
