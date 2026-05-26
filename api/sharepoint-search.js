@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const BASE_V2 = 'https://backend.composio.dev/api/v2';
+const BASE_V2 = 'https://backend.composio.dev/api/v3';
 
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
