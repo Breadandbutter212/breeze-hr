@@ -38,7 +38,8 @@ export default async function handler(req, res) {
         user_id,
         arguments: {
           query: 'is:inbox',
-          max_results: 20
+          max_results: 20,
+          ...(req.body.pageToken ? { page_token: req.body.pageToken } : {})
         }
       })
     });

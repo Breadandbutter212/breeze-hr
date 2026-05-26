@@ -5143,7 +5143,9 @@ function toggleEmailPanel() {
   if (!isOpen) loadEmailInbox();
 }
 
-async function loadEmailInbox() {
+let _emailNextPageToken = null;
+
+async function loadEmailInbox(pageToken = null) {
   if (!currentUser) return;
   const list = document.getElementById('emailList');
   const titleEl = document.getElementById('emailPanelTitle');
@@ -5169,14 +5171,20 @@ async function loadEmailInbox() {
     const res = await fetch('/api/fetch-emails', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ userId: currentUser.id, provider, connectedAccountId: window._emailAccountId, query: 'is:inbox', maxResults: 20 })
+      body: JSON.stringify({ userId: currentUser.id, provider, ...(pageToken ? { pageToken } : {}) })
     });
     const data = await res.json();
     if (!res.ok) {
       list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--red);font-size:12px;">Could not load emails.<br><span style="color:var(--ink3);font-size:11px;">${escapeHtml(data?.error||res.status)}</span></div>`;
       return;
     }
-    _allEmails = parseEmailList(data, provider);
+    const newEmails = parseEmailList(data, provider);
+    _emailNextPageToken = data?.data?.data?.nextPageToken || data?.data?.nextPageToken || null;
+    if (pageToken) {
+      _allEmails = [..._allEmails, ...newEmails];
+    } else {
+      _allEmails = newEmails;
+    }
     renderEmailList(_allEmails);
   } catch(e) {
     list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--red);font-size:12px;">Could not load emails: ${e.message}</div>`;
@@ -5250,7 +5258,14 @@ function renderEmailList(emails) {
         </button>
       </div>
     </div>`;
-  }).join('');
+  }).join('') + (_emailNextPageToken ? `
+    <div style="padding:12px 16px;text-align:center;">
+      <button onclick="loadEmailInbox('${_emailNextPageToken}')" id="loadMoreBtn"
+        style="font-size:12px;color:var(--accent);background:none;border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:7px 20px;cursor:pointer;font-family:inherit;width:100%;"
+        onmouseover="this.style.background='var(--accent-bg)'" onmouseout="this.style.background='none'">
+        ··· Load more emails
+      </button>
+    </div>` : '');
 }
 
 function filterEmails(q) {
@@ -5269,10 +5284,8 @@ function openEmailInGmail(messageId) {
 function selectEmailForChat(idx) {
   const email = _allEmails[idx]; if (!email) return;
   toggleEmailPanel();
-  const fromName = (email.from || '').replace(/<[^>]+>/,'').replace(/"/g,'').trim() || 'Unknown sender';
-  // Use first 1200 chars of cleaned body to keep context concise
   const bodyText = (email.body || email.snippet || '').substring(0, 1200);
-  const msg = `I've received this email and need help drafting an HR reply:\n\nFrom: ${fromName}\nSubject: ${email.subject}\n\n${bodyText}\n\nPlease draft a professional HR response.`;
+  const msg = `Draft an HR reply to this email:\n\n${bodyText}`;
   const ta = document.getElementById('chatInput');
   if (ta) {
     ta.value = msg;
