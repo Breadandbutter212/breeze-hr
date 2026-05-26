@@ -5147,6 +5147,16 @@ async function loadEmailInbox() {
   if (!currentUser) return;
   const list = document.getElementById('emailList');
   const titleEl = document.getElementById('emailPanelTitle');
+
+  // Always re-check connection status so reconnected accounts are picked up immediately
+  try {
+    const st = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`).then(r => r.json());
+    window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
+    window._emailAccountId = st.gmailAccountId || st.outlookAccountId || null;
+    const btn = document.getElementById('emailChip');
+    if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
+  } catch(e) {}
+
   const provider = window._emailProvider;
   if (!provider) {
     list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--ink3);font-size:12px;">No email connected.<br><a onclick="showView('settings',null);toggleEmailPanel()" style="color:var(--accent);cursor:pointer;">Connect in Settings →</a></div>`;
@@ -5162,7 +5172,10 @@ async function loadEmailInbox() {
       body: JSON.stringify({ userId: currentUser.id, provider, connectedAccountId: window._emailAccountId, query: 'is:inbox', maxResults: 20 })
     });
     const data = await res.json();
-    if (!res.ok) { console.error('fetch-emails error:', JSON.stringify(data)); }
+    if (!res.ok) {
+      list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--red);font-size:12px;">Could not load emails.<br><span style="color:var(--ink3);font-size:11px;">${escapeHtml(data?.error||res.status)}</span></div>`;
+      return;
+    }
     _allEmails = parseEmailList(data, provider);
     renderEmailList(_allEmails);
   } catch(e) {
