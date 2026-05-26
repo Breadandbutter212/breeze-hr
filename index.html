@@ -5285,6 +5285,9 @@ function openEmailInGmail(messageId) {
 
 function selectEmailForChat(idx) {
   const email = _allEmails[idx]; if (!email) return;
+  // Store sender address so send modal can pre-fill To
+  window._replyToEmail = extractEmailAddress(email.from || '');
+  window._replyToSubject = email.subject ? 'Re: ' + email.subject.replace(/^Re:\s*/i, '') : '';
   toggleEmailPanel();
   const bodyText = (email.body || email.snippet || '').substring(0, 1200);
   const msg = `Draft an HR reply to this email:\n\n${bodyText}`;
@@ -5297,13 +5300,26 @@ function selectEmailForChat(idx) {
   }
 }
 
+function extractEmailAddress(from) {
+  // Parse "Name <email@domain.com>" or plain "email@domain.com"
+  const match = from.match(/<([^>]+)>/);
+  return match ? match[1].trim() : from.trim();
+}
+
 // ── EMAIL SEND & FETCH ──
 function openSendEmailModal() {
   if (!currentArtifact) return;
-  const body = document.getElementById('artifactDoc')?.innerText || currentArtifact.draft;
+  let body = document.getElementById('artifactDoc')?.innerText || currentArtifact.draft || '';
+  // Replace [HR name] / [Your name] / [Name] sign-off placeholders with the logged-in user's name
+  const hrName = currentProfile?.full_name || '';
+  if (hrName) {
+    body = body.replace(/\[HR name\]/gi, hrName).replace(/\[Your name\]/gi, hrName).replace(/\[HR Manager\]/gi, hrName);
+  }
   let modal = document.getElementById('sendEmailModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'sendEmailModal'; document.body.appendChild(modal); }
   const provider = window._emailProvider || 'gmail';
+  const prefilledTo = window._replyToEmail || '';
+  const prefilledSubject = window._replyToSubject || 'Letter from HR';
   const inputStyle = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   const labelStyle = 'font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -5315,7 +5331,7 @@ function openSendEmailModal() {
     <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
       <div style="position:relative;">
         <div style="${labelStyle}">To</div>
-        <input id="sendEmailTo" placeholder="employee@company.com" autocomplete="off" style="${inputStyle}" oninput="emailContactSearch(this,'sendEmailToDropdown',event)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <input id="sendEmailTo" value="${prefilledTo}" placeholder="employee@company.com" autocomplete="off" style="${inputStyle}" oninput="emailContactSearch(this,'sendEmailToDropdown',event)" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
         <div id="sendEmailToDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--shadow-md);z-index:100;max-height:180px;overflow-y:auto;"></div>
       </div>
       <div style="display:flex;gap:10px;">
@@ -5332,7 +5348,7 @@ function openSendEmailModal() {
       </div>
       <div>
         <div style="${labelStyle}">Subject</div>
-        <input id="sendEmailSubject" value="Letter from HR" style="${inputStyle}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+        <input id="sendEmailSubject" value="${prefilledSubject}" style="${inputStyle}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
       </div>
       <div>
         <div style="${labelStyle}">Body</div>
