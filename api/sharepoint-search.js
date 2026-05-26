@@ -42,7 +42,8 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'COMPOSIO_API_KEY not set' });
 
-  const entityId = 'user_' + userId.replace(/-/g, '');
+  const composioUserId = 'user_' + userId.replace(/-/g, '');
+  const entityId = composioUserId; // kept for clarity below
 
   // action=fetch: download full file content from SharePoint
   if (action === 'fetch' && filePath) {
@@ -52,8 +53,7 @@ export default async function handler(req, res) {
         method: 'POST',
         headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          entityId,
-          appName: 'sharepoint',
+          userId: composioUserId,
           input: { file_url: filePath, site_url: siteUrl || '' }
         })
       });
