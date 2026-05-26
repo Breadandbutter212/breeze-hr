@@ -4746,7 +4746,7 @@ EMPLOYEE-FACING DRAFT: What HR sends to the employee after verifying facts.
 - Use [PLACEHOLDER] in square brackets for unknown specifics - HR fills them in before sending.
 - BANNED phrases: "I'll check and get back to you", "I'll look into this", "I'll confirm shortly", "I'll find out", "I'll need to review your contract", "your contract may contain". If you need a placeholder, use [PLACEHOLDER] and stop there - do NOT also promise to follow up.
 - CONTEXT-FIRST: If the HR user has already provided specific facts in this conversation (e.g. "he has 28 days", "she's been here 3 years", "remaining balance is 12 days"), use those facts directly in the draft - do NOT replace them with placeholders.
-- SINGLE TIER RULE: When entitlements have multiple tiers (e.g. 28/30/33 days by service length), NEVER list all tiers or describe the tier structure in the employee draft - not even as background context. Pick one: the specific applicable tier if known, or a single [X days] placeholder if not. Example of WRONG draft: "You receive 28 days, increasing to 30 after 5 years and 33 after 10." Example of RIGHT draft: "You receive [X days] annual leave per year." The tier breakdown belongs in HR Actions only, never in the employee-facing text.
+- SINGLE TIER RULE: When entitlements have multiple tiers (e.g. 28/30/33 days by service length), use the specific applicable tier if known. If the service length is unknown, you may show [28/30/33 days] so HR can delete whichever does not apply - do NOT write out the tier thresholds as narrative (e.g. "28 days increasing to 30 after 5 years"). The tier thresholds belong in HR Actions only.
 
 HR ACTIONS (not seen by employee): eligibility checks, statutory calculations, what to verify in HRIS, who to escalate to.
 
@@ -4804,16 +4804,17 @@ function formatArtifactContent(text) {
 let currentArtifact = null;
 
 function parseArtifact(text) {
-  // Look for 📧 DRAFT FOR EMPLOYEE: marker
-  const markerMatch = text.match(/📧\s*DRAFT FOR EMPLOYEE:?\s*\n/i);
+  // Match 📧 DRAFT FOR EMPLOYEE: in various formats the AI might use
+  const markerMatch = text.match(/\*{0,2}📧\s*(?:DRAFT\s+FOR\s+EMPLOYEE|EMPLOYEE\s+DRAFT|DRAFT\s+EMAIL)[^:\n]*:?\*{0,2}\s*\n/i);
   if (!markerMatch) return null;
-  const markerEnd = text.indexOf(markerMatch[0]) + markerMatch[0].length;
+  const markerIdx = text.indexOf(markerMatch[0]);
+  const markerEnd = markerIdx + markerMatch[0].length;
   const afterMarker = text.substring(markerEnd);
-  // Split off HR actions if present
-  const hrSplit = afterMarker.match(/\n---+\n|\n\*\*HR Actions?\*\*|\nHR Actions?:/i);
-  const draft = hrSplit ? afterMarker.substring(0, afterMarker.indexOf(hrSplit[0])).trim() : afterMarker.trim();
-  const hrSection = hrSplit ? afterMarker.substring(afterMarker.indexOf(hrSplit[0])).trim() : '';
-  const advice = text.substring(0, text.indexOf(markerMatch[0])).trim();
+  // Split off HR actions / separator
+  const hrSplit = afterMarker.match(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i);
+  const draft = hrSplit ? afterMarker.substring(0, afterMarker.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i)).trim() : afterMarker.trim();
+  const hrSection = hrSplit ? afterMarker.substring(afterMarker.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i)).trim() : '';
+  const advice = text.substring(0, markerIdx).trim();
   return { type: 'Draft', draft, advice: [advice, hrSection].filter(Boolean).join('\n\n') };
 }
 
@@ -5074,16 +5075,18 @@ function renderChatHistory() {
       <div class="chat-bubble user-bubble">${escapeHtml(m.content).replace(/\n/g,'<br>')}</div>
     </div>`;
     const artifact = parseArtifact(m.content);
+    if (artifact) window._chatArtifacts = window._chatArtifacts || {};
+    if (artifact) window._chatArtifacts[i] = artifact;
     const bubbleText = artifact ? (artifact.advice || 'Draft generated - see panel on the right.') : m.content;
     // Auto-show artifact for latest AI message
-    if (artifact && i === chatMessages.length - 1) setTimeout(() => showArtifact(artifact, i), 50);
+    if (artifact && i === chatMessages.length - 1) setTimeout(() => showArtifact(window._chatArtifacts[i], i), 50);
     return `<div class="chat-msg">
       <div class="chat-av ai-av">◈</div>
       <div style="flex:1;min-width:0;">
         <div class="chat-bubble ai-bubble" id="bubble-${i}" contenteditable="true" spellcheck="true"
           style="outline:none;cursor:text;" title="Click to edit before copying"
           oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent?escapeHtml(m._editedContent).replace(/\n/g,'<br>'):bubbleText)}</div>
-        ${artifact ? `<div style="margin:7px 0 4px 44px;"><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick='showArtifact(${JSON.stringify(artifact).replace(/'/g,"&#39;")},${i})'>📄 View draft</button></div>` : ''}
+        ${artifact ? `<div style="margin:7px 0 4px 44px;"><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 View draft</button></div>` : ''}
         <div class="chat-actions">
           <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
           <button class="chat-action-btn${m._ratingUp?' rated-up':''}" id="rate-up-${i}" onclick="rateChatMsg(${i},1)">👍</button>
@@ -6020,6 +6023,7 @@ async function newChat() {
   currentChatId = null;
   chatMessages = [];
   chatSystemPrompt = null;
+  window._chatArtifacts = {};
   closeArtifact();
   renderChatHistory();
   showView('chat', document.getElementById('nav-chat'));
