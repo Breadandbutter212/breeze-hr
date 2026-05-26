@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const BASE_V2 = 'https://backend.composio.dev/api/v3';
+const BASE = 'https://backend.composio.dev/api/v3.1';
 
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -14,8 +14,6 @@ function extractTextFromDocx(base64) {
   try {
     const buf = Buffer.from(base64, 'base64');
     const str = buf.toString('latin1');
-    const xmlStart = str.indexOf('<?xml');
-    if (xmlStart === -1) return null;
     const text = str
       .replace(/<w:t[^>]*>([^<]+)<\/w:t>/g, ' $1 ')
       .replace(/<[^>]+>/g, ' ')
@@ -42,36 +40,29 @@ export default async function handler(req, res) {
   const apiKey = process.env.COMPOSIO_API_KEY;
   if (!apiKey) return res.status(500).json({ error: 'COMPOSIO_API_KEY not set' });
 
-  const composioUserId = 'user_' + userId.replace(/-/g, '');
-  const entityId = composioUserId; // kept for clarity below
+  const user_id = 'user_' + userId.replace(/-/g, '');
 
   // action=fetch: download full file content from SharePoint
   if (action === 'fetch' && filePath) {
     try {
-      // Try Composio's file download action with the file URL/path
-      const r = await fetch(`${BASE_V2}/actions/SHARE_POINT_GET_FILE_CONTENT/execute`, {
+      const r = await fetch(`${BASE}/tools/execute/SHARE_POINT_GET_FILE_CONTENT`, {
         method: 'POST',
         headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          userId: composioUserId,
-          input: { file_url: filePath, site_url: siteUrl || '' }
+          user_id,
+          arguments: { file_url: filePath, site_url: siteUrl || '' }
         })
       });
       if (!r.ok) throw new Error(`Composio returned ${r.status}`);
       const data = await r.json();
-
-      // Try to extract text from response - Composio may return base64 content or raw text
       const content = data?.data?.content || data?.data?.file_content || data?.data?.text || data?.response_data?.content || '';
       if (!content) return res.status(200).json({ text: null });
-
-      // If it looks like base64 encoded docx, extract text from XML
       let text = content;
       if (/^[A-Za-z0-9+/]{100,}={0,2}$/.test(content.substring(0, 200))) {
         text = extractTextFromDocx(content) || content.substring(0, 6000);
       } else {
         text = String(content).substring(0, 6000);
       }
-
       return res.status(200).json({ text });
     } catch(e) {
       return res.status(200).json({ text: null, error: e.message });
@@ -82,20 +73,18 @@ export default async function handler(req, res) {
   if (!query) return res.status(400).json({ error: 'Missing query' });
 
   try {
-    const r = await fetch(`${BASE_V2}/actions/SHARE_POINT_SEARCH_QUERY/execute`, {
+    const r = await fetch(`${BASE}/tools/execute/SHARE_POINT_SEARCH_QUERY`, {
       method: 'POST',
       headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        entityId,
-        appName: 'sharepoint',
-        input: {
+        user_id,
+        arguments: {
           query_text: query,
           row_limit: 10,
           select_properties: ['Title', 'Path', 'Author', 'LastModifiedTime', 'FileExtension', 'HitHighlightedSummary', 'SPSiteURL', 'ParentLink']
         }
       })
     });
-
     const raw = await r.text();
     let data;
     try { data = JSON.parse(raw); } catch(e) { data = { raw }; }

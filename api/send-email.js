@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 
-const BASE = 'https://backend.composio.dev/api/v3';
+const BASE = 'https://backend.composio.dev/api/v3.1';
 
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
@@ -31,12 +31,12 @@ export default async function handler(req, res) {
   const action = provider === 'outlook' ? 'MICROSOFT_OUTLOOK_SEND_EMAIL' : 'GMAIL_SEND_EMAIL';
 
   try {
-    const r = await fetch(`${BASE}/actions/${action}/execute`, {
+    const r = await fetch(`${BASE}/tools/execute/${action}`, {
       method: 'POST',
       headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        userId: user_id,
-        input: { to, subject: subject || 'Letter from HR', messageBody: body }
+        user_id,
+        arguments: { to, subject: subject || 'Letter from HR', messageBody: body }
       })
     });
 
