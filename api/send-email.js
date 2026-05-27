@@ -28,19 +28,18 @@ export default async function handler(req, res) {
   if (!apiKey) return res.status(500).json({ error: 'COMPOSIO_API_KEY not set' });
 
   const user_id = 'user_' + userId.replace(/-/g, '');
-  const action = provider === 'outlook' ? 'MICROSOFT_OUTLOOK_SEND_EMAIL' : 'GMAIL_SEND_EMAIL';
 
-  const args = provider === 'outlook'
-    ? { to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) }
-    : {
-        recipient_email: to,
-        subject: subject || 'Letter from HR',
-        body,
-        ...(cc ? { cc } : {}),
-        ...(bcc ? { bcc } : {}),
-        ...(threadId ? { thread_id: threadId } : {}),
-        ...(inReplyTo ? { message_id: inReplyTo } : {})
-      };
+  // Use dedicated reply action when threading into an existing Gmail thread
+  const isGmailReply = provider !== 'outlook' && !!threadId;
+  const action = provider === 'outlook'
+    ? 'MICROSOFT_OUTLOOK_SEND_EMAIL'
+    : isGmailReply ? 'GMAIL_REPLY_TO_THREAD' : 'GMAIL_SEND_EMAIL';
+
+  const args = isGmailReply
+    ? { thread_id: threadId, message_body: body, recipient_email: to, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) }
+    : provider === 'outlook'
+      ? { to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) }
+      : { recipient_email: to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) };
 
   try {
     const r = await fetch(`${BASE}/tools/execute/${action}`, {

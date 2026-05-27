@@ -5328,6 +5328,7 @@ function openSendEmailModal() {
   const provider = window._emailProvider || 'gmail';
   const prefilledTo = window._replyToEmail || '';
   const prefilledSubject = window._replyToSubject || 'Letter from HR';
+  const isReply = !!(window._replyToThreadId);
   const inputStyle = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   const labelStyle = 'font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -5354,10 +5355,10 @@ function openSendEmailModal() {
           <div id="sendEmailBccDropdown" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--shadow-md);z-index:100;max-height:180px;overflow-y:auto;"></div>
         </div>
       </div>
-      <div>
+      ${isReply ? `<div style="font-size:11px;color:var(--ink3);padding:2px 0;">Replying in thread: <strong>${prefilledSubject}</strong></div>` : `<div>
         <div style="${labelStyle}">Subject</div>
         <input id="sendEmailSubject" value="${prefilledSubject}" style="${inputStyle}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-      </div>
+      </div>`}
       <div>
         <div style="${labelStyle}">Body</div>
         <textarea id="sendEmailBody" style="width:100%;min-height:160px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;resize:vertical;line-height:1.7;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${body}</textarea>
