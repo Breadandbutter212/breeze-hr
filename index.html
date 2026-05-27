@@ -5315,8 +5315,10 @@ function extractEmailAddress(from) {
 // ── EMAIL SEND & FETCH ──
 function openSendEmailModal() {
   if (!currentArtifact) return;
-  let body = document.getElementById('artifactDoc')?.innerText || currentArtifact.draft || '';
-  // Replace [HR name] / [Your name] / [Name] sign-off placeholders with the logged-in user's name
+  let body = currentArtifact.draft || document.getElementById('artifactDoc')?.innerText || '';
+  // Collapse soft line breaks (single \n mid-paragraph) into spaces - prevents broken sentences in Gmail
+  body = body.split(/\n{2,}/).map(para => para.replace(/\n/g, ' ').trim()).filter(Boolean).join('\n\n');
+  // Replace sign-off placeholders with logged-in user's name
   const hrName = currentProfile?.full_name || '';
   if (hrName) {
     body = body.replace(/\[HR name\]/gi, hrName).replace(/\[Your name\]/gi, hrName).replace(/\[HR Manager\]/gi, hrName);
