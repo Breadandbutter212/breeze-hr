@@ -5229,8 +5229,9 @@ function parseEmailList(apiData, provider) {
     const dateObj = rawDate ? new Date(isNaN(rawDate) ? rawDate : parseInt(rawDate)) : null;
     const date    = dateObj && !isNaN(dateObj.getTime()) ? dateObj.toISOString() : '';
 
-    const id      = m.messageId || m.id || '';
-    return { id, from, subject, date, snippet, body };
+    const id       = m.messageId || m.id || '';
+    const threadId = m.threadId || m.thread_id || '';
+    return { id, threadId, from, subject, date, snippet, body };
   }).filter(m => m.id);
 }
 
@@ -5288,9 +5289,11 @@ function openEmailInGmail(messageId) {
 
 function selectEmailForChat(idx) {
   const email = _allEmails[idx]; if (!email) return;
-  // Store sender address so send modal can pre-fill To
+  // Store sender/thread so send modal can pre-fill To and reply in-thread
   window._replyToEmail = extractEmailAddress(email.from || '');
   window._replyToSubject = email.subject ? 'Re: ' + email.subject.replace(/^Re:\s*/i, '') : '';
+  window._replyToThreadId = email.threadId || '';
+  window._replyToMessageId = email.id || '';
   toggleEmailPanel();
   const bodyText = (email.body || email.snippet || '').substring(0, 1200);
   const msg = `Draft an HR reply to this email:\n\n${bodyText}`;
@@ -5422,6 +5425,8 @@ async function submitSendEmail(provider) {
     const payload = { userId: currentUser.id, to, subject, body, provider };
     if (cc) payload.cc = cc;
     if (bcc) payload.bcc = bcc;
+    if (window._replyToThreadId) payload.threadId = window._replyToThreadId;
+    if (window._replyToMessageId) payload.inReplyTo = window._replyToMessageId;
     const res = await fetch('/api/send-email', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },

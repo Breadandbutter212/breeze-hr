@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   const user = await verifyAuth(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  const { userId, to, cc, bcc, subject, body, provider = 'gmail' } = req.body;
+  const { userId, to, cc, bcc, subject, body, provider = 'gmail', threadId, inReplyTo } = req.body;
   if (!userId || !to || !body) return res.status(400).json({ error: 'Missing required fields' });
   if (userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
 
@@ -32,7 +32,15 @@ export default async function handler(req, res) {
 
   const args = provider === 'outlook'
     ? { to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) }
-    : { recipient_email: to, subject: subject || 'Letter from HR', body, ...(cc ? { cc } : {}), ...(bcc ? { bcc } : {}) };
+    : {
+        recipient_email: to,
+        subject: subject || 'Letter from HR',
+        body,
+        ...(cc ? { cc } : {}),
+        ...(bcc ? { bcc } : {}),
+        ...(threadId ? { thread_id: threadId } : {}),
+        ...(inReplyTo ? { message_id: inReplyTo } : {})
+      };
 
   try {
     const r = await fetch(`${BASE}/tools/execute/${action}`, {
