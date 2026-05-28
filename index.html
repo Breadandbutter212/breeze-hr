@@ -501,11 +501,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="nav-label">Workspace</div>
     <div class="ni active" id="nav-chat" onclick="showView('chat',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
-      Chat with Breeze HR
+      Chat
     </div>
     <div class="ni" id="nav-chats" onclick="showView('chats',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="9" y1="10" x2="15" y2="10"/><line x1="9" y1="14" x2="13" y2="14"/></svg>
-      Chats
+      History
     </div>
 
     <div class="nav-label">Manage</div>
@@ -1266,9 +1266,8 @@ async function onSignedIn(user) {
     if (avatar) avatar.textContent = initials;
     const firstName = (profile.full_name || user.email).split(' ')[0];
     const hour = new Date().getHours();
-    const timeOfDay = hour < 12 ? 'Good morning' : hour < 17 ? 'Good afternoon' : 'Good evening';
     const greetEl = document.getElementById('appGreeting');
-    if (greetEl) greetEl.textContent = `${timeOfDay}, ${firstName}`;
+    if (greetEl) greetEl.textContent = firstName;
   }
   chatSystemPrompt = null;
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
@@ -5115,8 +5114,8 @@ function renderChatHistory() {
   if (!chatMessages.length && !chatLoading) {
     const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
-      <div class="chat-welcome-icon">≋</div>
-      <div class="chat-welcome-title">What can I help with${firstName ? ', ' + firstName : ''}?</div>
+      <div class="chat-welcome-title">Chat with Breeze HR${firstName ? ', ' + firstName : ''}</div>
+      <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or request a letter.</div>
     </div>`;
     return;
   }
