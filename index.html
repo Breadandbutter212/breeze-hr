@@ -1267,7 +1267,7 @@ async function onSignedIn(user) {
     const firstName = (profile.full_name || user.email).split(' ')[0];
     const hour = new Date().getHours();
     const greetEl = document.getElementById('appGreeting');
-    if (greetEl) greetEl.textContent = firstName;
+    if (greetEl) greetEl.textContent = '';
   }
   chatSystemPrompt = null;
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
@@ -5114,7 +5114,8 @@ function renderChatHistory() {
   if (!chatMessages.length && !chatLoading) {
     const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
-      <div class="chat-welcome-title">Chat with Breeze HR${firstName ? ', ' + firstName : ''}</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink3);letter-spacing:0.04em;margin-bottom:8px;">Breeze HR</div>
+      <div class="chat-welcome-title">What can I help with${firstName ? ', ' + firstName : ''}?</div>
       <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or request a letter.</div>
     </div>`;
     return;
