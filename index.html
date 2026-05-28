@@ -5113,10 +5113,10 @@ function renderChatHistory() {
   const el = document.getElementById('chatHistory');
   if (!el) return;
   if (!chatMessages.length && !chatLoading) {
+    const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
       <div class="chat-welcome-icon">≋</div>
-      <div class="chat-welcome-title">Chat with Breeze HR</div>
-      <div class="chat-welcome-sub">Ask policy questions, paste an email for a draft response, request a letter, or get ACAS guidance - your company policies are automatically loaded.</div>
+      <div class="chat-welcome-title">What can I help with${firstName ? ', ' + firstName : ''}?</div>
     </div>`;
     return;
   }
