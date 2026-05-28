@@ -1299,7 +1299,7 @@ async function onSignedIn(user) {
 
 function showOnboardingTour() {
   const steps = [
-    { icon:'◈', title:'It learns how your team works', desc:'Breeze HR adapts to your business over time. It learns from every conversation, picks up your writing style and tone, and gets sharper the more your team uses it - so responses feel like they came from someone who already knows your company.', nav:'chat' },
+    { icon:'≋', title:'It learns how your team works', desc:'Breeze HR adapts to your business over time. It learns from every conversation, picks up your writing style and tone, and gets sharper the more your team uses it - so responses feel like they came from someone who already knows your company.', nav:'chat' },
     { icon:'🗂️', title:'Connected to your documents', desc:'Connect SharePoint and Breeze HR reads your actual files - job descriptions, policies, contracts, handbooks. Ask it to create a new JD and it finds your existing ones first, then matches your format and structure automatically.', nav:'chat' },
     { icon:'📄', title:'Contracts, letters and documents', desc:'Draft offer letters, contracts, disciplinary letters, references and more in seconds. Answer a few questions and the document builds live - formatted, ready to download as a Word file and matched to how your company writes.', nav:'docs' },
     { icon:'📋', title:'Knows your business, not just the rules', desc:'Upload your HR policies, handbook and templates. Breeze HR uses them first when answering questions - so advice reflects your actual policies, your tone and your way of doing things, not generic guidance.', nav:'manage' },
@@ -3412,7 +3412,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">◈</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">≋</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
@@ -3457,7 +3457,7 @@ function submitQ() {
 function addGMsg(role,text) {
   const c=document.getElementById('gcMsgs');if(!c)return;
   const d=document.createElement('div');d.className='gm'+(role==='u'?' u':'');
-  d.innerHTML=`<div class="gm-av ${role}">${role==='ai'?'◈':'HR'}</div><div class="gm-b ${role}">${text}</div>`;
+  d.innerHTML=`<div class="gm-av ${role}">${role==='ai'?'≋':'HR'}</div><div class="gm-b ${role}">${text}</div>`;
   c.appendChild(d);c.scrollTop=c.scrollHeight;
 }
 
@@ -5114,7 +5114,7 @@ function renderChatHistory() {
   if (!el) return;
   if (!chatMessages.length && !chatLoading) {
     el.innerHTML = `<div class="chat-welcome">
-      <div class="chat-welcome-icon">◈</div>
+      <div class="chat-welcome-icon">≋</div>
       <div class="chat-welcome-title">Chat with Breeze HR</div>
       <div class="chat-welcome-sub">Ask policy questions, paste an email for a draft response, request a letter, or get ACAS guidance - your company policies are automatically loaded.</div>
     </div>`;
@@ -5132,7 +5132,7 @@ function renderChatHistory() {
     // Auto-show artifact for latest AI message
     if (artifact && i === chatMessages.length - 1) setTimeout(() => showArtifact(window._chatArtifacts[i], i), 50);
     return `<div class="chat-msg">
-      <div class="chat-av ai-av">◈</div>
+      <div class="chat-av ai-av">≋</div>
       <div style="flex:1;min-width:0;">
         <div class="chat-bubble ai-bubble" id="bubble-${i}" contenteditable="true" spellcheck="true"
           style="outline:none;cursor:text;" title="Click to edit before copying"
@@ -5150,7 +5150,7 @@ function renderChatHistory() {
   if (chatLoading) {
     const labels = ['Thinking...','Checking your policies...','Applying UK employment law...','Drafting response...','Reviewing ACAS guidance...'];
     const label = window._spSearchingForChat ? 'Searching your SharePoint...' : labels[Math.floor(Date.now() / 2000) % labels.length];
-    html += `<div class="chat-msg"><div class="chat-av ai-av">◈</div><div class="chat-bubble ai-bubble"><div class="thinking-block"><div class="thinking-label">${label}</div><div class="thinking-bar"><div class="thinking-bar-fill"></div></div></div></div></div>`;
+    html += `<div class="chat-msg"><div class="chat-av ai-av">≋</div><div class="chat-bubble ai-bubble"><div class="thinking-block"><div class="thinking-label">${label}</div><div class="thinking-bar"><div class="thinking-bar-fill"></div></div></div></div></div>`;
   }
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
