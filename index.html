@@ -1158,6 +1158,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <input id="emailSearch" placeholder="Search..." oninput="filterEmails(this.value)"
       style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 9px;font-size:12px;font-family:inherit;outline:none;width:110px;background:var(--surface2);"
       onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    <button onclick="loadEmailInbox()" title="Refresh" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--ink3);line-height:1;padding:0 4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--ink3)'">↻</button>
     <button onclick="toggleEmailPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink3);line-height:1;padding:0 2px;">×</button>
   </div>
   <div class="email-list" id="emailList">
@@ -5261,7 +5262,7 @@ function renderChatHistory() {
     </div>`;
   }).join('');
   if (chatLoading) {
-    const labels = ['Thinking...','Checking your policies...','Applying UK employment law...','Drafting response...','Reviewing ACAS guidance...'];
+    const labels = ['Thinking...','Thinking...','Working on it...','Thinking...'];
     const label = window._spSearchingForChat ? 'Searching your SharePoint...' : labels[Math.floor(Date.now() / 2000) % labels.length];
     html += `<div class="chat-msg"><div class="chat-av ai-av">Breeze</div><div class="chat-bubble ai-bubble"><div class="thinking-block"><div class="thinking-label">${label}</div><div class="thinking-bar"><div class="thinking-bar-fill"></div></div></div></div></div>`;
   }
