@@ -6322,6 +6322,40 @@ function diffLines(linesA, linesB) {
   return merged;
 }
 
+function charDiffHtml(oldStr, newStr) {
+  // LCS on characters to find what actually changed in newStr
+  const a = oldStr, b = newStr;
+  const m = a.length, n = b.length;
+  // Build LCS table (capped to avoid perf issues on very long strings)
+  if (m > 300 || n > 300) return escapeHtml(newStr);
+  const dp = Array.from({length: m + 1}, () => new Uint16Array(n + 1));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = a[i-1] === b[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+  // Traceback to classify each char in newStr as matched or inserted
+  const matched = new Uint8Array(n); // 1 = matched to a char in old
+  let i = m, j = n;
+  while (i > 0 && j > 0) {
+    if (a[i-1] === b[j-1]) { matched[j-1] = 1; i--; j--; }
+    else if (dp[i-1][j] >= dp[i][j-1]) i--;
+    else j--;
+  }
+  // Build HTML: group consecutive matched/unmatched runs
+  let html = '', inUnderline = false;
+  for (let k = 0; k < n; k++) {
+    const ch = escapeHtml(b[k]);
+    if (matched[k]) {
+      if (inUnderline) { html += '</u>'; inUnderline = false; }
+      html += ch;
+    } else {
+      if (!inUnderline) { html += '<u>'; inUnderline = true; }
+      html += ch;
+    }
+  }
+  if (inUnderline) html += '</u>';
+  return html;
+}
+
 async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
   const results = document.getElementById('compareResults');
   if (!diffs.length) {
@@ -6344,7 +6378,7 @@ async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
   const rows = diffs.map(d => {
     const badge = `<span class="diff-badge ${d.type}">${d.type}</span>`;
     const oldVal = d.old ? `<span class="diff-old">${escapeHtml(d.old)}</span>` : '<span style="color:var(--ink3);font-size:11px;">-</span>';
-    const newVal = d.newVal ? `<span class="diff-new">${escapeHtml(d.newVal)}</span>` : '<span style="color:var(--ink3);font-size:11px;">-</span>';
+    const newVal = d.newVal ? `<span class="diff-new">${d.type === 'changed' && d.old ? charDiffHtml(d.old, d.newVal) : escapeHtml(d.newVal)}</span>` : '<span style="color:var(--ink3);font-size:11px;">-</span>';
     return `<tr class="diff-${d.type}">
       ${isExcel ? `<td style="color:var(--ink3);font-size:11px;">${escapeHtml(d.sheet)}</td>` : ''}
       <td style="font-family:monospace;font-size:11px;white-space:nowrap;">${escapeHtml(d.cell)}</td>
