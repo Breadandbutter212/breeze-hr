@@ -2759,9 +2759,15 @@ function startRecording() {
   recRecognition.onresult = e => {
     interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) recFinalTranscript += e.results[i][0].transcript + ' ';
-      else interim += e.results[i][0].transcript;
+      if (e.results[i].isFinal) {
+        recFinalTranscript += e.results[i][0].transcript + ' ';
+        interim = '';
+      } else {
+        interim += e.results[i][0].transcript;
+      }
     }
+    // Store interim in closure so stopRecording can grab it
+    recRecognition._lastInterim = interim;
     recCheckReady();
   };
   recRecognition.onerror = e => { if (e.error !== 'no-speech') stopRecording(); };
@@ -2785,7 +2791,9 @@ function startRecording() {
 
 function stopRecording() {
   if (recRecognition) {
-    // Capture any last interim result before stopping
+    // Grab any pending interim text (Chrome often doesn't flush to final on stop)
+    const pendingInterim = recRecognition._lastInterim || '';
+    if (pendingInterim.trim()) recFinalTranscript += pendingInterim + ' ';
     recRecognition.onresult = e => {
       for (let i = e.resultIndex; i < e.results.length; i++) {
         recFinalTranscript += e.results[i][0].transcript + ' ';
@@ -2803,12 +2811,12 @@ function stopRecording() {
     btn.style.background = '#6B7280';
     btn.style.borderColor = '#6B7280';
   }
-  // Small delay to catch any final result events that fire right after stop
+  // Delay to catch any final result events that fire right after stop (Chrome needs longer)
   setTimeout(() => {
     const status = document.getElementById('recStatus');
     if (status) status.textContent = recFinalTranscript.trim() ? 'Recording complete - ready to write up' : 'Recording stopped';
     recCheckReady();
-  }, 200);
+  }, 600);
 }
 
 function recCheckReady() {
