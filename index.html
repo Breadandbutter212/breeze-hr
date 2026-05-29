@@ -1995,6 +1995,30 @@ async function handlePresUpload(event) {
     presUploadedText = text.substring(0, 14000);
     presUploadedSlideCount = slideFiles.length;
     if (keepLabel) keepLabel.style.display = 'flex';
+
+    // Populate presSlides from extracted content so preview shows actual deck immediately
+    presSlides = slideFiles.map((f, i) => {
+      const xml = zip.files[f].asText();
+      const paras = extractParas(xml);
+      const relsPath2 = f.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+      if (zip.files[relsPath2]) {
+        const relsXml2 = zip.files[relsPath2].asText();
+        [...relsXml2.matchAll(/Type="[^"]*diagramData[^"]*"\s+Target="([^"]+)"/g)].forEach(rel => {
+          const dp = resolvePptPath(f, rel[1]);
+          if (zip.files[dp]) paras.push(...extractParas(zip.files[dp].asText()));
+        });
+      }
+      const title = paras[0] || `Slide ${i + 1}`;
+      const bullets = paras.slice(1);
+      // Detect slide type from XML
+      const isTitleSlide = xml.includes('type="ctrTitle"');
+      const isSectionSlide = !isTitleSlide && bullets.length === 0 && xml.includes('type="title"');
+      const type = isTitleSlide ? 'title' : isSectionSlide ? 'section' : 'content';
+      return { id: i + 1, type, title, bullets };
+    });
+    if (presSlides.length) presTitle = presSlides[0].title || 'Presentation';
+    renderSlides();
+    document.getElementById('pres-empty-state').style.display = 'none';
   } catch(e) { presUploadedText = ''; if (lbl) lbl.textContent = 'Could not read file'; }
 }
 
