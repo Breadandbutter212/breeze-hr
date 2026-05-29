@@ -231,6 +231,28 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
    MANAGE VIEWS
 ══════════════════════ */
 .manage-view { flex-direction: column; background: var(--bg); }
+/* ── COMPARE ── */
+.compare-view { flex-direction: column; }
+.compare-upload-row { display: flex; gap: 16px; padding: 20px; }
+.compare-drop { flex: 1; border: 2px dashed var(--border); border-radius: var(--r-lg); padding: 28px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.15s; background: var(--surface); }
+.compare-drop:hover, .compare-drop.drag-over { border-color: var(--accent); background: var(--accent-bg); }
+.compare-drop-label { font-size: 12px; font-weight: 600; color: var(--ink2); }
+.compare-drop-sub { font-size: 11px; color: var(--ink3); }
+.compare-drop-file { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+.compare-results { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
+.diff-table { width: 100%; border-collapse: collapse; font-size: 12px; }
+.diff-table th { text-align: left; padding: 8px 12px; background: var(--surface); border-bottom: 2px solid var(--border); font-size: 11px; font-weight: 600; color: var(--ink2); position: sticky; top: 0; }
+.diff-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+.diff-table tr.diff-changed td:first-child { border-left: 3px solid #F59E0B; }
+.diff-table tr.diff-added td:first-child { border-left: 3px solid #10B981; }
+.diff-table tr.diff-removed td:first-child { border-left: 3px solid #EF4444; }
+.diff-old { color: #DC2626; background: #FEF2F2; padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 11px; }
+.diff-new { color: #059669; background: #ECFDF5; padding: 1px 4px; border-radius: 3px; font-family: monospace; font-size: 11px; }
+.diff-badge { display: inline-block; font-size: 9px; font-weight: 700; padding: 1px 6px; border-radius: 8px; }
+.diff-badge.changed { background: #FEF3C7; color: #92400E; }
+.diff-badge.added { background: #D1FAE5; color: #065F46; }
+.diff-badge.removed { background: #FEE2E2; color: #991B1B; }
+.compare-summary { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-radius: var(--r-lg); padding: 14px 16px; margin-bottom: 16px; font-size: 13px; line-height: 1.6; color: var(--ink1); }
 .manage-topbar { padding: 14px 20px 12px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
 .manage-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
 .manage-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
@@ -527,6 +549,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="ni" onclick="showView('analytics',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Analytics
+    </div>
+    <div class="ni" onclick="showView('compare',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
+      Compare
     </div>
     <div class="nav-label">Admin</div>
     <div class="ni" onclick="showView('settings',this)">
@@ -994,6 +1020,34 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
     </div>
   </div>
+</div>
+
+<!-- COMPARE -->
+<div class="view compare-view" id="view-compare">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Compare documents</div><div class="manage-sub">Upload two Excel or Word files to see exactly what changed.</div></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn btn-secondary btn-sm" onclick="resetCompare()">↺ Reset</button>
+      <button class="btn btn-primary btn-sm" id="compareBtn" onclick="runCompare()" style="display:none;">Compare</button>
+    </div>
+  </div>
+  <div class="compare-upload-row">
+    <div class="compare-drop" id="dropA" onclick="document.getElementById('fileA').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCompareDrop(event,'A')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ink3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div class="compare-drop-label">Original file</div>
+      <div class="compare-drop-sub">.xlsx, .xls, .docx, .doc</div>
+      <div class="compare-drop-file" id="fileAName"></div>
+      <input type="file" id="fileA" accept=".xlsx,.xls,.docx,.doc" style="display:none" onchange="handleCompareFile(this,'A')">
+    </div>
+    <div class="compare-drop" id="dropB" onclick="document.getElementById('fileB').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCompareDrop(event,'B')">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ink3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      <div class="compare-drop-label">Updated file</div>
+      <div class="compare-drop-sub">.xlsx, .xls, .docx, .doc</div>
+      <div class="compare-drop-file" id="fileBName"></div>
+      <input type="file" id="fileB" accept=".xlsx,.xls,.docx,.doc" style="display:none" onchange="handleCompareFile(this,'B')">
+    </div>
+  </div>
+  <div class="compare-results" id="compareResults"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -4306,6 +4360,7 @@ function showView(v,el) {
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
+  if(v==='compare') { /* no init needed */ }
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
 }
@@ -6126,6 +6181,210 @@ async function saveCurrentChat() {
       currentChatId = data.id;
       chatList.unshift({ id: data.id, title, created_at: data.created_at });
     }
+  }
+}
+
+// ── DOCUMENT COMPARE ──
+let _compareFiles = { A: null, B: null };
+
+function handleCompareDrop(e, side) {
+  e.preventDefault();
+  document.getElementById(`drop${side}`).classList.remove('drag-over');
+  const file = e.dataTransfer.files[0];
+  if (file) loadCompareFile(file, side);
+}
+
+function handleCompareFile(input, side) {
+  const file = input.files[0];
+  if (file) loadCompareFile(file, side);
+}
+
+function loadCompareFile(file, side) {
+  _compareFiles[side] = file;
+  document.getElementById(`file${side}Name`).textContent = file.name;
+  document.getElementById(`drop${side}`).style.borderColor = 'var(--accent)';
+  if (_compareFiles.A && _compareFiles.B) document.getElementById('compareBtn').style.display = '';
+}
+
+function resetCompare() {
+  _compareFiles = { A: null, B: null };
+  ['A','B'].forEach(s => {
+    document.getElementById(`file${s}Name`).textContent = '';
+    document.getElementById(`drop${s}`).style.borderColor = '';
+    document.getElementById(`file${s}`).value = '';
+  });
+  document.getElementById('compareBtn').style.display = 'none';
+  document.getElementById('compareResults').innerHTML = '';
+}
+
+async function runCompare() {
+  const a = _compareFiles.A, b = _compareFiles.B;
+  if (!a || !b) return;
+  const results = document.getElementById('compareResults');
+  results.innerHTML = '<div style="padding:20px;color:var(--ink3);font-size:13px;">Comparing...</div>';
+  const extA = a.name.split('.').pop().toLowerCase();
+  const extB = b.name.split('.').pop().toLowerCase();
+  const isExcel = ['xlsx','xls'].includes(extA) && ['xlsx','xls'].includes(extB);
+  const isWord  = ['docx','doc'].includes(extA) && ['docx','doc'].includes(extB);
+  if (!isExcel && !isWord) {
+    results.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;">Both files must be the same type (both Excel or both Word).</div>';
+    return;
+  }
+  try {
+    const diffs = isExcel ? await compareExcel(a, b) : await compareWord(a, b);
+    renderCompareDiffs(diffs, isExcel, a.name, b.name);
+  } catch(e) {
+    results.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Error: ${e.message}</div>`;
+  }
+}
+
+async function compareExcel(fileA, fileB) {
+  const readWb = f => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => { try { res(XLSX.read(e.target.result, { type: 'array', cellDates: true })); } catch(err) { rej(err); } };
+    reader.onerror = rej;
+    reader.readAsArrayBuffer(f);
+  });
+  const [wbA, wbB] = await Promise.all([readWb(fileA), readWb(fileB)]);
+  const diffs = [];
+  const allSheets = new Set([...wbA.SheetNames, ...wbB.SheetNames]);
+
+  for (const sheet of allSheets) {
+    const wsA = wbA.Sheets[sheet];
+    const wsB = wbB.Sheets[sheet];
+    if (!wsA && wsB) { diffs.push({ sheet, cell: '-', type: 'added', old: '', newVal: `Sheet "${sheet}" added` }); continue; }
+    if (wsA && !wsB) { diffs.push({ sheet, cell: '-', type: 'removed', old: `Sheet "${sheet}" removed`, newVal: '' }); continue; }
+
+    // Get all cell addresses across both sheets
+    const rangeA = XLSX.utils.decode_range(wsA['!ref'] || 'A1:A1');
+    const rangeB = XLSX.utils.decode_range(wsB['!ref'] || 'A1:A1');
+    const maxRow = Math.max(rangeA.e.r, rangeB.e.r);
+    const maxCol = Math.max(rangeA.e.c, rangeB.e.c);
+
+    for (let r = 0; r <= maxRow; r++) {
+      for (let c = 0; c <= maxCol; c++) {
+        const addr = XLSX.utils.encode_cell({ r, c });
+        const cellA = wsA[addr];
+        const cellB = wsB[addr];
+        const valA = cellA ? (cellA.w !== undefined ? cellA.w : String(cellA.v ?? '')) : '';
+        const valB = cellB ? (cellB.w !== undefined ? cellB.w : String(cellB.v ?? '')) : '';
+        if (valA === valB) continue;
+        const type = !valA ? 'added' : !valB ? 'removed' : 'changed';
+        diffs.push({ sheet, cell: addr, type, old: valA, newVal: valB });
+      }
+    }
+  }
+  return diffs;
+}
+
+async function compareWord(fileA, fileB) {
+  const readText = f => new Promise((res, rej) => {
+    const reader = new FileReader();
+    reader.onload = e => mammoth.extractRawText({ arrayBuffer: e.target.result }).then(r => res(r.value)).catch(rej);
+    reader.onerror = rej;
+    reader.readAsArrayBuffer(f);
+  });
+  const [textA, textB] = await Promise.all([readText(fileA), readText(fileB)]);
+  const linesA = textA.split('\n').map(l => l.trim()).filter(l => l);
+  const linesB = textB.split('\n').map(l => l.trim()).filter(l => l);
+  return diffLines(linesA, linesB);
+}
+
+function diffLines(linesA, linesB) {
+  // LCS-based diff
+  const m = linesA.length, n = linesB.length;
+  const dp = Array.from({ length: m + 1 }, () => new Array(n + 1).fill(0));
+  for (let i = 1; i <= m; i++)
+    for (let j = 1; j <= n; j++)
+      dp[i][j] = linesA[i-1] === linesB[j-1] ? dp[i-1][j-1] + 1 : Math.max(dp[i-1][j], dp[i][j-1]);
+
+  const diffs = [];
+  let i = m, j = n;
+  while (i > 0 || j > 0) {
+    if (i > 0 && j > 0 && linesA[i-1] === linesB[j-1]) { i--; j--; }
+    else if (j > 0 && (i === 0 || dp[i][j-1] >= dp[i-1][j])) {
+      diffs.unshift({ type: 'added', cell: `Line ${j}`, old: '', newVal: linesB[j-1], sheet: '' });
+      j--;
+    } else {
+      diffs.unshift({ type: 'removed', cell: `Line ${i}`, old: linesA[i-1], newVal: '', sheet: '' });
+      i--;
+    }
+  }
+  // Pair adjacent removed+added as changed
+  const merged = [];
+  for (let k = 0; k < diffs.length; k++) {
+    if (diffs[k].type === 'removed' && diffs[k+1]?.type === 'added') {
+      merged.push({ type: 'changed', cell: diffs[k].cell, old: diffs[k].old, newVal: diffs[k+1].newVal, sheet: '' });
+      k++;
+    } else merged.push(diffs[k]);
+  }
+  return merged;
+}
+
+async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
+  const results = document.getElementById('compareResults');
+  if (!diffs.length) {
+    results.innerHTML = '<div style="padding:20px;color:var(--green);font-size:13px;font-weight:600;">✓ No differences found - the files are identical.</div>';
+    return;
+  }
+  const changed = diffs.filter(d => d.type === 'changed').length;
+  const added   = diffs.filter(d => d.type === 'added').length;
+  const removed = diffs.filter(d => d.type === 'removed').length;
+
+  const statsHtml = `<div style="display:flex;gap:16px;margin-bottom:16px;flex-wrap:wrap;">
+    ${changed ? `<div style="font-size:12px;font-weight:600;color:#92400E;background:#FEF3C7;padding:4px 12px;border-radius:20px;">${changed} changed</div>` : ''}
+    ${added   ? `<div style="font-size:12px;font-weight:600;color:#065F46;background:#D1FAE5;padding:4px 12px;border-radius:20px;">${added} added</div>` : ''}
+    ${removed ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:4px 12px;border-radius:20px;">${removed} removed</div>` : ''}
+    <div style="font-size:12px;color:var(--ink3);padding:4px 0;">${diffs.length} total difference${diffs.length !== 1 ? 's' : ''}</div>
+  </div>`;
+
+  const colA = isExcel ? 'Sheet' : '';
+  const colB = isExcel ? 'Cell' : 'Location';
+  const rows = diffs.map(d => {
+    const badge = `<span class="diff-badge ${d.type}">${d.type}</span>`;
+    const oldVal = d.old ? `<span class="diff-old">${escapeHtml(d.old)}</span>` : '<span style="color:var(--ink3);font-size:11px;">-</span>';
+    const newVal = d.newVal ? `<span class="diff-new">${escapeHtml(d.newVal)}</span>` : '<span style="color:var(--ink3);font-size:11px;">-</span>';
+    return `<tr class="diff-${d.type}">
+      ${isExcel ? `<td style="color:var(--ink3);font-size:11px;">${escapeHtml(d.sheet)}</td>` : ''}
+      <td style="font-family:monospace;font-size:11px;white-space:nowrap;">${escapeHtml(d.cell)}</td>
+      <td>${badge}</td>
+      <td>${oldVal}</td>
+      <td>${newVal}</td>
+    </tr>`;
+  }).join('');
+
+  results.innerHTML = statsHtml + `
+  <table class="diff-table">
+    <thead><tr>
+      ${isExcel ? '<th>Sheet</th>' : ''}
+      <th>${colB}</th>
+      <th>Change</th>
+      <th>${nameA} (original)</th>
+      <th>${nameB} (updated)</th>
+    </tr></thead>
+    <tbody>${rows}</tbody>
+  </table>`;
+
+  // AI summary for Word docs
+  if (!isExcel && currentProfile && diffs.length <= 80) {
+    const diffText = diffs.map(d => `${d.type.toUpperCase()} at ${d.cell}: "${d.old || ''}" → "${d.newVal || ''}"`).join('\n');
+    const summaryEl = document.createElement('div');
+    summaryEl.className = 'compare-summary';
+    summaryEl.textContent = 'Summarising changes...';
+    results.prepend(summaryEl);
+    try {
+      const token = await getAuthToken();
+      const res = await fetch('/api/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          messages: [{ role: 'user', content: `Summarise these document differences in 2-3 plain English sentences. Focus on what materially changed (e.g. clause changes, figures, dates). Be concise.\n\n${diffText}` }],
+          system: 'You are a document comparison assistant. Summarise differences between two documents clearly and concisely.'
+        })
+      });
+      const data = await res.json();
+      summaryEl.textContent = data?.content?.[0]?.text || '';
+    } catch(e) { summaryEl.remove(); }
   }
 }
 
