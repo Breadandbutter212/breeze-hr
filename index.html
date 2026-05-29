@@ -2117,13 +2117,13 @@ async function generatePresentation() {
   const isUpdate = !!presUploadedText;
 
   const systemPrompt = keepStructure
-    ? `You are updating an existing presentation. Rules: (1) Output exactly the same number of slides. (2) For each slide, the bullets array must contain exactly (item count - 1) items. (3) Keep slide titles identical. (4) For rows shown with a '|' separator these are two-column layouts - output ONLY the cell value each side, never prefix with column header labels like 'Appraisal:' or 'Management:'. Example: if original is 'One-time event | Ongoing', output 'Annual review | Year-round process' not 'Appraisal: Annual review | Management: Year-round process'. (5) Keep cell values short (under 20 chars each side). Return only valid JSON.`
+    ? `You are updating an existing presentation. Rules: (1) Keep every slide title identical to the original - do not change titles. (2) You MAY add or remove bullet points on content slides if the instruction asks for it. (3) Do NOT change the number of slides unless the user explicitly asks to add or remove a slide. (4) For any slide that contains a diagram, SmartArt or chart, do NOT change the number of items - only reword them. (5) For two-column rows shown with a '|' separator, output ONLY the cell value each side, keep values under 20 chars each side. Return only valid JSON.`
     : isUpdate
     ? `You are improving an existing presentation. Keep the same themes and flow but you may improve structure and quality. Draw on AI best practice. Return only valid JSON.`
     : `You are a professional presentation designer. Create a high-quality, substantive workplace presentation. Draw on your full knowledge of best practice, research and frameworks for this topic. Return only valid JSON.`;
 
   const slideCountInstruction = keepStructure && presUploadedSlideCount
-    ? `CRITICAL: Output exactly ${presUploadedSlideCount} slides. For each slide, the "bullets" array length MUST match the original item count minus 1 (for the title). The original structure is shown above with item counts per slide. Titles stay the same.`
+    ? `There are currently ${presUploadedSlideCount} slides. Keep the same number of slides unless the instruction explicitly asks to add or remove one. Titles must stay identical.`
     : isUpdate
     ? `Base the structure on the uploaded presentation but you may add, remove or reorder slides to improve quality.`
     : `Include 10-16 slides with section breaks.`;
@@ -2430,7 +2430,7 @@ async function presAiEdit() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         messages: [{ role: 'user', content: `Here is the current presentation JSON:\n${currentJson}\n\nInstruction: ${instruction}\n\nReturn the full updated presentation as JSON in exactly the same format. Only change what the instruction asks for.` }],
-        system: 'You are editing a presentation. Apply the instruction precisely. Slide types: title, section, content, close, orgchart, chart. Chart format: {"type":"chart","title":"...","chartType":"bar|barh|line|pie|doughnut","labels":[...],"series":[{"name":"...","values":[...]}],"note":"optional source"}. Orgchart format: {"type":"orgchart","title":"...","nodes":[{"id":"1","name":"Full Name","title":"Job Title"},{"id":"2","name":"...","title":"...","parent":"1"}]}. Use realistic plausible data for charts if not specified. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
+        system: 'You are editing a presentation. Apply the instruction precisely. Rules: (1) Keep every slide title identical unless the instruction explicitly says to change it. (2) You MAY add or remove bullet points on any content slide when asked. (3) Only add or remove a whole slide when the user explicitly asks for it. (4) For diagram/chart slides, do not change the number of items - only reword them. Slide types: title, section, content, close, orgchart, chart, image. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
       })
     });
     const data = await res.json();
@@ -2469,147 +2469,250 @@ async function presAiEdit() {
   btn.disabled = false; btn.textContent = '✦ Apply';
 }
 
+// ── PPTX INJECTION HELPERS ──
+const _escXml = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const TAB_WEIGHT = 5;
+
+function _pptxClassifyShape(spXml) {
+  if (spXml.includes('<a:fld')) return 'skip';
+  const phMatch = spXml.match(/<p:ph([^>]*)\/?>/);
+  if (!phMatch) return 'other';
+  const phAttrs = phMatch[1];
+  const typeMatch = phAttrs.match(/type="([^"]+)"/);
+  const type = typeMatch ? typeMatch[1] : '';
+  if (type === 'title' || type === 'ctrTitle') return 'title';
+  if (type === 'body' || type === 'subTitle') return 'body';
+  if (type === 'ftr' || type === 'dt' || type === 'sldNum') return 'skip';
+  if (!type && /idx=/.test(phAttrs)) return 'body';
+  return 'skip';
+}
+
+function _pptxReplaceParaText(paraFull, paraInner, newText, tabTarget) {
+  const calcTabs = l => Math.max(1, Math.round((tabTarget - l) / TAB_WEIGHT));
+  const runs = [];
+  paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
+  const hasTabRun = runs.some(t => /^\t+$/.test(t));
+  const hasInlineTabs = !hasTabRun && runs.some(t => t.includes('\t'));
+  if (hasTabRun) {
+    const parts = newText.split(/\s*\|\s*/);
+    const newLeft = (parts[0]||'').trim(), newRight = (parts[1]||parts[0]||'').trim();
+    const newTabStr = '\t'.repeat(calcTabs(newLeft.length));
+    let colIdx = 0;
+    const newRuns = runs.map(t => { if (/^\t+$/.test(t)) return newTabStr; return colIdx++ === 0 ? newLeft : newRight; });
+    let rIdx = 0;
+    return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => `<a:t>${_escXml(newRuns[rIdx++]||'')}</a:t>`) + '</a:p>';
+  }
+  if (hasInlineTabs) {
+    const parts = newText.split(/\s*\|\s*/);
+    const newLeft = (parts[0]||'').trim(), newRight = (parts[1]||parts[0]||'').trim();
+    const recon = parts.length >= 2 ? newLeft + '\t'.repeat(calcTabs(newLeft.length)) + newRight : newText;
+    let isFirst = true;
+    return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(recon)}</a:t>`; } return '<a:t></a:t>'; }) + '</a:p>';
+  }
+  let isFirst = true;
+  return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(newText)}</a:t>`; } return '<a:t></a:t>'; }) + '</a:p>';
+}
+
+function _pptxInjectTxBody(txBodyXml, bullets, tabTarget) {
+  // Split into segments: non-para text and <a:p> blocks
+  const segs = [];
+  const paraRe = /<a:p>([\s\S]*?)<\/a:p>/g;
+  let m, pos = 0;
+  while ((m = paraRe.exec(txBodyXml)) !== null) {
+    if (m.index > pos) segs.push({ t: 'other', text: txBodyXml.substring(pos, m.index) });
+    const inner = m[1];
+    const hasFld = inner.includes('<a:fld');
+    const runs = []; inner.replace(/<a:t>([^<]*)<\/a:t>/g, (_, v) => runs.push(v));
+    const empty = runs.join('').trim().length === 0;
+    segs.push({ t: hasFld || empty ? 'fixed' : 'bullet', full: m[0], inner });
+    pos = m.index + m[0].length;
+  }
+  if (pos < txBodyXml.length) segs.push({ t: 'other', text: txBodyXml.substring(pos) });
+
+  let bIdx = 0;
+  for (const s of segs) if (s.t === 'bullet') s.bIdx = bIdx++;
+  const N = bIdx, W = bullets.length;
+  let lastBulletFull = null;
+  for (const s of segs) if (s.t === 'bullet') lastBulletFull = s.full;
+
+  let result = '';
+  for (const s of segs) {
+    if (s.t === 'other') { result += s.text; continue; }
+    if (s.t === 'fixed') { result += s.full; continue; }
+    // bullet
+    if (s.bIdx < W) {
+      result += _pptxReplaceParaText(s.full, s.inner, bullets[s.bIdx], tabTarget);
+      // After last original bullet, append extra bullets as clones
+      if (s.bIdx === N - 1 && W > N && lastBulletFull) {
+        for (let j = N; j < W; j++) {
+          let isFirst = true;
+          result += lastBulletFull.replace(/<a:t>[^<]*<\/a:t>/g, () => {
+            if (isFirst) { isFirst=false; return `<a:t>${_escXml(bullets[j])}</a:t>`; }
+            return '<a:t></a:t>';
+          });
+        }
+      }
+    }
+    // s.bIdx >= W: skip (delete)
+  }
+  return result;
+}
+
+function _pptxCalcTabTarget(xml) {
+  const samples = [];
+  xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (m, inner) => {
+    if (inner.includes('<a:fld')) return;
+    const rs = []; inner.replace(/<a:t>([^<]*)<\/a:t>/g, (m2, t) => { rs.push(t); return m2; });
+    const tabRun = rs.find(r => /^\t+$/.test(r));
+    if (tabRun) {
+      const left = rs.filter(r => !/^\t+$/.test(r))[0] || '';
+      samples.push(left.trim().length + tabRun.length * TAB_WEIGHT);
+    } else {
+      const src = rs.find(r => r.includes('\t') && !/^\t+$/.test(r));
+      if (src) { const mm = src.match(/^([^\t]*?)(\t+)/); if (mm) samples.push(mm[1].trim().length + mm[2].length * TAB_WEIGHT); }
+    }
+  });
+  return samples.length ? Math.round(samples.reduce((a,b)=>a+b,0)/samples.length) : 29;
+}
+
+function _pptxInjectSlide(xml, slide) {
+  const tabTarget = _pptxCalcTabTarget(xml);
+  // Extract all <p:sp> blocks
+  const spBlocks = [];
+  let pos = 0;
+  while (pos < xml.length) {
+    const start = xml.indexOf('<p:sp>', pos);
+    if (start === -1) break;
+    const end = xml.indexOf('</p:sp>', start);
+    if (end === -1) break;
+    const endFull = end + '</p:sp>'.length;
+    spBlocks.push({ start, end: endFull, xml: xml.substring(start, endFull) });
+    pos = endFull;
+  }
+  // Classify shapes and find best body (most non-empty non-fld <a:p>)
+  for (const sp of spBlocks) sp.cls = _pptxClassifyShape(sp.xml);
+  const bodyShapes = spBlocks.filter(sp => sp.cls === 'body');
+  let bestBody = null, bestCount = -1;
+  for (const sp of bodyShapes) {
+    let cnt = 0;
+    sp.xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (m, inner) => {
+      if (inner.includes('<a:fld')) return;
+      const rs = []; inner.replace(/<a:t>([^<]*)<\/a:t>/g, (_, v) => rs.push(v));
+      if (rs.join('').trim()) cnt++;
+    });
+    if (cnt > bestCount) { bestCount = cnt; bestBody = sp; }
+  }
+  if (bestBody) bestBody.isBestBody = true;
+  // Rebuild XML
+  let result = '', xmlPos = 0;
+  for (const sp of spBlocks) {
+    result += xml.substring(xmlPos, sp.start);
+    xmlPos = sp.end;
+    if (sp.cls === 'title') {
+      let isFirst = true;
+      result += sp.xml.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(slide.title||'')}</a:t>`; } return '<a:t></a:t>'; });
+    } else if (sp.isBestBody) {
+      const txStart = sp.xml.indexOf('<p:txBody>');
+      const txEnd = sp.xml.indexOf('</p:txBody>') + '</p:txBody>'.length;
+      if (txStart === -1 || txEnd < '</p:txBody>'.length) { result += sp.xml; continue; }
+      const newTx = _pptxInjectTxBody(sp.xml.substring(txStart, txEnd), slide.bullets||[], tabTarget);
+      result += sp.xml.substring(0, txStart) + newTx + sp.xml.substring(txEnd);
+    } else {
+      result += sp.xml;
+    }
+  }
+  result += xml.substring(xmlPos);
+  return result;
+}
+
 function downloadPresentation() {
   if (!presSlides.length) return;
   const btn = document.getElementById('pres-download-btn');
   btn.textContent = 'Generating...'; btn.disabled = true;
   const keepFormat = document.getElementById('pres-dl-keep')?.checked;
-  const keepStructure = document.getElementById('pres-keep-format')?.checked;
 
-  // If original pptx uploaded + keep structure: inject text into original file, preserving all formatting/images
-  if (presUploadedBase64 && keepStructure) {
+  // Task 4: injection path is driven by presUploadedBase64 + keepFormat (pres-dl-keep)
+  if (presUploadedBase64 && keepFormat) {
     try {
       const zip = new PizZip(presUploadedBase64, { base64: true });
+      const resolvePath = (base, rel) => {
+        const parts = base.split('/'); parts.pop();
+        rel.split('/').forEach(p => p === '..' ? parts.pop() : parts.push(p));
+        return parts.join('/');
+      };
       const slideFiles = Object.keys(zip.files)
-        .filter(f => f.match(/ppt\/slides\/slide\d+\.xml/))
+        .filter(f => /ppt\/slides\/slide\d+\.xml/.test(f))
         .sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
 
+      // Inject into existing slides
       slideFiles.forEach((sf, idx) => {
         const slide = presSlides[idx]; if (!slide) return;
-        let xml = zip.files[sf].asText();
-
-        // Collect new texts in order: title, subtitle, bullets
-        const newTexts = [slide.title, ...(slide.subtitle ? [slide.subtitle] : []), ...(slide.bullets || [])].filter(Boolean);
-        let tIdx = 0;
-
-        // Replace at paragraph level: each <a:p> = one logical text item.
-        const escXml = s => s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-
-        // Calibrate tab-column alignment from original two-column paragraphs.
-        // Original authors tune tab counts per row to compensate for text length,
-        // so right column always lands at the same tab stop. We derive that target
-        // from the original data and recalculate tabs for new (different-length) text.
-        const TAB_WEIGHT = 5; // empirical: each tab ≈ 5 character-widths
-        const twoColSamples = [];
-        xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (m, inner) => {
-          if (inner.includes('<a:fld')) return;
-          const rs = []; inner.replace(/<a:t>([^<]*)<\/a:t>/g, (m2, t) => { rs.push(t); return m2; });
-          const tabRun = rs.find(r => /^\t+$/.test(r));
-          if (tabRun) {
-            const left = rs.filter(r => !/^\t+$/.test(r))[0] || '';
-            twoColSamples.push(left.trim().length + tabRun.length * TAB_WEIGHT);
-          } else {
-            const inlineTabSrc = rs.find(r => r.includes('\t') && !(/^\t+$/.test(r)));
-            if (inlineTabSrc) {
-              const m2 = inlineTabSrc.match(/^([^\t]*?)(\t+)/);
-              if (m2) twoColSamples.push(m2[1].trim().length + m2[2].length * TAB_WEIGHT);
-            }
-          }
-        });
-        const tabTarget = twoColSamples.length
-          ? Math.round(twoColSamples.reduce((a, b) => a + b, 0) / twoColSamples.length)
-          : 29;
-        const calcTabs = leftLen => Math.max(1, Math.round((tabTarget - leftLen) / TAB_WEIGHT));
-
-        xml = xml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
-          if (paraInner.includes('<a:fld')) return paraMatch;
-          const runs = [];
-          paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
-          const paraText = runs.join('').trim();
-          if (!paraText) return paraMatch;
-          const newText = newTexts[tIdx];
-          if (newText === undefined) return paraMatch;
-          tIdx++;
-
-          // Two-column tab layout detection:
-          // Style A: separate tab-only run e.g. ['Appraisal', '\t\t\t\t', 'Management']
-          // Style B: inline tabs           e.g. ['One-time event\t\t\tOngoing']
-          const hasTabRun = runs.some(t => /^\t+$/.test(t));
-          const hasInlineTabs = !hasTabRun && runs.some(t => t.includes('\t'));
-
-          if (hasTabRun) {
-            const parts = newText.split(/\s*\|\s*/);
-            const newLeft = (parts[0] || '').trim();
-            const newRight = (parts[1] || parts[0] || '').trim();
-            const newTabStr = '\t'.repeat(calcTabs(newLeft.length));
-            let colIdx = 0;
-            const newRuns = runs.map(t => {
-              if (/^\t+$/.test(t)) return newTabStr;
-              const repl = colIdx === 0 ? newLeft : newRight;
-              colIdx++;
-              return repl;
-            });
-            let rIdx = 0;
-            return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () =>
-              `<a:t>${escXml(newRuns[rIdx++] || '')}</a:t>`
-            ) + '</a:p>';
-          }
-
-          if (hasInlineTabs) {
-            const parts = newText.split(/\s*\|\s*/);
-            const newLeft = (parts[0] || '').trim();
-            const newRight = (parts[1] || parts[0] || '').trim();
-            const newTabStr = '\t'.repeat(calcTabs(newLeft.length));
-            const reconstructed = parts.length >= 2 ? newLeft + newTabStr + newRight : newText;
-            let isFirst = true;
-            return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => {
-              if (isFirst) { isFirst = false; return `<a:t>${escXml(reconstructed)}</a:t>`; }
-              return '<a:t></a:t>';
-            }) + '</a:p>';
-          }
-
-          // Normal paragraph: first <a:t> gets new text, rest cleared
-          let isFirst = true;
-          return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => {
-            if (isFirst) { isFirst = false; return `<a:t>${escXml(newText)}</a:t>`; }
-            return '<a:t></a:t>';
-          }) + '</a:p>';
-        });
-
+        let xml = _pptxInjectSlide(zip.files[sf].asText(), slide);
         zip.file(sf, xml);
 
-        // Also replace text in linked SmartArt/diagram data files (tIdx continues)
-        const resolvePath = (base, rel) => {
-          const parts = base.split('/'); parts.pop();
-          rel.split('/').forEach(p => p === '..' ? parts.pop() : parts.push(p));
-          return parts.join('/');
-        };
+        // SmartArt/diagram: 1:1 fixed swap only (no add/remove)
         const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
-        if (zip.files[relsPath]) {
-          const relsXml = zip.files[relsPath].asText();
-          [...relsXml.matchAll(/Type="[^"]*diagramData[^"]*"\s+Target="([^"]+)"/g)].forEach(rel => {
-            const diagPath = resolvePath(sf, rel[1]);
-            if (!zip.files[diagPath]) return;
-            let diagXml = zip.files[diagPath].asText();
-            diagXml = diagXml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
-              if (paraInner.includes('<a:fld')) return paraMatch;
-              const runs = [];
-              paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
-              const paraText = runs.join('').trim();
-              if (!paraText) return paraMatch;
-              const newText = newTexts[tIdx];
-              if (newText === undefined) return paraMatch;
-              tIdx++;
-              let isFirst = true;
-              return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => {
-                if (isFirst) { isFirst = false; return `<a:t>${escXml(newText)}</a:t>`; }
-                return '<a:t></a:t>';
-              }) + '</a:p>';
-            });
-            zip.file(diagPath, diagXml);
+        if (!zip.files[relsPath]) return;
+        const relsXml = zip.files[relsPath].asText();
+        const diagTexts = [slide.title, ...(slide.bullets||[])];
+        let dIdx = 0;
+        [...relsXml.matchAll(/Type="[^"]*diagramData[^"]*"\s+Target="([^"]+)"/g)].forEach(rel => {
+          const diagPath = resolvePath(sf, rel[1]);
+          if (!zip.files[diagPath]) return;
+          let diagXml = zip.files[diagPath].asText();
+          diagXml = diagXml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
+            if (paraInner.includes('<a:fld')) return paraMatch;
+            const runs = []; paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
+            if (!runs.join('').trim()) return paraMatch;
+            const newText = diagTexts[dIdx]; if (newText === undefined) return paraMatch;
+            dIdx++;
+            let isFirst = true;
+            return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(newText)}</a:t>`; } return '<a:t></a:t>'; }) + '</a:p>';
           });
-        }
+          zip.file(diagPath, diagXml);
+        });
       });
+
+      // Append new slides when presSlides has more entries than original
+      if (presSlides.length > slideFiles.length) {
+        // Find a good content slide template (has body placeholder)
+        let tmplFile = slideFiles[Math.min(1, slideFiles.length-1)];
+        for (const sf of slideFiles) {
+          const x = zip.files[sf].asText();
+          if ((x.includes('type="body"') || x.match(/<p:ph[^>]*idx=/)) && !x.includes('type="ctrTitle"')) { tmplFile = sf; break; }
+        }
+        const existingNums = slideFiles.map(f => parseInt(f.match(/slide(\d+)\.xml/)[1]));
+        let nextNum = Math.max(...existingNums) + 1;
+        let presXml = zip.files['ppt/presentation.xml']?.asText() || '';
+        let presRels = zip.files['ppt/_rels/presentation.xml.rels']?.asText() || '';
+        let contentTypes = zip.files['[Content_Types].xml']?.asText() || '';
+        const allIds = [...presXml.matchAll(/\bid="(\d+)"/g)].map(m => parseInt(m[1]));
+        let maxId = allIds.length ? Math.max(...allIds) : 256;
+        const allRIds = [...presRels.matchAll(/\bId="(rId\d+)"/g)].map(m => m[1]);
+        let nextRIdNum = allRIds.length ? Math.max(...allRIds.map(r => parseInt(r.replace('rId',''))||0)) + 1 : 900;
+
+        for (let i = slideFiles.length; i < presSlides.length; i++) {
+          const newSlide = presSlides[i];
+          const newNum = nextNum++;
+          const newPath = `ppt/slides/slide${newNum}.xml`;
+          const newRelsPath = `ppt/slides/_rels/slide${newNum}.xml.rels`;
+          // Clone template, blank all text, then inject
+          let newXml = zip.files[tmplFile].asText().replace(/<a:t>[^<]*<\/a:t>/g, '<a:t></a:t>');
+          newXml = _pptxInjectSlide(newXml, newSlide);
+          zip.file(newPath, newXml);
+          const tmplRels = tmplFile.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+          if (zip.files[tmplRels]) zip.file(newRelsPath, zip.files[tmplRels].asText());
+          // Update manifests
+          maxId++;
+          const newRId = `rId${nextRIdNum++}`;
+          contentTypes = contentTypes.replace('</Types>', `<Override PartName="/ppt/slides/slide${newNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`);
+          presXml = presXml.replace('</p:sldIdLst>', `<p:sldId id="${maxId}" r:id="${newRId}"/></p:sldIdLst>`);
+          presRels = presRels.replace('</Relationships>', `<Relationship Id="${newRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newNum}.xml"/></Relationships>`);
+        }
+        zip.file('[Content_Types].xml', contentTypes);
+        zip.file('ppt/presentation.xml', presXml);
+        zip.file('ppt/_rels/presentation.xml.rels', presRels);
+      }
 
       const blob = new Blob([zip.generate({ type:'uint8array' })], { type:'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
@@ -2618,7 +2721,7 @@ function downloadPresentation() {
       setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
       return;
     } catch(e) {
-      console.warn('Direct pptx injection failed, falling back:', e.message);
+      console.warn('Injection failed, falling back to pptxgenjs:', e.message);
     }
   }
   try {
