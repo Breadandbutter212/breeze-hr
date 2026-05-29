@@ -2140,7 +2140,8 @@ Generate slides as JSON:
   {"id":3,"type":"section","title":"Section Break Title","bullets":[]},
   {"id":4,"type":"chart","title":"Headcount by Department","chartType":"bar","labels":["Dept A","Dept B"],"series":[{"name":"Headcount","values":[0,0]}],"note":"Source: HRIS"},
   {"id":5,"type":"orgchart","title":"Organisation Chart","nodes":[{"id":"1","name":"[CEO Name]","title":"CEO"},{"id":"2","name":"[CFO Name]","title":"CFO","parent":"1"}]},
-  {"id":6,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
+  {"id":6,"type":"image","title":"Slide Title","imageHint":"Describe what image would work here, e.g. 'team collaboration photo' or 'office environment'","bullets":["Supporting point"]},
+  {"id":7,"type":"close","title":"Questions?","bullets":["contact@company.com"]}
 ]}
 
 Guidelines:
@@ -2151,6 +2152,7 @@ Guidelines:
 - For chart slides: use real HRIS figures if provided above; otherwise use [TBC] as values and note "Data to be confirmed"
 - For orgchart slides: only use real names if provided; otherwise use [Name] and [Job Title] placeholders
 - chartType options: bar, barh, line, pie, doughnut
+- Use the "image" slide type where a photo or visual would genuinely add value (e.g. a slide about workplace culture, team, office, onboarding day). Include an imageHint describing what the image should show. Do not overuse - maximum 2-3 image slides per deck.
 - Return ONLY the JSON object, nothing else`;
 
   try {
@@ -2303,6 +2305,19 @@ function slideCardHtml(s, i) {
     return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;background:#fff;">
       <div style="background:${D};padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Chart')} <span style="font-size:6px;opacity:0.6;text-transform:uppercase;">${ct}</span></div></div>
       <div style="flex:1;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">${barPreview}</div>
+      <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
+    </div>`;
+  }
+  if (s.type === 'image') {
+    return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;background:#F8FAFC;">
+      <div style="background:${D};padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'')}</div></div>
+      <div style="flex:1;display:flex;gap:4px;padding:6px;">
+        <div style="flex:2;background:#E2E8F0;border-radius:4px;border:1px dashed #94A3B8;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:2px;">
+          <div style="font-size:10px;">📷</div>
+          <div style="font-size:5px;color:#94A3B8;text-align:center;padding:0 4px;">${escapeHtml((s.imageHint||'Add image').substring(0,30))}</div>
+        </div>
+        <div style="flex:1;display:flex;flex-direction:column;gap:2px;justify-content:center;">${(s.bullets||[]).slice(0,3).map(b=>`<div style="font-size:5.5px;color:#374151;line-height:1.4;">• ${escapeHtml(b)}</div>`).join('')}</div>
+      </div>
       <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
     </div>`;
   }
@@ -2653,6 +2668,16 @@ function downloadPresentation() {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
           slide.addText(s.title||'Questions?', { x:0.6, y:2, w:11, h:1.2, fontSize:40, bold:true, color:WHITE, fontFace:'Calibri' });
           if (s.bullets?.[0]) slide.addText(s.bullets[0], { x:0.6, y:3.4, w:9, h:0.6, fontSize:18, color:ACCENT, fontFace:'Calibri' });
+        } else if (s.type === 'image') {
+          slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color: DARK } });
+          slide.addText(s.title||'', { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
+          // Image placeholder box
+          slide.addShape(pptx.ShapeType.rect, { x:0.5, y:1.25, w:7.5, h:5.5, fill:{ color:'F1F5F9' }, line:{ color:'CBD5E1', width:1.5, dashType:'dash' } });
+          slide.addText(`📷  ${s.imageHint || 'Add image here'}`, { x:0.5, y:3.3, w:7.5, h:0.8, align:'center', fontSize:13, color:'94A3B8', fontFace:'Calibri', italic:true });
+          if (s.bullets?.length) {
+            const bullets = s.bullets.map(b => ({ text: b, options:{ bullet:{ code:'2022' }, fontSize:15, color:'374151', fontFace:'Calibri', paraSpaceAfter:8 } }));
+            slide.addText(bullets, { x:8.2, y:1.35, w:5, h:5.3, valign:'top' });
+          }
         } else {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color: DARK } });
           slide.addText(s.title||'', { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
