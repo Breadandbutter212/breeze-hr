@@ -2755,23 +2755,26 @@ function startRecording() {
   recRecognition.continuous = true;
   recRecognition.interimResults = true;
   recRecognition.lang = 'en-GB';
-  let interim = '';
+  // Track all text - Chrome sometimes never fires isFinal so keep a combined running transcript
+  let interimBuffer = '';
   recRecognition.onresult = e => {
-    interim = '';
+    interimBuffer = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) {
         recFinalTranscript += e.results[i][0].transcript + ' ';
-        interim = '';
       } else {
-        interim += e.results[i][0].transcript;
+        interimBuffer += e.results[i][0].transcript;
       }
     }
-    // Store interim in closure so stopRecording can grab it
-    recRecognition._lastInterim = interim;
+    window._recInterimBuffer = interimBuffer;
     recCheckReady();
   };
   recRecognition.onerror = e => { if (e.error !== 'no-speech') stopRecording(); };
-  recRecognition.onend = () => { if (recIsRecording) recRecognition.start(); };
+  recRecognition.onend = () => {
+    if (recIsRecording && recRecognition) {
+      try { recRecognition.start(); } catch(e) {}
+    }
+  };
   recRecognition.start();
   recIsRecording = true;
   recSeconds = 0;
@@ -2790,21 +2793,19 @@ function startRecording() {
 }
 
 function stopRecording() {
+  recIsRecording = false; // Set false FIRST so onend doesn't restart
   if (recRecognition) {
-    // Grab any pending interim text (Chrome often doesn't flush to final on stop)
-    const pendingInterim = recRecognition._lastInterim || '';
-    if (pendingInterim.trim()) recFinalTranscript += pendingInterim + ' ';
-    recRecognition.onresult = e => {
-      for (let i = e.resultIndex; i < e.results.length; i++) {
-        recFinalTranscript += e.results[i][0].transcript + ' ';
-      }
-    };
+    // Capture any buffered interim text before stopping (Chrome often skips isFinal)
+    const pending = (window._recInterimBuffer || '').trim();
+    if (pending) recFinalTranscript += pending + ' ';
+    window._recInterimBuffer = '';
+    recRecognition.onresult = null;
+    recRecognition.onerror = null;
     recRecognition.onend = null;
-    recRecognition.stop();
+    try { recRecognition.stop(); } catch(e) {}
     recRecognition = null;
   }
   clearInterval(recTimerInterval);
-  recIsRecording = false;
   const btn = document.getElementById('recBtn');
   if (btn) {
     btn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="12" r="10"/></svg> Record again';
