@@ -35,9 +35,11 @@ export default async function handler(req, res) {
     return res.status(200).json({ ok: true });
   }
 
-  // All other actions require auth
+  // All other actions require auth AND admin
   const user = await verifyAuth(req);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || 'dwgordon7@icloud.com').split(',').map(e => e.trim().toLowerCase());
+  if (!ADMIN_EMAILS.includes((user.email || '').toLowerCase())) return res.status(403).json({ error: 'Forbidden' });
 
   // GET /api/waitlist?action=list
   if (req.method === 'GET' && action === 'list') {

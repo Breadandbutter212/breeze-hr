@@ -929,7 +929,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <p>Processing of employee personal data through Breeze HR is carried out under the legitimate interests of the employer in managing its HR function efficiently, or under contractual necessity where applicable. Special category data (health, disciplinary matters) should only be entered where a specific lawful basis under UK GDPR Article 9 applies.</p>
 
       <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;margin-top:16px;">Meeting recordings</div>
-      <p>When using the meeting recorder, you are responsible for ensuring that all participants are aware the conversation will be transcribed and processed by AI. Under UK GDPR and the Investigatory Powers Act 2016, recording individuals without their knowledge may be unlawful. Always obtain consent or inform participants before recording.</p>
+      <p>When using the meeting recorder, you are responsible for ensuring that all participants are aware the conversation will be transcribed by Google (Speech-to-Text) and then processed by Anthropic AI. Under UK GDPR and the Investigatory Powers Act 2016, recording individuals without their knowledge may be unlawful. Always obtain consent or inform participants before recording.</p>
 
       <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:4px;margin-top:16px;">Data retention</div>
       <p>Your account administrator can configure how long data is retained under Settings - Data &amp; privacy. After the retention period, chat history, meeting notes and response data are automatically deleted. Uploaded policies and templates are kept until manually deleted. You can also delete all company data immediately from Settings.</p>
@@ -946,7 +946,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <div id="recConsentOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.6);z-index:1800;display:none;align-items:center;justify-content:center;padding:20px;">
   <div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:28px 32px;">
     <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;">Before you record</div>
-    <div style="font-size:13px;color:var(--ink2);line-height:1.75;margin-bottom:20px;">This recording will be transcribed and processed by AI (Anthropic). Under UK GDPR you must ensure all meeting participants are aware before recording begins.<br><br>Do not record employees without their knowledge.</div>
+    <div style="font-size:13px;color:var(--ink2);line-height:1.75;margin-bottom:20px;">This recording will be transcribed by Google (Speech-to-Text) and then processed by Anthropic AI. Under UK GDPR you must ensure all meeting participants are aware before recording begins.<br><br>Do not record employees without their knowledge.</div>
     <div style="display:flex;gap:10px;">
       <button onclick="document.getElementById('recConsentOverlay').style.display='none';" class="btn btn-secondary btn-sm" style="flex:1;">Cancel</button>
       <button onclick="consentAndRecord()" class="btn btn-primary btn-sm" style="flex:1;">All participants are aware - start</button>
@@ -974,7 +974,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
       <div class="faq-item">
         <div class="faq-q" onclick="toggleFaq(this)">Does Breeze HR stay up to date with UK employment law?<svg class="faq-chevron" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"/></svg></div>
-        <div class="faq-a">Yes. Breeze HR is built on continuously updated AI that is trained on current ACAS guidance, UK employment legislation and statutory rates. Current rates built in include: National Living Wage (£12.21/hr for 21+), Statutory Sick Pay (£116.75/week), Statutory Maternity/Paternity Pay (£184.03/week or 90% of AWE), and statutory notice and redundancy pay rules.<br><br>You do not need to manually update anything. As the underlying model is updated with new legislation, rate changes or updated ACAS guidance, those changes flow through automatically. If a new right is introduced - such as changes to flexible working rules or carer's leave - Breeze HR will reflect it.</div>
+        <div class="faq-a">Breeze HR's statutory rates and employment law guidance are reviewed and updated by our team each April and when significant legislative changes occur. Current rates are built into the platform and flagged for verification where figures may have changed.<br><br>We recommend HR professionals verify any statutory figure before relying on it, particularly in the weeks following the April uprating. Last reviewed: April 2026.</div>
       </div>
 
       <div style="font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-top:28px;margin-bottom:12px;">Your data and documents</div>
@@ -1534,7 +1534,8 @@ let mergeSearchTimeout = null;
 async function loadMergeEmployees() {
   if (mergeEmployeeCache) return mergeEmployeeCache;
   try {
-    const res = await fetch('/api/merge-search');
+    const token = await getAuthToken();
+    const res = await fetch('/api/merge-search', { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
     mergeEmployeeCache = data.results || [];
   } catch(e) { mergeEmployeeCache = []; }
@@ -2051,7 +2052,8 @@ async function generatePresentation() {
   if (urlInput) {
     setPresStatus('Fetching intranet page...');
     try {
-      const r = await fetch('/api/fetch-url', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ url: urlInput }) });
+      const _fuToken = await getAuthToken();
+      const r = await fetch('/api/fetch-url', { method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${_fuToken}`}, body: JSON.stringify({ url: urlInput }) });
       const d = await r.json();
       if (d.text) { intranetContext = `\n\nINTRANET CONTENT (${urlInput}):\n${d.text.substring(0,4000)}`; sourcesUsed.push('Intranet page'); }
       else { intranetContext = `\n\nNote: ${urlInput} could not be fetched (may require login).`; }
@@ -2825,7 +2827,7 @@ async function loadSavedMeetings() {
     return `<div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
       <span style="font-size:13px;color:var(--ink);flex:1;">${escapeHtml(label)}</span>
-      <button class="btn btn-secondary btn-sm" onclick="downloadSavedMeeting('${m.id}','${escapeHtml(label).replace(/'/g,"\\'")}')">⬇ Download</button>
+      <button class="btn btn-secondary btn-sm" onclick="downloadSavedMeeting('${m.id}','${jsAttr(label)}')">⬇ Download</button>
       <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteMeeting('${m.id}')">Delete</button>
     </div>`;
   }).join('');
@@ -3032,7 +3034,7 @@ function showDpaModal() {
       <p><strong>Data Isolation and Multi-Tenancy:</strong> All Customer Data is scoped to a unique company identifier enforced at the database layer; no cross-customer data access is possible through the application layer; Customer data is logically segregated within shared infrastructure with technical controls preventing unauthorised access.</p>
       <p><strong>Encryption:</strong> All data in transit is encrypted using TLS 1.2 or higher with strong cipher suites; data at rest is encrypted by the relevant infrastructure provider using AES-256 or equivalent; encryption keys are managed by the relevant Sub-processor in accordance with their security policies.</p>
       <p><strong>Pseudonymisation:</strong> Where technically practicable and appropriate to the risk, the Processor implements pseudonymisation of Personal Data in analytics and processing pipelines in accordance with Article 32(1)(a) UK GDPR.</p>
-      <p><strong>Infrastructure Security:</strong> Application hosted on Vercel with automatic HTTPS enforcement and DDoS protection; database hosted on Supabase with enterprise-grade security controls and SOC 2 Type II compliance; AI processing via Anthropic API with a zero data-retention policy for API calls (Anthropic does not train on API data by default); regular dependency updates and vulnerability patching.</p>
+      <p><strong>Infrastructure Security:</strong> Application hosted on Vercel with automatic HTTPS enforcement and DDoS protection; database hosted on Supabase with enterprise-grade security controls and SOC 2 Type II compliance; AI processing via Anthropic API (Anthropic does not train on API data by default; data retention is subject to Anthropic's standard API terms); regular dependency updates and vulnerability patching.</p>
       <p><strong>Penetration Testing and Vulnerability Management:</strong> The Processor conducts or commissions vulnerability assessments of the platform infrastructure on at least an annual basis. Critical vulnerabilities are remediated within 14 days of discovery. The Processor's Sub-processors (Supabase, Vercel, Anthropic) conduct their own penetration testing programmes, details of which are available in their respective security documentation.</p>
       <p><strong>Backup and Recovery:</strong> Customer Data is backed up by Supabase in accordance with its standard backup policy. The Processor maintains documented incident response and business continuity procedures to ensure the availability and resilience of the Services.</p>
       <p><strong>Personnel and Organisational Measures:</strong> Access to Customer Personal Data is restricted to personnel who require it to deliver the Services; all personnel with access to Personal Data are subject to binding confidentiality obligations; the Processor maintains internal data protection awareness measures appropriate to the size and nature of the organisation.</p>
@@ -3043,7 +3045,8 @@ function showDpaModal() {
       <p>The following Sub-processors are approved as at 21 May 2026. The Processor shall provide at least 30 days' written notice of changes in accordance with clause 4.5.</p>
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;">
         <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Sub-processor / Location</td><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Purpose and Data Processed</td><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:600;">Transfer Safeguard</td></tr>
-        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Anthropic, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">AI processing. Chat messages, uploaded documents and policy content are transmitted to Anthropic's API to generate AI outputs. Anthropic does not use API data to train models. Zero data retention on API calls.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. anthropic.com/legal/privacy</td></tr>
+        <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Anthropic, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">AI processing. Chat messages, uploaded documents and policy content are transmitted to Anthropic's API to generate AI outputs. Anthropic does not use API data to train models by default. Data retention is subject to Anthropic's standard API terms.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. anthropic.com/legal/privacy</td></tr>
+        <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Google LLC<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Speech-to-Text transcription. When the meeting recorder is used, audio is streamed to Google's Web Speech API for transcription. <strong>Only activated when the meeting recorder feature is used.</strong></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. policies.google.com/privacy</td></tr>
         <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Supabase, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Database and authentication. All Customer Data including employee information, chat history, policies, templates and user accounts are stored in Supabase. SOC 2 Type II certified.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. supabase.com/privacy</td></tr>
         <tr><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Vercel Inc.<br><span style="color:#9CA3AF;">United States / EU</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Application hosting and serverless functions. Processes requests and serves the application. Limited exposure to Personal Data in transit only. SOC 2 Type II certified.</td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. vercel.com/legal/privacy-policy</td></tr>
         <tr style="background:#F8FAFC;"><td style="padding:8px 12px;border:1px solid #E5E7EB;font-weight:500;">Composio, Inc.<br><span style="color:#9CA3AF;">United States</span></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">Email and SharePoint integration. Processes email content and SharePoint file metadata. <strong>Only activated if the Controller connects these integrations.</strong></td><td style="padding:8px 12px;border:1px solid #E5E7EB;">IDTA / UK Addendum to SCCs. composio.dev</td></tr>
@@ -3716,7 +3719,7 @@ async function renderManage() {
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${handbook ? '✓ Uploaded - Breeze HR is reading this' : 'Upload a PDF, Word or text file'}</div>
         </div>
         <div style="display:flex;gap:8px;align-items:center;">
-          ${handbook ? `<button class="btn btn-ghost btn-sm" onclick="viewPolicy('${handbook.id}','${handbook.name.replace('HANDBOOK:','').trim().replace(/'/g,"\\'")}')">View</button><button class="btn btn-ghost btn-sm" onclick="downloadPolicyFile('${handbook.id}','${handbook.name.replace('HANDBOOK:','').trim().replace(/'/g,"\\'")}')">⬇</button>` : ''}
+          ${handbook ? `<button class="btn btn-ghost btn-sm" onclick="viewPolicy('${handbook.id}','${jsAttr(handbook.name.replace('HANDBOOK:','').trim())}')">View</button><button class="btn btn-ghost btn-sm" onclick="downloadPolicyFile('${handbook.id}','${jsAttr(handbook.name.replace('HANDBOOK:','').trim())}')">⬇</button>` : ''}
           <label class="btn btn-primary btn-sm" style="cursor:pointer;margin:0;">${handbook?'Replace':'Upload handbook'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadHandbook(event,'${handbook?.id||''}')"></label>
           ${handbook ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deletePolicy('${handbook.id}')">Delete</button>` : ''}
         </div>
@@ -3725,7 +3728,7 @@ async function renderManage() {
     <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Policies</div>
     <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${uc} of ${policies.length} uploaded - Breeze HR uses these to answer employee questions accurately</div>`;
 
-  body.innerHTML=`${handbookHtml}<div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${p.name.replace(/'/g,"\\'")}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${p.name.replace(/'/g,"\\'")}')">⬇</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${p.name}','${p.dbId||''}')"></label></div></div></div>`).join('')}</div>${regularDb.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${regularDb.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${p.name}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${p.name.replace(/'/g,"\\'")}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${p.name.replace(/'/g,"\\'")}')">⬇</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+  body.innerHTML=`${handbookHtml}<div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${p.icon}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${jsAttr(p.name)}')">⬇</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${jsAttr(p.name)}','${p.dbId||''}')"></label></div></div></div>`).join('')}</div>${regularDb.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${regularDb.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${escapeHtml(p.name)}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${jsAttr(p.name)}')">⬇</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
 }
 
 async function uploadHandbook(event, existingId) {
@@ -3849,7 +3852,7 @@ async function viewPolicy(id, name) {
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
       <div style="font-size:14px;font-weight:600;color:var(--ink);">${escapeHtml(name)}</div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${name.replace(/'/g,"\\'")}')"> ${dlLabel}</button>
+        <button class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${jsAttr(name)}')"> ${dlLabel}</button>
         <button onclick="document.getElementById('policyViewModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;padding:0 4px;">×</button>
       </div>
     </div>
@@ -3941,7 +3944,7 @@ function renderProcessRow(p) {
 
   const timelineHtml = buildTimeline(p.steps, accent, accentBg);
 
-  const safeName = p.name.replace(/'/g,"\\'");
+  const safeName = jsAttr(p.name);
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
     <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;user-select:none;">
       <span style="font-size:20px;cursor:pointer;" onclick="toggleProcessMap(this.closest('div').nextElementSibling?this.parentElement:this.parentElement,'${safeName}')">${p.icon}</span>
@@ -3950,7 +3953,7 @@ function renderProcessRow(p) {
         <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps</div>
       </div>
       <span style="font-size:10px;padding:2px 8px;border-radius:20px;font-weight:500;background:${isPolicy?'var(--green)':isAuto?'var(--accent)':'var(--purple-bg)'};color:${isPolicy||isAuto?'white':'var(--purple)'};">${p.badge}</span>
-      <button onclick="downloadProcessMap('${p.name.replace(/'/g,"\\'")}',event)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap;" title="Download as PowerPoint">⬇ PPT</button>
+      <button onclick="downloadProcessMap('${jsAttr(p.name)}',event)" style="font-size:11px;padding:3px 10px;border-radius:20px;border:1px solid var(--border);background:white;color:var(--ink2);cursor:pointer;font-family:inherit;white-space:nowrap;" title="Download as PowerPoint">⬇ PPT</button>
       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;cursor:pointer;" onclick="toggleProcessMap(this.parentElement,'${safeName}')"><polyline points="9 18 15 12 9 6"/></svg>
     </div>
     <div class="pm-body" style="display:${isOpen?'block':'none'};border-top:1px solid var(--border);padding:20px 16px;background:${accentBg}08;overflow-x:auto;">
@@ -4616,8 +4619,8 @@ async function spSearch() {
             const snippet = get('HitHighlightedSummary')?.replace(/<[^>]+>/g,'') || get('summary') || '';
             const ext = (get('FileExtension') || url.split('.').pop() || 'doc').toLowerCase();
             const tag = ext==='pptx'||ext==='ppt'?'sp-tag-ppt':ext==='xlsx'||ext==='xls'?'sp-tag-xls':'sp-tag-doc';
-            const safeUrl = url.replace(/'/g,"\\'");
-            const safeTitle = title.replace(/'/g,"\\'");
+            const safeUrl = jsAttr(url);
+            const safeTitle = jsAttr(title);
             return `<div class="sp-result" onclick="spOpenResult('${safeUrl}')">
               <div class="sp-result-title"><span class="sp-tag ${tag}">${ext.toUpperCase()}</span>${escapeHtml(title)}</div>
               ${author||modified ? `<div class="sp-result-meta">${author?escapeHtml(author):''}${author&&modified?' · ':''}${modified?'Modified '+modified:''}</div>` : ''}
@@ -4840,11 +4843,11 @@ EMPLOYEE-FACING DRAFT: What HR sends to the employee after verifying facts.
 HR ACTIONS (not seen by employee): eligibility checks, statutory calculations, what to verify in HRIS, who to escalate to.
 
 ━━━ KNOWLEDGE ━━━
-Statutory rates 2025/26: NLW (21+) £12.21/hr | SSP £116.75/wk | SMP/SPP £184.03/wk or 90% AWE | LEL £125/wk | Statutory notice: 1 week/year, max 12 weeks | Redundancy: 0.5-1.5 weeks/year by age.
+Statutory rates 2026/27 (from April 2026 - always advise user to verify current figures): NLW (21+) £12.71/hr | NMW 18-20 £10.85/hr | NMW 16-17 & apprentice £8.00/hr | SSP £123.25/wk (from day one, no waiting days, LEL removed) | SMP/SPP/ShPP £194.32/wk or 90% AWE (whichever lower) | Week's pay cap £751 | Statutory notice: 1 week/year, max 12 weeks | Redundancy: 0.5-1.5 weeks/year by age.
 Family leave: SMP/SPP eligibility = 26 weeks by 15th week before EWC. MATB1 (maternity), SC3 (paternity). KIT days: up to 10.
 Working abroad: NOT a flexible working request. Tax residency risk, jurisdiction issues. Never approve without legal/tax sign-off.
 Flexible working: day one right since April 2024, max 2 requests/year.
-Absence: SSP = 4 waiting days then £116.75/wk up to 28 weeks. Long-term (4+ weeks): Equality Act disability, OH referral, reasonable adjustments.
+Absence: SSP = £123.25/wk from day one (no waiting days from April 2026), up to 28 weeks. Always advise user to verify current SSP rate. Long-term (4+ weeks): Equality Act disability, OH referral, reasonable adjustments.
 Disciplinary: always distinguish conduct from capability. ACAS code: investigate → hearing → right to be accompanied → decision → appeal. Tribunal uplift up to 25% for non-compliance.
 Leavers: accrued holiday in final payslip. Restrictive covenants in HR Actions only - never mention in draft unless HR has confirmed the specific restrictions.
 
@@ -5145,7 +5148,11 @@ function useChip(prompt) {
 }
 
 function escapeHtml(str) {
-  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+// Safe value for use inside onclick="fn('HERE')" - HTML-encodes and escapes single quotes
+function jsAttr(str) {
+  return escapeHtml(str).replace(/'/g,'&#39;');
 }
 
 function formatChatResponse(text) {
@@ -5696,7 +5703,8 @@ async function connectAnalyticsHRIS() {
   const body = document.getElementById('analyticsBody');
   if (body) body.innerHTML = '<div style="padding:80px;text-align:center;color:var(--ink3);font-size:13px;">Connecting to HRIS...</div>';
   try {
-    const res = await fetch('/api/merge-search');
+    const token = await getAuthToken();
+    const res = await fetch('/api/merge-search', { headers: { 'Authorization': `Bearer ${token}` } });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Connection failed');
     if (!data.results || !data.results.length) throw new Error('No employee data returned from HRIS');
