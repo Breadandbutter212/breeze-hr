@@ -875,6 +875,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <button id="recWriteBtn" onclick="writeUpMeeting()" disabled class="btn btn-primary btn-sm" style="opacity:0.4;">✦ Write up &amp; save</button>
       </div>
 
+      <div id="recLiveText" style="display:none;margin-top:12px;min-height:80px;max-height:200px;overflow-y:auto;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;line-height:1.7;color:var(--ink);background:var(--bg);"></div>
+
       <div id="recPastePanel" style="margin-top:16px;">
         <textarea id="recPasteArea" placeholder="Paste transcript or rough notes here..." style="width:100%;min-height:120px;border:1px solid var(--border);border-radius:var(--r-sm);padding:12px;font-size:13px;font-family:inherit;color:var(--ink);background:var(--bg);outline:none;resize:vertical;line-height:1.7;box-sizing:border-box;" oninput="recCheckReady()"></textarea>
       </div>
@@ -2755,18 +2757,24 @@ function startRecording() {
   recRecognition.continuous = true;
   recRecognition.interimResults = true;
   recRecognition.lang = 'en-GB';
-  // Track all text - Chrome sometimes never fires isFinal so keep a combined running transcript
-  let interimBuffer = '';
+  const liveEl = document.getElementById('recLiveText');
+  if (liveEl) { liveEl.style.display = 'block'; liveEl.textContent = ''; }
   recRecognition.onresult = e => {
-    interimBuffer = '';
+    let interim = '';
     for (let i = e.resultIndex; i < e.results.length; i++) {
       if (e.results[i].isFinal) {
         recFinalTranscript += e.results[i][0].transcript + ' ';
       } else {
-        interimBuffer += e.results[i][0].transcript;
+        interim += e.results[i][0].transcript;
       }
     }
-    window._recInterimBuffer = interimBuffer;
+    window._recInterimBuffer = interim;
+    // Show live transcript so user can see Chrome is capturing speech
+    if (liveEl) {
+      liveEl.innerHTML = escapeHtml(recFinalTranscript) +
+        (interim ? `<span style="color:var(--ink3);">${escapeHtml(interim)}</span>` : '');
+      liveEl.scrollTop = liveEl.scrollHeight;
+    }
     recCheckReady();
   };
   recRecognition.onerror = e => { if (e.error !== 'no-speech') stopRecording(); };
@@ -2812,12 +2820,17 @@ function stopRecording() {
     btn.style.background = '#6B7280';
     btn.style.borderColor = '#6B7280';
   }
-  // Delay to catch any final result events that fire right after stop (Chrome needs longer)
   setTimeout(() => {
+    // Last resort: if still empty, grab whatever is visible in the live text box
+    if (!recFinalTranscript.trim()) {
+      const liveEl = document.getElementById('recLiveText');
+      const liveText = liveEl ? liveEl.innerText.trim() : '';
+      if (liveText) recFinalTranscript = liveText;
+    }
     const status = document.getElementById('recStatus');
-    if (status) status.textContent = recFinalTranscript.trim() ? 'Recording complete - ready to write up' : 'Recording stopped';
+    if (status) status.textContent = recFinalTranscript.trim() ? 'Recording complete - ready to write up' : 'No speech detected - try speaking more clearly or use the paste option below';
     recCheckReady();
-  }, 600);
+  }, 800);
 }
 
 function recCheckReady() {
@@ -2936,8 +2949,10 @@ async function deleteMeeting(id) {
 
 function resetRecorder() {
   if (recIsRecording) stopRecording();
-  recFinalTranscript = ''; recSeconds = 0;
+  recFinalTranscript = ''; recSeconds = 0; window._recInterimBuffer = '';
   if (document.getElementById('recPasteArea')) document.getElementById('recPasteArea').value = '';
+  const liveEl = document.getElementById('recLiveText');
+  if (liveEl) { liveEl.style.display = 'none'; liveEl.textContent = ''; }
   const btn = document.getElementById('recWriteBtn');
   if (btn) { btn.disabled = true; btn.style.opacity = '0.4'; btn.textContent = '✦ Write up & save'; }
   const status = document.getElementById('recStatus');
