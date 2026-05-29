@@ -1903,6 +1903,31 @@ function getDefaultFields(name) {
 
 // ── PRESENTATIONS ──
 let presSlides = [], presTitle = '', presUploadedText = '', presUploadedSlideCount = 0, presUploadedBase64 = '';
+let presAccent = '475569', presDark = '1E293B'; // default neutral
+
+function parsePresentationColours(topic) {
+  const t = (topic || '').toLowerCase();
+  const map = {
+    green:   { accent: '16A34A', dark: '14532D' },
+    red:     { accent: 'DC2626', dark: '7F1D1D' },
+    orange:  { accent: 'EA580C', dark: '7C2D12' },
+    yellow:  { accent: 'D97706', dark: '78350F' },
+    purple:  { accent: '7C3AED', dark: '3B0764' },
+    pink:    { accent: 'DB2777', dark: '831843' },
+    teal:    { accent: '0D9488', dark: '134E4A' },
+    navy:    { accent: '1D4ED8', dark: '1E3A5F' },
+    blue:    { accent: '2563EB', dark: '1E3A5F' },
+    black:   { accent: '374151', dark: '111827' },
+    grey:    { accent: '6B7280', dark: '1F2937' },
+    gray:    { accent: '6B7280', dark: '1F2937' },
+    cyan:    { accent: '0891B2', dark: '164E63' },
+    indigo:  { accent: '4F46E5', dark: '1E1B4B' },
+  };
+  for (const [name, cols] of Object.entries(map)) {
+    if (t.includes(name)) return cols;
+  }
+  return { accent: '475569', dark: '1E293B' }; // neutral default
+}
 
 function initPresentations() {}
 
@@ -2157,6 +2182,8 @@ Guidelines:
       pres = JSON.parse(fm ? fm[0].replace(/,(\s*[}\]])/g,'$1') : '{}');
     }
     presTitle = (pres.title || topic).replace(/[—–]/g,'-');
+    const cols = parsePresentationColours(topic);
+    presAccent = cols.accent; presDark = cols.dark;
     presSlides = (pres.slides || []).map(s => ({
       ...s,
       title: (s.title||'').replace(/[—–]/g,'-'),
@@ -2174,9 +2201,9 @@ Guidelines:
 }
 
 // Draws a chart slide using pptxgenjs native chart engine
-function drawChart(pptx, slide, s, theme) {
+function drawChart(pptx, slide, s, theme, accentCol, darkCol) {
   const branded = theme === 'branded';
-  const DARK = '0A1628', WHITE = 'FFFFFF';
+  const DARK = darkCol || '1E293B', ACCENT = accentCol || '475569', WHITE = 'FFFFFF';
   if (branded) {
     slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color:DARK } });
     slide.addText(s.title||'', { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
@@ -2208,9 +2235,9 @@ function drawChart(pptx, slide, s, theme) {
 }
 
 // Draws an org chart onto a pptxgenjs slide using boxes + elbow connectors
-function drawOrgChart(pptx, slide, s, theme) {
+function drawOrgChart(pptx, slide, s, theme, accentCol, darkCol) {
   const branded = theme === 'branded';
-  const DARK = '0A1628', ACCENT = '3B82F6', WHITE = 'FFFFFF', LINE = 'CBD5E1';
+  const DARK = darkCol || '1E293B', ACCENT = accentCol || '475569', WHITE = 'FFFFFF', LINE = 'CBD5E1';
   const title = s.title || 'Organisation Chart';
   if (branded) {
     slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color:DARK } });
@@ -2604,18 +2631,17 @@ function downloadPresentation() {
         }
       });
     } else {
-      // Breeze HR branded theme
-      const DARK = '0A1628', ACCENT = '3B82F6', WHITE = 'FFFFFF';
+      const DARK = presDark || '1E293B', ACCENT = presAccent || '475569', WHITE = 'FFFFFF';
       presSlides.forEach(s => {
         const slide = pptx.addSlide();
         if (s.type === 'chart') {
-          drawChart(pptx, slide, s, 'branded');
+          drawChart(pptx, slide, s, 'branded', ACCENT, DARK);
         } else if (s.type === 'orgchart') {
-          drawOrgChart(pptx, slide, s, 'branded');
+          drawOrgChart(pptx, slide, s, 'branded', ACCENT, DARK);
         } else if (s.type === 'title') {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
           slide.addText(s.title||'', { x:0.6, y:2.2, w:11, h:1.4, fontSize:40, bold:true, color:WHITE, fontFace:'Calibri' });
-          if (s.subtitle) slide.addText(s.subtitle, { x:0.6, y:3.7, w:9, h:0.6, fontSize:20, color:'93C5FD', fontFace:'Calibri' });
+          if (s.subtitle) slide.addText(s.subtitle, { x:0.6, y:3.7, w:9, h:0.6, fontSize:20, color:ACCENT, fontFace:'Calibri' });
           slide.addShape(pptx.ShapeType.rect, { x:0.6, y:5, w:1.2, h:0.08, fill:{ color: ACCENT } });
         } else if (s.type === 'section') {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: ACCENT } });
@@ -2623,7 +2649,7 @@ function downloadPresentation() {
         } else if (s.type === 'close') {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{ color: DARK } });
           slide.addText(s.title||'Questions?', { x:0.6, y:2, w:11, h:1.2, fontSize:40, bold:true, color:WHITE, fontFace:'Calibri' });
-          if (s.bullets?.[0]) slide.addText(s.bullets[0], { x:0.6, y:3.4, w:9, h:0.6, fontSize:18, color:'93C5FD', fontFace:'Calibri' });
+          if (s.bullets?.[0]) slide.addText(s.bullets[0], { x:0.6, y:3.4, w:9, h:0.6, fontSize:18, color:ACCENT, fontFace:'Calibri' });
         } else {
           slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{ color: DARK } });
           slide.addText(s.title||'', { x:0.4, y:0.15, w:11.4, h:0.8, fontSize:22, bold:true, color:WHITE, fontFace:'Calibri' });
