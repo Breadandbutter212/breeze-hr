@@ -2630,9 +2630,10 @@ function downloadPresentation() {
   const btn = document.getElementById('pres-download-btn');
   btn.textContent = 'Generating...'; btn.disabled = true;
   const keepFormat = document.getElementById('pres-dl-keep')?.checked;
+  const keepStructureCheck = document.getElementById('pres-keep-format')?.checked;
 
-  // Task 4: injection path is driven by presUploadedBase64 + keepFormat (pres-dl-keep)
-  if (presUploadedBase64 && keepFormat) {
+  // Use injection whenever a file was uploaded and either keep-branding checkbox is ticked
+  if (presUploadedBase64 && (keepFormat || keepStructureCheck)) {
     try {
       const zip = new PizZip(presUploadedBase64, { base64: true });
       const resolvePath = (base, rel) => {
