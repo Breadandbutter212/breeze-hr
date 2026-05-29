@@ -5819,7 +5819,8 @@ function renderDashboard() {
     const vals = rows.map(r=>parseFloat(String(r[col]||'').replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
     const avg = vals.length ? (vals.reduce((a,b)=>a+b,0)/vals.length) : 0;
     const label = col.replace(/_/g,' ');
-    const fmt = avg >= 1000 ? avg.toLocaleString('en-GB',{maximumFractionDigits:0}) : avg.toFixed(1);
+    const isYear = avg >= 1900 && avg <= 2100 && vals.every(v => Number.isInteger(v) && v >= 1900 && v <= 2100);
+    const fmt = isYear ? Math.round(avg).toString() : avg >= 1000 ? avg.toLocaleString('en-GB',{maximumFractionDigits:0}) : avg.toFixed(1);
     kpiHtml += kpiCard('Avg '+label, fmt, `${vals.length} values`, kpiColors[i+1]);
   });
 
