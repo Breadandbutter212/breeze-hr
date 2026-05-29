@@ -3626,7 +3626,8 @@ function updatePreview() {
 
   else { const rows=t.flow.map(f=>`<p><strong>${f.f.replace(/_/g,' ')}:</strong> ${ph(f.f)}</p>`).join(''); content=`${header()}${salutation()}<div class="doc-body-text">${rows}</div>${sign()}`; }
 
-  body.innerHTML=`<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click anywhere to edit">${content}</div>`;
+  const builtInNotice = `<div id="docPreviewNotice" style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Draft - preview only. Formatting is applied when you download the Word file.</div>`;
+  body.innerHTML=`${builtInNotice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click anywhere to edit">${content}</div>`;
 }
 
 function finishTmpl() {
@@ -3658,7 +3659,9 @@ async function downloadAsDocx() {
   if(btn){btn.textContent='Generating...';btn.disabled=true;}
   try {
     const body=document.getElementById('dpBody');
-    const text = body ? body.innerText : '';
+    // Exclude the preview notice div from download content
+    const docPage = body ? body.querySelector('.doc-page, .mammoth-doc') : null;
+    const text = docPage ? docPage.innerText : (body ? body.innerText : '');
     const res=await fetch('/api/generate-doc',{
       method:'POST',
       headers:{'Content-Type':'application/json'},

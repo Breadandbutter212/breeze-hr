@@ -50,7 +50,7 @@ function textToDocxBuffer(text, title) {
       paras += `<w:p><w:pPr><w:spacing w:before="0" w:after="100"/></w:pPr>${runsToXml(runs)}</w:p>`;
     } else {
       // Plain text - detect numbered sections or ALL-CAPS headings
-      const isSection = /^\d+\.\d*\s/.test(trimmed);
+      const isSection = /^\d+\.\s/.test(trimmed) && !/^\d+\.\d+/.test(trimmed);
       const isAllCaps = trimmed.length < 70 && trimmed === trimmed.toUpperCase() && /[A-Z]{3}/.test(trimmed);
       const bold = isSection || isAllCaps;
       const spaceBefore = bold ? '200' : '0';
