@@ -2582,7 +2582,7 @@ function _pptxCalcTabTarget(xml) {
   return samples.length ? Math.round(samples.reduce((a,b)=>a+b,0)/samples.length) : 29;
 }
 
-function _pptxInjectSlide(xml, slide) {
+function _pptxInjectSlide(xml, slide, skipBody) {
   const tabTarget = _pptxCalcTabTarget(xml);
   // Extract all <p:sp> blocks
   const spBlocks = [];
@@ -2618,7 +2618,7 @@ function _pptxInjectSlide(xml, slide) {
     if (sp.cls === 'title') {
       let isFirst = true;
       result += sp.xml.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(slide.title||'')}</a:t>`; } return '<a:t></a:t>'; });
-    } else if (sp.isBestBody) {
+    } else if (sp.isBestBody && !skipBody) {
       const txStart = sp.xml.indexOf('<p:txBody>');
       const txEnd = sp.xml.indexOf('</p:txBody>') + '</p:txBody>'.length;
       if (txStart === -1 || txEnd < '</p:txBody>'.length) { result += sp.xml; continue; }
@@ -2655,11 +2655,16 @@ function downloadPresentation() {
       // Inject into existing slides
       slideFiles.forEach((sf, idx) => {
         const slide = presSlides[idx]; if (!slide) return;
-        let xml = _pptxInjectSlide(zip.files[sf].asText(), slide);
+
+        // Check if this slide has SmartArt/diagram rels - if so skip body injection
+        const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+        const hasDiagram = zip.files[relsPath] &&
+          /Type="[^"]*diagramData[^"]*"/.test(zip.files[relsPath].asText());
+
+        let xml = _pptxInjectSlide(zip.files[sf].asText(), slide, hasDiagram);
         zip.file(sf, xml);
 
         // SmartArt/diagram: 1:1 fixed swap only (no add/remove)
-        const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
         if (!zip.files[relsPath]) return;
         const relsXml = zip.files[relsPath].asText();
         const diagTexts = [slide.title, ...(slide.bullets||[])];
