@@ -2214,7 +2214,7 @@ function drawChart(pptx, slide, s, theme, accentCol, darkCol) {
   const labels = s.labels || [], series = s.series || [];
   if (!labels.length || !series.length) return;
   const COLORS = ['3B82F6','10B981','F59E0B','EF4444','8B5CF6','F97316','06B6D4'];
-  const chartData = series.map(ser => ({ name: ser.name||'', labels, values: ser.values||[] }));
+  const chartData = series.map(ser => ({ name: ser.name||'', labels, values: (ser.values||[]).map(v => { const n = parseFloat(v); return isNaN(n) ? 0 : n; }) }));
   const chartColors = series.map((_,i) => COLORS[i % COLORS.length]);
   const ct = s.chartType || 'bar';
   const typeMap = { line: pptx.ChartType.line, pie: pptx.ChartType.pie, doughnut: pptx.ChartType.doughnut, area: pptx.ChartType.area };
@@ -2284,21 +2284,23 @@ function drawOrgChart(pptx, slide, s, theme, accentCol, darkCol) {
 }
 
 function slideCardHtml(s, i) {
+  const A = '#' + (presAccent || '475569');
+  const D = '#' + (presDark  || '1E293B');
   if (s.type === 'chart') {
     const vals = s.series?.[0]?.values || [];
     const maxV = Math.max(...vals, 1);
     const labels = s.labels || [];
     const ct = s.chartType || 'bar';
-    const barPreview = vals.slice(0,7).map((v,i) => {
+    const barPreview = vals.slice(0,7).map((v,j) => {
       const pct = Math.round((v/maxV)*85);
       return `<div style="display:flex;align-items:center;gap:3px;margin-bottom:2px;">
-        <div style="font-size:5px;color:#6B7280;width:28px;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(String(labels[i]||''))}</div>
-        <div style="flex:1;background:#E5E7EB;border-radius:2px;height:8px;"><div style="width:${pct}%;height:100%;background:#3B82F6;border-radius:2px;"></div></div>
+        <div style="font-size:5px;color:#6B7280;width:28px;text-align:right;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(String(labels[j]||''))}</div>
+        <div style="flex:1;background:#E5E7EB;border-radius:2px;height:8px;"><div style="width:${pct}%;height:100%;background:${A};border-radius:2px;"></div></div>
         <div style="font-size:5px;color:#374151;width:14px;">${v}</div>
       </div>`;
     }).join('');
     return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;background:#fff;">
-      <div style="background:#0A1628;padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Chart')} <span style="font-size:6px;opacity:0.6;text-transform:uppercase;">${ct}</span></div></div>
+      <div style="background:${D};padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Chart')} <span style="font-size:6px;opacity:0.6;text-transform:uppercase;">${ct}</span></div></div>
       <div style="flex:1;padding:6px 10px;display:flex;flex-direction:column;justify-content:center;">${barPreview}</div>
       <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
     </div>`;
@@ -2308,9 +2310,9 @@ function slideCardHtml(s, i) {
     const root = nodes.find(n => !n.parent);
     const reports = nodes.filter(n => n.parent === root?.id);
     return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;background:#F8FAFC;">
-      <div style="background:#0A1628;padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Org Chart')}</div></div>
+      <div style="background:${D};padding:8px 12px;"><div style="font-size:8px;font-weight:700;color:white;">${escapeHtml(s.title||'Org Chart')}</div></div>
       <div style="flex:1;padding:6px 10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;">
-        ${root?`<div style="background:#0A1628;color:white;border-radius:4px;padding:2px 8px;font-size:6.5px;font-weight:700;">${escapeHtml(root.name||'')} - ${escapeHtml(root.title||'')}</div><div style="width:1px;height:6px;background:#CBD5E1;"></div><div style="display:flex;gap:4px;">${reports.slice(0,4).map(r=>`<div style="background:#3B82F6;color:white;border-radius:3px;padding:2px 5px;font-size:5.5px;">${escapeHtml(r.name||'')}</div>`).join('')}${nodes.length>5?`<div style="color:#9CA3AF;font-size:5.5px;padding:2px;">+${nodes.length-1-reports.length} more</div>`:''}</div>`:'<div style="color:#9CA3AF;font-size:7px;">No nodes</div>'}
+        ${root?`<div style="background:${D};color:white;border-radius:4px;padding:2px 8px;font-size:6.5px;font-weight:700;">${escapeHtml(root.name||'')} - ${escapeHtml(root.title||'')}</div><div style="width:1px;height:6px;background:#CBD5E1;"></div><div style="display:flex;gap:4px;">${reports.slice(0,4).map(r=>`<div style="background:${A};color:white;border-radius:3px;padding:2px 5px;font-size:5.5px;">${escapeHtml(r.name||'')}</div>`).join('')}${nodes.length>5?`<div style="color:#9CA3AF;font-size:5.5px;padding:2px;">+${nodes.length-1-reports.length} more</div>`:''}</div>`:'<div style="color:#9CA3AF;font-size:7px;">No nodes</div>'}
       </div>
       <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
     </div>`;
@@ -2318,7 +2320,7 @@ function slideCardHtml(s, i) {
   const isTitleType = s.type==='title';
   const isSectionType = s.type==='section';
   const isCloseType = s.type==='close';
-  const bg = isTitleType||isCloseType ? '#0A1628' : isSectionType ? '#3B82F6' : '#1B2D50';
+  const bg = isTitleType||isCloseType ? D : isSectionType ? A : D;
   const hasBody = !isTitleType && !isSectionType && !isCloseType;
   return `<div onclick="openSlideEdit(${i})" style="cursor:pointer;border-radius:10px;overflow:hidden;box-shadow:0 2px 10px rgba(0,0,0,0.12);transition:transform 0.15s,box-shadow 0.15s;aspect-ratio:16/9;display:flex;flex-direction:column;position:relative;" onmouseover="this.style.transform='translateY(-3px)';this.style.boxShadow='0 6px 20px rgba(0,0,0,0.18)'" onmouseout="this.style.transform='none';this.style.boxShadow='0 2px 10px rgba(0,0,0,0.12)'">
     <div style="background:${bg};padding:${isTitleType?'20px 16px':'8px 12px'};flex:${isTitleType||isSectionType||isCloseType?1:0};display:flex;flex-direction:column;justify-content:${isTitleType||isCloseType?'center':'flex-start'};">
@@ -2326,7 +2328,7 @@ function slideCardHtml(s, i) {
       ${s.subtitle&&isTitleType?`<div style="font-size:7px;color:rgba(255,255,255,0.6);margin-top:4px;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(s.subtitle)}</div>`:''}
       ${isCloseType&&s.bullets?.[0]?`<div style="font-size:7px;color:rgba(255,255,255,0.6);margin-top:4px;">${escapeHtml(s.bullets[0])}</div>`:''}
     </div>
-    ${hasBody?`<div style="background:#ffffff;flex:1;padding:6px 10px;overflow:hidden;">${(s.bullets||[]).slice(0,4).map(b=>`<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:2px;"><span style="color:#3B82F6;font-size:7px;margin-top:1px;flex-shrink:0;">•</span><span style="font-size:6.5px;color:#374151;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">${escapeHtml(b)}</span></div>`).join('')}</div>`:''}
+    ${hasBody?`<div style="background:#ffffff;flex:1;padding:6px 10px;overflow:hidden;">${(s.bullets||[]).slice(0,4).map(b=>`<div style="display:flex;gap:4px;align-items:flex-start;margin-bottom:2px;"><span style="color:${A};font-size:7px;margin-top:1px;flex-shrink:0;">•</span><span style="font-size:6.5px;color:#374151;line-height:1.4;overflow:hidden;display:-webkit-box;-webkit-line-clamp:1;-webkit-box-orient:vertical;">${escapeHtml(b)}</span></div>`).join('')}</div>`:''}
     <div style="position:absolute;top:4px;right:6px;font-size:7px;font-weight:700;color:rgba(255,255,255,0.5);">${i+1}</div>
   </div>`;
 }
