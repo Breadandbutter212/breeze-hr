@@ -3513,16 +3513,20 @@ function askQ() {
         <div id="mergeDropdown" style="display:none;position:absolute;bottom:100%;left:0;right:36px;background:white;border:1px solid var(--border2);border-radius:var(--r-sm) var(--r-sm) 0 0;box-shadow:var(--shadow);z-index:500;max-height:220px;overflow-y:auto;margin-bottom:2px;"></div>
       </div>`;
   } else {
-    field.innerHTML=`<div class="gc-field-label">${q.f.replace(/_/g,' ')}</div><div class="gc-field-row"><input class="gc-input" id="gcInp" placeholder="Type here..." onkeydown="if(event.key==='Enter'){event.preventDefault();submitQ()}"><button class="gc-next" onclick="submitQ()">→</button></div>`;
+    const prefilled = genVals[q.f] || '';
+    const hrisHint = prefilled ? ` <span style="font-size:10px;color:var(--green);font-weight:500;">from HRIS</span>` : '';
+    field.innerHTML=`<div class="gc-field-label">${q.f.replace(/_/g,' ')}${hrisHint}</div><div class="gc-field-row"><input class="gc-input" id="gcInp" value="${prefilled.replace(/"/g,'&quot;')}" placeholder="Type here..." onkeydown="if(event.key==='Enter'){event.preventDefault();submitQ()}"><button class="gc-next" onclick="submitQ()">→</button></div>`;
   }
-  setTimeout(()=>{const i=document.getElementById('gcInp');if(i)i.focus();},40);
+  setTimeout(()=>{const i=document.getElementById('gcInp');if(i){i.focus();i.select();}},40);
 }
 
 function submitQ() {
-  const inp=document.getElementById('gcInp'); if(!inp||!inp.value.trim())return;
+  const inp=document.getElementById('gcInp'); if(!inp)return;
   const val=inp.value.trim();
-  genVals[selTmpl.flow[genStep].f]=val;
-  genStep++; addGMsg('u',val); updatePreview(); setTimeout(askQ,280);
+  if(!val && !genVals[selTmpl.flow[genStep]?.f]) return;
+  if(val) genVals[selTmpl.flow[genStep].f]=val;
+  const confirmed=genVals[selTmpl.flow[genStep].f]||'';
+  genStep++; addGMsg('u',confirmed); updatePreview(); setTimeout(askQ,280);
 }
 
 function addGMsg(role,text) {
