@@ -2430,7 +2430,14 @@ async function presAiEdit() {
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
         messages: [{ role: 'user', content: `Here is the current presentation JSON:\n${currentJson}\n\nInstruction: ${instruction}\n\nReturn the full updated presentation as JSON in exactly the same format. Only change what the instruction asks for.` }],
-        system: 'You are editing a presentation. Apply the instruction precisely. Rules: (1) Keep every slide title identical unless the instruction explicitly says to change it. (2) You MAY add or remove bullet points on any content slide when asked. (3) Only add or remove a whole slide when the user explicitly asks for it. (4) For diagram/chart slides, do not change the number of items - only reword them. Slide types: title, section, content, close, orgchart, chart, image. Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.'
+        system: `You are editing a presentation JSON. Follow the instruction LITERALLY and PRECISELY. Rules:
+1. TITLES: Never change any slide title unless the instruction explicitly says to rename or retitle that specific slide.
+2. ADD SLIDE: If the instruction says "add a slide about X", add a brand-new object to the slides array with type "content", a clear title, and relevant bullets. Do not just add an agenda item - create the actual new slide.
+3. UPDATE EXAMPLES: If the instruction says "update examples on slide N", replace the bullet text on that slide with new realistic examples matching the topic.
+4. UPDATE DATES/YEARS: If the instruction says "update dates to YYYY" or "update references to YYYY", find every bullet or subtitle containing a year number and change it to YYYY.
+5. UNCHANGED SLIDES: Every slide not mentioned in the instruction must be returned byte-for-byte identical - same title, same bullets, same order.
+6. Do not restructure, reformat, or improve anything not mentioned in the instruction.
+Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.`
       })
     });
     const data = await res.json();
