@@ -2800,15 +2800,16 @@ function downloadPresentation() {
       slideFiles.forEach((sf, idx) => {
         const slide = origSlides[idx]; if (!slide) return;
 
-        // Check if this slide has SmartArt/diagram rels - if so skip body injection
+        // Check if this slide has SmartArt/diagram rels - if so skip entirely (too complex to inject)
         const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
         const hasDiagram = zip.files[relsPath] &&
           /Type="[^"]*diagramData[^"]*"/.test(zip.files[relsPath].asText());
 
-        let xml = _pptxInjectSlide(zip.files[sf].asText(), slide, hasDiagram);
+        if (hasDiagram) return; // leave SmartArt slides byte-for-byte unchanged
+
+        let xml = _pptxInjectSlide(zip.files[sf].asText(), slide, false);
         zip.file(sf, xml);
 
-        // SmartArt/diagram: 1:1 fixed swap only - skip if counts don't match (Issue 2)
         if (!zip.files[relsPath]) return;
         const relsXml = zip.files[relsPath].asText();
         const diagTexts = [slide.title, ...(slide.bullets||[])];
@@ -2881,7 +2882,10 @@ function downloadPresentation() {
           if (_pptxClassifyShape(spX) === 'other') bgShapes.push(spX);
           bPos = bEnd;
         }
-        const bgXml = bgShapes.join('');
+        // Renumber bg shape IDs to avoid conflicts with placeholder IDs 2 and 3
+        let bgIdCounter = 10;
+        const bgXml = bgShapes.map(s => s.replace(/<p:cNvPr\b([^>]*)\bid="[^"]*"/g,
+          (m, pre) => `<p:cNvPr${pre}id="${bgIdCounter++}"`)).join('');
 
         for (const newSlide of newSlides) {
           const newNum = nextNum++;
