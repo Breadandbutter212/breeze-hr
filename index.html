@@ -2068,7 +2068,8 @@ function presLog(msg, type) {
   if (!panel) return;
   const ts = new Date().toLocaleTimeString();
   const colour = type === 'error' ? '#EF4444' : type === 'ok' ? '#22C55E' : type === 'warn' ? '#F59E0B' : '#94A3B8';
-  panel.innerHTML += `<span style="color:${colour}">[${ts}] ${msg}\n</span>`;
+  const safe = msg.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  panel.innerHTML += `<span style="color:${colour}">[${ts}] ${safe}\n</span>`;
   panel.scrollTop = panel.scrollHeight;
 }
 
@@ -2904,11 +2905,22 @@ ${bgXml}
 </p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>`;
           let newXml = _pptxInjectSlide(minSlideXml, { ...newSlide, _allowExtraBullets: true });
           zip.file(newPath, newXml);
-          presLog(`New slide XML first 200: ${newXml.substring(0,200)}`, 'ok');
-          // Minimal rels pointing to the borrowed slide layout
-          const minRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="${layoutRef}"/></Relationships>`;
+          presLog(`New slide XML length: ${newXml.length}, title injected: ${newXml.includes('Why') || newXml.includes(newSlide.title?.substring(0,10)||'?')}`, 'ok');
+
+          // Notes slide (empty) - required to avoid PowerPoint repair warning
+          const notesPath = `ppt/notesSlides/notesSlide${newNum}.xml`;
+          const notesRelsPath = `ppt/notesSlides/_rels/notesSlide${newNum}.xml.rels`;
+          const notesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><p:notes xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"><p:cSld><p:spTree><p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr><p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr><p:sp><p:nvSpPr><p:cNvPr id="2" name="Slide Image 1"/><p:cNvSpPr><a:spLocks noGrp="1" noRot="1" noChangeAspect="1"/></p:cNvSpPr><p:nvPr><p:ph type="sldImg"/></p:nvPr></p:nvSpPr><p:spPr/></p:sp><p:sp><p:nvSpPr><p:cNvPr id="3" name="Notes Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="body" idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:endParaRPr lang="en-US" dirty="0"/></a:p></p:txBody></p:sp></p:spTree></p:cSld><p:clrMapOvr><a:masterClrMapping/></p:clrMapOvr></p:notes>`;
+          const notesRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesMaster" Target="../notesMasters/notesMaster1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="../slides/slide${newNum}.xml"/></Relationships>`;
+          zip.file(notesPath, notesXml);
+          zip.file(notesRelsPath, notesRels);
+
+          // Slide rels: layout + notesSlide reference
+          const minRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="${layoutRef}"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/notesSlide" Target="../notesSlides/notesSlide${newNum}.xml"/></Relationships>`;
           zip.file(newRelsPath, minRels);
-          presLog(`New slide rels: ${minRels}`, 'ok');
+          // Content_Types: add Override for new notesSlide
+          contentTypes = contentTypes.replace('</Types>', `<Override PartName="/ppt/notesSlides/notesSlide${newNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.notesSlide+xml"/></Types>`);
+          presLog(`Created notesSlide${newNum}.xml and updated rels`, 'ok');
           // Update manifests
           maxId++;
           const newRId = `rId${nextRIdNum++}`;
