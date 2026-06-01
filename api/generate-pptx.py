@@ -44,62 +44,47 @@ def clone_slide_with_images(prs, source_idx):
 
     return new_slide
 
-def write_title_like_source(ph, source_ph, new_title):
-    """Replace txBody wholesale from source (preserves bodyPr fontScale, run rPr/sz, pPr)
-    then swap only the text. This is the correct approach per Claude.ai analysis."""
+def overwrite_title_text(ph, new_title):
+    """Slide is already a clone - just swap the text in the existing runs. Touch nothing else."""
+    from pptx.oxml.ns import qn
+    txBody = ph.text_frame._txBody
+    # Find all a:t elements in the title and set the first one, clear the rest
+    all_t = txBody.findall('.//' + qn('a:t'))
+    if all_t:
+        all_t[0].text = new_title
+        for t in all_t[1:]:
+            t.text = ''
+    else:
+        # Fallback: no runs found - use tf.text
+        ph.text_frame.text = new_title
+
+def overwrite_body_text(ph, bullets):
+    """Slide is already a clone - replace body paragraph texts. Clone first run for formatting."""
     from pptx.oxml.ns import qn
     from lxml import etree
+    if not bullets:
+        return
     txBody = ph.text_frame._txBody
-    src_txBody = source_ph.text_frame._txBody
+    paras = txBody.findall(qn('a:p'))
+    if not paras:
+        return
 
-    # Replace entire txBody content with source's (bodyPr autofit, lstStyle, rPr/@sz all survive)
-    for child in list(txBody):
-        txBody.remove(child)
-    for child in src_txBody:
-        txBody.append(copy.deepcopy(child))
+    # Use first existing paragraph as formatting template
+    ref_para = copy.deepcopy(paras[0])
 
-    # Strip normAutofit fontScale so PowerPoint recomputes fit for potentially longer title
-    body_pr = txBody.find(qn('a:bodyPr'))
-    if body_pr is not None:
-        norm = body_pr.find(qn('a:normAutofit'))
-        if norm is not None:
-            norm.attrib.pop('fontScale', None)
-            norm.attrib.pop('lnSpcReduction', None)
+    # Remove all existing paragraphs
+    for p in paras:
+        txBody.remove(p)
 
-    # Retext: keep first paragraph's first run (and its rPr/@sz), drop rest
-    first_p = txBody.find(qn('a:p'))
-    if first_p is not None:
-        runs = first_p.findall(qn('a:r'))
-        if runs:
-            t = runs[0].find(qn('a:t'))
-            if t is None:
-                t = etree.SubElement(runs[0], qn('a:t'))
-            t.text = new_title
-            for r in runs[1:]:
-                first_p.remove(r)
-        else:
-            new_r = etree.SubElement(first_p, qn('a:r'))
-            new_t = etree.SubElement(new_r, qn('a:t'))
-            new_t.text = new_title
-        for br in first_p.findall(qn('a:br')):
-            first_p.remove(br)
-        for p in txBody.findall(qn('a:p'))[1:]:
-            txBody.remove(p)
-    else:
-        new_p = etree.SubElement(txBody, qn('a:p'))
-        new_r = etree.SubElement(new_p, qn('a:r'))
-        etree.SubElement(new_r, qn('a:t')).text = new_title
-
-def reset_and_write_placeholder(shape, texts):
-    """Clear text content only - keep lstStyle so font size from cloned slide is preserved."""
-    tf = shape.text_frame
-    tf.clear()
-    if texts:
-        tf.paragraphs[0].text = texts[0]
-    for text in texts[1:]:
-        p = tf.add_paragraph()
-        p.text = text
-        p.level = 0
+    for bullet in bullets:
+        new_p = copy.deepcopy(ref_para)
+        # Set text in first run, clear rest
+        all_t = new_p.findall('.//' + qn('a:t'))
+        if all_t:
+            all_t[0].text = bullet
+            for t in all_t[1:]:
+                t.text = ''
+        txBody.append(new_p)
 
 def apply_ops(prs, ops):
     from pptx.oxml.ns import qn
@@ -201,22 +186,14 @@ def apply_ops(prs, ops):
             template_slide = prs.slides[template_idx]
             new_slide = clone_slide_with_images(prs, template_idx)
 
-            # Find source title placeholder for formatting reference
-            source_title_ph = next(
-                (ph for ph in template_slide.placeholders if ph.placeholder_format.type in TITLE_TYPES),
-                None
-            )
-
-            # Write content: title uses source formatting, body uses tf.clear()
+            # Slide is a clone - just overwrite text in existing runs, touch nothing else
             for ph in new_slide.placeholders:
                 ph_type = ph.placeholder_format.type
                 ph_idx  = ph.placeholder_format.idx
-                if ph_type in TITLE_TYPES and source_title_ph:
-                    write_title_like_source(ph, source_title_ph, title_text)
-                elif ph_type in TITLE_TYPES:
-                    reset_and_write_placeholder(ph, [title_text])
+                if ph_type in TITLE_TYPES:
+                    overwrite_title_text(ph, title_text)
                 elif ph_idx == 1:
-                    reset_and_write_placeholder(ph, bullets)
+                    overwrite_body_text(ph, bullets)
 
             # Move to correct position (add_slide always appends)
             xml_slides = prs.slides._sldIdLst
