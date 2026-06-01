@@ -2018,7 +2018,7 @@ async function handlePresUpload(event) {
     });
     if (presSlides.length) presTitle = presSlides[0].title || 'Presentation';
 
-    // Extract theme accent colour from ppt/theme/theme1.xml for preview
+    // Extract theme accent colour for preview (used after Build is clicked)
     const themeFile = Object.keys(zip.files).find(f => /ppt\/theme\/theme\d+\.xml/.test(f));
     if (themeFile) {
       const themeXml = zip.files[themeFile].asText();
@@ -2028,8 +2028,8 @@ async function handlePresUpload(event) {
       if (darkMatch)   presDark   = darkMatch[1];
     }
 
-    renderSlides();
-    document.getElementById('pres-empty-state').style.display = 'none';
+    // Don't show slides yet - wait for Build to be clicked
+    // presSlides is populated so the edit path can use it, but preview stays grey
   } catch(e) { presUploadedText = ''; if (lbl) lbl.textContent = 'Could not read file'; }
 }
 
@@ -2085,7 +2085,9 @@ async function generatePresentation() {
   if (!topic) { document.getElementById('pres-topic')?.focus(); return; }
 
   // If a deck is already uploaded, route to patch edit instead of full generation
-  if (presUploadedBase64 && presSlides.length) {
+  // Only route to patch edit if the instruction looks like an edit (mentions slide numbers or specific changes)
+  const looksLikeEdit = /\bslide\s*\d+\b|add\s+a?\s*(new\s+)?(bullet|point)|remove|update|change|rename|translate/i.test(topic);
+  if (presUploadedBase64 && presSlides.length && looksLikeEdit) {
     presLog('Routing to patch edit (deck already uploaded)', 'warn');
     const chatInput = document.getElementById('pres-chat-input');
     if (chatInput) chatInput.value = topic;
@@ -2814,7 +2816,9 @@ async function _downloadPresentationPython(btn) {
 }
 
 function _downloadPresentationClient(btn) {
-  if (presUploadedBase64 && (document.getElementById('pres-dl-keep')?.checked || document.getElementById('pres-keep-format')?.checked)) {
+  const keepFormat = document.getElementById('pres-dl-keep')?.checked;
+  const keepStructureCheck = document.getElementById('pres-keep-format')?.checked;
+  if (presUploadedBase64 && (keepFormat || keepStructureCheck)) {
     try {
       const zip = new PizZip(presUploadedBase64, { base64: true });
       const resolvePath = (base, rel) => {

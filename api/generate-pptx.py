@@ -74,10 +74,9 @@ def hard_reset_placeholder(shape):
             p.remove(ppr)
 
 def reset_and_write_placeholder(shape, texts):
-    """Hard reset placeholder formatting then write content with no explicit sizing."""
-    hard_reset_placeholder(shape)
+    """Clear text content only - keep lstStyle so font size from cloned slide is preserved."""
     tf = shape.text_frame
-    # Write first text directly (no explicit font - pure inheritance from layout)
+    tf.clear()  # clears text but keeps lstStyle (which has correct size from source slide)
     if texts:
         tf.paragraphs[0].text = texts[0]
     for text in texts[1:]:
