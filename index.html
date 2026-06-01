@@ -2559,8 +2559,8 @@ Rules:
         slides[idx].bullets = (op.bullets||[]).map(b => b.replace(/[—–]/g,'-'));
         presLog(`update_bullets slide ${slideNum}: ${slides[idx].bullets.length} bullets`, 'ok');
       } else if ((opType === 'add_bullet' || opType === 'add_example' || opType === 'append_bullet') && slides[idx]) {
-        const txt = (op.bullet || op.text || op.content || op.example || '').replace(/[—–]/g,'-');
-        if (txt) { slides[idx].bullets.push(txt); presLog(`add_bullet slide ${slideNum}: "${txt.substring(0,60)}"`, 'ok'); }
+        const txt = (op.bullet || op.text || op.content || op.example || '').replace(/[—–]/g,'-').replace(/\n/g,' ').trim();
+        if (txt) { slides[idx].bullets.push(txt); slides[idx]._allowExtraBullets = true; presLog(`add_bullet slide ${slideNum}: "${txt.substring(0,60)}"`, 'ok'); }
         else presLog(`add_bullet slide ${slideNum}: EMPTY TEXT - check op.bullet field`, 'error');
       } else if ((opType === 'update_title' || opType === 'rename') && slides[idx]) {
         slides[idx].title = (op.title||'').replace(/[—–]/g,'-');
@@ -2650,7 +2650,7 @@ function _pptxReplaceParaText(paraFull, paraInner, newText, tabTarget) {
   return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(newText)}</a:t>`; } return '<a:t></a:t>'; }) + '</a:p>';
 }
 
-function _pptxInjectTxBody(txBodyXml, bullets, tabTarget) {
+function _pptxInjectTxBody(txBodyXml, bullets, tabTarget, allowExtra) {
   // Split into segments: non-para text and <a:p> blocks
   const segs = [];
   const paraRe = /<a:p>([\s\S]*?)<\/a:p>/g;
@@ -2668,7 +2668,7 @@ function _pptxInjectTxBody(txBodyXml, bullets, tabTarget) {
 
   let bIdx = 0;
   for (const s of segs) if (s.t === 'bullet') s.bIdx = bIdx++;
-  const N = bIdx, W = bullets.length;
+  const N = bIdx, W = allowExtra ? bullets.length : Math.min(bullets.length, N);
   let lastBulletFull = null;
   for (const s of segs) if (s.t === 'bullet') lastBulletFull = s.full;
 
@@ -2754,7 +2754,7 @@ function _pptxInjectSlide(xml, slide, skipBody) {
       const txStart = sp.xml.indexOf('<p:txBody>');
       const txEnd = sp.xml.indexOf('</p:txBody>') + '</p:txBody>'.length;
       if (txStart === -1 || txEnd < '</p:txBody>'.length) { result += sp.xml; continue; }
-      const newTx = _pptxInjectTxBody(sp.xml.substring(txStart, txEnd), slide.bullets||[], tabTarget);
+      const newTx = _pptxInjectTxBody(sp.xml.substring(txStart, txEnd), slide.bullets||[], tabTarget, slide._allowExtraBullets);
       result += sp.xml.substring(0, txStart) + newTx + sp.xml.substring(txEnd);
     } else {
       result += sp.xml;
@@ -2833,21 +2833,24 @@ function downloadPresentation() {
         });
       });
 
-      // Append new slides (_isNew flagged by patch, or any extras beyond original count)
+      // Append new slides (_isNew flagged by patch)
       if (newSlides.length > 0) {
-        // Find a good content slide template (has body placeholder)
-        let tmplFile = slideFiles[Math.min(1, slideFiles.length-1)];
+        // Find a slide layout ref to use (borrow from first non-title slide)
+        let layoutRef = '../slideLayouts/slideLayout2.xml';
         for (const sf of slideFiles) {
-          const x = zip.files[sf].asText();
-          if ((x.includes('type="body"') || x.match(/<p:ph[^>]*idx=/)) && !x.includes('type="ctrTitle"')) { tmplFile = sf; break; }
+          const rp = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+          if (zip.files[rp]) {
+            const m = zip.files[rp].asText().match(/slideLayouts\/slideLayout\d+\.xml/);
+            if (m) { layoutRef = '../' + m[0]; break; }
+          }
         }
         const existingNums = slideFiles.map(f => parseInt(f.match(/slide(\d+)\.xml/)[1]));
         let nextNum = Math.max(...existingNums) + 1;
         let presXml = zip.files['ppt/presentation.xml']?.asText() || '';
         let presRels = zip.files['ppt/_rels/presentation.xml.rels']?.asText() || '';
         let contentTypes = zip.files['[Content_Types].xml']?.asText() || '';
-        const allIds = [...presXml.matchAll(/\bid="(\d+)"/g)].map(m => parseInt(m[1]));
-        let maxId = allIds.length ? Math.max(...allIds) : 256;
+        const allSldIds = [...presXml.matchAll(/<p:sldId\b[^>]*\bid="(\d+)"/g)].map(m => parseInt(m[1]));
+        let maxId = allSldIds.length ? Math.max(...allSldIds) : 255;
         const allRIds = [...presRels.matchAll(/\bId="(rId\d+)"/g)].map(m => m[1]);
         let nextRIdNum = allRIds.length ? Math.max(...allRIds.map(r => parseInt(r.replace('rId',''))||0)) + 1 : 900;
 
@@ -2855,12 +2858,20 @@ function downloadPresentation() {
           const newNum = nextNum++;
           const newPath = `ppt/slides/slide${newNum}.xml`;
           const newRelsPath = `ppt/slides/_rels/slide${newNum}.xml.rels`;
-          // Clone template and inject - shape-aware injection handles title/body; footers/dates left intact
-          let newXml = zip.files[tmplFile].asText();
-          newXml = _pptxInjectSlide(newXml, newSlide);
+          // Use a minimal clean slide XML to avoid repair errors from cloned artefacts
+          const minSlideXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
+<p:cSld><p:spTree>
+<p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
+<p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
+<p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t></a:t></a:r></a:p></p:txBody></p:sp>
+<p:sp><p:nvSpPr><p:cNvPr id="3" name="Content Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t></a:t></a:r></a:p></p:txBody></p:sp>
+</p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>`;
+          let newXml = _pptxInjectSlide(minSlideXml, { ...newSlide, _allowExtraBullets: true });
           zip.file(newPath, newXml);
-          const tmplRels = tmplFile.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
-          if (zip.files[tmplRels]) zip.file(newRelsPath, zip.files[tmplRels].asText());
+          // Minimal rels pointing to the borrowed slide layout
+          const minRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="${layoutRef}"/></Relationships>`;
+          zip.file(newRelsPath, minRels);
           // Update manifests
           maxId++;
           const newRId = `rId${nextRIdNum++}`;
