@@ -2812,8 +2812,8 @@ function downloadPresentation() {
           const newNum = nextNum++;
           const newPath = `ppt/slides/slide${newNum}.xml`;
           const newRelsPath = `ppt/slides/_rels/slide${newNum}.xml.rels`;
-          // Clone template, blank all text, then inject
-          let newXml = zip.files[tmplFile].asText().replace(/<a:t>[^<]*<\/a:t>/g, '<a:t></a:t>');
+          // Clone template and inject - shape-aware injection handles title/body; footers/dates left intact
+          let newXml = zip.files[tmplFile].asText();
           newXml = _pptxInjectSlide(newXml, newSlide);
           zip.file(newPath, newXml);
           const tmplRels = tmplFile.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
