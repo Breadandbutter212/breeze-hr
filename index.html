@@ -2501,22 +2501,30 @@ async function presAiEdit() {
   try {
     const token = await getAuthToken();
 
-    // Send slide index and title only as context - Claude outputs a patch, not the full deck
+    // Parse which slide numbers the instruction mentions, include their full content
+    const mentionedSlides = new Set();
+    const numRefs = instruction.match(/\bslides?\s*(\d+)\b|\bpage\s*(\d+)\b|\b(\d+)(st|nd|rd|th)?\s+slide\b/gi) || [];
+    numRefs.forEach(r => { const n = r.match(/\d+/); if (n) mentionedSlides.add(parseInt(n[0])); });
+
     const slideIndex = presSlides.map((s, i) => `Slide ${i+1}: "${s.title}" (${s.bullets?.length||0} bullets)`).join('\n');
+    const relevantContent = presSlides
+      .filter((_, i) => mentionedSlides.has(i+1) || mentionedSlides.size === 0)
+      .map((s, i) => `Slide ${presSlides.indexOf(s)+1}:\nTitle: ${s.title}\nBullets:\n${(s.bullets||[]).map((b,j)=>`  ${j+1}. ${b}`).join('\n')}`)
+      .join('\n\n');
 
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: `Slide list:\n${slideIndex}\n\nCurrent slide content (for slides being changed):\n${JSON.stringify(presSlides)}\n\nInstruction: ${instruction}` }],
+        messages: [{ role: 'user', content: `Slide list:\n${slideIndex}\n\nFull content of relevant slides:\n${relevantContent}\n\nInstruction: ${instruction}` }],
         system: `You are editing a presentation. Output ONLY a JSON patch describing the changes - do NOT return the full slide list.
 
 Patch format:
 {
   "ops": [
     {"op": "update_bullets", "slide": 3, "bullets": ["new bullet 1", "new bullet 2"]},
-    {"op": "add_bullet", "slide": 10, "bullet": "New example text to add"},
-    {"op": "insert_slide", "after": 10, "slide": {"type":"content","title":"New Slide Title","bullets":["point 1","point 2"]}},
+    {"op": "add_bullet", "slide": 10, "bullet": "Full complete example text here - not a placeholder"},
+    {"op": "insert_slide", "after": 10, "slide": {"type":"content","title":"Descriptive Real Title","bullets":["Meaningful point 1","Meaningful point 2"]}},
     {"op": "update_title", "slide": 5, "title": "New Title"},
     {"op": "update_dates", "year": "2027"}
   ]
@@ -2524,10 +2532,10 @@ Patch format:
 
 Rules:
 - "slide" numbers are 1-indexed (slide 1 = first slide).
-- "add_bullet" appends one new bullet to the existing bullets on that slide. Use when instruction says "add a new example/bullet/point to slide N".
-- "insert_slide" inserts a brand-new slide after the given position. Use when instruction says "add a new slide at page N" or "add a slide after slide N".
-- "update_bullets" replaces ALL bullets on that slide. Only use when instruction explicitly asks to rewrite or replace the whole slide content.
-- "update_dates" finds and replaces any year numbers in all slides' bullets and subtitles.
+- "add_bullet" appends one new bullet. Write COMPLETE, MEANINGFUL content - never a placeholder like "Example 3:" or "New content here". Look at the existing bullets on that slide and match their style and depth.
+- "insert_slide" inserts a brand-new slide. Write a real descriptive title and real bullet content relevant to the presentation topic - never "New Slide Title" or "point 1".
+- "update_bullets" replaces ALL bullets. Only use when explicitly asked to rewrite the whole slide.
+- "update_dates" finds and replaces year numbers.
 - Only include ops for what the instruction explicitly asks. Never change slides not mentioned.
 - Return ONLY the JSON patch. No explanation.`
       })
@@ -2569,7 +2577,7 @@ Rules:
         const afterNum = op.after || op.position || op.after_slide || slides.length;
         const afterIdx = (typeof afterNum === 'number' ? afterNum : slides.length) - 1;
         const slideData = op.slide || op.content || op.data || {};
-        const newSlide = { ...slideData, _isNew: true, id: slides.length + 1,
+        const newSlide = { ...slideData, _isNew: true, _insertAfter: afterNum, id: slides.length + 1,
           title: (slideData.title||'New Slide').replace(/[—–]/g,'-'),
           bullets: (slideData.bullets||[]).map(b => b.replace(/[—–]/g,'-')),
           type: slideData.type || 'content' };
@@ -2854,11 +2862,32 @@ function downloadPresentation() {
         const allRIds = [...presRels.matchAll(/\bId="(rId\d+)"/g)].map(m => m[1]);
         let nextRIdNum = allRIds.length ? Math.max(...allRIds.map(r => parseInt(r.replace('rId',''))||0)) + 1 : 900;
 
+        // Find a template content slide (no SmartArt) for borrowing background shapes
+        let tmplFile2 = slideFiles[Math.min(1, slideFiles.length-1)];
+        for (const sf of slideFiles) {
+          const rp2 = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
+          const hasDiag = zip.files[rp2] && /diagramData/.test(zip.files[rp2].asText());
+          if (!hasDiag) { const x2 = zip.files[sf].asText(); if (!x2.includes('type="ctrTitle"') && (x2.includes('type="body"') || x2.match(/<p:ph[^>]*idx=/))) { tmplFile2 = sf; break; } }
+        }
+        // Extract non-placeholder shapes from template (background/branding shapes)
+        const tmplXml2 = zip.files[tmplFile2].asText();
+        const bgShapes = [];
+        let bPos = 0;
+        while (bPos < tmplXml2.length) {
+          const bStart = tmplXml2.indexOf('<p:sp>', bPos);
+          if (bStart === -1) break;
+          const bEnd = tmplXml2.indexOf('</p:sp>', bStart) + '</p:sp>'.length;
+          const spX = tmplXml2.substring(bStart, bEnd);
+          if (_pptxClassifyShape(spX) === 'other') bgShapes.push(spX);
+          bPos = bEnd;
+        }
+        const bgXml = bgShapes.join('');
+
         for (const newSlide of newSlides) {
           const newNum = nextNum++;
           const newPath = `ppt/slides/slide${newNum}.xml`;
           const newRelsPath = `ppt/slides/_rels/slide${newNum}.xml.rels`;
-          // Use a minimal clean slide XML to avoid repair errors from cloned artefacts
+          // Minimal XML with background shapes from template for branding
           const minSlideXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <p:sld xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <p:cSld><p:spTree>
@@ -2866,17 +2895,27 @@ function downloadPresentation() {
 <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
 <p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t></a:t></a:r></a:p></p:txBody></p:sp>
 <p:sp><p:nvSpPr><p:cNvPr id="3" name="Content Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t></a:t></a:r></a:p></p:txBody></p:sp>
+${bgXml}
 </p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>`;
           let newXml = _pptxInjectSlide(minSlideXml, { ...newSlide, _allowExtraBullets: true });
           zip.file(newPath, newXml);
           // Minimal rels pointing to the borrowed slide layout
           const minRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="${layoutRef}"/></Relationships>`;
           zip.file(newRelsPath, minRels);
-          // Update manifests
+          // Update manifests - insert sldId at correct position (after newSlide._insertAfter if set)
           maxId++;
           const newRId = `rId${nextRIdNum++}`;
+          const insertAfterN = newSlide._insertAfter || 0; // 1-indexed slide number to insert after
+          const sldIdList = [...presXml.matchAll(/<p:sldId\b[^/]*\/>/g)];
+          const newSldIdTag = `<p:sldId id="${maxId}" r:id="${newRId}"/>`;
+          if (insertAfterN > 0 && sldIdList[insertAfterN - 1]) {
+            const m = sldIdList[insertAfterN - 1];
+            const insertPoint = m.index + m[0].length;
+            presXml = presXml.substring(0, insertPoint) + newSldIdTag + presXml.substring(insertPoint);
+          } else {
+            presXml = presXml.replace('</p:sldIdLst>', newSldIdTag + '</p:sldIdLst>');
+          }
           contentTypes = contentTypes.replace('</Types>', `<Override PartName="/ppt/slides/slide${newNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`);
-          presXml = presXml.replace('</p:sldIdLst>', `<p:sldId id="${maxId}" r:id="${newRId}"/></p:sldIdLst>`);
           presRels = presRels.replace('</Relationships>', `<Relationship Id="${newRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newNum}.xml"/></Relationships>`);
         }
         zip.file('[Content_Types].xml', contentTypes);
