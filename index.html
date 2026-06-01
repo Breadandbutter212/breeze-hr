@@ -2495,32 +2495,48 @@ Rules:
 
     const data = await res.json();
     let text = (data.content?.[0]?.text || '').replace(/[—–]/g, '-');
+
+    // Show raw response for debugging
+    status.textContent = 'Claude response: ' + text.substring(0, 200);
+    await new Promise(r => setTimeout(r, 2000));
+
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No patch in response');
+    if (!match) throw new Error('No JSON found in: ' + text.substring(0, 100));
     let patch;
     try { patch = JSON.parse(match[0].replace(/,(\s*[}\]])/g, '$1')); }
-    catch(e) { throw new Error('Invalid patch JSON: ' + e.message); }
+    catch(e) { throw new Error('Parse failed: ' + e.message + ' | raw: ' + match[0].substring(0,100)); }
 
-    // Apply patch to presSlides in JavaScript - untouched slides are guaranteed identical
+    // Accept any reasonable key name Claude might use for the ops array
+    const ops = patch.ops || patch.operations || patch.changes || patch.edits || [];
+    status.textContent = `Patch parsed: ${ops.length} op(s): ${JSON.stringify(ops).substring(0,150)}`;
+    await new Promise(r => setTimeout(r, 2000));
+
     const slides = presSlides.map(s => ({ ...s, bullets: [...(s.bullets||[])] }));
-    for (const op of (patch.ops || [])) {
-      const idx = (op.slide || 1) - 1; // convert 1-indexed slide number to 0-indexed (used for non-insert ops)
-      if (op.op === 'update_bullets' && slides[idx]) {
+    for (const op of ops) {
+      // Accept multiple possible field names
+      const opType = op.op || op.type || op.action || '';
+      const slideNum = op.slide || op.slide_number || op.slideNum || 1;
+      const idx = (typeof slideNum === 'number' ? slideNum : 1) - 1;
+
+      if ((opType === 'update_bullets' || opType === 'replace_bullets') && slides[idx]) {
         slides[idx].bullets = (op.bullets||[]).map(b => b.replace(/[—–]/g,'-'));
-      } else if (op.op === 'add_bullet' && slides[idx]) {
-        slides[idx].bullets.push((op.bullet||'').replace(/[—–]/g,'-'));
-      } else if (op.op === 'update_title' && slides[idx]) {
+      } else if ((opType === 'add_bullet' || opType === 'add_example' || opType === 'append_bullet') && slides[idx]) {
+        const txt = (op.bullet || op.text || op.content || op.example || '').replace(/[—–]/g,'-');
+        if (txt) slides[idx].bullets.push(txt);
+      } else if ((opType === 'update_title' || opType === 'rename') && slides[idx]) {
         slides[idx].title = (op.title||'').replace(/[—–]/g,'-');
-      } else if (op.op === 'insert_slide') {
-        // op.after is 1-indexed position AFTER which to insert; op.slide is the new slide object
-        const afterIdx = typeof op.after === 'number' ? op.after - 1 : slides.length - 1;
-        const newSlide = { ...op.slide, _isNew: true, id: slides.length + 1,
-          title: (op.slide?.title||'').replace(/[—–]/g,'-'),
-          bullets: (op.slide?.bullets||[]).map(b => b.replace(/[—–]/g,'-')) };
+      } else if (opType === 'insert_slide' || opType === 'add_slide' || opType === 'new_slide') {
+        const afterNum = op.after || op.position || op.after_slide || slides.length;
+        const afterIdx = (typeof afterNum === 'number' ? afterNum : slides.length) - 1;
+        const slideData = op.slide || op.content || op.data || {};
+        const newSlide = { ...slideData, _isNew: true, id: slides.length + 1,
+          title: (slideData.title||'New Slide').replace(/[—–]/g,'-'),
+          bullets: (slideData.bullets||[]).map(b => b.replace(/[—–]/g,'-')),
+          type: slideData.type || 'content' };
         slides.splice(afterIdx + 1, 0, newSlide);
-      } else if (op.op === 'update_dates') {
-        const yr = String(op.year||'');
-        slides.forEach(s => {
+      } else if (opType === 'update_dates' || opType === 'replace_year') {
+        const yr = String(op.year||op.new_year||'');
+        if (yr) slides.forEach(s => {
           s.bullets = (s.bullets||[]).map(b => b.replace(/\b20\d{2}\b/g, yr));
           if (s.subtitle) s.subtitle = s.subtitle.replace(/\b20\d{2}\b/g, yr);
         });
@@ -2529,8 +2545,8 @@ Rules:
     presSlides = slides;
     renderSlides();
     input.value = '';
-    status.textContent = `Done - ${(patch.ops||[]).length} change${(patch.ops||[]).length!==1?'s':''} applied.`;
-    setTimeout(() => { status.style.display = 'none'; }, 3000);
+    status.textContent = `Done - ${ops.length} op(s) applied.`;
+    setTimeout(() => { status.style.display = 'none'; }, 4000);
   } catch(e) {
     status.textContent = 'Failed: ' + e.message;
   }
