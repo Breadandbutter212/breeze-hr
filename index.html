@@ -2802,8 +2802,8 @@ function downloadPresentation() {
 
         // Check if this slide has SmartArt/diagram rels - if so skip entirely (too complex to inject)
         const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
-        const hasDiagram = zip.files[relsPath] &&
-          /Type="[^"]*diagramData[^"]*"/.test(zip.files[relsPath].asText());
+        const relsText = zip.files[relsPath]?.asText() || '';
+        const hasDiagram = relsText.includes('diagramData');
 
         if (hasDiagram) return; // leave SmartArt slides byte-for-byte unchanged
 
@@ -2879,7 +2879,8 @@ function downloadPresentation() {
           if (bStart === -1) break;
           const bEnd = tmplXml2.indexOf('</p:sp>', bStart) + '</p:sp>'.length;
           const spX = tmplXml2.substring(bStart, bEnd);
-          if (_pptxClassifyShape(spX) === 'other') bgShapes.push(spX);
+          // Only include shapes with no relationship refs (r:embed/r:href point to rels we don't copy)
+          if (_pptxClassifyShape(spX) === 'other' && !spX.includes('r:embed') && !spX.includes('r:href') && !spX.includes('r:link')) bgShapes.push(spX);
           bPos = bEnd;
         }
         // Renumber bg shape IDs to avoid conflicts with placeholder IDs 2 and 3
@@ -2898,7 +2899,7 @@ function downloadPresentation() {
 <p:nvGrpSpPr><p:cNvPr id="1" name=""/><p:cNvGrpSpPr/><p:nvPr/></p:nvGrpSpPr>
 <p:grpSpPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/><a:chOff x="0" y="0"/><a:chExt cx="0" cy="0"/></a:xfrm></p:grpSpPr>
 <p:sp><p:nvSpPr><p:cNvPr id="2" name="Title 1"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph type="title"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t></a:t></a:r></a:p></p:txBody></p:sp>
-<p:sp><p:nvSpPr><p:cNvPr id="3" name="Content Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t></a:t></a:r></a:p></p:txBody></p:sp>
+<p:sp><p:nvSpPr><p:cNvPr id="3" name="Content Placeholder 2"/><p:cNvSpPr><a:spLocks noGrp="1"/></p:cNvSpPr><p:nvPr><p:ph idx="1"/></p:nvPr></p:nvSpPr><p:spPr/><p:txBody><a:bodyPr/><a:lstStyle/><a:p><a:r><a:rPr lang="en-GB" dirty="0"/><a:t>bullet</a:t></a:r></a:p></p:txBody></p:sp>
 ${bgXml}
 </p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>`;
           let newXml = _pptxInjectSlide(minSlideXml, { ...newSlide, _allowExtraBullets: true });
