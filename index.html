@@ -786,7 +786,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
             onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();presAiEdit();}"></textarea>
           <button id="pres-chat-btn" onclick="presAiEdit()" class="btn btn-primary btn-sm" style="width:100%;margin-top:6px;">✦ Apply edit</button>
-          <div id="pres-chat-status" style="display:none;font-size:11px;color:var(--ink3);margin-top:5px;"></div>
+          <div id="pres-chat-status" style="display:none;font-size:11px;color:var(--ink3);margin-top:5px;word-break:break-word;"></div>
+          <button onclick="togglePresLog()" style="margin-top:6px;width:100%;font-size:10px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px;cursor:pointer;font-family:inherit;">📋 Show debug log</button>
+          <div id="presLogPanel" style="display:none;margin-top:6px;background:#1E293B;color:#94A3B8;border-radius:var(--r-sm);padding:10px;font-size:10px;font-family:monospace;max-height:200px;overflow-y:auto;line-height:1.6;white-space:pre-wrap;word-break:break-all;"></div>
         </div>
 
       </div>
@@ -2054,9 +2056,45 @@ function showPresSources(sources) {
   list.style.display = 'flex';
 }
 
+function togglePresLog() {
+  const panel = document.getElementById('presLogPanel');
+  const btn = event.target;
+  if (panel.style.display === 'none') { panel.style.display = 'block'; btn.textContent = '📋 Hide debug log'; }
+  else { panel.style.display = 'none'; btn.textContent = '📋 Show debug log'; }
+}
+
+function presLog(msg, type) {
+  const panel = document.getElementById('presLogPanel');
+  if (!panel) return;
+  const ts = new Date().toLocaleTimeString();
+  const colour = type === 'error' ? '#EF4444' : type === 'ok' ? '#22C55E' : type === 'warn' ? '#F59E0B' : '#94A3B8';
+  panel.innerHTML += `<span style="color:${colour}">[${ts}] ${msg}\n</span>`;
+  panel.scrollTop = panel.scrollHeight;
+}
+
+function presStatusPersist(msg, isError) {
+  const el = document.getElementById('pres-chat-status');
+  if (!el) return;
+  el.style.display = 'block';
+  el.style.color = isError ? 'var(--red)' : 'var(--ink3)';
+  el.textContent = msg;
+  presLog(msg, isError ? 'error' : 'ok');
+}
+
 async function generatePresentation() {
   const topic = document.getElementById('pres-topic')?.value?.trim();
   if (!topic) { document.getElementById('pres-topic')?.focus(); return; }
+
+  // If a deck is already uploaded, route to patch edit instead of full generation
+  if (presUploadedBase64 && presSlides.length) {
+    presLog('Routing to patch edit (deck already uploaded)', 'warn');
+    const chatInput = document.getElementById('pres-chat-input');
+    if (chatInput) chatInput.value = topic;
+    document.getElementById('pres-topic').value = '';
+    await presAiEdit();
+    return;
+  }
+
   const btn = document.getElementById('pres-gen-btn');
   btn.disabled = true; btn.textContent = '⟳ Working...';
 
@@ -2457,6 +2495,8 @@ async function presAiEdit() {
 
   btn.disabled = true; btn.textContent = '⟳ Applying...';
   status.style.display = 'block'; status.textContent = 'Thinking...';
+  presLog(`Instruction: "${instruction}"`, 'ok');
+  presLog(`presSlides count: ${presSlides.length}`, 'ok');
 
   try {
     const token = await getAuthToken();
@@ -2496,20 +2536,17 @@ Rules:
     const data = await res.json();
     let text = (data.content?.[0]?.text || '').replace(/[—–]/g, '-');
 
-    // Show raw response for debugging
-    status.textContent = 'Claude response: ' + text.substring(0, 200);
-    await new Promise(r => setTimeout(r, 2000));
+    presLog('Claude raw response: ' + text.substring(0, 400), 'ok');
 
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No JSON found in: ' + text.substring(0, 100));
+    if (!match) throw new Error('No JSON found. Claude said: ' + text.substring(0, 200));
     let patch;
     try { patch = JSON.parse(match[0].replace(/,(\s*[}\]])/g, '$1')); }
-    catch(e) { throw new Error('Parse failed: ' + e.message + ' | raw: ' + match[0].substring(0,100)); }
+    catch(e) { throw new Error('JSON parse failed: ' + e.message + '\nRaw: ' + match[0].substring(0, 200)); }
 
     // Accept any reasonable key name Claude might use for the ops array
     const ops = patch.ops || patch.operations || patch.changes || patch.edits || [];
-    status.textContent = `Patch parsed: ${ops.length} op(s): ${JSON.stringify(ops).substring(0,150)}`;
-    await new Promise(r => setTimeout(r, 2000));
+    presLog(`Parsed ${ops.length} op(s): ${JSON.stringify(ops).substring(0, 300)}`, ops.length > 0 ? 'ok' : 'error');
 
     const slides = presSlides.map(s => ({ ...s, bullets: [...(s.bullets||[])] }));
     for (const op of ops) {
@@ -2520,11 +2557,14 @@ Rules:
 
       if ((opType === 'update_bullets' || opType === 'replace_bullets') && slides[idx]) {
         slides[idx].bullets = (op.bullets||[]).map(b => b.replace(/[—–]/g,'-'));
+        presLog(`update_bullets slide ${slideNum}: ${slides[idx].bullets.length} bullets`, 'ok');
       } else if ((opType === 'add_bullet' || opType === 'add_example' || opType === 'append_bullet') && slides[idx]) {
         const txt = (op.bullet || op.text || op.content || op.example || '').replace(/[—–]/g,'-');
-        if (txt) slides[idx].bullets.push(txt);
+        if (txt) { slides[idx].bullets.push(txt); presLog(`add_bullet slide ${slideNum}: "${txt.substring(0,60)}"`, 'ok'); }
+        else presLog(`add_bullet slide ${slideNum}: EMPTY TEXT - check op.bullet field`, 'error');
       } else if ((opType === 'update_title' || opType === 'rename') && slides[idx]) {
         slides[idx].title = (op.title||'').replace(/[—–]/g,'-');
+        presLog(`update_title slide ${slideNum}: "${slides[idx].title}"`, 'ok');
       } else if (opType === 'insert_slide' || opType === 'add_slide' || opType === 'new_slide') {
         const afterNum = op.after || op.position || op.after_slide || slides.length;
         const afterIdx = (typeof afterNum === 'number' ? afterNum : slides.length) - 1;
@@ -2534,6 +2574,7 @@ Rules:
           bullets: (slideData.bullets||[]).map(b => b.replace(/[—–]/g,'-')),
           type: slideData.type || 'content' };
         slides.splice(afterIdx + 1, 0, newSlide);
+        presLog(`insert_slide after position ${afterNum}: "${newSlide.title}"`, 'ok');
       } else if (opType === 'update_dates' || opType === 'replace_year') {
         const yr = String(op.year||op.new_year||'');
         if (yr) slides.forEach(s => {
@@ -2545,10 +2586,12 @@ Rules:
     presSlides = slides;
     renderSlides();
     input.value = '';
-    status.textContent = `Done - ${ops.length} op(s) applied.`;
-    setTimeout(() => { status.style.display = 'none'; }, 4000);
+    const summary = `Done - ${ops.length} op(s) applied. New presSlides count: ${presSlides.length}`;
+    presLog(summary, 'ok');
+    presStatusPersist(summary, false);
   } catch(e) {
-    status.textContent = 'Failed: ' + e.message;
+    presLog('ERROR: ' + e.message, 'error');
+    presStatusPersist('Failed: ' + e.message, true);
   }
   btn.disabled = false; btn.textContent = '✦ Apply';
 }
