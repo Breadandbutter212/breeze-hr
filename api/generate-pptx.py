@@ -7,7 +7,10 @@ import copy
 def apply_ops(prs, ops):
     from pptx.util import Pt
     from pptx.oxml.ns import qn
+    from pptx.enum.shapes import PP_PLACEHOLDER
     from lxml import etree
+
+    TITLE_TYPES = (PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE)
 
     for op in ops:
         op_type = op.get('op', '')
@@ -89,7 +92,7 @@ def apply_ops(prs, ops):
             target_layout = prs.slide_layouts[1]
             for layout in prs.slide_layouts:
                 has_title = any(
-                    ph.placeholder_format.type.name in ('TITLE', 'CENTER_TITLE')
+                    ph.placeholder_format.type in TITLE_TYPES
                     for ph in layout.placeholders
                 )
                 has_body = any(ph.placeholder_format.idx == 1 for ph in layout.placeholders)
@@ -100,9 +103,9 @@ def apply_ops(prs, ops):
             new_slide = prs.slides.add_slide(target_layout)
 
             for ph in new_slide.placeholders:
-                ph_type = ph.placeholder_format.type.name
+                ph_type = ph.placeholder_format.type
                 ph_idx  = ph.placeholder_format.idx
-                if ph_type in ('TITLE', 'CENTER_TITLE'):
+                if ph_type in TITLE_TYPES:
                     ph.text = title_text
                 elif ph_idx == 1 and bullets:
                     tf = ph.text_frame
@@ -128,7 +131,7 @@ def apply_ops(prs, ops):
             slide = prs.slides[slide_idx]
             new_title = op.get('title', '')
             for ph in slide.placeholders:
-                if ph.placeholder_format.type.name in ('TITLE', 'CENTER_TITLE'):
+                if ph.placeholder_format.type in TITLE_TYPES:
                     ph.text = new_title
                     break
 
