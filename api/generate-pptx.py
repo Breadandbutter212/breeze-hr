@@ -115,12 +115,13 @@ def apply_ops(prs, ops):
                             p.text = bullet
                             p.level = 0
 
-            # Move new slide to correct position in sldIdLst
-            sldIdLst = prs.slides._sldIdLst
-            new_sld_id = sldIdLst[-1]
-            sldIdLst.remove(new_sld_id)
-            insert_pos = min(after_num, len(sldIdLst))
-            sldIdLst.insert(insert_pos, new_sld_id)
+            # Move new slide to correct position (add_slide always appends)
+            xml_slides = prs.slides._sldIdLst
+            slides_list = list(xml_slides)
+            new_el = slides_list[-1]
+            xml_slides.remove(new_el)
+            insert_pos = min(int(after_num), len(list(xml_slides)))
+            xml_slides.insert(insert_pos, new_el)
 
         # ── UPDATE TITLE ──────────────────────────────────────────────────────────
         elif op_type == 'update_title' and 0 <= slide_idx < len(prs.slides):
