@@ -44,39 +44,52 @@ def clone_slide_with_images(prs, source_idx):
 
     return new_slide
 
-def hard_reset_placeholder(shape):
-    """Strip all explicit formatting from a cloned placeholder so it inherits from layout."""
+def write_title_like_source(ph, source_ph, new_title):
+    """Write title text using source placeholder's pPr/lstStyle so size matches source slide."""
     from pptx.oxml.ns import qn
     from lxml import etree
-    tf = shape.text_frame
-    tf.clear()
-    txBody = tf._txBody
-    # Replace lstStyle with empty one - removes explicit size overrides baked in during clone
-    lst_style = txBody.find(qn('a:lstStyle'))
-    if lst_style is not None:
-        txBody.remove(lst_style)
-    new_lst_style = etree.Element(qn('a:lstStyle'))
-    body_pr = txBody.find(qn('a:bodyPr'))
-    if body_pr is not None:
-        body_pr.addnext(new_lst_style)
-        # Strip defRPr from bodyPr
-        def_rpr = body_pr.find(qn('a:defRPr'))
-        if def_rpr is not None:
-            body_pr.remove(def_rpr)
-    else:
-        txBody.insert(0, new_lst_style)
-    # Strip any explicit rPr/pPr from paragraphs
+    txBody = ph.text_frame._txBody
+    src_txBody = source_ph.text_frame._txBody
+
+    # Copy lstStyle from source (carries correct size context)
+    new_lst = txBody.find(qn('a:lstStyle'))
+    src_lst = src_txBody.find(qn('a:lstStyle'))
+    if new_lst is not None:
+        txBody.remove(new_lst)
+    if src_lst is not None:
+        body_pr = txBody.find(qn('a:bodyPr'))
+        insert_idx = list(txBody).index(body_pr) + 1 if body_pr is not None else 0
+        txBody.insert(insert_idx, copy.deepcopy(src_lst))
+
+    # Remove all paragraphs
     for p in txBody.findall(qn('a:p')):
-        for rpr in p.findall('.//' + qn('a:rPr')):
-            rpr.getparent().remove(rpr)
-        ppr = p.find(qn('a:pPr'))
-        if ppr is not None:
-            p.remove(ppr)
+        txBody.remove(p)
+
+    # Clone source paragraph structure (pPr holds size context), strip runs
+    src_paras = src_txBody.findall(qn('a:p'))
+    if src_paras:
+        new_p = copy.deepcopy(src_paras[0])
+        for r in new_p.findall(qn('a:r')):
+            new_p.remove(r)
+        for br in new_p.findall(qn('a:br')):
+            new_p.remove(br)
+        # Write run with no explicit size - inherits from pPr
+        new_r = etree.SubElement(new_p, qn('a:r'))
+        etree.SubElement(new_r, qn('a:rPr'), attrib={'lang': 'en-GB', 'dirty': '0'})
+        new_t = etree.SubElement(new_r, qn('a:t'))
+        new_t.text = new_title
+        txBody.append(new_p)
+    else:
+        # Fallback: simple paragraph
+        new_p = etree.SubElement(txBody, qn('a:p'))
+        new_r = etree.SubElement(new_p, qn('a:r'))
+        new_t = etree.SubElement(new_r, qn('a:t'))
+        new_t.text = new_title
 
 def reset_and_write_placeholder(shape, texts):
     """Clear text content only - keep lstStyle so font size from cloned slide is preserved."""
     tf = shape.text_frame
-    tf.clear()  # clears text but keeps lstStyle (which has correct size from source slide)
+    tf.clear()
     if texts:
         tf.paragraphs[0].text = texts[0]
     for text in texts[1:]:
@@ -181,13 +194,22 @@ def apply_ops(prs, ops):
                     break
 
             # Clone slide with working image relationships
+            template_slide = prs.slides[template_idx]
             new_slide = clone_slide_with_images(prs, template_idx)
 
-            # Reset placeholder formatting to layout defaults, then write content
+            # Find source title placeholder for formatting reference
+            source_title_ph = next(
+                (ph for ph in template_slide.placeholders if ph.placeholder_format.type in TITLE_TYPES),
+                None
+            )
+
+            # Write content: title uses source formatting, body uses tf.clear()
             for ph in new_slide.placeholders:
                 ph_type = ph.placeholder_format.type
                 ph_idx  = ph.placeholder_format.idx
-                if ph_type in TITLE_TYPES:
+                if ph_type in TITLE_TYPES and source_title_ph:
+                    write_title_like_source(ph, source_title_ph, title_text)
+                elif ph_type in TITLE_TYPES:
                     reset_and_write_placeholder(ph, [title_text])
                 elif ph_idx == 1:
                     reset_and_write_placeholder(ph, bullets)
