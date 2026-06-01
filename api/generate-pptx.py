@@ -45,46 +45,50 @@ def clone_slide_with_images(prs, source_idx):
     return new_slide
 
 def write_title_like_source(ph, source_ph, new_title):
-    """Write title text using source placeholder's pPr/lstStyle so size matches source slide."""
+    """Replace txBody wholesale from source (preserves bodyPr fontScale, run rPr/sz, pPr)
+    then swap only the text. This is the correct approach per Claude.ai analysis."""
     from pptx.oxml.ns import qn
     from lxml import etree
     txBody = ph.text_frame._txBody
     src_txBody = source_ph.text_frame._txBody
 
-    # Copy lstStyle from source (carries correct size context)
-    new_lst = txBody.find(qn('a:lstStyle'))
-    src_lst = src_txBody.find(qn('a:lstStyle'))
-    if new_lst is not None:
-        txBody.remove(new_lst)
-    if src_lst is not None:
-        body_pr = txBody.find(qn('a:bodyPr'))
-        insert_idx = list(txBody).index(body_pr) + 1 if body_pr is not None else 0
-        txBody.insert(insert_idx, copy.deepcopy(src_lst))
+    # Replace entire txBody content with source's (bodyPr autofit, lstStyle, rPr/@sz all survive)
+    for child in list(txBody):
+        txBody.remove(child)
+    for child in src_txBody:
+        txBody.append(copy.deepcopy(child))
 
-    # Remove all paragraphs
-    for p in txBody.findall(qn('a:p')):
-        txBody.remove(p)
+    # Strip normAutofit fontScale so PowerPoint recomputes fit for potentially longer title
+    body_pr = txBody.find(qn('a:bodyPr'))
+    if body_pr is not None:
+        norm = body_pr.find(qn('a:normAutofit'))
+        if norm is not None:
+            norm.attrib.pop('fontScale', None)
+            norm.attrib.pop('lnSpcReduction', None)
 
-    # Clone source paragraph structure (pPr holds size context), strip runs
-    src_paras = src_txBody.findall(qn('a:p'))
-    if src_paras:
-        new_p = copy.deepcopy(src_paras[0])
-        for r in new_p.findall(qn('a:r')):
-            new_p.remove(r)
-        for br in new_p.findall(qn('a:br')):
-            new_p.remove(br)
-        # Write run with no explicit size - inherits from pPr
-        new_r = etree.SubElement(new_p, qn('a:r'))
-        etree.SubElement(new_r, qn('a:rPr'), attrib={'lang': 'en-GB', 'dirty': '0'})
-        new_t = etree.SubElement(new_r, qn('a:t'))
-        new_t.text = new_title
-        txBody.append(new_p)
+    # Retext: keep first paragraph's first run (and its rPr/@sz), drop rest
+    first_p = txBody.find(qn('a:p'))
+    if first_p is not None:
+        runs = first_p.findall(qn('a:r'))
+        if runs:
+            t = runs[0].find(qn('a:t'))
+            if t is None:
+                t = etree.SubElement(runs[0], qn('a:t'))
+            t.text = new_title
+            for r in runs[1:]:
+                first_p.remove(r)
+        else:
+            new_r = etree.SubElement(first_p, qn('a:r'))
+            new_t = etree.SubElement(new_r, qn('a:t'))
+            new_t.text = new_title
+        for br in first_p.findall(qn('a:br')):
+            first_p.remove(br)
+        for p in txBody.findall(qn('a:p'))[1:]:
+            txBody.remove(p)
     else:
-        # Fallback: simple paragraph
         new_p = etree.SubElement(txBody, qn('a:p'))
         new_r = etree.SubElement(new_p, qn('a:r'))
-        new_t = etree.SubElement(new_r, qn('a:t'))
-        new_t.text = new_title
+        etree.SubElement(new_r, qn('a:t')).text = new_title
 
 def reset_and_write_placeholder(shape, texts):
     """Clear text content only - keep lstStyle so font size from cloned slide is preserved."""
