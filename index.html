@@ -2504,7 +2504,7 @@ Rules:
     // Apply patch to presSlides in JavaScript - untouched slides are guaranteed identical
     const slides = presSlides.map(s => ({ ...s, bullets: [...(s.bullets||[])] }));
     for (const op of (patch.ops || [])) {
-      const idx = (op.slide || 1) - 1; // convert to 0-indexed
+      const idx = (op.slide || 1) - 1; // convert 1-indexed slide number to 0-indexed (used for non-insert ops)
       if (op.op === 'update_bullets' && slides[idx]) {
         slides[idx].bullets = (op.bullets||[]).map(b => b.replace(/[—–]/g,'-'));
       } else if (op.op === 'add_bullet' && slides[idx]) {
@@ -2512,10 +2512,12 @@ Rules:
       } else if (op.op === 'update_title' && slides[idx]) {
         slides[idx].title = (op.title||'').replace(/[—–]/g,'-');
       } else if (op.op === 'insert_slide') {
-        const newSlide = { ...op.slide, id: slides.length + 1,
+        // op.after is 1-indexed position AFTER which to insert; op.slide is the new slide object
+        const afterIdx = typeof op.after === 'number' ? op.after - 1 : slides.length - 1;
+        const newSlide = { ...op.slide, _isNew: true, id: slides.length + 1,
           title: (op.slide?.title||'').replace(/[—–]/g,'-'),
           bullets: (op.slide?.bullets||[]).map(b => b.replace(/[—–]/g,'-')) };
-        slides.splice(idx + 1, 0, newSlide);
+        slides.splice(afterIdx + 1, 0, newSlide);
       } else if (op.op === 'update_dates') {
         const yr = String(op.year||'');
         slides.forEach(s => {
@@ -2723,9 +2725,13 @@ function downloadPresentation() {
         .filter(f => /ppt\/slides\/slide\d+\.xml/.test(f))
         .sort((a,b) => parseInt(a.match(/\d+/)[0]) - parseInt(b.match(/\d+/)[0]));
 
+      // Split presSlides into originals (1:1 with slideFiles) and new slides (append at end)
+      const origSlides = presSlides.filter(s => !s._isNew);
+      const newSlides  = presSlides.filter(s =>  s._isNew);
+
       // Inject into existing slides
       slideFiles.forEach((sf, idx) => {
-        const slide = presSlides[idx]; if (!slide) return;
+        const slide = origSlides[idx]; if (!slide) return;
 
         // Check if this slide has SmartArt/diagram rels - if so skip body injection
         const relsPath = sf.replace('ppt/slides/', 'ppt/slides/_rels/') + '.rels';
@@ -2768,8 +2774,8 @@ function downloadPresentation() {
         });
       });
 
-      // Append new slides when presSlides has more entries than original
-      if (presSlides.length > slideFiles.length) {
+      // Append new slides (_isNew flagged by patch, or any extras beyond original count)
+      if (newSlides.length > 0) {
         // Find a good content slide template (has body placeholder)
         let tmplFile = slideFiles[Math.min(1, slideFiles.length-1)];
         for (const sf of slideFiles) {
@@ -2786,8 +2792,7 @@ function downloadPresentation() {
         const allRIds = [...presRels.matchAll(/\bId="(rId\d+)"/g)].map(m => m[1]);
         let nextRIdNum = allRIds.length ? Math.max(...allRIds.map(r => parseInt(r.replace('rId',''))||0)) + 1 : 900;
 
-        for (let i = slideFiles.length; i < presSlides.length; i++) {
-          const newSlide = presSlides[i];
+        for (const newSlide of newSlides) {
           const newNum = nextNum++;
           const newPath = `ppt/slides/slide${newNum}.xml`;
           const newRelsPath = `ppt/slides/_rels/slide${newNum}.xml.rels`;
