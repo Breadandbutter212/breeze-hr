@@ -2017,6 +2017,17 @@ async function handlePresUpload(event) {
       return { id: i + 1, type, title, bullets };
     });
     if (presSlides.length) presTitle = presSlides[0].title || 'Presentation';
+
+    // Extract theme accent colour from ppt/theme/theme1.xml for preview
+    const themeFile = Object.keys(zip.files).find(f => /ppt\/theme\/theme\d+\.xml/.test(f));
+    if (themeFile) {
+      const themeXml = zip.files[themeFile].asText();
+      const accentMatch = themeXml.match(/<a:accent1[^>]*>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"/);
+      const darkMatch  = themeXml.match(/<a:dk1[^>]*>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"/);
+      if (accentMatch) presAccent = accentMatch[1];
+      if (darkMatch)   presDark   = darkMatch[1];
+    }
+
     renderSlides();
     document.getElementById('pres-empty-state').style.display = 'none';
   } catch(e) { presUploadedText = ''; if (lbl) lbl.textContent = 'Could not read file'; }
@@ -2449,52 +2460,75 @@ async function presAiEdit() {
 
   try {
     const token = await getAuthToken();
-    const currentJson = JSON.stringify({ title: presTitle, slides: presSlides });
+
+    // Send slide index and title only as context - Claude outputs a patch, not the full deck
+    const slideIndex = presSlides.map((s, i) => `Slide ${i+1}: "${s.title}" (${s.bullets?.length||0} bullets)`).join('\n');
+
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
       body: JSON.stringify({
-        messages: [{ role: 'user', content: `Here is the current presentation JSON:\n${currentJson}\n\nInstruction: ${instruction}\n\nReturn the full updated presentation as JSON in exactly the same format. Only change what the instruction asks for.` }],
-        system: `You are editing a presentation JSON. Follow the instruction LITERALLY and PRECISELY. Rules:
-1. TITLES: Never change any slide title unless the instruction explicitly says to rename or retitle that specific slide.
-2. ADD SLIDE: If the instruction says "add a slide about X", add a brand-new object to the slides array with type "content", a clear title, and relevant bullets. Do not just add an agenda item - create the actual new slide.
-3. UPDATE EXAMPLES: If the instruction says "update examples on slide N", replace the bullet text on that slide with new realistic examples matching the topic.
-4. UPDATE DATES/YEARS: If the instruction says "update dates to YYYY" or "update references to YYYY", find every bullet or subtitle containing a year number and change it to YYYY.
-5. UNCHANGED SLIDES: Every slide not mentioned in the instruction must be returned byte-for-byte identical - same title, same bullets, same order.
-6. Do not restructure, reformat, or improve anything not mentioned in the instruction.
-Return ONLY valid JSON in format {"title":"...","slides":[...]}. No explanation.`
+        messages: [{ role: 'user', content: `Slide list:\n${slideIndex}\n\nCurrent slide content (for slides being changed):\n${JSON.stringify(presSlides)}\n\nInstruction: ${instruction}` }],
+        system: `You are editing a presentation. Output ONLY a JSON patch describing the changes - do NOT return the full slide list.
+
+Patch format:
+{
+  "ops": [
+    {"op": "update_bullets", "slide": 3, "bullets": ["new bullet 1", "new bullet 2"]},
+    {"op": "add_bullet", "slide": 10, "bullet": "New example text to add"},
+    {"op": "insert_slide", "after": 10, "slide": {"type":"content","title":"New Slide Title","bullets":["point 1","point 2"]}},
+    {"op": "update_title", "slide": 5, "title": "New Title"},
+    {"op": "update_dates", "year": "2027"}
+  ]
+}
+
+Rules:
+- "slide" numbers are 1-indexed (slide 1 = first slide).
+- "add_bullet" appends one new bullet to the existing bullets on that slide. Use when instruction says "add a new example/bullet/point to slide N".
+- "insert_slide" inserts a brand-new slide after the given position. Use when instruction says "add a new slide at page N" or "add a slide after slide N".
+- "update_bullets" replaces ALL bullets on that slide. Only use when instruction explicitly asks to rewrite or replace the whole slide content.
+- "update_dates" finds and replaces any year numbers in all slides' bullets and subtitles.
+- Only include ops for what the instruction explicitly asks. Never change slides not mentioned.
+- Return ONLY the JSON patch. No explanation.`
       })
     });
+
     const data = await res.json();
-    let text = data.content?.[0]?.text || '';
-    // Extract JSON
-    text = text.replace(/[—–]/g, '-');
+    let text = (data.content?.[0]?.text || '').replace(/[—–]/g, '-');
     const match = text.match(/\{[\s\S]*\}/);
-    if (!match) throw new Error('No JSON in response');
-    let pres;
-    try { pres = JSON.parse(match[0].replace(/,(\s*[}\]])/g, '$1')); }
-    catch(e) {
-      // Ask Claude to fix it
-      const fix = await fetch('/api/chat', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify({ messages: [{ role: 'user', content: `Fix this broken JSON and return only valid JSON:\n${match[0].substring(0,8000)}` }], system: 'Return only valid JSON. No explanation.' })
-      });
-      const fd = await fix.json();
-      const ft = (fd.content?.[0]?.text || '{}').match(/\{[\s\S]*\}/);
-      pres = JSON.parse(ft ? ft[0] : '{}');
+    if (!match) throw new Error('No patch in response');
+    let patch;
+    try { patch = JSON.parse(match[0].replace(/,(\s*[}\]])/g, '$1')); }
+    catch(e) { throw new Error('Invalid patch JSON: ' + e.message); }
+
+    // Apply patch to presSlides in JavaScript - untouched slides are guaranteed identical
+    const slides = presSlides.map(s => ({ ...s, bullets: [...(s.bullets||[])] }));
+    for (const op of (patch.ops || [])) {
+      const idx = (op.slide || 1) - 1; // convert to 0-indexed
+      if (op.op === 'update_bullets' && slides[idx]) {
+        slides[idx].bullets = (op.bullets||[]).map(b => b.replace(/[—–]/g,'-'));
+      } else if (op.op === 'add_bullet' && slides[idx]) {
+        slides[idx].bullets.push((op.bullet||'').replace(/[—–]/g,'-'));
+      } else if (op.op === 'update_title' && slides[idx]) {
+        slides[idx].title = (op.title||'').replace(/[—–]/g,'-');
+      } else if (op.op === 'insert_slide') {
+        const newSlide = { ...op.slide, id: slides.length + 1,
+          title: (op.slide?.title||'').replace(/[—–]/g,'-'),
+          bullets: (op.slide?.bullets||[]).map(b => b.replace(/[—–]/g,'-')) };
+        slides.splice(idx + 1, 0, newSlide);
+      } else if (op.op === 'update_dates') {
+        const yr = String(op.year||'');
+        slides.forEach(s => {
+          s.bullets = (s.bullets||[]).map(b => b.replace(/\b20\d{2}\b/g, yr));
+          if (s.subtitle) s.subtitle = s.subtitle.replace(/\b20\d{2}\b/g, yr);
+        });
+      }
     }
-    if (pres.title) presTitle = pres.title.replace(/[—–]/g,'-');
-    if (pres.slides?.length) presSlides = pres.slides.map(s => ({
-      ...s,
-      title: (s.title||'').replace(/[—–]/g,'-'),
-      subtitle: s.subtitle ? s.subtitle.replace(/[—–]/g,'-') : s.subtitle,
-      bullets: (s.bullets||[]).map(b => b.replace(/[—–]/g,'-'))
-    }));
+    presSlides = slides;
     renderSlides();
     input.value = '';
-    status.textContent = 'Done.';
-    setTimeout(() => { status.style.display = 'none'; }, 2000);
+    status.textContent = `Done - ${(patch.ops||[]).length} change${(patch.ops||[]).length!==1?'s':''} applied.`;
+    setTimeout(() => { status.style.display = 'none'; }, 3000);
   } catch(e) {
     status.textContent = 'Failed: ' + e.message;
   }
