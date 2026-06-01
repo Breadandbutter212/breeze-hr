@@ -2769,12 +2769,12 @@ function downloadPresentation() {
   const keepFormat = document.getElementById('pres-dl-keep')?.checked;
   const keepStructureCheck = document.getElementById('pres-keep-format')?.checked;
 
-  // Use Python server-side injection when a file was uploaded and keep-branding is ticked
+  // Use Python for both: editing uploaded deck AND generating new decks
   if (presUploadedBase64 && (keepFormat || keepStructureCheck)) {
-    _downloadPresentationPython(btn);
+    _downloadPresentationPython(btn);  // edit path: send ops + original file
     return;
   }
-  _downloadPresentationClient(btn);
+  _downloadPresentationPythonGenerate(btn);  // generate path: send slides JSON to Python
 }
 
 async function _downloadPresentationPython(btn) {
@@ -2811,6 +2811,37 @@ async function _downloadPresentationPython(btn) {
   } catch(e) {
     presLog('Python engine failed: ' + e.message + ' — falling back to client-side', 'error');
     console.warn('Python pptx failed, falling back:', e.message);
+    _downloadPresentationClient(btn);
+  }
+}
+
+async function _downloadPresentationPythonGenerate(btn) {
+  try {
+    presLog('Generating deck via Python engine...', 'ok');
+    const token = await getAuthToken();
+    const res = await fetch('/api/generate-pptx', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        action: 'generate',
+        slides: presSlides,
+        accent: presAccent || '475569',
+        dark: presDark || '1E293B',
+        title: presTitle || 'Presentation'
+      })
+    });
+    if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Server error ${res.status}`); }
+    const data = await res.json();
+    if (!data.pptxBase64) throw new Error('No pptx returned');
+    const bytes = Uint8Array.from(atob(data.pptxBase64), c => c.charCodeAt(0));
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
+    const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+    a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+    presLog('Downloaded via Python engine', 'ok');
+    btn.textContent = '✓ Downloaded'; btn.disabled = false;
+    setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
+  } catch(e) {
+    presLog('Python generate failed: ' + e.message + ' — falling back to pptxgenjs', 'error');
     _downloadPresentationClient(btn);
   }
 }

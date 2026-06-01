@@ -242,6 +242,117 @@ def apply_ops(prs, ops):
                                     run.text = re.sub(r'\b20\d{2}\b', year, run.text)
 
 
+def _rgb(h):
+    h = h.lstrip('#')
+    return __import__('pptx.dml.color', fromlist=['RGBColor']).RGBColor(int(h[0:2],16), int(h[2:4],16), int(h[4:6],16))
+
+def _rect(slide, l, t, w, h, color):
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+    s = slide.shapes.add_shape(1, l, t, w, h)  # 1 = rectangle
+    s.fill.solid(); s.fill.fore_color.rgb = color
+    s.line.fill.background()
+    return s
+
+def _txt(slide, text, l, t, w, h, size, color, bold=False, align=None, wrap=True):
+    from pptx.util import Pt
+    from pptx.enum.text import PP_ALIGN
+    bx = slide.shapes.add_textbox(l, t, w, h)
+    tf = bx.text_frame; tf.word_wrap = wrap
+    p = tf.paragraphs[0]
+    if align: p.alignment = align
+    run = p.add_run()
+    run.text = text
+    run.font.size = Pt(size); run.font.color.rgb = color
+    run.font.bold = bold; run.font.name = 'Calibri'
+    return bx
+
+def _bullets(slide, bullets, l, t, w, h, size, color):
+    from pptx.util import Pt
+    bx = slide.shapes.add_textbox(l, t, w, h)
+    tf = bx.text_frame; tf.word_wrap = True
+    for i, b in enumerate(bullets):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        p.space_before = Pt(3)
+        run = p.add_run()
+        run.text = f'• {b}'
+        run.font.size = Pt(size); run.font.color.rgb = color; run.font.name = 'Calibri'
+    return bx
+
+def generate_deck(slides, accent_hex, dark_hex, prs_title):
+    from pptx import Presentation
+    from pptx.util import Inches, Pt, Emu
+    from pptx.dml.color import RGBColor
+    from pptx.enum.text import PP_ALIGN
+    from pptx.chart.data import ChartData
+    from pptx.enum.chart import XL_CHART_TYPE
+
+    SW, SH = Inches(13.33), Inches(7.5)
+    ACC  = _rgb(accent_hex or '475569')
+    DARK = _rgb(dark_hex   or '1E293B')
+    WHITE = RGBColor(0xFF,0xFF,0xFF)
+    INK   = RGBColor(0x37,0x41,0x51)
+
+    prs = Presentation()
+    prs.slide_width = SW; prs.slide_height = SH
+    blank = prs.slide_layouts[6]
+
+    for s in slides:
+        sl = prs.slides.add_slide(blank)
+        st = s.get('type','content')
+        title   = s.get('title','')
+        bullets = s.get('bullets',[])
+        subtitle = s.get('subtitle','')
+
+        if st == 'title':
+            _rect(sl, 0, 0, SW, SH, DARK)
+            _txt(sl, title, Inches(.6), Inches(2.2), Inches(11), Inches(1.4), 40, WHITE, bold=True, align=PP_ALIGN.LEFT)
+            if subtitle: _txt(sl, subtitle, Inches(.6), Inches(3.7), Inches(9), Inches(.6), 20, ACC)
+            _rect(sl, Inches(.6), Inches(5), Inches(1.2), Emu(72000), ACC)
+
+        elif st == 'section':
+            _rect(sl, 0, 0, SW, SH, ACC)
+            _txt(sl, title, Inches(.6), Inches(2.5), Inches(11), Inches(1.2), 36, WHITE, bold=True, align=PP_ALIGN.CENTER)
+
+        elif st == 'close':
+            _rect(sl, 0, 0, SW, SH, DARK)
+            _txt(sl, title or 'Questions?', Inches(.6), Inches(2), Inches(11), Inches(1.2), 40, WHITE, bold=True, align=PP_ALIGN.CENTER)
+            if bullets: _txt(sl, bullets[0], Inches(.6), Inches(3.4), Inches(9), Inches(.6), 18, ACC, align=PP_ALIGN.CENTER)
+
+        elif st == 'image':
+            _rect(sl, 0, 0, SW, Inches(1.1), DARK)
+            _txt(sl, title, Inches(.4), Inches(.15), Inches(11.4), Inches(.8), 22, WHITE, bold=True)
+            _rect(sl, Inches(.5), Inches(1.25), Inches(7.5), Inches(5.5), RGBColor(0xF1,0xF5,0xF9))
+            hint = s.get('imageHint','Add image here')
+            _txt(sl, f'\U0001f4f7  {hint}', Inches(.5), Inches(3.3), Inches(7.5), Inches(.8), 13, RGBColor(0x94,0xA3,0xB8), align=PP_ALIGN.CENTER)
+            if bullets: _bullets(sl, bullets, Inches(8.2), Inches(1.35), Inches(5), Inches(5.3), 15, INK)
+
+        elif st == 'chart':
+            _rect(sl, 0, 0, SW, Inches(1.1), DARK)
+            _txt(sl, title, Inches(.4), Inches(.15), Inches(11.4), Inches(.8), 22, WHITE, bold=True)
+            labels  = s.get('labels',[])
+            series  = s.get('series',[])
+            ct_str  = s.get('chartType','bar')
+            ct_map  = {'bar': XL_CHART_TYPE.COLUMN_CLUSTERED, 'barh': XL_CHART_TYPE.BAR_CLUSTERED,
+                       'line': XL_CHART_TYPE.LINE, 'pie': XL_CHART_TYPE.PIE, 'doughnut': XL_CHART_TYPE.DOUGHNUT}
+            ct = ct_map.get(ct_str, XL_CHART_TYPE.COLUMN_CLUSTERED)
+            if labels and series:
+                cd = ChartData()
+                cd.categories = labels
+                for ser in series:
+                    vals = [float(v) if str(v).replace('.','').replace('-','').isdigit() else 0 for v in ser.get('values',[])]
+                    cd.add_series(ser.get('name',''), vals)
+                chart = sl.shapes.add_chart(ct, Inches(.5), Inches(1.25), Inches(12.3), Inches(5.5), cd).chart
+                chart.has_legend = len(series) > 1
+            note = s.get('note','')
+            if note: _txt(sl, note, Inches(.5), Inches(6.9), Inches(12), Inches(.3), 9, RGBColor(0x9C,0xA3,0xAF))
+
+        else:  # content
+            _rect(sl, 0, 0, SW, Inches(1.1), DARK)
+            _txt(sl, title, Inches(.4), Inches(.15), Inches(11.4), Inches(.8), 22, WHITE, bold=True)
+            if bullets: _bullets(sl, bullets, Inches(.5), Inches(1.3), Inches(11.2), Inches(4.5), 16, INK)
+
+    return prs
+
 class handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # suppress request logging
@@ -263,15 +374,21 @@ class handler(BaseHTTPRequestHandler):
 
             pptx_b64 = data.get('pptxBase64', '')
             ops      = data.get('ops', [])
+            action   = data.get('action', 'edit' if pptx_b64 else 'generate')
 
-            if not pptx_b64:
-                self._error(400, 'Missing pptxBase64')
-                return
-
-            pptx_bytes = base64.b64decode(pptx_b64)
-            prs = Presentation(io.BytesIO(pptx_bytes))
-
-            apply_ops(prs, ops)
+            if action == 'generate':
+                slides     = data.get('slides', [])
+                accent     = data.get('accent', '475569')
+                dark       = data.get('dark',   '1E293B')
+                prs_title  = data.get('title', 'Presentation')
+                prs = generate_deck(slides, accent, dark, prs_title)
+            else:
+                if not pptx_b64:
+                    self._error(400, 'Missing pptxBase64')
+                    return
+                pptx_bytes = base64.b64decode(pptx_b64)
+                prs = Presentation(io.BytesIO(pptx_bytes))
+                apply_ops(prs, ops)
 
             output = io.BytesIO()
             prs.save(output)
