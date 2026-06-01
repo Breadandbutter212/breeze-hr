@@ -4,8 +4,59 @@ import base64
 import io
 import copy
 
+R_EMBED = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed'
+R_IMAGE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image'
+
+def clone_slide_with_images(prs, source_idx):
+    """Clone a slide preserving images, background shapes and decorative elements."""
+    from pptx.oxml.ns import qn
+    source = prs.slides[source_idx]
+    new_slide = prs.slides.add_slide(source.slide_layout)
+
+    # Clear shapes added by add_slide
+    dest_tree = new_slide.shapes._spTree
+    for el in list(dest_tree):
+        dest_tree.remove(el)
+
+    rId_map = {}
+    for el in source.shapes._spTree:
+        tag = el.tag.split('}')[-1]
+        if tag == 'pic':
+            blip = el.find('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
+            if blip is not None:
+                old_rId = blip.get(R_EMBED)
+                if old_rId and old_rId not in rId_map:
+                    try:
+                        image_part = source.part.related_part(old_rId)
+                        new_rId = new_slide.part.relate_to(image_part, R_IMAGE)
+                        rId_map[old_rId] = new_rId
+                    except Exception:
+                        pass
+            new_el = copy.deepcopy(el)
+            blip_new = new_el.find('.//{http://schemas.openxmlformats.org/drawingml/2006/main}blip')
+            if blip_new is not None:
+                old_rId = blip_new.get(R_EMBED)
+                if old_rId in rId_map:
+                    blip_new.set(R_EMBED, rId_map[old_rId])
+            dest_tree.append(new_el)
+        else:
+            dest_tree.append(copy.deepcopy(el))
+
+    return new_slide
+
+def reset_and_write_placeholder(shape, texts):
+    """Clear placeholder formatting (inherits from layout) then write content."""
+    tf = shape.text_frame
+    tf.clear()  # strips explicit run/para formatting - inherits layout defaults
+    for i, text in enumerate(texts):
+        if i == 0:
+            tf.paragraphs[0].text = text
+        else:
+            p = tf.add_paragraph()
+            p.text = text
+            p.level = 0
+
 def apply_ops(prs, ops):
-    from pptx.util import Pt
     from pptx.oxml.ns import qn
     from pptx.enum.shapes import PP_PLACEHOLDER
     from lxml import etree
@@ -88,54 +139,30 @@ def apply_ops(prs, ops):
             title_text = slide_data.get('title', 'New Slide')
             bullets    = slide_data.get('bullets', [])
 
-            # Find a content slide to clone (preserves all formatting/positioning)
-            template_idx = 1  # default: second slide
+            # Find the best content slide to clone (has title + body, no SmartArt)
+            template_idx = 1
             for i, sl in enumerate(prs.slides):
-                has_title = any(ph.placeholder_format.type in TITLE_TYPES for ph in sl.placeholders)
-                has_body  = any(ph.placeholder_format.idx == 1 for ph in sl.placeholders)
-                if has_title and has_body:
+                has_title  = any(ph.placeholder_format.type in TITLE_TYPES for ph in sl.placeholders)
+                has_body   = any(ph.placeholder_format.idx == 1 for ph in sl.placeholders)
+                has_smartart = any(
+                    hasattr(sh, 'shape_type') and sh.shape_type == 15  # MSO_SHAPE_TYPE.SMART_ART
+                    for sh in sl.shapes
+                )
+                if has_title and has_body and not has_smartart:
                     template_idx = i
                     break
 
-            template_slide = prs.slides[template_idx]
-            layout = template_slide.slide_layout
-            new_slide = prs.slides.add_slide(layout)
+            # Clone slide with working image relationships
+            new_slide = clone_slide_with_images(prs, template_idx)
 
-            # Clone the full shape tree from the template (fonts, colours, positions)
-            source_tree = template_slide.shapes._spTree
-            dest_tree   = new_slide.shapes._spTree
-            # Remove default shapes added by add_slide
-            for el in list(dest_tree):
-                dest_tree.remove(el)
-            for el in source_tree:
-                dest_tree.append(copy.deepcopy(el))
-
-            # Now overwrite only the text in title and body placeholders
+            # Reset placeholder formatting to layout defaults, then write content
             for ph in new_slide.placeholders:
                 ph_type = ph.placeholder_format.type
                 ph_idx  = ph.placeholder_format.idx
                 if ph_type in TITLE_TYPES:
-                    ph.text = title_text
+                    reset_and_write_placeholder(ph, [title_text])
                 elif ph_idx == 1:
-                    tf = ph.text_frame
-                    # Enable auto-fit so PowerPoint reflows on open
-                    from pptx.oxml.ns import qn as _qn
-                    txBody = tf._txBody
-                    bodyPr = txBody.find(_qn('a:bodyPr'))
-                    if bodyPr is not None:
-                        for attr in ['spAutoFit', 'noAutofit', 'normAutofit']:
-                            el = bodyPr.find(_qn(f'a:{attr}'))
-                            if el is not None:
-                                bodyPr.remove(el)
-                        etree.SubElement(bodyPr, _qn('a:spAutoFit'))
-                    tf.clear()
-                    for i, bullet in enumerate(bullets):
-                        if i == 0:
-                            tf.paragraphs[0].text = bullet
-                        else:
-                            p = tf.add_paragraph()
-                            p.text = bullet
-                            p.level = 0
+                    reset_and_write_placeholder(ph, bullets)
 
             # Move to correct position (add_slide always appends)
             xml_slides = prs.slides._sldIdLst
