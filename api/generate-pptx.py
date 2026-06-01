@@ -88,27 +88,46 @@ def apply_ops(prs, ops):
             title_text = slide_data.get('title', 'New Slide')
             bullets    = slide_data.get('bullets', [])
 
-            # Find a layout with both a title and a body content placeholder
-            target_layout = prs.slide_layouts[1]
-            for layout in prs.slide_layouts:
-                has_title = any(
-                    ph.placeholder_format.type in TITLE_TYPES
-                    for ph in layout.placeholders
-                )
-                has_body = any(ph.placeholder_format.idx == 1 for ph in layout.placeholders)
+            # Find a content slide to clone (preserves all formatting/positioning)
+            template_idx = 1  # default: second slide
+            for i, sl in enumerate(prs.slides):
+                has_title = any(ph.placeholder_format.type in TITLE_TYPES for ph in sl.placeholders)
+                has_body  = any(ph.placeholder_format.idx == 1 for ph in sl.placeholders)
                 if has_title and has_body:
-                    target_layout = layout
+                    template_idx = i
                     break
 
-            new_slide = prs.slides.add_slide(target_layout)
+            template_slide = prs.slides[template_idx]
+            layout = template_slide.slide_layout
+            new_slide = prs.slides.add_slide(layout)
 
+            # Clone the full shape tree from the template (fonts, colours, positions)
+            source_tree = template_slide.shapes._spTree
+            dest_tree   = new_slide.shapes._spTree
+            # Remove default shapes added by add_slide
+            for el in list(dest_tree):
+                dest_tree.remove(el)
+            for el in source_tree:
+                dest_tree.append(copy.deepcopy(el))
+
+            # Now overwrite only the text in title and body placeholders
             for ph in new_slide.placeholders:
                 ph_type = ph.placeholder_format.type
                 ph_idx  = ph.placeholder_format.idx
                 if ph_type in TITLE_TYPES:
                     ph.text = title_text
-                elif ph_idx == 1 and bullets:
+                elif ph_idx == 1:
                     tf = ph.text_frame
+                    # Enable auto-fit so PowerPoint reflows on open
+                    from pptx.oxml.ns import qn as _qn
+                    txBody = tf._txBody
+                    bodyPr = txBody.find(_qn('a:bodyPr'))
+                    if bodyPr is not None:
+                        for attr in ['spAutoFit', 'noAutofit', 'normAutofit']:
+                            el = bodyPr.find(_qn(f'a:{attr}'))
+                            if el is not None:
+                                bodyPr.remove(el)
+                        etree.SubElement(bodyPr, _qn('a:spAutoFit'))
                     tf.clear()
                     for i, bullet in enumerate(bullets):
                         if i == 0:
@@ -118,7 +137,7 @@ def apply_ops(prs, ops):
                             p.text = bullet
                             p.level = 0
 
-            # Move new slide to correct position (add_slide always appends)
+            # Move to correct position (add_slide always appends)
             xml_slides = prs.slides._sldIdLst
             slides_list = list(xml_slides)
             new_el = slides_list[-1]
