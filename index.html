@@ -2802,6 +2802,7 @@ async function _downloadPresentationPython(btn) {
     const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+    window._presPatchOps = []; // clear after successful download
     presLog('Downloaded successfully via Python engine', 'ok');
     btn.textContent = '✓ Downloaded'; btn.disabled = false;
     setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);

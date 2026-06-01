@@ -11,7 +11,9 @@ def apply_ops(prs, ops):
 
     for op in ops:
         op_type = op.get('op', '')
-        slide_num = op.get('slide', 1)
+        # 'slide' is a number for add_bullet/update_* but a dict for insert_slide - guard carefully
+        raw_slide = op.get('slide', 1)
+        slide_num = raw_slide if isinstance(raw_slide, int) else 1
         slide_idx = slide_num - 1
 
         # ── ADD BULLET ──────────────────────────────────────────────────────────
