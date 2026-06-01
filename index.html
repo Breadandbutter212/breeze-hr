@@ -2187,7 +2187,7 @@ async function generatePresentation() {
     ? `There are currently ${presUploadedSlideCount} slides. Keep the same number of slides unless the instruction explicitly asks to add or remove one. Titles must stay identical.`
     : isUpdate
     ? `Base the structure on the uploaded presentation but you may add, remove or reorder slides to improve quality.`
-    : `Include 10-16 slides with section breaks.`;
+    : (()=>{ const m = topic.match(/\b(\d+)\s*(slide|page|deck)s?\b/i); return m ? `Generate exactly ${m[1]} slides - no more, no less.` : `Include 8-12 slides with section breaks.`; })();
 
   const prompt = `Create a professional, engaging presentation.
 
@@ -2210,7 +2210,7 @@ Generate slides as JSON:
 Guidelines:
 - Draw on best practice, frameworks and real-world examples for this topic
 - Reference actual company facts where available (policy names, headcount, office locations)
-- Slide structure: use your judgement based on the topic. Some slides need 6-8 detailed bullets, others just 2-3 high-level points, some work better as a visual or two-column layout. Do not apply a fixed bullet count - vary it to suit the content. Keep individual bullet text concise (under 15 words) but let the number of bullets reflect what the slide actually needs.
+- Slide structure: vary it. Mix content slides, section breaks, chart slides, image slides and close slides. Some slides need 6-8 bullets, others 2-3. Don't make every slide the same layout. Use chart slides for any data or comparisons. Use image slides where a visual would help. Use section slides to break up long decks.
 - REAL DATA RULE: Only use figures and names from the sources provided above. Never invent headcount numbers, employee names, job titles, survey scores or any other specific data. If real data is not provided, use placeholders: [Number], [Name], [Job Title], [Department] etc.
 - For chart slides: use real HRIS figures if provided above; otherwise use [TBC] as values and note "Data to be confirmed"
 - For orgchart slides: only use real names if provided; otherwise use [Name] and [Job Title] placeholders
