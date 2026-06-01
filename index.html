@@ -828,7 +828,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
         <!-- Template note -->
         <div id="pres-template-note" style="display:none;background:#FEF3C7;border:1px solid #FDE68A;border-radius:6px;padding:8px 12px;font-size:12px;color:#92400E;">
-          Preview shows content only - your template's colours, fonts, images and layouts will appear when downloaded.
+          ⚠️ Content-only preview - your original colours, fonts, images and slide layouts are preserved in the file and will appear correctly when you download with branding kept.
         </div>
 
         <!-- Slide grid -->
@@ -2386,7 +2386,8 @@ function renderSlides() {
   document.getElementById('pres-empty-state').style.display = 'none';
   document.getElementById('pres-status').style.display = 'none';
   const note = document.getElementById('pres-template-note');
-  if (note) note.style.display = presUploadedBase64 ? 'block' : 'none';
+  const keepingBranding = document.getElementById('pres-keep-format')?.checked || document.getElementById('pres-dl-keep')?.checked;
+  if (note) note.style.display = (presUploadedBase64 && keepingBranding) ? 'block' : 'none';
 }
 
 function openSlideEdit(i) {
@@ -2518,7 +2519,17 @@ function _pptxClassifyShape(spXml) {
   return 'skip';
 }
 
+function _pptxExtractParaText(paraInner) {
+  const runs = [];
+  paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
+  const hasTabRun = runs.some(r => /^\t+$/.test(r));
+  if (hasTabRun) return runs.filter(r => !/^\t+$/.test(r)).map(r => r.trim()).join(' | ');
+  return runs.join('').replace(/\t+/g, ' | ').trim();
+}
+
 function _pptxReplaceParaText(paraFull, paraInner, newText, tabTarget) {
+  // Issue 1: if text unchanged leave XML byte-for-byte identical (preserves inline formatting)
+  if (_pptxExtractParaText(paraInner) === newText) return paraFull;
   const calcTabs = l => Math.max(1, Math.round((tabTarget - l) / TAB_WEIGHT));
   const runs = [];
   paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
@@ -2640,8 +2651,10 @@ function _pptxInjectSlide(xml, slide, skipBody) {
     result += xml.substring(xmlPos, sp.start);
     xmlPos = sp.end;
     if (sp.cls === 'title') {
-      let isFirst = true;
-      result += sp.xml.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(slide.title||'')}</a:t>`; } return '<a:t></a:t>'; });
+      // Issue 1: skip if title text unchanged
+      const existingTitle = sp.xml.replace(/<a:t>([^<]*)<\/a:t>/g, (_, t) => t).replace(/<[^>]+>/g, '').trim();
+      if (existingTitle === (slide.title||'').trim()) { result += sp.xml; }
+      else { let isFirst = true; result += sp.xml.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(slide.title||'')}</a:t>`; } return '<a:t></a:t>'; }); }
     } else if (sp.isBestBody && !skipBody) {
       const txStart = sp.xml.indexOf('<p:txBody>');
       const txEnd = sp.xml.indexOf('</p:txBody>') + '</p:txBody>'.length;
@@ -2688,21 +2701,32 @@ function downloadPresentation() {
         let xml = _pptxInjectSlide(zip.files[sf].asText(), slide, hasDiagram);
         zip.file(sf, xml);
 
-        // SmartArt/diagram: 1:1 fixed swap only (no add/remove)
+        // SmartArt/diagram: 1:1 fixed swap only - skip if counts don't match (Issue 2)
         if (!zip.files[relsPath]) return;
         const relsXml = zip.files[relsPath].asText();
         const diagTexts = [slide.title, ...(slide.bullets||[])];
-        let dIdx = 0;
         [...relsXml.matchAll(/Type="[^"]*diagramData[^"]*"\s+Target="([^"]+)"/g)].forEach(rel => {
           const diagPath = resolvePath(sf, rel[1]);
           if (!zip.files[diagPath]) return;
           let diagXml = zip.files[diagPath].asText();
+          // Count non-empty non-field paragraphs in diagram
+          const diagParas = [];
+          diagXml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (pm, pi) => {
+            if (pi.includes('<a:fld')) return;
+            const rs = []; pi.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => rs.push(t));
+            if (rs.join('').trim()) diagParas.push({ pm, pi });
+          });
+          // Issue 2: only swap when counts match exactly
+          if (diagParas.length !== diagTexts.length) return;
+          let dIdx = 0;
           diagXml = diagXml.replace(/<a:p>([\s\S]*?)<\/a:p>/g, (paraMatch, paraInner) => {
             if (paraInner.includes('<a:fld')) return paraMatch;
             const runs = []; paraInner.replace(/<a:t>([^<]*)<\/a:t>/g, (m, t) => { runs.push(t); return m; });
             if (!runs.join('').trim()) return paraMatch;
-            const newText = diagTexts[dIdx]; if (newText === undefined) return paraMatch;
-            dIdx++;
+            const newText = diagTexts[dIdx++];
+            // Issue 1: skip if identical
+            const existingText = runs.join('').trim();
+            if (existingText === (newText||'').trim()) return paraMatch;
             let isFirst = true;
             return '<a:p>' + paraInner.replace(/<a:t>[^<]*<\/a:t>/g, () => { if (isFirst) { isFirst=false; return `<a:t>${_escXml(newText)}</a:t>`; } return '<a:t></a:t>'; }) + '</a:p>';
           });
