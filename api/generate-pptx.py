@@ -44,17 +44,46 @@ def clone_slide_with_images(prs, source_idx):
 
     return new_slide
 
-def reset_and_write_placeholder(shape, texts):
-    """Clear placeholder formatting (inherits from layout) then write content."""
+def hard_reset_placeholder(shape):
+    """Strip all explicit formatting from a cloned placeholder so it inherits from layout."""
+    from pptx.oxml.ns import qn
+    from lxml import etree
     tf = shape.text_frame
-    tf.clear()  # strips explicit run/para formatting - inherits layout defaults
-    for i, text in enumerate(texts):
-        if i == 0:
-            tf.paragraphs[0].text = text
-        else:
-            p = tf.add_paragraph()
-            p.text = text
-            p.level = 0
+    tf.clear()
+    txBody = tf._txBody
+    # Replace lstStyle with empty one - removes explicit size overrides baked in during clone
+    lst_style = txBody.find(qn('a:lstStyle'))
+    if lst_style is not None:
+        txBody.remove(lst_style)
+    new_lst_style = etree.Element(qn('a:lstStyle'))
+    body_pr = txBody.find(qn('a:bodyPr'))
+    if body_pr is not None:
+        body_pr.addnext(new_lst_style)
+        # Strip defRPr from bodyPr
+        def_rpr = body_pr.find(qn('a:defRPr'))
+        if def_rpr is not None:
+            body_pr.remove(def_rpr)
+    else:
+        txBody.insert(0, new_lst_style)
+    # Strip any explicit rPr/pPr from paragraphs
+    for p in txBody.findall(qn('a:p')):
+        for rpr in p.findall('.//' + qn('a:rPr')):
+            rpr.getparent().remove(rpr)
+        ppr = p.find(qn('a:pPr'))
+        if ppr is not None:
+            p.remove(ppr)
+
+def reset_and_write_placeholder(shape, texts):
+    """Hard reset placeholder formatting then write content with no explicit sizing."""
+    hard_reset_placeholder(shape)
+    tf = shape.text_frame
+    # Write first text directly (no explicit font - pure inheritance from layout)
+    if texts:
+        tf.paragraphs[0].text = texts[0]
+    for text in texts[1:]:
+        p = tf.add_paragraph()
+        p.text = text
+        p.level = 0
 
 def apply_ops(prs, ops):
     from pptx.oxml.ns import qn
