@@ -2904,22 +2904,21 @@ ${bgXml}
 </p:spTree></p:cSld><p:clrMapOvr><a:masterClr/></p:clrMapOvr></p:sld>`;
           let newXml = _pptxInjectSlide(minSlideXml, { ...newSlide, _allowExtraBullets: true });
           zip.file(newPath, newXml);
+          presLog(`New slide XML first 200: ${newXml.substring(0,200)}`, 'ok');
           // Minimal rels pointing to the borrowed slide layout
           const minRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slideLayout" Target="${layoutRef}"/></Relationships>`;
           zip.file(newRelsPath, minRels);
-          // Update manifests - insert sldId at correct position (after newSlide._insertAfter if set)
+          presLog(`New slide rels: ${minRels}`, 'ok');
+          // Update manifests
           maxId++;
           const newRId = `rId${nextRIdNum++}`;
-          const insertAfterN = newSlide._insertAfter || 0; // 1-indexed slide number to insert after
-          const sldIdList = [...presXml.matchAll(/<p:sldId\b[^/]*\/>/g)];
           const newSldIdTag = `<p:sldId id="${maxId}" r:id="${newRId}"/>`;
-          if (insertAfterN > 0 && sldIdList[insertAfterN - 1]) {
-            const m = sldIdList[insertAfterN - 1];
-            const insertPoint = m.index + m[0].length;
-            presXml = presXml.substring(0, insertPoint) + newSldIdTag + presXml.substring(insertPoint);
-          } else {
-            presXml = presXml.replace('</p:sldIdLst>', newSldIdTag + '</p:sldIdLst>');
+          presLog(`presXml length:${presXml.length} maxId:${maxId} newRId:${newRId}`, 'ok');
+          presLog(`sldIdLst snippet: ${presXml.substring(presXml.indexOf('<p:sldIdLst'), presXml.indexOf('</p:sldIdLst>')+14).substring(0,200)}`, 'ok');
+          if (!presXml.includes('</p:sldIdLst>')) {
+            presLog('ERROR: </p:sldIdLst> not found in presentation.xml', 'error');
           }
+          presXml = presXml.replace('</p:sldIdLst>', newSldIdTag + '</p:sldIdLst>');
           contentTypes = contentTypes.replace('</Types>', `<Override PartName="/ppt/slides/slide${newNum}.xml" ContentType="application/vnd.openxmlformats-officedocument.presentationml.slide+xml"/></Types>`);
           presRels = presRels.replace('</Relationships>', `<Relationship Id="${newRId}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/slide" Target="slides/slide${newNum}.xml"/></Relationships>`);
         }
