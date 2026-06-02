@@ -2208,7 +2208,13 @@ async function generatePresentation() {
     ? `There are currently ${presUploadedSlideCount} slides. Keep the same number of slides unless the instruction explicitly asks to add or remove one. Titles must stay identical.`
     : isUpdate
     ? `Base the structure on the uploaded presentation but you may add, remove or reorder slides to improve quality.`
-    : (()=>{ const m = topic.match(/\b(\d+)\s*(slide|page|deck)s?\b/i); return m ? `Generate exactly ${m[1]} slides - no more, no less.` : `Include 8-12 slides with section breaks.`; })();
+    : (()=>{
+        const words = {'one':1,'two':2,'three':3,'four':4,'five':5,'six':6,'seven':7,'eight':8,'nine':9,'ten':10};
+        const numWord = topic.match(/\b(one|two|three|four|five|six|seven|eight|nine|ten)\s*(slide|page|deck)s?\b/i);
+        const numDigit = topic.match(/\b(\d+)\s*(slide|page|deck)s?\b/i);
+        const n = numWord ? words[numWord[1].toLowerCase()] : numDigit ? parseInt(numDigit[1]) : null;
+        return n ? `Generate exactly ${n} slides - no more, no less. Do not add extra slides.` : `Include 6-10 slides with section breaks.`;
+      })();
 
   const prompt = `Create a professional, engaging presentation.
 
