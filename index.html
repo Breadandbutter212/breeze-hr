@@ -2872,8 +2872,14 @@ async function _downloadPresentationPythonGenerate(btn) {
     btn.textContent = '✓ Downloaded'; btn.disabled = false;
     setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
   } catch(e) {
-    presLog('Python generate failed: ' + e.message + ' — falling back to pptxgenjs', 'error');
-    _downloadPresentationClient(btn);
+    presLog('AI skill failed: ' + e.message, 'error');
+    // Show error in the log panel and open it
+    const logPanel = document.getElementById('presLogPanel');
+    if (logPanel) { logPanel.style.display = 'block'; logPanel.scrollTop = logPanel.scrollHeight; }
+    const logBtn = logPanel?.previousElementSibling;
+    if (logBtn && logBtn.textContent.includes('Show')) logBtn.textContent = '📋 Hide debug log';
+    btn.textContent = '⬇ Download .pptx'; btn.disabled = false;
+    // Don't fall back silently - show the error so user knows what happened
   }
 }
 
