@@ -278,7 +278,35 @@ def _bullets(slide, bullets, l, t, w, h, size, color):
         run.font.size = Pt(size); run.font.color.rgb = color; run.font.name = 'Calibri'
     return bx
 
+def _set_placeholder_text(ph, text, font_size=None, bold=False, color=None):
+    """Write text into a real placeholder - uses proper text frame with auto-sizing."""
+    from pptx.util import Pt
+    tf = ph.text_frame
+    tf.word_wrap = True
+    tf.clear()
+    p = tf.paragraphs[0]
+    run = p.add_run()
+    run.text = text
+    if font_size: run.font.size = Pt(font_size)
+    if bold: run.font.bold = bold
+    if color: run.font.color.rgb = color
+
+def _set_body_bullets(ph, bullets, font_size=16, color=None):
+    """Write bullet list into a body placeholder."""
+    from pptx.util import Pt
+    tf = ph.text_frame
+    tf.word_wrap = True
+    tf.clear()
+    for i, b in enumerate(bullets):
+        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
+        run = p.add_run()
+        run.text = b
+        if font_size: run.font.size = Pt(font_size)
+        if color: run.font.color.rgb = color
+        p.level = 0
+
 def generate_deck(slides, accent_hex, dark_hex, prs_title):
+    """Generate using proper slide layouts (title+content placeholders) + brand colour decorations."""
     from pptx import Presentation
     from pptx.util import Inches, Pt, Emu
     from pptx.dml.color import RGBColor
@@ -287,53 +315,76 @@ def generate_deck(slides, accent_hex, dark_hex, prs_title):
     from pptx.enum.chart import XL_CHART_TYPE
 
     SW, SH = Inches(13.33), Inches(7.5)
-    ACC  = _rgb(accent_hex or '475569')
-    DARK = _rgb(dark_hex   or '1E293B')
-    WHITE = RGBColor(0xFF,0xFF,0xFF)
-    INK   = RGBColor(0x37,0x41,0x51)
+    ACC  = _rgb(accent_hex or '0D9488')
+    DARK = _rgb(dark_hex   or '0F172A')
+    WHITE = RGBColor(0xFF, 0xFF, 0xFF)
+    INK   = RGBColor(0x1E, 0x29, 0x3B)
 
     prs = Presentation()
-    prs.slide_width = SW; prs.slide_height = SH
-    blank = prs.slide_layouts[6]
+    prs.slide_width = SW
+    prs.slide_height = SH
+
+    # Use proper named layouts: 0=Title, 1=Title+Content, 2=Title Only, 5=Blank, 6=Blank
+    LAYOUT_TITLE   = prs.slide_layouts[0]   # ctrTitle + subtitle
+    LAYOUT_CONTENT = prs.slide_layouts[1]   # title + body (bullet list)
+    LAYOUT_TITLE_ONLY = prs.slide_layouts[5] # title only (section/close)
+    LAYOUT_BLANK   = prs.slide_layouts[6]   # blank (chart/image)
 
     for s in slides:
-        sl = prs.slides.add_slide(blank)
-        st = s.get('type','content')
-        title   = s.get('title','')
-        bullets = s.get('bullets',[])
-        subtitle = s.get('subtitle','')
+        st      = s.get('type', 'content')
+        title   = s.get('title', '')
+        bullets = s.get('bullets', [])
+        subtitle = s.get('subtitle', '')
 
         if st == 'title':
+            sl = prs.slides.add_slide(LAYOUT_TITLE)
             _rect(sl, 0, 0, SW, SH, DARK)
-            _txt(sl, title, Inches(.6), Inches(2.2), Inches(11), Inches(1.4), 40, WHITE, bold=True, align=PP_ALIGN.LEFT)
-            if subtitle: _txt(sl, subtitle, Inches(.6), Inches(3.7), Inches(9), Inches(.6), 20, ACC)
-            _rect(sl, Inches(.6), Inches(5), Inches(1.2), Emu(72000), ACC)
+            _rect(sl, 0, 0, SW, Inches(0.08), ACC)  # thin top accent
+            _rect(sl, 0, SH - Inches(0.08), SW, Inches(0.08), ACC)  # thin bottom accent
+            for ph in sl.placeholders:
+                if ph.placeholder_format.idx == 0:
+                    _set_placeholder_text(ph, title, font_size=40, bold=True, color=WHITE)
+                elif ph.placeholder_format.idx == 1 and subtitle:
+                    _set_placeholder_text(ph, subtitle, font_size=20, color=ACC)
+                elif ph.placeholder_format.idx == 1 and not subtitle:
+                    ph.text = ''
 
         elif st == 'section':
+            sl = prs.slides.add_slide(LAYOUT_TITLE_ONLY)
             _rect(sl, 0, 0, SW, SH, ACC)
-            _txt(sl, title, Inches(.6), Inches(2.5), Inches(11), Inches(1.2), 36, WHITE, bold=True, align=PP_ALIGN.CENTER)
+            for ph in sl.placeholders:
+                if ph.placeholder_format.idx == 0:
+                    _set_placeholder_text(ph, title, font_size=36, bold=True, color=WHITE)
 
         elif st == 'close':
+            sl = prs.slides.add_slide(LAYOUT_TITLE_ONLY)
             _rect(sl, 0, 0, SW, SH, DARK)
-            _txt(sl, title or 'Questions?', Inches(.6), Inches(2), Inches(11), Inches(1.2), 40, WHITE, bold=True, align=PP_ALIGN.CENTER)
-            if bullets: _txt(sl, bullets[0], Inches(.6), Inches(3.4), Inches(9), Inches(.6), 18, ACC, align=PP_ALIGN.CENTER)
+            _rect(sl, 0, 0, SW, Inches(0.08), ACC)
+            for ph in sl.placeholders:
+                if ph.placeholder_format.idx == 0:
+                    _set_placeholder_text(ph, title or 'Questions?', font_size=40, bold=True, color=WHITE)
+            if bullets:
+                _txt(sl, bullets[0], Inches(1), Inches(4.2), Inches(11), Inches(0.6), 18, ACC, align=PP_ALIGN.CENTER)
 
         elif st == 'image':
+            sl = prs.slides.add_slide(LAYOUT_BLANK)
             _rect(sl, 0, 0, SW, Inches(1.1), DARK)
-            _txt(sl, title, Inches(.4), Inches(.15), Inches(11.4), Inches(.8), 22, WHITE, bold=True)
-            _rect(sl, Inches(.5), Inches(1.25), Inches(7.5), Inches(5.5), RGBColor(0xF1,0xF5,0xF9))
-            hint = s.get('imageHint','Add image here')
-            _txt(sl, f'\U0001f4f7  {hint}', Inches(.5), Inches(3.3), Inches(7.5), Inches(.8), 13, RGBColor(0x94,0xA3,0xB8), align=PP_ALIGN.CENTER)
-            if bullets: _bullets(sl, bullets, Inches(8.2), Inches(1.35), Inches(5), Inches(5.3), 15, INK)
+            _txt(sl, title, Inches(0.4), Inches(0.15), Inches(11.4), Inches(0.8), 24, WHITE, bold=True)
+            _rect(sl, Inches(0.5), Inches(1.25), Inches(7.2), Inches(5.5), RGBColor(0xF1,0xF5,0xF9))
+            hint = s.get('imageHint', 'Add image here')
+            _txt(sl, f'\U0001f4f7  {hint}', Inches(0.5), Inches(3.3), Inches(7.2), Inches(0.8),
+                 13, RGBColor(0x94,0xA3,0xB8), align=PP_ALIGN.CENTER)
+            if bullets: _bullets(sl, bullets, Inches(8.0), Inches(1.35), Inches(5), Inches(5.3), 15, INK)
 
         elif st == 'chart':
+            sl = prs.slides.add_slide(LAYOUT_BLANK)
             _rect(sl, 0, 0, SW, Inches(1.1), DARK)
-            _txt(sl, title, Inches(.4), Inches(.15), Inches(11.4), Inches(.8), 22, WHITE, bold=True)
-            labels  = s.get('labels',[])
-            series  = s.get('series',[])
-            ct_str  = s.get('chartType','bar')
-            ct_map  = {'bar': XL_CHART_TYPE.COLUMN_CLUSTERED, 'barh': XL_CHART_TYPE.BAR_CLUSTERED,
-                       'line': XL_CHART_TYPE.LINE, 'pie': XL_CHART_TYPE.PIE, 'doughnut': XL_CHART_TYPE.DOUGHNUT}
+            _txt(sl, title, Inches(0.4), Inches(0.15), Inches(11.4), Inches(0.8), 24, WHITE, bold=True)
+            labels = s.get('labels', [])
+            series = s.get('series', [])
+            ct_str = s.get('chartType', 'bar')
+            ct_map = {'bar': XL_CHART_TYPE.COLUMN_CLUSTERED, 'barh': XL_CHART_TYPE.BAR_CLUSTERED,
+                      'line': XL_CHART_TYPE.LINE, 'pie': XL_CHART_TYPE.PIE, 'doughnut': XL_CHART_TYPE.DOUGHNUT}
             ct = ct_map.get(ct_str, XL_CHART_TYPE.COLUMN_CLUSTERED)
             if labels and series:
                 cd = ChartData()
@@ -341,15 +392,20 @@ def generate_deck(slides, accent_hex, dark_hex, prs_title):
                 for ser in series:
                     vals = [float(v) if str(v).replace('.','').replace('-','').isdigit() else 0 for v in ser.get('values',[])]
                     cd.add_series(ser.get('name',''), vals)
-                chart = sl.shapes.add_chart(ct, Inches(.5), Inches(1.25), Inches(12.3), Inches(5.5), cd).chart
+                chart = sl.shapes.add_chart(ct, Inches(0.5), Inches(1.25), Inches(12.3), Inches(5.5), cd).chart
                 chart.has_legend = len(series) > 1
             note = s.get('note','')
-            if note: _txt(sl, note, Inches(.5), Inches(6.9), Inches(12), Inches(.3), 9, RGBColor(0x9C,0xA3,0xAF))
+            if note: _txt(sl, note, Inches(0.5), Inches(6.9), Inches(12), Inches(0.3), 9, RGBColor(0x9C,0xA3,0xAF))
 
-        else:  # content
-            _rect(sl, 0, 0, SW, Inches(1.1), DARK)
-            _txt(sl, title, Inches(.4), Inches(.15), Inches(11.4), Inches(.8), 22, WHITE, bold=True)
-            if bullets: _bullets(sl, bullets, Inches(.5), Inches(1.3), Inches(11.2), Inches(4.5), 16, INK)
+        else:  # content - uses proper Title+Content layout with real placeholders
+            sl = prs.slides.add_slide(LAYOUT_CONTENT)
+            # Brand: coloured header bar behind title
+            _rect(sl, 0, 0, SW, Inches(1.3), DARK)
+            for ph in sl.placeholders:
+                if ph.placeholder_format.idx == 0:
+                    _set_placeholder_text(ph, title, font_size=24, bold=True, color=WHITE)
+                elif ph.placeholder_format.idx == 1 and bullets:
+                    _set_body_bullets(ph, bullets, font_size=16, color=INK)
 
     return prs
 
