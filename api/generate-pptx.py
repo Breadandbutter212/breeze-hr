@@ -409,20 +409,22 @@ def _inject_template_slide(slide, title, bullets):
             text_shapes.append({'shape': shape, 'max_sz': max_sz, 'paras': para_count, 'text': full_text})
 
         if text_shapes:
-            # Title = shape with largest font, or if tied, shortest text
+            # Title = shape with largest font
             by_size = sorted(text_shapes, key=lambda x: (-x['max_sz'], len(x['text'])))
+            title_shape = None
             if not title_done and by_size:
-                _replace_text_in_shape(by_size[0]['shape'], title)
+                title_shape = by_size[0]['shape']
+                _replace_text_in_shape(title_shape, title)
                 title_done = True
 
-            # Body = shape with most content paragraphs (excluding the title shape)
+            # Body = largest area text box BELOW the title (avoids small header labels)
             if not body_done and bullets:
-                remaining = [s for s in text_shapes if s['shape'] != by_size[0]['shape']] if by_size else text_shapes
-                by_paras = sorted(remaining, key=lambda x: -x['paras'])
-                if by_paras:
-                    body_shape = by_paras[0]['shape']
+                title_top = title_shape.top if title_shape else 0
+                candidates = [s for s in text_shapes if s['shape'] != title_shape and s['shape'].top >= title_top]
+                by_area = sorted(candidates, key=lambda x: -(x['shape'].width * x['shape'].height))
+                if by_area:
+                    body_shape = by_area[0]['shape']
                     tf = body_shape.text_frame
-                    # Clone first paragraph as template, replace all
                     from pptx.oxml.ns import qn
                     txBody = tf._txBody
                     paras = txBody.findall(qn('a:p'))
@@ -459,9 +461,9 @@ def generate_deck_from_template(slides, template_b64):
         'section': min(2, n_tmpl - 1),
         'image':   min(3, n_tmpl - 1),
         'chart':   min(4, n_tmpl - 1),
-        'content': min(1, n_tmpl - 1),
+        'content': min(3, n_tmpl - 1),  # use Bullets slide, not Agenda slide
     }
-    DEFAULT_IDX = min(1, n_tmpl - 1)
+    DEFAULT_IDX = min(3, n_tmpl - 1)
 
     prs = Presentation(io.BytesIO(template_bytes))
     original_count = len(prs.slides)
