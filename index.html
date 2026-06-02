@@ -806,6 +806,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <span id="pres-status-text" style="font-size:13px;">Working...</span>
       </div>
 
+      <!-- AI generation live progress -->
+      <div id="pres-generating" style="display:none;flex:1;flex-direction:column;padding:40px 48px;font-family:monospace;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:20px;letter-spacing:0.04em;">≋ Building your presentation</div>
+        <div id="pres-gen-log" style="font-size:12px;color:var(--ink3);line-height:2;display:flex;flex-direction:column;gap:2px;"></div>
+      </div>
+
       <!-- Slides output -->
       <div id="pres-slides" style="display:none;padding:20px;flex-direction:column;gap:16px;">
 
@@ -2830,10 +2836,57 @@ async function _downloadPresentationPython(btn) {
   }
 }
 
+function _startGenProgress(slides) {
+  // Show the live progress panel, hide slide grid
+  document.getElementById('pres-generating').style.display = 'flex';
+  document.getElementById('pres-slides').style.display = 'none';
+  document.getElementById('pres-empty-state').style.display = 'none';
+  const log = document.getElementById('pres-gen-log');
+  log.innerHTML = '';
+
+  const phases = [
+    'Planning slide structure...',
+    'Selecting design system and layout...',
+    ...slides.map(s => `Writing "${s.title}"...`),
+    'Generating Python code...',
+    'Building presentation file...',
+    'Applying design and typography...',
+    'Finalising...'
+  ];
+
+  // Spread messages evenly over estimated duration (40s per 3 slides, min 60s)
+  const estimated = Math.max(60, Math.ceil(slides.length / 3) * 40) * 1000;
+  const interval = estimated / (phases.length + 1);
+  let idx = 0;
+
+  const addLine = (text, done = false) => {
+    const line = document.createElement('div');
+    line.style.cssText = `color:${done ? 'var(--green)' : 'var(--ink3)'};display:flex;align-items:center;gap:8px;`;
+    line.innerHTML = `<span style="opacity:0.4">${done ? '✓' : '›'}</span><span id="gen-line-${idx}">${text}</span>`;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  };
+
+  window._genProgressTimer = setInterval(() => {
+    if (idx > 0 && log.children[idx - 1]) {
+      const prev = log.children[idx - 1];
+      prev.style.color = 'var(--green)';
+      prev.querySelector('span').textContent = '✓';
+    }
+    if (idx < phases.length) { addLine(phases[idx]); idx++; }
+  }, interval);
+}
+
+function _stopGenProgress() {
+  clearInterval(window._genProgressTimer);
+  document.getElementById('pres-generating').style.display = 'none';
+}
+
 async function _downloadPresentationPythonGenerate(btn) {
   // Force debug log open so messages are visible
   const _lp = document.getElementById('presLogPanel');
   if (_lp) { _lp.style.display = 'block'; }
+  _startGenProgress(presSlides);
   try {
     presLog('Generating deck via Anthropic pptx skill...', 'ok');
     const token = await getAuthToken();
@@ -2871,18 +2924,18 @@ async function _downloadPresentationPythonGenerate(btn) {
     }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
     a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+    _stopGenProgress();
+    document.getElementById('pres-slides').style.display = 'flex';
     presLog('Downloaded via Anthropic pptx skill', 'ok');
     btn.textContent = '✓ Downloaded'; btn.disabled = false;
     setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
   } catch(e) {
+    _stopGenProgress();
+    document.getElementById('pres-slides').style.display = 'flex';
     presLog('AI skill failed: ' + e.message, 'error');
-    // Show error in the log panel and open it
     const logPanel = document.getElementById('presLogPanel');
     if (logPanel) { logPanel.style.display = 'block'; logPanel.scrollTop = logPanel.scrollHeight; }
-    const logBtn = logPanel?.previousElementSibling;
-    if (logBtn && logBtn.textContent.includes('Show')) logBtn.textContent = '📋 Hide debug log';
     btn.textContent = '⬇ Download .pptx'; btn.disabled = false;
-    // Don't fall back silently - show the error so user knows what happened
   }
 }
 
