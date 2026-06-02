@@ -353,21 +353,106 @@ def generate_deck(slides, accent_hex, dark_hex, prs_title):
 
     return prs
 
+def _replace_text_in_shape(shape, new_text):
+    """Replace all text in a shape's first paragraph run, preserving formatting."""
+    if not shape.has_text_frame:
+        return
+    from pptx.oxml.ns import qn
+    txBody = shape.text_frame._txBody
+    all_t = txBody.findall('.//' + qn('a:t'))
+    if all_t:
+        all_t[0].text = new_text
+        for t in all_t[1:]:
+            t.text = ''
+
+def _inject_template_slide(slide, title, bullets):
+    """Inject title and bullets into a cloned template slide.
+    Works for both placeholder-based and manual text box templates.
+    Strategy: find the largest-font text (title), then the text box
+    with the most paragraphs (body), replace their content.
+    """
+    from pptx.util import Pt
+    from pptx.oxml.ns import qn
+    from lxml import etree
+
+    # First try placeholder approach
+    from pptx.enum.shapes import PP_PLACEHOLDER
+    TITLE_TYPES = (PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE)
+    title_done = body_done = False
+    for ph in slide.placeholders:
+        ph_type = ph.placeholder_format.type
+        ph_idx  = ph.placeholder_format.idx
+        if not title_done and ph_type in TITLE_TYPES:
+            overwrite_title_text(ph, title)
+            title_done = True
+        elif not body_done and ph_idx == 1:
+            overwrite_body_text(ph, bullets)
+            body_done = True
+
+    # Fallback: find text boxes by largest font or most content (for manual text box templates)
+    if not title_done or not body_done:
+        # Collect all text-bearing shapes with their max font size and paragraph count
+        text_shapes = []
+        for shape in slide.shapes:
+            if not shape.has_text_frame:
+                continue
+            tf = shape.text_frame
+            full_text = ' '.join(p.text for p in tf.paragraphs).strip()
+            if not full_text:
+                continue
+            max_sz = 0
+            for p in tf.paragraphs:
+                for run in p.runs:
+                    if run.font.size:
+                        max_sz = max(max_sz, run.font.size)
+            para_count = sum(1 for p in tf.paragraphs if p.text.strip())
+            text_shapes.append({'shape': shape, 'max_sz': max_sz, 'paras': para_count, 'text': full_text})
+
+        if text_shapes:
+            # Title = shape with largest font, or if tied, shortest text
+            by_size = sorted(text_shapes, key=lambda x: (-x['max_sz'], len(x['text'])))
+            if not title_done and by_size:
+                _replace_text_in_shape(by_size[0]['shape'], title)
+                title_done = True
+
+            # Body = shape with most content paragraphs (excluding the title shape)
+            if not body_done and bullets:
+                remaining = [s for s in text_shapes if s['shape'] != by_size[0]['shape']] if by_size else text_shapes
+                by_paras = sorted(remaining, key=lambda x: -x['paras'])
+                if by_paras:
+                    body_shape = by_paras[0]['shape']
+                    tf = body_shape.text_frame
+                    # Clone first paragraph as template, replace all
+                    from pptx.oxml.ns import qn
+                    txBody = tf._txBody
+                    paras = txBody.findall(qn('a:p'))
+                    ref_para = copy.deepcopy(paras[0]) if paras else None
+                    for p in paras:
+                        txBody.remove(p)
+                    for bullet in bullets:
+                        new_p = copy.deepcopy(ref_para) if ref_para is not None else etree.SubElement(txBody, qn('a:p'))
+                        all_t = new_p.findall('.//' + qn('a:t'))
+                        if all_t:
+                            all_t[0].text = bullet
+                            for t in all_t[1:]: t.text = ''
+                        txBody.append(new_p)
+                    body_done = True
+
 def generate_deck_from_template(slides, template_b64):
     """Generate a new deck by cloning slides from a brand template.
     Template slide mapping (by index):
       0 = title/close  (dark background)
-      1 = content      (first content slide - bullets)
+      1 = content      (first content slide)
       2 = section      (section divider)
-      3 = image        (bullets + image placeholder)
-      4 = chart        (chart slide)
-    Falls back to slide 1 (content) for any unrecognised type.
+      3 = image        (bullets + image)
+      4 = chart
+    Falls back to index 1 for unrecognised types.
     """
     from pptx import Presentation
-    template_prs = Presentation(io.BytesIO(base64.b64decode(template_b64)))
+    template_bytes = base64.b64decode(template_b64)
+    template_prs = Presentation(io.BytesIO(template_bytes))
     n_tmpl = len(template_prs.slides)
 
-    # Map slide types to template slide indices (capped to available slides)
     TYPE_MAP = {
         'title':   min(0, n_tmpl - 1),
         'close':   min(0, n_tmpl - 1),
@@ -378,8 +463,7 @@ def generate_deck_from_template(slides, template_b64):
     }
     DEFAULT_IDX = min(1, n_tmpl - 1)
 
-    # We'll build a new prs by adding slides to the template then removing originals
-    prs = Presentation(io.BytesIO(base64.b64decode(template_b64)))
+    prs = Presentation(io.BytesIO(template_bytes))
     original_count = len(prs.slides)
 
     for slide_data in slides:
@@ -388,21 +472,10 @@ def generate_deck_from_template(slides, template_b64):
         bullets = slide_data.get('bullets', [])
         tmpl_idx = TYPE_MAP.get(stype, DEFAULT_IDX)
 
-        # Clone the template slide
         new_slide = clone_slide_with_images(prs, tmpl_idx)
+        _inject_template_slide(new_slide, title, bullets)
 
-        # Overwrite title and body text in place
-        for ph in new_slide.placeholders:
-            ph_type = ph.placeholder_format.type
-            ph_idx  = ph.placeholder_format.idx
-            from pptx.enum.shapes import PP_PLACEHOLDER
-            TITLE_TYPES = (PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE)
-            if ph_type in TITLE_TYPES:
-                overwrite_title_text(ph, title)
-            elif ph_idx == 1:
-                overwrite_body_text(ph, bullets)
-
-    # Remove the original template slides (now at the start)
+    # Remove original template slides
     xml_slides = prs.slides._sldIdLst
     slides_list = list(xml_slides)
     for i in range(original_count):
