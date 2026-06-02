@@ -2816,6 +2816,13 @@ function downloadPresentation() {
 
 async function _downloadPresentationPython(btn) {
   try {
+    // Auto-apply any pending edit text before downloading
+    const pendingEdit = document.getElementById('pres-chat-input')?.value?.trim();
+    if (pendingEdit) {
+      presLog('Auto-applying pending edit before download...', 'warn');
+      await presAiEdit();
+    }
+
     presLog('Sending to Python pptx engine...', 'ok');
     const token = await getAuthToken();
 
