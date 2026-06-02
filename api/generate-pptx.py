@@ -542,15 +542,26 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
     if template_file_id:
         content.append({'type': 'container_upload', 'file_id': template_file_id})
 
-    with client.beta.messages.stream(
-        model='claude-opus-4-8',
-        max_tokens=16000,
-        betas=SKILL_BETAS,
-        container={'skills': SKILL_DEF},
-        tools=SKILL_TOOLS,
-        messages=[{'role': 'user', 'content': content}]
-    ) as stream:
-        message = stream.get_final_message()
+    # Try streaming first (newer SDK), fall back to create() for older SDK
+    try:
+        with client.beta.messages.stream(
+            model='claude-opus-4-8',
+            max_tokens=16000,
+            betas=SKILL_BETAS,
+            container={'skills': SKILL_DEF},
+            tools=SKILL_TOOLS,
+            messages=[{'role': 'user', 'content': content}]
+        ) as stream:
+            message = stream.get_final_message()
+    except AttributeError:
+        message = client.beta.messages.create(
+            model='claude-opus-4-8',
+            max_tokens=16000,
+            betas=SKILL_BETAS,
+            container={'skills': SKILL_DEF},
+            tools=SKILL_TOOLS,
+            messages=[{'role': 'user', 'content': content}]
+        )
 
     out_id = _extract_file_id(message)
     if not out_id:
