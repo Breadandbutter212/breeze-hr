@@ -2789,7 +2789,7 @@ function downloadPresentation() {
     _downloadPresentationPython(btn);  // edit path: send ops + original file
     return;
   }
-  _downloadPresentationClient(btn);  // generate path: use pptxgenjs (reliable client-side)
+  _downloadPresentationPythonGenerate(btn);  // generate path: Anthropic pptx skill
 }
 
 async function _downloadPresentationPython(btn) {
