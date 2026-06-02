@@ -2107,7 +2107,7 @@ async function generatePresentation() {
 
   // If a deck is already uploaded, route to patch edit instead of full generation
   // Only route to patch edit if the instruction looks like an edit (mentions slide numbers or specific changes)
-  const looksLikeEdit = /\bslide\s*\d+\b|add\s+a?\s*(new\s+)?(bullet|point)|remove|update|change|rename|translate/i.test(topic);
+  const looksLikeEdit = /\bslide\s*\d+\b|add\s+a?\s*(new\s+)?(bullet|point|slide|page)|new\s+slide|insert\s+slide|page\s+\d+|remove|update|change|rename|translate|make\s+slide|edit\s+slide/i.test(topic);
   if (presUploadedBase64 && presSlides.length && looksLikeEdit) {
     presLog('Routing to patch edit (deck already uploaded)', 'warn');
     const chatInput = document.getElementById('pres-chat-input');
