@@ -2439,7 +2439,17 @@ function renderSlides() {
   const titleEl = document.getElementById('pres-slide-title');
   if (!container || !panel) return;
   if (titleEl) titleEl.textContent = presTitle;
-  container.innerHTML = presSlides.map((s,i) => slideCardHtml(s,i)).join('');
+  // Don't show preview cards - the AI skill generates the real design on download
+  // Show slide titles as a simple list instead so user knows what was planned
+  container.innerHTML = `<div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px 24px;">
+    <div style="font-size:12px;font-weight:600;color:var(--ink2);margin-bottom:12px;letter-spacing:0.04em;">PLANNED SLIDES (${presSlides.length})</div>
+    ${presSlides.map((s,i)=>`<div style="display:flex;align-items:center;gap:10px;padding:7px 0;border-bottom:1px solid var(--border);font-size:13px;">
+      <span style="font-size:10px;font-weight:700;color:var(--ink3);min-width:20px;">${i+1}</span>
+      <span style="font-weight:500;color:var(--ink);">${escapeHtml(s.title||'Untitled')}</span>
+      <span style="font-size:11px;color:var(--ink3);margin-left:auto;">${(s.bullets||[]).length} bullets</span>
+    </div>`).join('')}
+    <div style="margin-top:14px;font-size:12px;color:var(--ink3);">Click <strong>Download .pptx</strong> to generate the final designed presentation.</div>
+  </div>`;
   panel.style.display = 'flex';
   document.getElementById('pres-empty-state').style.display = 'none';
   document.getElementById('pres-status').style.display = 'none';
