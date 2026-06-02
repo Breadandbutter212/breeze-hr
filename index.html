@@ -2831,8 +2831,11 @@ async function _downloadPresentationPython(btn) {
 }
 
 async function _downloadPresentationPythonGenerate(btn) {
+  // Force debug log open so messages are visible
+  const _lp = document.getElementById('presLogPanel');
+  if (_lp) { _lp.style.display = 'block'; }
   try {
-    presLog('Generating deck via Python engine...', 'ok');
+    presLog('Generating deck via Anthropic pptx skill...', 'ok');
     const token = await getAuthToken();
 
     // Load brand template if one is saved
