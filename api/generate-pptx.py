@@ -242,259 +242,197 @@ def apply_ops(prs, ops):
                                     run.text = re.sub(r'\b20\d{2}\b', year, run.text)
 
 
-def _rgb(h):
-    h = h.lstrip('#')
-    return __import__('pptx.dml.color', fromlist=['RGBColor']).RGBColor(int(h[0:2],16), int(h[2:4],16), int(h[4:6],16))
+# ── GENERATION HELPERS (Claude.ai verified approach) ────────────────────────
+import math
 
-def _rect(slide, l, t, w, h, color):
-    from pptx.enum.shapes import MSO_SHAPE_TYPE
-    s = slide.shapes.add_shape(1, l, t, w, h)  # 1 = rectangle
+class BRAND:
+    DARK   = None; DARKER = None; ACCENT = None
+    TEXT   = None; MUTED  = None; FAINT  = None
+    WHITE  = None; LIGHT  = None; LIGHTTXT = None
+    HEAD_FONT = "Trebuchet MS"; BODY_FONT = "Calibri"
+
+    @classmethod
+    def init(cls, accent_hex, dark_hex):
+        from pptx.dml.color import RGBColor
+        def rgb(h): h=h.lstrip('#'); return RGBColor(int(h[0:2],16),int(h[2:4],16),int(h[4:6],16))
+        cls.ACCENT   = rgb(accent_hex or '0D9488')
+        cls.DARK     = rgb(dark_hex   or '1E293B')
+        cls.DARKER   = rgb('0F172A')
+        cls.TEXT     = cls.DARK
+        cls.MUTED    = rgb('64748B')
+        cls.FAINT    = rgb('94A3B8')
+        cls.LIGHT    = rgb('F8FAFC')
+        cls.WHITE    = rgb('FFFFFF')
+        cls.LIGHTTXT = rgb('CBD5E1')
+
+SLIDE_W = 13.333; SLIDE_H = 7.5; MARGIN = 0.7
+CONTENT_W = SLIDE_W - 2 * MARGIN
+
+def _blank_slide(prs, bg):
+    from pptx.enum.shapes import MSO_SHAPE
+    sl = prs.slides.add_slide(prs.slide_layouts[6])
+    fill = sl.background.fill; fill.solid(); fill.fore_color.rgb = bg
+    return sl
+
+def _add_rect(sl, x, y, w, h, color):
+    from pptx.enum.shapes import MSO_SHAPE
+    from pptx.util import Inches
+    s = sl.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
     s.fill.solid(); s.fill.fore_color.rgb = color
-    s.line.fill.background()
+    s.line.fill.background(); s.shadow.inherit = False
     return s
 
-def _txt(slide, text, l, t, w, h, size, color, bold=False, align=None, wrap=True):
-    from pptx.util import Pt
-    from pptx.enum.text import PP_ALIGN
-    bx = slide.shapes.add_textbox(l, t, w, h)
-    tf = bx.text_frame; tf.word_wrap = wrap
+def _estimate_lines(text, box_w, font_pt, avg=0.50):
+    cw = (font_pt * avg) / 72.0
+    cpl = max(1, int(box_w / cw))
+    return sum(math.ceil(max(1,len(l))/cpl) for l in text.split('\n'))
+
+def _fit_font(text, bw, bh, start, min_pt=10, ls=1.18):
+    pt = start
+    while pt > min_pt:
+        if _estimate_lines(text, bw, pt) * (pt*ls/72.0) <= bh: break
+        pt -= 1
+    return pt
+
+def _add_text(sl, text, x, y, w, h, *, size=18, color, font=None, bold=False,
+              align=None, anchor=None, autofit=True):
+    from pptx.util import Inches, Pt
+    from pptx.enum.text import PP_ALIGN, MSO_ANCHOR, MSO_AUTO_SIZE
+    font = font or BRAND.BODY_FONT
+    bx = sl.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
+    tf = bx.text_frame; tf.word_wrap = True
+    if autofit:
+        tf.auto_size = MSO_AUTO_SIZE.TEXT_TO_FIT_SHAPE
+        size = _fit_font(text, w, h, size)
+    if anchor: tf.vertical_anchor = anchor
+    for m in ('margin_left','margin_right','margin_top','margin_bottom'):
+        setattr(tf, m, Pt(0))
     p = tf.paragraphs[0]
     if align: p.alignment = align
-    run = p.add_run()
-    run.text = text
-    run.font.size = Pt(size); run.font.color.rgb = color
-    run.font.bold = bold; run.font.name = 'Calibri'
+    run = p.add_run(); run.text = text
+    run.font.size = Pt(size); run.font.bold = bold
+    run.font.name = font; run.font.color.rgb = color
     return bx
 
-def _bullets(slide, bullets, l, t, w, h, size, color):
+def _set_bullet_xml(paragraph):
+    from pptx.oxml.ns import qn
     from pptx.util import Pt
-    bx = slide.shapes.add_textbox(l, t, w, h)
+    pPr = paragraph._p.get_or_add_pPr()
+    pPr.set('marL', str(int(Pt(0.28*72).emu // 1)))
+    pPr.set('indent', str(-int(Pt(0.28*72).emu // 1)))
+    bf = pPr.makeelement(qn('a:buFont'), {'typeface': 'Arial'})
+    bc = pPr.makeelement(qn('a:buChar'), {'char': '•'})
+    pPr.append(bf); pPr.append(bc)
+
+def _add_bullets(sl, items, x, y, w, h, *, size=15, color, gap=10):
+    from pptx.util import Inches, Pt
+    bx = sl.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
     tf = bx.text_frame; tf.word_wrap = True
-    for i, b in enumerate(bullets):
-        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        p.space_before = Pt(3)
-        run = p.add_run()
-        run.text = f'• {b}'
-        run.font.size = Pt(size); run.font.color.rgb = color; run.font.name = 'Calibri'
+    for m in ('margin_left','margin_right','margin_top','margin_bottom'):
+        setattr(tf, m, Pt(0))
+    for i, item in enumerate(items):
+        p = tf.paragraphs[0] if i==0 else tf.add_paragraph()
+        p.space_after = Pt(gap)
+        sz = _fit_font(item, w-0.3, h/max(1,len(items)), size)
+        run = p.add_run(); run.text = item
+        run.font.size = Pt(sz); run.font.name = BRAND.BODY_FONT; run.font.color.rgb = color
+        _set_bullet_xml(p)
     return bx
 
-def _set_placeholder_text(ph, text, font_size=None, bold=False, color=None):
-    """Write text into a real placeholder - uses proper text frame with auto-sizing."""
-    from pptx.util import Pt
-    tf = ph.text_frame
-    tf.word_wrap = True
-    tf.clear()
-    p = tf.paragraphs[0]
-    run = p.add_run()
-    run.text = text
-    if font_size: run.font.size = Pt(font_size)
-    if bold: run.font.bold = bold
-    if color: run.font.color.rgb = color
-
-def _set_body_bullets(ph, bullets, font_size=16, color=None):
-    """Write bullet list into a body placeholder."""
-    from pptx.util import Pt
-    tf = ph.text_frame
-    tf.word_wrap = True
-    tf.clear()
-    for i, b in enumerate(bullets):
-        p = tf.paragraphs[0] if i == 0 else tf.add_paragraph()
-        run = p.add_run()
-        run.text = b
-        if font_size: run.font.size = Pt(font_size)
-        if color: run.font.color.rgb = color
-        p.level = 0
+def _title_block(sl, title, kicker=None):
+    sq_y = 0.82 if kicker else 0.66
+    _add_rect(sl, MARGIN, sq_y, 0.18, 0.18, BRAND.ACCENT)
+    if kicker:
+        _add_text(sl, kicker.upper(), MARGIN+0.3, 0.5, 11, 0.3,
+                  size=11, color=BRAND.ACCENT, bold=True, autofit=False)
+    _add_text(sl, title, MARGIN+0.28, (0.74 if kicker else 0.5), CONTENT_W, 0.7,
+              size=28, color=BRAND.DARK, font=BRAND.HEAD_FONT, bold=True)
 
 def generate_deck(slides, accent_hex, dark_hex, prs_title):
-    """Generate using proper slide layouts (title+content placeholders) + brand colour decorations."""
     from pptx import Presentation
-    from pptx.util import Inches, Pt, Emu
+    from pptx.util import Inches
     from pptx.dml.color import RGBColor
-    from pptx.enum.text import PP_ALIGN
     from pptx.chart.data import ChartData
     from pptx.enum.chart import XL_CHART_TYPE
+    from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
 
-    SW, SH = Inches(13.33), Inches(7.5)
-    ACC  = _rgb(accent_hex or '0D9488')
-    DARK = _rgb(dark_hex   or '0F172A')
-    WHITE = RGBColor(0xFF, 0xFF, 0xFF)
-    INK   = RGBColor(0x1E, 0x29, 0x3B)
-
+    BRAND.init(accent_hex, dark_hex)
     prs = Presentation()
-    prs.slide_width = SW
-    prs.slide_height = SH
-
-    # Use proper named layouts: 0=Title, 1=Title+Content, 2=Title Only, 5=Blank, 6=Blank
-    LAYOUT_TITLE   = prs.slide_layouts[0]   # ctrTitle + subtitle
-    LAYOUT_CONTENT = prs.slide_layouts[1]   # title + body (bullet list)
-    LAYOUT_TITLE_ONLY = prs.slide_layouts[5] # title only (section/close)
-    LAYOUT_BLANK   = prs.slide_layouts[6]   # blank (chart/image)
+    prs.slide_width = Inches(SLIDE_W); prs.slide_height = Inches(SLIDE_H)
 
     for s in slides:
-        st      = s.get('type', 'content')
-        title   = s.get('title', '')
-        bullets = s.get('bullets', [])
-        subtitle = s.get('subtitle', '')
+        st      = s.get('type','content')
+        title   = s.get('title','')
+        bullets = s.get('bullets',[])
+        subtitle = s.get('subtitle','')
 
         if st == 'title':
-            sl = prs.slides.add_slide(LAYOUT_TITLE)
-            _rect(sl, 0, 0, SW, SH, DARK)
-            _rect(sl, 0, 0, SW, Inches(0.08), ACC)  # thin top accent
-            _rect(sl, 0, SH - Inches(0.08), SW, Inches(0.08), ACC)  # thin bottom accent
-            for ph in sl.placeholders:
-                if ph.placeholder_format.idx == 0:
-                    _set_placeholder_text(ph, title, font_size=40, bold=True, color=WHITE)
-                elif ph.placeholder_format.idx == 1 and subtitle:
-                    _set_placeholder_text(ph, subtitle, font_size=20, color=ACC)
-                elif ph.placeholder_format.idx == 1 and not subtitle:
-                    ph.text = ''
+            sl = _blank_slide(prs, BRAND.DARKER)
+            _add_rect(sl, 0.9, 1.05, 0.26, 0.26, BRAND.ACCENT)
+            _add_text(sl, title, 0.88, 2.25, 11.4, 1.5, size=50,
+                      color=BRAND.WHITE, font=BRAND.HEAD_FONT, bold=True)
+            if subtitle:
+                _add_text(sl, subtitle, 0.9, 3.95, 10.5, 0.7, size=18, color=BRAND.LIGHTTXT)
 
         elif st == 'section':
-            sl = prs.slides.add_slide(LAYOUT_TITLE_ONLY)
-            _rect(sl, 0, 0, SW, SH, ACC)
-            for ph in sl.placeholders:
-                if ph.placeholder_format.idx == 0:
-                    _set_placeholder_text(ph, title, font_size=36, bold=True, color=WHITE)
+            sl = _blank_slide(prs, BRAND.DARK)
+            _add_text(sl, '—', 0.85, 2.0, 4.0, 2.2, size=120,
+                      color=BRAND.ACCENT, font=BRAND.HEAD_FONT, bold=True, autofit=False)
+            _add_rect(sl, 5.1, 2.55, 0.05, 1.7, BRAND.ACCENT)
+            _add_text(sl, title, 5.5, 2.7, 7.0, 0.8, size=34,
+                      color=BRAND.WHITE, font=BRAND.HEAD_FONT, bold=True)
 
         elif st == 'close':
-            sl = prs.slides.add_slide(LAYOUT_TITLE_ONLY)
-            _rect(sl, 0, 0, SW, SH, DARK)
-            _rect(sl, 0, 0, SW, Inches(0.08), ACC)
-            for ph in sl.placeholders:
-                if ph.placeholder_format.idx == 0:
-                    _set_placeholder_text(ph, title or 'Questions?', font_size=40, bold=True, color=WHITE)
+            sl = _blank_slide(prs, BRAND.DARKER)
+            _add_rect(sl, 0.9, 1.15, 0.26, 0.26, BRAND.ACCENT)
+            _add_text(sl, title or 'Questions?', 0.88, 1.6, 11, 1.0, size=44,
+                      color=BRAND.WHITE, font=BRAND.HEAD_FONT, bold=True)
             if bullets:
-                _txt(sl, bullets[0], Inches(1), Inches(4.2), Inches(11), Inches(0.6), 18, ACC, align=PP_ALIGN.CENTER)
+                _add_bullets(sl, bullets, MARGIN+0.3, 3.0, 9.5, 2.2, size=17, color=BRAND.LIGHTTXT)
 
         elif st == 'image':
-            sl = prs.slides.add_slide(LAYOUT_BLANK)
-            _rect(sl, 0, 0, SW, Inches(1.1), DARK)
-            _txt(sl, title, Inches(0.4), Inches(0.15), Inches(11.4), Inches(0.8), 24, WHITE, bold=True)
-            _rect(sl, Inches(0.5), Inches(1.25), Inches(7.2), Inches(5.5), RGBColor(0xF1,0xF5,0xF9))
-            hint = s.get('imageHint', 'Add image here')
-            _txt(sl, f'\U0001f4f7  {hint}', Inches(0.5), Inches(3.3), Inches(7.2), Inches(0.8),
-                 13, RGBColor(0x94,0xA3,0xB8), align=PP_ALIGN.CENTER)
-            if bullets: _bullets(sl, bullets, Inches(8.0), Inches(1.35), Inches(5), Inches(5.3), 15, INK)
+            sl = _blank_slide(prs, BRAND.WHITE)
+            _title_block(sl, title, kicker='SECTION')
+            _add_rect(sl, MARGIN+0.25, 1.85, 5.8, 4.4, RGBColor(0xF1,0xF5,0xF9))
+            hint = s.get('imageHint','Add image here')
+            _add_text(sl, f'\U0001f4f7  {hint}', MARGIN+0.25, 3.85, 5.8, 0.4,
+                      size=12, color=BRAND.MUTED, align=PP_ALIGN.CENTER, autofit=False)
+            if bullets:
+                _add_bullets(sl, bullets, 7.3, 1.85, 5.3, 4.4, size=15, color=BRAND.TEXT)
 
         elif st == 'chart':
-            sl = prs.slides.add_slide(LAYOUT_BLANK)
-            _rect(sl, 0, 0, SW, Inches(1.1), DARK)
-            _txt(sl, title, Inches(0.4), Inches(0.15), Inches(11.4), Inches(0.8), 24, WHITE, bold=True)
-            labels = s.get('labels', [])
-            series = s.get('series', [])
-            ct_str = s.get('chartType', 'bar')
-            ct_map = {'bar': XL_CHART_TYPE.COLUMN_CLUSTERED, 'barh': XL_CHART_TYPE.BAR_CLUSTERED,
-                      'line': XL_CHART_TYPE.LINE, 'pie': XL_CHART_TYPE.PIE, 'doughnut': XL_CHART_TYPE.DOUGHNUT}
-            ct = ct_map.get(ct_str, XL_CHART_TYPE.COLUMN_CLUSTERED)
+            sl = _blank_slide(prs, BRAND.WHITE)
+            _title_block(sl, title)
+            labels = s.get('labels',[]); series = s.get('series',[])
+            ct_map = {'bar':XL_CHART_TYPE.COLUMN_CLUSTERED,'barh':XL_CHART_TYPE.BAR_CLUSTERED,
+                      'line':XL_CHART_TYPE.LINE,'pie':XL_CHART_TYPE.PIE,'doughnut':XL_CHART_TYPE.DOUGHNUT}
+            ct = ct_map.get(s.get('chartType','bar'), XL_CHART_TYPE.COLUMN_CLUSTERED)
             if labels and series:
-                cd = ChartData()
-                cd.categories = labels
+                cd = ChartData(); cd.categories = labels
                 for ser in series:
                     vals = [float(v) if str(v).replace('.','').replace('-','').isdigit() else 0 for v in ser.get('values',[])]
                     cd.add_series(ser.get('name',''), vals)
-                chart = sl.shapes.add_chart(ct, Inches(0.5), Inches(1.25), Inches(12.3), Inches(5.5), cd).chart
+                chart = sl.shapes.add_chart(ct, Inches(MARGIN), Inches(1.6), Inches(CONTENT_W), Inches(5.0), cd).chart
                 chart.has_legend = len(series) > 1
             note = s.get('note','')
-            if note: _txt(sl, note, Inches(0.5), Inches(6.9), Inches(12), Inches(0.3), 9, RGBColor(0x9C,0xA3,0xAF))
+            if note: _add_text(sl, note, MARGIN, 6.9, CONTENT_W, 0.3, size=11, color=BRAND.MUTED, autofit=False)
 
-        else:  # content - uses proper Title+Content layout with real placeholders
-            sl = prs.slides.add_slide(LAYOUT_CONTENT)
-            # Brand: coloured header bar behind title
-            _rect(sl, 0, 0, SW, Inches(1.3), DARK)
-            for ph in sl.placeholders:
-                if ph.placeholder_format.idx == 0:
-                    _set_placeholder_text(ph, title, font_size=24, bold=True, color=WHITE)
-                elif ph.placeholder_format.idx == 1 and bullets:
-                    _set_body_bullets(ph, bullets, font_size=16, color=INK)
+        else:  # content
+            sl = _blank_slide(prs, BRAND.WHITE)
+            _title_block(sl, title, kicker='SECTION')
+            if bullets:
+                _add_bullets(sl, bullets, MARGIN+0.25, 1.85, 6.0, 4.6, size=15, color=BRAND.TEXT)
 
     return prs
 
 def _replace_text_in_shape(shape, new_text):
-    """Replace all text in a shape's first paragraph run, preserving formatting."""
-    if not shape.has_text_frame:
-        return
+    if not shape.has_text_frame: return
     from pptx.oxml.ns import qn
     txBody = shape.text_frame._txBody
     all_t = txBody.findall('.//' + qn('a:t'))
     if all_t:
         all_t[0].text = new_text
-        for t in all_t[1:]:
-            t.text = ''
-
-def _inject_template_slide(slide, title, bullets):
-    """Inject title and bullets into a cloned template slide.
-    Works for both placeholder-based and manual text box templates.
-    Strategy: find the largest-font text (title), then the text box
-    with the most paragraphs (body), replace their content.
-    """
-    from pptx.util import Pt
-    from pptx.oxml.ns import qn
-    from lxml import etree
-
-    # First try placeholder approach
-    from pptx.enum.shapes import PP_PLACEHOLDER
-    TITLE_TYPES = (PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE)
-    title_done = body_done = False
-    for ph in slide.placeholders:
-        ph_type = ph.placeholder_format.type
-        ph_idx  = ph.placeholder_format.idx
-        if not title_done and ph_type in TITLE_TYPES:
-            overwrite_title_text(ph, title)
-            title_done = True
-        elif not body_done and ph_idx == 1:
-            overwrite_body_text(ph, bullets)
-            body_done = True
-
-    # Fallback: find text boxes by largest font or most content (for manual text box templates)
-    if not title_done or not body_done:
-        # Collect all text-bearing shapes with their max font size and paragraph count
-        text_shapes = []
-        for shape in slide.shapes:
-            if not shape.has_text_frame:
-                continue
-            tf = shape.text_frame
-            full_text = ' '.join(p.text for p in tf.paragraphs).strip()
-            if not full_text:
-                continue
-            max_sz = 0
-            for p in tf.paragraphs:
-                for run in p.runs:
-                    if run.font.size:
-                        max_sz = max(max_sz, run.font.size)
-            para_count = sum(1 for p in tf.paragraphs if p.text.strip())
-            text_shapes.append({'shape': shape, 'max_sz': max_sz, 'paras': para_count, 'text': full_text})
-
-        if text_shapes:
-            # Title = shape with largest font
-            by_size = sorted(text_shapes, key=lambda x: (-x['max_sz'], len(x['text'])))
-            title_shape = None
-            if not title_done and by_size:
-                title_shape = by_size[0]['shape']
-                _replace_text_in_shape(title_shape, title)
-                title_done = True
-
-            # Body = largest area text box BELOW the title (avoids small header labels)
-            if not body_done and bullets:
-                title_top = title_shape.top if title_shape else 0
-                candidates = [s for s in text_shapes if s['shape'] != title_shape and s['shape'].top >= title_top]
-                by_area = sorted(candidates, key=lambda x: -(x['shape'].width * x['shape'].height))
-                if by_area:
-                    body_shape = by_area[0]['shape']
-                    tf = body_shape.text_frame
-                    from pptx.oxml.ns import qn
-                    txBody = tf._txBody
-                    paras = txBody.findall(qn('a:p'))
-                    ref_para = copy.deepcopy(paras[0]) if paras else None
-                    for p in paras:
-                        txBody.remove(p)
-                    for bullet in bullets:
-                        new_p = copy.deepcopy(ref_para) if ref_para is not None else etree.SubElement(txBody, qn('a:p'))
-                        all_t = new_p.findall('.//' + qn('a:t'))
-                        if all_t:
-                            all_t[0].text = bullet
-                            for t in all_t[1:]: t.text = ''
-                        txBody.append(new_p)
-                    body_done = True
+        for t in all_t[1:]: t.text = ''
 
 def generate_deck_from_template(slides, template_b64):
     """Generate a new deck by cloning slides from a brand template.
