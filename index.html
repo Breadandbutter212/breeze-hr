@@ -1416,16 +1416,31 @@ window.addEventListener('load', async () => {
 
 // ── DB OPS ──
 
-async function saveResponse(messageId, aiDraft, hrSent) {
-  if (!currentProfile) return;
+async function saveResponse(messageId, aiDraft, hrSent, query) {
+  if (!currentProfile) return null;
   const edited = aiDraft !== hrSent && hrSent.trim().length > 0;
-  await sb.from('responses').insert({
+  const { data } = await sb.from('responses').insert({
     message_id: messageId,
     company_id: currentProfile.company_id,
     ai_draft: aiDraft,
     hr_sent: hrSent,
-    was_edited: edited
-  });
+    was_edited: edited,
+    query: query || null
+  }).select('id').single();
+  return data?.id || null;
+}
+
+async function analyzeEdit(responseId, aiDraft, hrSent, query) {
+  // Fire-and-forget: analyze style diff and store embedding for RAG
+  if (!currentProfile || !responseId || aiDraft === hrSent) return;
+  try {
+    const token = await getAuthToken();
+    fetch('/api/analyze-edit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ responseId, aiDraft, hrSent, query: query || '', companyId: currentProfile.company_id })
+    });
+  } catch(e) {}
 }
 
 async function rateAIDraft(msgId, rating, draftText, msgType) {
@@ -5302,9 +5317,35 @@ async function buildChatSystemPrompt() {
         else if (best>thanks) editPats.push('Sign off with "Best regards"');
         else if (thanks>0) editPats.push('Sign off with "Many thanks"');
         if (editPats.length) learningContext += `\n\nEDIT PATTERNS (from ${edited.length} edited responses):\n${editPats.map(p=>`- ${p}`).join('\n')}`;
+
+        // Aggregate style_signals from Sonnet analysis (richer than pattern matching)
+        const withSignals = responses.filter(r => r.style_signals);
+        if (withSignals.length >= 2) {
+          const tones = withSignals.map(r => r.style_signals?.tone_shift).filter(Boolean);
+          const subs = withSignals.flatMap(r => r.style_signals?.lexical_substitutions || []);
+          const signOffs = withSignals.map(r => r.style_signals?.sign_off).filter(Boolean);
+          const removed = withSignals.flatMap(r => r.style_signals?.removed_phrases || []);
+          const toneCount = tones.reduce((a,t) => { a[t]=(a[t]||0)+1; return a; }, {});
+          const dominantTone = Object.entries(toneCount).sort((a,b)=>b[1]-a[1])[0];
+          const subCount = {};
+          subs.forEach(s => { const k=`${s.from}→${s.to}`; subCount[k]=(subCount[k]||0)+1; });
+          const freqSubs = Object.entries(subCount).filter(([,n])=>n>=2).map(([k])=>k);
+          const freqRemoved = [...new Set(removed)].slice(0,3);
+          const dominantSignOff = signOffs.length ? signOffs.sort((a,b)=>signOffs.filter(x=>x===b).length-signOffs.filter(x=>x===a).length)[0] : null;
+          const aiSignals = [];
+          if (dominantTone && dominantTone[1] >= 2) aiSignals.push(`Tone preference: ${dominantTone[0].replace(/_/g,' ')}`);
+          if (freqSubs.length) aiSignals.push(`Word substitutions: ${freqSubs.join(', ')}`);
+          if (freqRemoved.length) aiSignals.push(`Phrases to avoid: ${freqRemoved.join(', ')}`);
+          if (dominantSignOff) aiSignals.push(`Sign off with: "${dominantSignOff}"`);
+          if (aiSignals.length) learningContext += `\n\nAI-ANALYSED STYLE SIGNALS:\n${aiSignals.map(s=>`- ${s}`).join('\n')}`;
+        }
       } else if (responses.length >= 5) {
         learningContext += `\n\nLEARNING: ${responses.length} responses logged. Style preferences will emerge as more drafts are edited.`;
       }
+
+      // Also fetch responses with style_signals for the context window
+      const respWithSignals = await sb.from('responses').select('ai_draft,hr_sent,style_signals,query').eq('company_id', cid).not('style_signals','is',null).order('created_at',{ascending:false}).limit(20);
+      if (respWithSignals.data) responsesRes.data = [...(responsesRes.data||[]), ...respWithSignals.data.filter(r=>!(responsesRes.data||[]).find(x=>x.ai_draft===r.ai_draft))];
     }
   }
   return `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You are chatting with an HR professional.
@@ -5626,16 +5667,18 @@ async function sendChat(overrideMsg) {
   chatLoading = false;
   window._spSearchingForChat = false;
   if (btn) btn.disabled = false;
-  // Save AI response immediately so learning model has data from every conversation
+  // Save AI response with the original query for RAG retrieval later
   let responseDbId = null;
   if (currentProfile && reply) {
     const { data: savedResp } = await sb.from('responses').insert({
       company_id: currentProfile.company_id,
       ai_draft: reply,
       hr_sent: reply,
-      was_edited: false
+      was_edited: false,
+      query: msg.substring(0, 500)
     }).select('id').single();
     responseDbId = savedResp?.id || null;
+    window._lastResponseId = responseDbId;
   }
   const spLinks = window._pendingSpLinks || null;
   window._pendingSpLinks = null;
@@ -6050,6 +6093,13 @@ async function submitSendEmail(provider) {
     if (!res.ok) throw new Error(data.error || 'Send failed');
     if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Email sent successfully'; }
     if (btn) { btn.textContent = '✓ Sent'; }
+    // Analyze style diff if draft was edited before sending
+    const sentBody = body;
+    const originalDraft = currentArtifact?.draft || '';
+    if (sentBody && originalDraft && sentBody !== originalDraft && window._lastResponseId) {
+      const lastQuery = chatMessages.filter(m=>m.role==='user').slice(-3).map(m=>m.content).join(' ');
+      analyzeEdit(window._lastResponseId, originalDraft, sentBody, lastQuery);
+    }
     setTimeout(() => { const m = document.getElementById('sendEmailModal'); if (m) m.style.display = 'none'; }, 1500);
   } catch(e) {
     if (msg) { msg.style.color = 'var(--red)'; msg.textContent = 'Failed: ' + e.message; }
