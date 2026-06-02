@@ -187,14 +187,52 @@ def apply_ops(prs, ops):
             template_slide = prs.slides[template_idx]
             new_slide = clone_slide_with_images(prs, template_idx)
 
-            # Slide is a clone - just overwrite text in existing runs, touch nothing else
+            # Try placeholder injection first
+            title_done = body_done = False
             for ph in new_slide.placeholders:
                 ph_type = ph.placeholder_format.type
                 ph_idx  = ph.placeholder_format.idx
-                if ph_type in TITLE_TYPES:
+                if not title_done and ph_type in TITLE_TYPES:
                     overwrite_title_text(ph, title_text)
-                elif ph_idx == 1:
+                    title_done = True
+                elif not body_done and ph_idx == 1:
                     overwrite_body_text(ph, bullets)
+                    body_done = True
+
+            # Fallback: for custom text box templates, find by font size / area
+            if not title_done or not body_done:
+                text_shapes = []
+                for shape in new_slide.shapes:
+                    if not shape.has_text_frame: continue
+                    full = ' '.join(p.text for p in shape.text_frame.paragraphs).strip()
+                    if not full: continue
+                    max_sz = max((run.font.size or 0 for p in shape.text_frame.paragraphs for run in p.runs), default=0)
+                    text_shapes.append({'shape': shape, 'max_sz': max_sz, 'text': full})
+                by_size = sorted(text_shapes, key=lambda x: (-x['max_sz'], len(x['text'])))
+                if not title_done and by_size:
+                    _replace_text_in_shape(by_size[0]['shape'], title_text)
+                    title_done = True
+                if not body_done and bullets and len(by_size) > 1:
+                    title_top = by_size[0]['shape'].top if by_size else 0
+                    body_candidates = sorted(
+                        [s for s in text_shapes if s['shape'] != by_size[0]['shape'] and s['shape'].top >= title_top],
+                        key=lambda x: -(x['shape'].width * x['shape'].height)
+                    )
+                    if body_candidates:
+                        bs = body_candidates[0]['shape']
+                        tf = bs.text_frame
+                        from pptx.oxml.ns import qn as _qn
+                        txBody = tf._txBody
+                        paras = txBody.findall(_qn('a:p'))
+                        ref = copy.deepcopy(paras[0]) if paras else None
+                        for p in paras: txBody.remove(p)
+                        for b in bullets:
+                            new_p = copy.deepcopy(ref) if ref else __import__('lxml.etree', fromlist=['etree']).etree.SubElement(txBody, _qn('a:p'))
+                            all_t = new_p.findall('.//' + _qn('a:t'))
+                            if all_t:
+                                all_t[0].text = b
+                                for t in all_t[1:]: t.text = ''
+                            txBody.append(new_p)
 
             # Move to correct position (add_slide always appends)
             xml_slides = prs.slides._sldIdLst
