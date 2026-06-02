@@ -528,12 +528,13 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
         template_file_id = _upload_template(client, template_b64)
 
     prompt = (
-        'A branded PowerPoint template has been provided in the container. '
-        'Open it and build the presentation reusing its layouts, theme colours, fonts and master. '
-        'Do NOT invent a new visual style — preserve the template look exactly, only change content.\n\n'
-        f'Build a presentation about:\n{topic}\n\n'
-        'Keep each slide focused, use the template bullet and title styles, '
-        'ensure no text overflows. Save as a .pptx file.'
+        f'Create a brand-new PowerPoint presentation from scratch about:\n{topic}\n\n'
+        'There is NO input file and NO template. Do not search for, open, or try '
+        'to load any existing .pptx, and do NOT use the template-based editing '
+        'workflow — build the slides yourself using the skill\'s from-scratch '
+        'creation path. Pick a clean, professional design. Keep each slide '
+        'focused, ensure no text overflows its boxes, and save the result as a '
+        '.pptx file.'
     )
     if instructions:
         prompt += f'\n\nAdditional instructions:\n{instructions}'
