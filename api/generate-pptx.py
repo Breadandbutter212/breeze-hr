@@ -3,6 +3,7 @@ import json
 import base64
 import io
 import copy
+import os
 
 R_EMBED = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed'
 R_IMAGE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image'
@@ -485,6 +486,80 @@ def generate_deck_from_template(slides, template_b64):
 
     return prs
 
+PPTX_MIME = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+SKILL_BETAS = ['skills-2025-10-02', 'code-execution-2025-08-25', 'files-api-2025-04-14']
+SKILL_TOOLS = [{'type': 'code_execution_20250825', 'name': 'code_execution'}]
+SKILL_DEF   = [{'type': 'anthropic', 'skill_id': 'pptx', 'version': 'latest'}]
+
+def _upload_template(client, template_b64):
+    """Upload template bytes to Files API, return file_id."""
+    import tempfile, os
+    tmpl_bytes = base64.b64decode(template_b64)
+    with tempfile.NamedTemporaryFile(suffix='.pptx', delete=False) as f:
+        f.write(tmpl_bytes); tmp = f.name
+    try:
+        with open(tmp, 'rb') as f:
+            obj = client.beta.files.upload(file=('template.pptx', f, PPTX_MIME))
+        return obj.id
+    finally:
+        os.unlink(tmp)
+
+def _extract_file_id(message):
+    """Find file_id of generated pptx in tool result blocks."""
+    file_id = None
+    for block in message.content:
+        t = getattr(block, 'type', '')
+        if t in ('code_execution_tool_result', 'bash_code_execution_tool_result'):
+            result = getattr(block, 'content', None)
+            if getattr(result, 'type', '') in ('code_execution_result', 'bash_code_execution_result'):
+                for output in getattr(result, 'content', []) or []:
+                    if getattr(output, 'file_id', None):
+                        file_id = output.file_id
+    return file_id
+
+def generate_with_skill(topic, instructions=None, template_b64=None):
+    """Call Anthropic pptx Agent Skill to generate a deck. Returns bytes."""
+    import anthropic
+    client = anthropic.Anthropic(api_key=os.environ.get('ANTHROPIC_API_KEY'))
+
+    # Use stored template file_id or upload fresh
+    template_file_id = os.environ.get('TEMPLATE_FILE_ID')
+    if not template_file_id and template_b64:
+        template_file_id = _upload_template(client, template_b64)
+
+    prompt = (
+        'A branded PowerPoint template has been provided in the container. '
+        'Open it and build the presentation reusing its layouts, theme colours, fonts and master. '
+        'Do NOT invent a new visual style — preserve the template look exactly, only change content.\n\n'
+        f'Build a presentation about:\n{topic}\n\n'
+        'Keep each slide focused, use the template bullet and title styles, '
+        'ensure no text overflows. Save as a .pptx file.'
+    )
+    if instructions:
+        prompt += f'\n\nAdditional instructions:\n{instructions}'
+
+    content = [{'type': 'text', 'text': prompt}]
+    if template_file_id:
+        content.append({'type': 'container_upload', 'file_id': template_file_id})
+
+    with client.beta.messages.stream(
+        model='claude-opus-4-8',
+        max_tokens=16000,
+        betas=SKILL_BETAS,
+        container={'skills': SKILL_DEF},
+        tools=SKILL_TOOLS,
+        messages=[{'role': 'user', 'content': content}]
+    ) as stream:
+        message = stream.get_final_message()
+
+    out_id = _extract_file_id(message)
+    if not out_id:
+        txt = ''.join(getattr(b,'text','') for b in message.content if getattr(b,'type','')=='text')
+        raise RuntimeError(f'No output file produced. Model: {txt[:400]}')
+
+    downloaded = client.beta.files.download(file_id=out_id)
+    return downloaded.read()
+
 class handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # suppress request logging
@@ -549,6 +624,24 @@ class handler(BaseHTTPRequestHandler):
                         prs = generate_deck(slides, accent, dark, prs_title)
                 else:
                     prs = generate_deck(slides, accent, dark, prs_title)
+            elif action == 'generate_ai':
+                # Use Anthropic pptx Agent Skill for high-quality generation
+                topic        = data.get('topic', '')
+                instructions = data.get('instructions')
+                template_b64 = data.get('templateBase64', '')
+                if not topic:
+                    self._error(400, 'Missing topic')
+                    return
+                pptx_bytes = generate_with_skill(topic, instructions, template_b64)
+                self.send_response(200)
+                self.send_header('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation')
+                self.send_header('Content-Disposition', 'attachment; filename="presentation.pptx"')
+                self.send_header('Content-Length', str(len(pptx_bytes)))
+                self.send_header('Access-Control-Allow-Origin', '*')
+                self.end_headers()
+                self.wfile.write(pptx_bytes)
+                return
+
             else:
                 if not pptx_b64:
                     self._error(400, 'Missing pptxBase64')

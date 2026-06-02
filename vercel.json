@@ -3,5 +3,10 @@
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
     { "source": "/", "destination": "/landing.html" }
-  ]
+  ],
+  "functions": {
+    "api/generate-pptx.py": {
+      "maxDuration": 300
+    }
+  }
 }
