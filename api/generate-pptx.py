@@ -539,16 +539,20 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
     if instructions:
         prompt += f'\n\nAdditional instructions:\n{instructions}'
 
-    content = [{'type': 'text', 'text': prompt}]
+    # Add cache_control to prompt so the skill's repeated system content is cached
+    # Cached input is discounted ~90% - biggest cost lever for multi-turn skill loops
+    content = [{'type': 'text', 'text': prompt, 'cache_control': {'type': 'ephemeral'}}]
     if template_file_id:
         content.append({'type': 'container_upload', 'file_id': template_file_id})
+
+    betas_with_cache = SKILL_BETAS + ['prompt-caching-2024-07-31']
 
     # Try streaming first (newer SDK), fall back to create() for older SDK
     try:
         with client.beta.messages.stream(
             model='claude-sonnet-4-6',
-            max_tokens=16000,
-            betas=SKILL_BETAS,
+            max_tokens=8000,  # reduced from 16000 - fewer output tokens = lower cost
+            betas=betas_with_cache,
             container={'skills': SKILL_DEF},
             tools=SKILL_TOOLS,
             messages=[{'role': 'user', 'content': content}]
@@ -557,8 +561,8 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
     except AttributeError:
         message = client.beta.messages.create(
             model='claude-sonnet-4-6',
-            max_tokens=16000,
-            betas=SKILL_BETAS,
+            max_tokens=8000,
+            betas=betas_with_cache,
             container={'skills': SKILL_DEF},
             tools=SKILL_TOOLS,
             messages=[{'role': 'user', 'content': content}]
