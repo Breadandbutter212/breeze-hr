@@ -546,7 +546,7 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
     # Try streaming first (newer SDK), fall back to create() for older SDK
     try:
         with client.beta.messages.stream(
-            model='claude-opus-4-8',
+            model='claude-sonnet-4-6',
             max_tokens=16000,
             betas=SKILL_BETAS,
             container={'skills': SKILL_DEF},
@@ -556,7 +556,7 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
             message = stream.get_final_message()
     except AttributeError:
         message = client.beta.messages.create(
-            model='claude-opus-4-8',
+            model='claude-sonnet-4-6',
             max_tokens=16000,
             betas=SKILL_BETAS,
             container={'skills': SKILL_DEF},
