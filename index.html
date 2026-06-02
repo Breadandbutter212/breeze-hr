@@ -2842,9 +2842,9 @@ async function _downloadPresentationPythonGenerate(btn) {
       if (tmpl?.content) { templateBase64 = tmpl.content; presLog('Using brand template', 'ok'); }
     }
 
-    // Build topic from slide titles for the AI skill
-    const topic = presTitle + '. Slides: ' + presSlides.map(s=>s.title).filter(Boolean).join(', ');
-    const instructions = `Generate exactly ${presSlides.length} slides covering: ${presSlides.map((s,i)=>`Slide ${i+1}: ${s.title} - ${(s.bullets||[]).slice(0,3).join('; ')}`).join(' | ')}`;
+    // Build topic and slide structure for the AI skill
+    const topic = presTitle || 'HR presentation';
+    const instructions = `Generate exactly ${presSlides.length} slides covering these topics in order: ${presSlides.map((s,i)=>`Slide ${i+1} (${s.type||'content'}): ${s.title}${s.bullets?.length ? ' - key points: ' + s.bullets.slice(0,3).join('; ') : ''}`).join(' | ')}`;
 
     const res = await fetch('/api/generate-pptx', {
       method: 'POST',
@@ -2852,8 +2852,7 @@ async function _downloadPresentationPythonGenerate(btn) {
       body: JSON.stringify({
         action: 'generate_ai',
         topic,
-        instructions,
-        templateBase64
+        instructions
       })
     });
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Server error ${res.status}`); }
