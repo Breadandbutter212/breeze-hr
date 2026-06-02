@@ -521,7 +521,38 @@ class handler(BaseHTTPRequestHandler):
                 prs_title     = data.get('title', 'Presentation')
                 template_b64  = data.get('templateBase64', '')
                 if template_b64:
-                    prs = generate_deck_from_template(slides, template_b64)
+                    # Extract brand colours from template, use them in generate_deck
+                    try:
+                        from pptx import Presentation as _Prs
+                        from pptx.oxml.ns import qn as _qn
+                        _tmpl = _Prs(io.BytesIO(base64.b64decode(template_b64)))
+                        _theme = _tmpl.slide_master.theme_color_map
+                        # Try to get accent1 and dk1 from theme XML
+                        _theme_xml = _tmpl.slide_master.part.part_related_by(
+                            'http://schemas.openxmlformats.org/officeDocument/2006/relationships/theme'
+                        )._element
+                        def _hex(el, tag):
+                            n = el.find('.//' + _qn(tag))
+                            if n is not None:
+                                clr = n.find(_qn('a:srgbClr'))
+                                if clr is not None: return clr.get('val','')
+                            return ''
+                        tmpl_accent = _hex(_theme_xml, 'a:accent1') or accent
+                        tmpl_dark   = _hex(_theme_xml, 'a:dk2')     or _hex(_theme_xml, 'a:dk1') or dark
+                        # Also scan slide shapes for most common background colour
+                        for sl in _tmpl.slides[:3]:
+                            for sh in sl.shapes:
+                                try:
+                                    rgb = sh.fill.fore_color.rgb
+                                    val = str(rgb)
+                                    # If it looks like a dark background colour use it
+                                    if int(val[:2],16) < 50 and int(val[2:4],16) < 50:
+                                        tmpl_dark = val
+                                        break
+                                except: pass
+                        prs = generate_deck(slides, tmpl_accent, tmpl_dark, prs_title)
+                    except Exception as _e:
+                        prs = generate_deck(slides, accent, dark, prs_title)
                 else:
                     prs = generate_deck(slides, accent, dark, prs_title)
             else:

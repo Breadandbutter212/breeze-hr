@@ -4857,13 +4857,27 @@ async function uploadPresTemplate(event) {
   if (statusEl) statusEl.textContent = 'Uploading...';
   try {
     const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
+
+    // Extract theme colours from template for preview and generation
+    try {
+      const zip = new PizZip(b64, { base64: true });
+      const themeFile = Object.keys(zip.files).find(f => /ppt\/theme\/theme\d+\.xml/.test(f));
+      if (themeFile) {
+        const themeXml = zip.files[themeFile].asText();
+        const accentMatch = themeXml.match(/<a:accent1[^>]*>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"/);
+        const darkMatch   = themeXml.match(/<a:dk[12][^>]*>[\s\S]*?<a:srgbClr val="([0-9A-Fa-f]{6})"/);
+        if (accentMatch) { presAccent = accentMatch[1]; window._tmplAccent = accentMatch[1]; }
+        if (darkMatch)   { presDark   = darkMatch[1];   window._tmplDark   = darkMatch[1]; }
+      }
+    } catch(e) {}
+
     const existing = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:PresentationTemplate').maybeSingle();
     if (existing.data) {
       await sb.from('policies').update({ content: b64 }).eq('id', existing.data.id);
     } else {
       await sb.from('policies').insert({ company_id: currentProfile.company_id, name: 'SETTING:PresentationTemplate', content: b64 });
     }
-    if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = `✓ ${file.name} saved`; }
+    if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = `✓ ${file.name} saved - brand colours extracted`; }
     if (clearBtn) clearBtn.style.display = '';
   } catch(e) {
     if (statusEl) { statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Upload failed: ' + e.message; }
