@@ -2834,6 +2834,14 @@ async function _downloadPresentationPythonGenerate(btn) {
   try {
     presLog('Generating deck via Python engine...', 'ok');
     const token = await getAuthToken();
+
+    // Load brand template if one is saved
+    let templateBase64 = null;
+    if (currentProfile) {
+      const { data: tmpl } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','SETTING:PresentationTemplate').maybeSingle();
+      if (tmpl?.content) { templateBase64 = tmpl.content; presLog('Using brand template', 'ok'); }
+    }
+
     const res = await fetch('/api/generate-pptx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
@@ -2842,7 +2850,8 @@ async function _downloadPresentationPythonGenerate(btn) {
         slides: presSlides,
         accent: presAccent || '475569',
         dark: presDark || '1E293B',
-        title: presTitle || 'Presentation'
+        title: presTitle || 'Presentation',
+        templateBase64
       })
     });
     if (!res.ok) { const e = await res.json().catch(()=>({})); throw new Error(e.error || `Server error ${res.status}`); }
@@ -4676,6 +4685,18 @@ function renderSettings() {
         <div id="set-style-msg" style="font-size:12px;min-height:16px;"></div>
       </div>
     </div>
+    <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Presentation brand template</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">Upload a branded .pptx file. When generating new decks, Breeze HR will clone slides from this template so every deck matches your company branding automatically.</div>
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <label class="btn btn-primary btn-sm" style="cursor:pointer;">
+          📎 Upload template
+          <input type="file" accept=".pptx" style="display:none" onchange="uploadPresTemplate(event)">
+        </label>
+        <div id="presTemplateStatus" style="font-size:12px;color:var(--ink3);"></div>
+        <button id="presTemplateClearBtn" class="btn btn-secondary btn-sm" onclick="clearPresTemplate()" style="display:none;">Remove</button>
+      </div>
+    </div>
     <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;grid-column:1/-1;">
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Integrations</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">Connect your email so you can send letters and drafts directly from Breeze HR.</div>
@@ -4719,6 +4740,7 @@ function renderSettings() {
   // Load documents list async
   loadSettingsDocs();
   loadWritingStyle();
+  loadPresTemplateStatus();
   loadRetentionSetting();
   loadIntegrations();
   loadWaitlist();
@@ -4826,6 +4848,46 @@ async function clearWritingStyle() {
   if (ta) ta.value = '';
   chatSystemPrompt = null;
   if (msg) { msg.style.color = 'var(--ink3)'; msg.textContent = 'Style cleared'; }
+}
+
+async function uploadPresTemplate(event) {
+  const file = event.target.files[0]; if (!file || !currentProfile) return;
+  const statusEl = document.getElementById('presTemplateStatus');
+  const clearBtn = document.getElementById('presTemplateClearBtn');
+  if (statusEl) statusEl.textContent = 'Uploading...';
+  try {
+    const b64 = await new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
+    const existing = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:PresentationTemplate').maybeSingle();
+    if (existing.data) {
+      await sb.from('policies').update({ content: b64 }).eq('id', existing.data.id);
+    } else {
+      await sb.from('policies').insert({ company_id: currentProfile.company_id, name: 'SETTING:PresentationTemplate', content: b64 });
+    }
+    if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = `✓ ${file.name} saved`; }
+    if (clearBtn) clearBtn.style.display = '';
+  } catch(e) {
+    if (statusEl) { statusEl.style.color = 'var(--red)'; statusEl.textContent = 'Upload failed: ' + e.message; }
+  }
+}
+
+async function clearPresTemplate() {
+  if (!currentProfile) return;
+  await sb.from('policies').delete().eq('company_id', currentProfile.company_id).eq('name','SETTING:PresentationTemplate');
+  const statusEl = document.getElementById('presTemplateStatus');
+  const clearBtn = document.getElementById('presTemplateClearBtn');
+  if (statusEl) { statusEl.style.color = 'var(--ink3)'; statusEl.textContent = 'Template removed - new decks will use default styling'; }
+  if (clearBtn) clearBtn.style.display = 'none';
+}
+
+async function loadPresTemplateStatus() {
+  if (!currentProfile) return;
+  const { data } = await sb.from('policies').select('id,created_at').eq('company_id', currentProfile.company_id).eq('name','SETTING:PresentationTemplate').maybeSingle();
+  const statusEl = document.getElementById('presTemplateStatus');
+  const clearBtn = document.getElementById('presTemplateClearBtn');
+  if (data) {
+    if (statusEl) { statusEl.style.color = 'var(--green)'; statusEl.textContent = `✓ Template active (uploaded ${new Date(data.created_at).toLocaleDateString('en-GB')})`; }
+    if (clearBtn) clearBtn.style.display = '';
+  }
 }
 
 async function saveInboundEmail() {

@@ -353,6 +353,69 @@ def generate_deck(slides, accent_hex, dark_hex, prs_title):
 
     return prs
 
+def generate_deck_from_template(slides, template_b64):
+    """Generate a new deck by cloning slides from a brand template.
+    Template slide mapping (by index):
+      0 = title/close  (dark background)
+      1 = content      (first content slide - bullets)
+      2 = section      (section divider)
+      3 = image        (bullets + image placeholder)
+      4 = chart        (chart slide)
+    Falls back to slide 1 (content) for any unrecognised type.
+    """
+    from pptx import Presentation
+    template_prs = Presentation(io.BytesIO(base64.b64decode(template_b64)))
+    n_tmpl = len(template_prs.slides)
+
+    # Map slide types to template slide indices (capped to available slides)
+    TYPE_MAP = {
+        'title':   min(0, n_tmpl - 1),
+        'close':   min(0, n_tmpl - 1),
+        'section': min(2, n_tmpl - 1),
+        'image':   min(3, n_tmpl - 1),
+        'chart':   min(4, n_tmpl - 1),
+        'content': min(1, n_tmpl - 1),
+    }
+    DEFAULT_IDX = min(1, n_tmpl - 1)
+
+    # We'll build a new prs by adding slides to the template then removing originals
+    prs = Presentation(io.BytesIO(base64.b64decode(template_b64)))
+    original_count = len(prs.slides)
+
+    for slide_data in slides:
+        stype   = slide_data.get('type', 'content')
+        title   = slide_data.get('title', '')
+        bullets = slide_data.get('bullets', [])
+        tmpl_idx = TYPE_MAP.get(stype, DEFAULT_IDX)
+
+        # Clone the template slide
+        new_slide = clone_slide_with_images(prs, tmpl_idx)
+
+        # Overwrite title and body text in place
+        for ph in new_slide.placeholders:
+            ph_type = ph.placeholder_format.type
+            ph_idx  = ph.placeholder_format.idx
+            from pptx.enum.shapes import PP_PLACEHOLDER
+            TITLE_TYPES = (PP_PLACEHOLDER.TITLE, PP_PLACEHOLDER.CENTER_TITLE)
+            if ph_type in TITLE_TYPES:
+                overwrite_title_text(ph, title)
+            elif ph_idx == 1:
+                overwrite_body_text(ph, bullets)
+
+    # Remove the original template slides (now at the start)
+    xml_slides = prs.slides._sldIdLst
+    slides_list = list(xml_slides)
+    for i in range(original_count):
+        s = slides_list[i]
+        r_id = s.get('{http://schemas.openxmlformats.org/officeDocument/2006/relationships}id')
+        try:
+            prs.part.drop_rel(r_id)
+        except Exception:
+            pass
+        xml_slides.remove(s)
+
+    return prs
+
 class handler(BaseHTTPRequestHandler):
     def log_message(self, format, *args):
         pass  # suppress request logging
@@ -377,11 +440,15 @@ class handler(BaseHTTPRequestHandler):
             action   = data.get('action', 'edit' if pptx_b64 else 'generate')
 
             if action == 'generate':
-                slides     = data.get('slides', [])
-                accent     = data.get('accent', '475569')
-                dark       = data.get('dark',   '1E293B')
-                prs_title  = data.get('title', 'Presentation')
-                prs = generate_deck(slides, accent, dark, prs_title)
+                slides        = data.get('slides', [])
+                accent        = data.get('accent', '475569')
+                dark          = data.get('dark',   '1E293B')
+                prs_title     = data.get('title', 'Presentation')
+                template_b64  = data.get('templateBase64', '')
+                if template_b64:
+                    prs = generate_deck_from_template(slides, template_b64)
+                else:
+                    prs = generate_deck(slides, accent, dark, prs_title)
             else:
                 if not pptx_b64:
                     self._error(400, 'Missing pptxBase64')
