@@ -539,19 +539,21 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
     if instructions:
         prompt += f'\n\nAdditional instructions:\n{instructions}'
 
-    # Add cache_control to prompt so the skill's repeated system content is cached
-    # Cached input is discounted ~90% - biggest cost lever for multi-turn skill loops
-    content = [{'type': 'text', 'text': prompt, 'cache_control': {'type': 'ephemeral'}}]
+    # Plain content - no cache_control on user message (it changes every request, never hits cache)
+    content = [{'type': 'text', 'text': prompt}]
     if template_file_id:
         content.append({'type': 'container_upload', 'file_id': template_file_id})
 
+    # Automatic caching: cache_control at top level caches the growing conversation
+    # prefix across the skill's internal multi-turn code execution loop
     betas_with_cache = SKILL_BETAS + ['prompt-caching-2024-07-31']
 
     # Try streaming first (newer SDK), fall back to create() for older SDK
     try:
         with client.beta.messages.stream(
             model='claude-sonnet-4-6',
-            max_tokens=8000,  # reduced from 16000 - fewer output tokens = lower cost
+            max_tokens=8000,
+            cache_control={'type': 'ephemeral'},
             betas=betas_with_cache,
             container={'skills': SKILL_DEF},
             tools=SKILL_TOOLS,
@@ -562,6 +564,7 @@ def generate_with_skill(topic, instructions=None, template_b64=None):
         message = client.beta.messages.create(
             model='claude-sonnet-4-6',
             max_tokens=8000,
+            cache_control={'type': 'ephemeral'},
             betas=betas_with_cache,
             container={'skills': SKILL_DEF},
             tools=SKILL_TOOLS,
