@@ -5569,7 +5569,11 @@ You only answer HR, employment law, people management and business-related quest
 ━━━ RESPONSE FORMAT ━━━
 You are in a chat with an HR professional. Be direct and practical.
 For Tier 1 (simple policy questions): answer in 2-4 sentences. No draft needed.
-When providing an email draft for the employee, clearly label it:
+When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: format so it appears in the right-hand panel where HR can edit and download as a Word doc - NEVER paste letter or document content into the chat:
+• Email drafts to employees
+• Reference letters (mortgage, rental, employment, visa)
+• Letter templates (blank or pre-filled)
+• Any HR letter or document
 
 📧 DRAFT FOR EMPLOYEE:
 [draft text]
@@ -5635,7 +5639,7 @@ function showArtifact(artifact, msgIdx) {
     <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
-    ${emailProvider ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
+    ${emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
   body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft)}</div>`;
   // Update currentArtifact.draft when user edits
