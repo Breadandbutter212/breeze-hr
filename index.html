@@ -11145,13 +11145,12 @@ function wfInjectChecklistButtons(container, activeCases) {
         const sc = WF_SCENARIOS.find(s=>s.id===linked.scenarioId)||{steps:[]};
         const pct = sc.steps.length ? Math.round((linked.checkedSteps.length/sc.steps.length)*100) : 0;
         const mpRecId = row.querySelector('button[onclick*="openMatPatRecord"]')?.getAttribute('onclick')?.match(/openMatPatRecord\('([^']+)'\)/)?.[1] || linked.mpRecordId || '';
-        lastTd.style.cssText = 'white-space:nowrap;min-width:160px;';
-        lastTd.innerHTML = `
-          <div style="display:flex;align-items:center;gap:8px;margin-bottom:5px;">
-            <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px;"><div data-wf-bar="${linked.id}" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div>
-            <span data-wf-pct="${linked.id}" style="font-size:12px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink)'};">${pct}%</span>
-          </div>
-          <div style="display:flex;align-items:center;gap:4px;">
+        lastTd.style.cssText = 'white-space:nowrap;';
+        lastTd.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
+            <div style="display:flex;align-items:center;gap:6px;min-width:90px;">
+              <div style="width:56px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div data-wf-bar="${linked.id}" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div>
+              <span data-wf-pct="${linked.id}" style="font-size:12px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink)'};">${pct}%</span>
+            </div>
             <button data-wf-btn="${linked.id}" onclick="event.stopPropagation();openWfCasePanel('${linked.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:90px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist →</button>
             ${mpRecId?`<button onclick="event.stopPropagation();openMatPatRecord('${mpRecId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>`:''}
             <button onclick="event.stopPropagation();deleteMatPatAndCase('${mpRecId}','${linked.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
