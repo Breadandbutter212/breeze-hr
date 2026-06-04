@@ -5231,7 +5231,7 @@ function showView(v,el) {
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
   if(v==='orgchart')initOrgChart();
-  if(v==='trackers'){mpRecords=null;_guidanceCache={};renderTrackers();}
+  if(v==='trackers'){mpRecords=null;_guidanceCache={};wfPolicies=null;wfCases=null;wfActiveCase=null;renderTrackers();}
 }
 
 // ── BULK MAIL MERGE ──
@@ -8837,8 +8837,7 @@ function renderLeaveTracker(body) {
 
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;">
-    <div id="tracker-guidance-leave"></div>
-
+    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('leave')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>Family leave guidance</button></div>
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity').length} upcoming</div></div>
@@ -8885,7 +8884,7 @@ function renderLeaveTracker(body) {
       </div>`}
     </div>
   </div>`;
-  loadTrackerGuidance('leave', 'tracker-guidance-leave');
+  // guidance loaded via popup link
 }
 
 // ── ADD RECORD MODAL ──
@@ -9108,8 +9107,7 @@ async function deleteMatPatRecord(id) {
 function renderRecruitmentTracker(body) {
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
-    <div id="tracker-guidance-recruitment"></div>
-
+    <div style="display:flex;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('recruitment')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Recruitment guidance</button></div>
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">8</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">3 urgent</div></div>
@@ -9235,7 +9233,7 @@ function renderRecruitmentTracker(body) {
     </div>
 
   </div>`;
-  loadTrackerGuidance('recruitment', 'tracker-guidance-recruitment');
+  // guidance loaded via popup link
 }
 
 
@@ -9253,7 +9251,7 @@ function renderCareersTracker(body) {
   const scoreColor = s => s==='Exceeds'?'trk-badge-green':s==='Meets'?'trk-badge-blue':'trk-badge-amber';
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
-    <div id="tracker-guidance-careers"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('careers')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Careers guidance</button></div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
@@ -9287,7 +9285,7 @@ function renderCareersTracker(body) {
       </table></div>
     </div>
   </div>`;
-  loadTrackerGuidance('careers', 'tracker-guidance-careers');
+  // guidance loaded via popup link
 }
 
 function openCareerMap(idx) {
@@ -9340,7 +9338,7 @@ function renderImmigrationTracker(body) {
   const urgent = DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)<90||daysUntil(p.rightToWork)<90);
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
-    <div id="tracker-guidance-immigration"></div>
+    <div style="display:flex;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('immigration')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Immigration guidance</button></div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_IMMI.length}</div><div class="trk-kpi-label">Visa holders tracked</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--red);">${DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)<0).length}</div><div class="trk-kpi-label">Expired</div></div>
@@ -9370,7 +9368,7 @@ function renderImmigrationTracker(body) {
       </table></div>
     </div>
   </div>`;
-  loadTrackerGuidance('immigration', 'tracker-guidance-immigration');
+  // guidance loaded via popup link
 }
 
 function openImmigrationRecord(idx) {
@@ -9447,22 +9445,9 @@ function initOrgChart() {
 }
 
 async function ocLoadData() {
-  const spinner = document.getElementById('ocSpinner');
-  try {
-    const emps = await loadMergeEmployees();
-    if (emps && emps.length) { _ocEmps = emps; ocBuild(); return; }
-  } catch(e) {}
-  if (spinner) spinner.innerHTML = `
-    <div style="text-align:center;max-width:360px;padding:0 24px;">
-      <div style="font-size:40px;margin-bottom:16px;">&#127970;</div>
-      <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px;">Build your org chart</div>
-      <div style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:24px;">Connect your HRIS for an auto-populated chart, upload a CSV (Name, Job Title, Department, Manager), or view a demo.</div>
-      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-        <button onclick="ocConnectHRIS()" class="btn btn-primary btn-sm">Connect HRIS</button>
-        <label class="btn btn-secondary btn-sm" style="cursor:pointer;">Upload CSV<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="ocLoadCSV(event)"></label>
-        <button onclick="ocLoadDemo()" class="btn btn-ghost btn-sm" style="color:var(--accent);">View demo</button>
-      </div>
-    </div>`;
+  // Load demo data immediately — no HRIS dependency
+  _ocEmps = ocGetDemoData();
+  ocBuild();
 }
 
 function ocExtractDept(emp) {
@@ -9832,8 +9817,9 @@ function ocFit() {
 
 function ocReset() {
   _ocOffsets={};
-  if(_ocTree){ocLayout(_ocTree,0,0);ocRender(_ocTree);}
-  setTimeout(()=>ocFit(),60);
+  _ocRelations={};
+  _ocEmps=ocGetDemoData();
+  ocBuild();
 }
 
 function ocHighlight(q) {
@@ -9870,21 +9856,83 @@ async function ocLoadCSV(event) {
   event.target.value='';
 }
 
-function ocLoadDemo() {
-  _ocEmps=[
-    {id:'o1',display_full_name:'Alex Thompson',employments:[{job_title:'Chief Executive Officer',department:'Leadership'}],manager:null},
-    {id:'o2',display_full_name:'Sarah Chen',employments:[{job_title:'VP Engineering',department:'Engineering'}],manager:'o1'},
-    {id:'o3',display_full_name:'James Miller',employments:[{job_title:'VP People',department:'People'}],manager:'o1'},
-    {id:'o4',display_full_name:'Emily Davis',employments:[{job_title:'VP Sales',department:'Sales'}],manager:'o1'},
-    {id:'o5',display_full_name:'Tom Wilson',employments:[{job_title:'Senior Engineer',department:'Engineering'}],manager:'o2'},
-    {id:'o6',display_full_name:'Lisa Park',employments:[{job_title:'Product Manager',department:'Engineering'}],manager:'o2'},
-    {id:'o7',display_full_name:'Michael Brown',employments:[{job_title:'HR Business Partner',department:'People'}],manager:'o3'},
-    {id:'o8',display_full_name:'Jessica Lee',employments:[{job_title:'L&D Manager',department:'People'}],manager:'o3'},
-    {id:'o9',display_full_name:'David Martinez',employments:[{job_title:'Account Executive',department:'Sales'}],manager:'o4'},
-    {id:'o10',display_full_name:'Rachel Taylor',employments:[{job_title:'Account Executive',department:'Sales'}],manager:'o4'},
-    {id:'o11',display_full_name:'Chris Anderson',employments:[{job_title:'Junior Engineer',department:'Engineering'}],manager:'o5'},
-    {id:'o12',display_full_name:'Amy Johnson',employments:[{job_title:'Talent Acquisition',department:'People'}],manager:'o3'},
+function ocGetDemoData() {
+  return [
+    // ── C-Suite ──
+    {id:'e1', display_full_name:'Sarah Mitchell',   employments:[{job_title:'Chief Executive Officer',    department:'Leadership'}],      manager:null},
+    {id:'e2', display_full_name:'James Thornton',   employments:[{job_title:'Chief Operating Officer',    department:'Leadership'}],      manager:'e1'},
+    {id:'e36',display_full_name:'Robert Chen',      employments:[{job_title:'Chief Financial Officer',    department:'Finance'}],         manager:'e1'},
+    {id:'e41',display_full_name:'Laura Kim',        employments:[{job_title:'General Counsel',            department:'Legal'}],           manager:'e1'},
+
+    // ── Engineering ──
+    {id:'e3', display_full_name:'Alex Chen',        employments:[{job_title:'VP Engineering',             department:'Engineering'}],     manager:'e1'},
+    {id:'e4', display_full_name:'Emma Davis',       employments:[{job_title:'Engineering Manager',        department:'Engineering'}],     manager:'e3'},
+    {id:'e5', display_full_name:'Ryan Scott',       employments:[{job_title:'Engineering Manager',        department:'Engineering'}],     manager:'e3'},
+    {id:'e6', display_full_name:'Tom Wilson',       employments:[{job_title:'Senior Frontend Engineer',   department:'Engineering'}],     manager:'e4'},
+    {id:'e7', display_full_name:'Lucy Park',        employments:[{job_title:'Frontend Engineer',          department:'Engineering'}],     manager:'e4'},
+    {id:'e8', display_full_name:'Mia Johnson',      employments:[{job_title:'Junior Frontend Engineer',   department:'Engineering'}],     manager:'e4'},
+    {id:'e9', display_full_name:'Kate Brown',       employments:[{job_title:'Senior Backend Engineer',    department:'Engineering'}],     manager:'e5'},
+    {id:'e10',display_full_name:'Dan Lee',          employments:[{job_title:'Backend Engineer',           department:'Engineering'}],     manager:'e5'},
+    {id:'e11',display_full_name:'Sophie Taylor',    employments:[{job_title:'Backend Engineer',           department:'Engineering'}],     manager:'e5'},
+    {id:'e12',display_full_name:'Amir Khan',        employments:[{job_title:'DevOps Engineer',            department:'Engineering'}],     manager:'e5'},
+
+    // ── Product ──
+    {id:'e13',display_full_name:'Maya Patel',       employments:[{job_title:'VP Product',                 department:'Product'}],         manager:'e1'},
+    {id:'e14',display_full_name:'Jake Anderson',    employments:[{job_title:'Product Manager',            department:'Product'}],         manager:'e13'},
+    {id:'e15',display_full_name:'Olivia Chen',      employments:[{job_title:'Product Manager',            department:'Product'}],         manager:'e13'},
+    {id:'e16',display_full_name:'Chris Martin',     employments:[{job_title:'UX Designer',                department:'Product'}],         manager:'e13'},
+
+    // ── Sales ──
+    {id:'e17',display_full_name:'Mark Thompson',    employments:[{job_title:'VP Sales',                   department:'Sales'}],           manager:'e1'},
+    {id:'e18',display_full_name:'Rachel Adams',     employments:[{job_title:'Sales Manager',              department:'Sales'}],           manager:'e17'},
+    {id:'e19',display_full_name:'Diana Ross',       employments:[{job_title:'Sales Manager',              department:'Sales'}],           manager:'e17'},
+    {id:'e20',display_full_name:'Sam Foster',       employments:[{job_title:'Account Executive',          department:'Sales'}],           manager:'e18'},
+    {id:'e21',display_full_name:'Lily Wang',        employments:[{job_title:'Account Executive',          department:'Sales'}],           manager:'e18'},
+    {id:'e22',display_full_name:'Jack Murphy',      employments:[{job_title:'Account Executive',          department:'Sales'}],           manager:'e18'},
+    {id:'e23',display_full_name:'Tyler Brooks',     employments:[{job_title:'Account Executive',          department:'Sales'}],           manager:'e19'},
+    {id:'e24',display_full_name:'Priya Sharma',     employments:[{job_title:'Account Executive',          department:'Sales'}],           manager:'e19'},
+    {id:'e25',display_full_name:"Kevin O'Brien",    employments:[{job_title:'Sales Development Rep',      department:'Sales'}],           manager:'e19'},
+
+    // ── Marketing ──
+    {id:'e26',display_full_name:'Jessica Lee',      employments:[{job_title:'VP Marketing',               department:'Marketing'}],       manager:'e1'},
+    {id:'e27',display_full_name:'Amy Zhang',        employments:[{job_title:'Content Lead',               department:'Marketing'}],       manager:'e26'},
+    {id:'e28',display_full_name:'Carlos Rivera',    employments:[{job_title:'Performance Marketing Mgr',  department:'Marketing'}],       manager:'e26'},
+    {id:'e29',display_full_name:'Fiona Walsh',      employments:[{job_title:'Brand Manager',              department:'Marketing'}],       manager:'e26'},
+    {id:'e30',display_full_name:'Patrick Hughes',   employments:[{job_title:'Events Lead',                department:'Marketing'}],       manager:'e26'},
+
+    // ── People & HR ──
+    {id:'e31',display_full_name:'Hannah Moore',     employments:[{job_title:'VP People',                  department:'People & HR'}],     manager:'e1'},
+    {id:'e32',display_full_name:'Grace Taylor',     employments:[{job_title:'HR Business Partner',        department:'People & HR'}],     manager:'e31'},
+    {id:'e33',display_full_name:'Josh Peterson',    employments:[{job_title:'Talent Acquisition Lead',    department:'People & HR'}],     manager:'e31'},
+    {id:'e34',display_full_name:'Claire Roberts',   employments:[{job_title:'L&D Manager',                department:'People & HR'}],     manager:'e31'},
+    {id:'e35',display_full_name:'Ethan Clark',      employments:[{job_title:'People Ops Coordinator',     department:'People & HR'}],     manager:'e31'},
+
+    // ── Finance ──
+    {id:'e37',display_full_name:'Victoria Hunt',    employments:[{job_title:'Finance Manager',            department:'Finance'}],         manager:'e36'},
+    {id:'e38',display_full_name:'Aaron Price',      employments:[{job_title:'Financial Controller',       department:'Finance'}],         manager:'e36'},
+    {id:'e39',display_full_name:'Nathan Webb',      employments:[{job_title:'Financial Analyst',          department:'Finance'}],         manager:'e37'},
+    {id:'e40',display_full_name:'Isabella Santos',  employments:[{job_title:'Financial Analyst',          department:'Finance'}],         manager:'e37'},
+
+    // ── Legal ──
+    {id:'e42',display_full_name:'Michael Ford',     employments:[{job_title:'Legal Counsel',              department:'Legal'}],           manager:'e41'},
+    {id:'e43',display_full_name:'Sandra Wright',    employments:[{job_title:'Compliance Manager',         department:'Legal'}],           manager:'e41'},
+
+    // ── Operations (under COO) ──
+    {id:'e44',display_full_name:'Oliver Hayes',     employments:[{job_title:'VP Operations',              department:'Operations'}],      manager:'e2'},
+    {id:'e45',display_full_name:'Anna Clarke',      employments:[{job_title:'Operations Manager',         department:'Operations'}],      manager:'e44'},
+    {id:'e46',display_full_name:'Marcus Bell',      employments:[{job_title:'Operations Analyst',         department:'Operations'}],      manager:'e44'},
+
+    // ── Customer Success (under COO) ──
+    {id:'e47',display_full_name:'Rebecca Stone',    employments:[{job_title:'VP Customer Success',        department:'Customer Success'}], manager:'e2'},
+    {id:'e48',display_full_name:'Lena Fox',         employments:[{job_title:'CS Manager',                 department:'Customer Success'}], manager:'e47'},
+    {id:'e49',display_full_name:'Joel Marsh',       employments:[{job_title:'Customer Success Rep',       department:'Customer Success'}], manager:'e47'},
+    {id:'e50',display_full_name:'Nina Patel',       employments:[{job_title:'Customer Success Rep',       department:'Customer Success'}], manager:'e47'},
   ];
+}
+
+function ocLoadDemo() {
+  _ocEmps = ocGetDemoData();
+  _ocRelations = {};
   ocBuild();
 }
 
@@ -10041,8 +10089,8 @@ const WF_SCENARIOS = [
   },
 ];
 
-let wfActiveScenario = null;
-let wfCheckedSteps = {};
+let wfActiveCase = null;   // { id, employeeName, scenarioId, checkedSteps[], startedAt, notes }
+let wfCases = null;        // all cases for this company, null = not loaded
 let wfPolicies = null;
 
 async function loadWfPolicies() {
@@ -10055,41 +10103,28 @@ async function loadWfPolicies() {
   wfPolicies = data || [];
 }
 
+async function loadWfCases() {
+  if (wfCases !== null) return;
+  if (!currentProfile) { wfCases = []; return; }
+  const { data } = await sb.from('policies').select('content')
+    .eq('company_id', currentProfile.company_id).eq('name','TRACKER:Workflows').maybeSingle();
+  try { wfCases = data?.content ? JSON.parse(data.content) : []; } catch(e) { wfCases = []; }
+}
+
+async function saveWfCases() {
+  if (!currentProfile) return;
+  const json = JSON.stringify(wfCases);
+  const { data: ex } = await sb.from('policies').select('id')
+    .eq('company_id', currentProfile.company_id).eq('name','TRACKER:Workflows').maybeSingle();
+  if (ex) await sb.from('policies').update({ content: json }).eq('id', ex.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'TRACKER:Workflows', content: json });
+}
+
 function wfFindPolicy(tag) {
   if (!wfPolicies?.length) return null;
   const tagMap = { maternity:['maternity','family leave','parental'], paternity:['paternity','parental'], absence:['absence','sickness','sick'], performance:['performance','pip','capability'], disciplinary:['disciplinary','conduct'], grievance:['grievance'], redundancy:['redundancy'], 'health-safety':['health','safety','dse'], probation:['probation'] };
   const kws = tagMap[tag] || [tag];
   return wfPolicies.find(p => kws.some(k => (p.name+' '+(p.content||'')).toLowerCase().includes(k)));
-}
-
-function wfStepKey(scenarioId) { return 'breeze_wf_'+(currentProfile?.company_id||'x')+'_'+scenarioId; }
-
-function wfLoadChecked(id) {
-  try { const s=localStorage.getItem(wfStepKey(id)); return new Set(s?JSON.parse(s):[]); } catch(e){ return new Set(); }
-}
-
-function wfSaveChecked(id) {
-  try { localStorage.setItem(wfStepKey(id), JSON.stringify([...wfCheckedSteps[id]])); } catch(e){}
-}
-
-function wfToggleStep(scenarioId, stepId) {
-  if (!wfCheckedSteps[scenarioId]) wfCheckedSteps[scenarioId] = new Set();
-  const s = wfCheckedSteps[scenarioId];
-  if (s.has(stepId)) s.delete(stepId); else s.add(stepId);
-  wfSaveChecked(scenarioId);
-  const row = document.getElementById('wf-step-'+stepId);
-  if (row) {
-    const done = s.has(stepId);
-    row.style.opacity = done?'0.5':'1';
-    const cb = row.querySelector('input[type=checkbox]'); if(cb) cb.checked=done;
-    const t = row.querySelector('.wf-step-title'); if(t) t.style.textDecoration=done?'line-through':'';
-  }
-  const sc = WF_SCENARIOS.find(x=>x.id===scenarioId);
-  if (sc) {
-    const pct = Math.round((s.size/sc.steps.length)*100);
-    const bar=document.getElementById('wf-progress-fill'); if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
-    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=s.size+' / '+sc.steps.length+' steps complete';
-  }
 }
 
 function wfTagBadge(tag) {
@@ -10099,38 +10134,117 @@ function wfTagBadge(tag) {
 }
 
 async function renderWorkflowsTab(body) {
-  await loadWfPolicies();
+  await Promise.all([loadWfPolicies(), loadWfCases()]);
   const catGroups = {};
   WF_SCENARIOS.forEach(s=>{ if(!catGroups[s.cat]) catGroups[s.cat]=[]; catGroups[s.cat].push(s); });
+  const activeCases = (wfCases||[]).filter(c=>c.status!=='closed');
 
-  body.innerHTML = '<div style="flex:1;display:flex;overflow:hidden;min-height:0;"><div style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;display:flex;flex-direction:column;"><div style="padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;"><input id="wf-search" placeholder="Search scenarios..." oninput="wfFilterScenarios(this.value)" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'"></div><div id="wf-scenario-list" style="flex:1;overflow-y:auto;padding:8px 0;">'
-  + Object.entries(catGroups).map(([cat,scenarios])=>`<div style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:10px 14px 4px;">${cat}</div>`+scenarios.map(s=>{const ck=wfLoadChecked(s.id);const pct=Math.round((ck.size/s.steps.length)*100);return `<div id="wf-scenario-item-${s.id}" class="wf-scenario-item" onclick="wfSelectScenario('${s.id}')" style="padding:9px 14px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-sm);margin:1px 6px;transition:background 0.1s;"><span style="font-size:18px;flex-shrink:0;margin-top:1px;">${s.icon}</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;color:var(--ink);line-height:1.35;">${s.label}</div>${pct>0?`<div style="margin-top:4px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:2px;"></div></div>`:''}</div></div>`;}).join('')).join('')
-  + '</div></div><div id="wf-detail" style="flex:1;overflow-y:auto;background:var(--bg);"><div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);padding:40px;text-align:center;"><div style="font-size:40px;">✦</div><div style="font-size:15px;font-weight:600;color:var(--ink);">Select a scenario</div><div style="font-size:13px;max-width:360px;line-height:1.7;">Choose a situation from the left and get a step-by-step checklist of what to do next, referencing your policies and UK employment law.</div></div></div></div>';
+  body.innerHTML = '<div style="flex:1;display:flex;overflow:hidden;min-height:0;">'
+  // Left panel
+  + '<div style="width:272px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;display:flex;flex-direction:column;">'
+  + '<div style="padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">'
+  + '<div style="font-size:12px;font-weight:600;color:var(--ink);">Active cases</div>'
+  + '<button onclick="wfNewCase()" class="btn btn-primary btn-sm" style="font-size:11px;">+ New case</button>'
+  + '</div>'
+  + '<div style="flex:1;overflow-y:auto;">'
+  + (activeCases.length
+      ? '<div style="padding:8px 0;">' + activeCases.map(c => {
+          const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{icon:'📋',label:'Unknown',steps:[]};
+          const pct = sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0;
+          const isActive = wfActiveCase?.id === c.id;
+          return `<div onclick="wfOpenCase('${c.id}')" style="padding:10px 14px;cursor:pointer;background:${isActive?'var(--accent-bg)':'white'};border-left:${isActive?'3px solid var(--accent)':'3px solid transparent'};transition:background 0.1s;" onmouseover="if(this.style.background!=='var(--accent-bg)')this.style.background='var(--surface2)'" onmouseout="if('${c.id}'!=='${wfActiveCase?.id||''}')this.style.background='white'">
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:3px;">
+              <span style="font-size:14px;">${sc.icon}</span>
+              <div style="font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${c.employeeName}</div>
+              <div style="margin-left:auto;font-size:10px;color:${pct===100?'var(--green)':'var(--ink3)'};">${pct}%</div>
+            </div>
+            <div style="font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${sc.label}</div>
+            <div style="margin-top:5px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:2px;"></div></div>
+          </div>`;
+        }).join('') + '</div>'
+      : '<div style="padding:32px 16px;text-align:center;color:var(--ink3);font-size:12px;line-height:1.7;">No active cases yet.<br>Click <strong>+ New case</strong> to start tracking next steps for an employee.</div>')
+  + '</div>'
+  // Scenario templates section
+  + '<div style="border-top:1px solid var(--border);flex-shrink:0;">'
+  + '<div style="padding:10px 14px 6px;font-size:10px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);">Start new checklist</div>'
+  + Object.entries(catGroups).map(([cat,scenarios])=>`<div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding:8px 14px 2px;">${cat}</div>`
+    + scenarios.map(s=>`<div onclick="wfNewCaseForScenario('${s.id}')" style="padding:7px 14px;cursor:pointer;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);transition:background 0.1s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''"><span style="font-size:14px;">${s.icon}</span>${s.label}</div>`).join('')).join('')
+  + '</div></div>'
+  // Right: detail
+  + '<div id="wf-detail" style="flex:1;overflow-y:auto;background:var(--bg);">'
+  + '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);padding:40px;text-align:center;">'
+  + '<div style="font-size:40px;">✦</div>'
+  + '<div style="font-size:15px;font-weight:600;color:var(--ink);">' + (activeCases.length ? 'Select a case' : 'Start your first case') + '</div>'
+  + '<div style="font-size:13px;max-width:340px;line-height:1.7;">' + (activeCases.length ? 'Click a case on the left to see its checklist.' : 'Click <strong>+ New case</strong> or a scenario below to create a per-employee checklist — each employee gets their own progress.') + '</div>'
+  + (activeCases.length ? '' : '<button onclick="wfNewCase()" class="btn btn-primary" style="margin-top:8px;">+ New case</button>')
+  + '</div></div>'
+  + '</div>';
 }
 
-function wfFilterScenarios(q) {
-  const lower = q.toLowerCase();
-  document.querySelectorAll('.wf-scenario-item').forEach(el=>{
-    el.style.display = (!q||el.textContent.toLowerCase().includes(lower))?'':'none';
-  });
+function wfNewCase() {
+  // Show a modal: pick scenario + enter employee name
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const catGroups = {};
+  WF_SCENARIOS.forEach(s=>{ if(!catGroups[s.cat]) catGroups[s.cat]=[]; catGroups[s.cat].push(s); });
+  const opts = Object.entries(catGroups).map(([cat,scenarios])=>`<optgroup label="${cat}">${scenarios.map(s=>`<option value="${s.id}">${s.icon} ${s.label}</option>`).join('')}</optgroup>`).join('');
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:18px 22px;"><div style="font-size:15px;font-weight:700;color:white;">New checklist case</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Each employee gets their own checklist and progress</div></div>
+    <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="wf-new-name" placeholder="e.g. Sarah Mitchell" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Scenario</label><select id="wf-new-scenario" style="${inp}">${opts}</select></div>
+    </div>
+    <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="wfCreateCase(this)">Create checklist</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  setTimeout(()=>document.getElementById('wf-new-name')?.focus(), 60);
 }
 
-async function wfSelectScenario(id) {
-  wfActiveScenario = id;
-  document.querySelectorAll('.wf-scenario-item').forEach(el=>{
-    const a = el.id==='wf-scenario-item-'+id;
-    el.style.background = a?'var(--accent-bg)':'';
-    el.style.borderLeft = a?'3px solid var(--accent)':'';
-    el.style.paddingLeft = a?'11px':'';
+function wfNewCaseForScenario(scenarioId) {
+  wfNewCase();
+  setTimeout(()=>{ const sel=document.getElementById('wf-new-scenario'); if(sel) sel.value=scenarioId; }, 80);
+}
+
+async function wfCreateCase(btn) {
+  const name = document.getElementById('wf-new-name')?.value?.trim();
+  const scenarioId = document.getElementById('wf-new-scenario')?.value;
+  if (!name) { document.getElementById('wf-new-name').style.borderColor='var(--red)'; return; }
+  btn.textContent = 'Creating...'; btn.disabled = true;
+  const newCase = { id:'wfc_'+Date.now(), employeeName:name, scenarioId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active' };
+  if (!wfCases) wfCases = [];
+  wfCases.push(newCase);
+  await saveWfCases();
+  btn.closest('div[style*=fixed]').remove();
+  wfActiveCase = newCase;
+  await renderWorkflowsTab(document.getElementById('trackersBody'));
+  wfRenderCase(newCase);
+}
+
+function wfOpenCase(id) {
+  const c = (wfCases||[]).find(x=>x.id===id); if (!c) return;
+  wfActiveCase = c;
+  // Refresh left panel highlight
+  document.querySelectorAll('[onclick*="wfOpenCase"]').forEach(el=>{
+    const isActive = el.getAttribute('onclick')===`wfOpenCase('${id}')`;
+    el.style.background = isActive ? 'var(--accent-bg)' : 'white';
+    el.style.borderLeft = isActive ? '3px solid var(--accent)' : '3px solid transparent';
   });
-  const scenario = WF_SCENARIOS.find(s=>s.id===id); if (!scenario) return;
-  if (!wfCheckedSteps[id]) wfCheckedSteps[id] = wfLoadChecked(id);
-  const checked = wfCheckedSteps[id];
+  wfRenderCase(c);
+}
+
+function wfRenderCase(c) {
   const detail = document.getElementById('wf-detail'); if (!detail) return;
-  const total = scenario.steps.length, done=checked.size, pct=Math.round((done/total)*100);
+  const scenario = WF_SCENARIOS.find(s=>s.id===c.scenarioId); if (!scenario) return;
+  const checkedSet = new Set(c.checkedSteps);
+  const total = scenario.steps.length, done = checkedSet.size, pct = Math.round((done/total)*100);
 
   const stepsHtml = scenario.steps.map(step=>{
-    const isDone = checked.has(step.id);
+    const isDone = checkedSet.has(step.id);
     const policy = step.policyTag ? wfFindPolicy(step.policyTag) : null;
     const policyBadge = policy?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);white-space:nowrap;">📋 ${policy.name}</span>`:'';
     let actionBtn = '';
@@ -10138,8 +10252,8 @@ async function wfSelectScenario(id) {
       if (step.action.type==='doc') actionBtn=`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
       else if (step.action.type==='tab') actionBtn=`<button onclick="event.stopPropagation();showTrackerTab('${step.action.tab}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
     }
-    return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${id}',${step.id})">
-      <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation();wfToggleStep('${id}',${step.id})" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
+    return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${c.id}',${step.id})">
+      <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation();wfToggleStep('${c.id}',${step.id})" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
           <div class="wf-step-title" style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;${isDone?'text-decoration:line-through;':''}">${step.title}</div>
@@ -10154,31 +10268,146 @@ async function wfSelectScenario(id) {
     </div>`;
   }).join('');
 
-  detail.innerHTML = `<div style="padding:24px;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-    <div>
-      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
-        <span style="font-size:28px;">${scenario.icon}</span>
-        <div><div style="font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${scenario.label}</div><div style="font-size:11px;color:var(--ink3);">${scenario.cat} - ${total} steps</div></div>
-        <button onclick="wfResetChecklist('${id}')" class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--ink3);font-size:11px;">↺ Reset</button>
+  const startedDate = new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+
+  detail.innerHTML = `<div style="padding:22px;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+    <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <span style="font-size:26px;flex-shrink:0;">${scenario.icon}</span>
+        <div style="flex:1;">
+          <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${c.employeeName}</div>
+          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${scenario.label} · Started ${startedDate}</div>
+        </div>
+        <div style="display:flex;gap:6px;">
+          ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);">✓ Close case</button>`:''}
+          <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:11px;">Delete</button>
+        </div>
       </div>
-      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+      <div style="margin-top:12px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
           <span style="font-size:11px;font-weight:600;color:var(--ink);">Progress</span>
-          <span id="wf-progress-pct" style="font-size:11px;color:var(--ink3);">${done} / ${total} steps complete</span>
+          <span id="wf-progress-pct" style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${done} / ${total} complete${pct===100?' — all steps done ✓':''}</span>
         </div>
         <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
       </div>
-      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:9px 12px;font-size:11px;color:var(--amber);display:flex;align-items:center;gap:8px;">No policies uploaded - steps use ACAS statutory guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;margin-left:4px;">Upload policies</a></div>`:`<div style="margin-top:10px;background:var(--green-bg);border:1px solid #A7F3D0;border-radius:var(--r-sm);padding:9px 12px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} policies loaded - steps marked 📋 reference your specific policies.</div>`}
+      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:7px 12px;font-size:11px;color:var(--amber);">No policies uploaded — using ACAS guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;">Upload policies</a></div>`
+      :`<div style="margin-top:10px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} company policies loaded — steps marked 📋 reference your policies.</div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;">${stepsHtml}</div>
   </div>`;
 }
 
-function wfResetChecklist(id) {
-  if (!confirm('Reset all steps for this checklist?')) return;
-  wfCheckedSteps[id] = new Set();
-  wfSaveChecked(id);
-  wfSelectScenario(id);
+async function wfToggleStep(caseId, stepId) {
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  const idx = c.checkedSteps.indexOf(stepId);
+  if (idx>-1) c.checkedSteps.splice(idx,1); else c.checkedSteps.push(stepId);
+  await saveWfCases();
+  const isDone = c.checkedSteps.includes(stepId);
+  const row = document.getElementById('wf-step-'+stepId);
+  if (row) {
+    row.style.opacity = isDone?'0.5':'1';
+    const cb=row.querySelector('input[type=checkbox]'); if(cb) cb.checked=isDone;
+    const t=row.querySelector('.wf-step-title'); if(t) t.style.textDecoration=isDone?'line-through':'';
+  }
+  const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId);
+  if (sc) {
+    const pct=Math.round((c.checkedSteps.length/sc.steps.length)*100);
+    const bar=document.getElementById('wf-progress-fill'); if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
+    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=c.checkedSteps.length+' / '+sc.steps.length+' complete'+(pct===100?' — all steps done ✓':'');
+  }
+  // Update sidebar progress bar
+  wfUpdateSidebarCase(c);
+}
+
+function wfUpdateSidebarCase(c) {
+  const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
+  const pct = sc.steps.length?Math.round((c.checkedSteps.length/sc.steps.length)*100):0;
+  const item = document.querySelector(`[onclick="wfOpenCase('${c.id}')"]`);
+  if (item) {
+    const pctEl = item.querySelector('div[style*="margin-left:auto"]');
+    if(pctEl){pctEl.textContent=pct+'%';pctEl.style.color=pct===100?'var(--green)':'var(--ink3)';}
+    const bar = item.querySelector('div[style*="height:100%;background"]');
+    if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
+  }
+}
+
+async function wfCloseCase(id) {
+  const c = (wfCases||[]).find(x=>x.id===id); if(!c) return;
+  c.status = 'closed';
+  await saveWfCases();
+  wfActiveCase = null;
+  await renderWorkflowsTab(document.getElementById('trackersBody'));
+}
+
+async function wfDeleteCase(id) {
+  if (!confirm('Delete this checklist? This cannot be undone.')) return;
+  wfCases = wfCases.filter(x=>x.id!==id);
+  await saveWfCases();
+  wfActiveCase = null;
+  await renderWorkflowsTab(document.getElementById('trackersBody'));
+}
+
+// ── TRACKER GUIDANCE POPUP ──
+async function openTrackerGuidance(topic) {
+  // Load policies if not already loaded
+  if (wfPolicies === null) await loadWfPolicies();
+  const fallback = TRACKER_GUIDANCE_FALLBACK[topic];
+  const policy = ['maternity','paternity','absence','performance','disciplinary','grievance','redundancy','health-safety','recruitment','immigration'].reduce((match, tag) => {
+    if (match) return match;
+    const topicTagMap = { leave:['maternity','absence'], recruitment:['recruitment'], careers:['performance'], immigration:['immigration'] };
+    const tags = topicTagMap[topic] || [topic];
+    if (!tags.some(t=>tag.includes(t)||t.includes(tag))) return null;
+    return wfFindPolicy ? wfFindPolicy(tag) : null;
+  }, null);
+
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+
+  const points = fallback?.points || [];
+  const source = policy ? `Based on your policy: ${policy.name}` : (fallback?.source || 'ACAS guidance');
+  const isFromPolicy = !!policy;
+
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:85vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;">
+        <div style="font-size:15px;font-weight:700;color:white;">Guidance — ${fallback?.title||topic}</div>
+        <div style="font-size:11px;color:${isFromPolicy?'#6EE7B7':'rgba(255,255,255,0.45)'};margin-top:3px;">${isFromPolicy?'📋 '+source:'ℹ '+source}</div>
+      </div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+    </div>
+    <div style="padding:18px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;" id="guidance-modal-body">
+      ${points.map(p=>`<div style="display:flex;gap:10px;font-size:12px;color:var(--ink);line-height:1.7;"><span style="color:var(--accent);flex-shrink:0;margin-top:3px;">•</span><span>${p}</span></div>`).join('')}
+    </div>
+    <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
+      ${fallback?.acasUrl?`<a href="${fallback.acasUrl}" target="_blank" style="font-size:12px;color:var(--accent);text-decoration:none;">View on ACAS.org.uk ↗</a>`:'<span></span>'}
+      ${!isFromPolicy?`<a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'));this.closest('div[style*=fixed]').remove()" style="font-size:11px;color:var(--ink3);cursor:pointer;text-decoration:underline;">Upload your policy →</a>`:'<span></span>'}
+    </div>
+  </div>`;
+
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+
+  // If policy found, enrich with AI (async, replace content when ready)
+  if (policy && !_guidanceCache[topic]) {
+    const bodyEl = document.getElementById('guidance-modal-body');
+    if (bodyEl) bodyEl.insertAdjacentHTML('beforeend', '<div id="guidance-loading" style="font-size:11px;color:var(--ink3);margin-top:8px;display:flex;align-items:center;gap:6px;"><span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> Loading points from your policy...</div>');
+    try {
+      const token = await getAuthToken();
+      const topicLabel = {leave:'maternity, paternity and parental leave', recruitment:'recruitment and hiring', careers:'performance management and promotions', immigration:'right to work and immigration compliance'}[topic]||topic;
+      const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`Extract the 5 most actionable guidance points from this policy for ${topicLabel}. Return a JSON array of 5 strings, each starting with <strong>heading:</strong> then guidance.\n\nPolicy: "${policy.name}"\n\n${(policy.content||'').substring(0,5000)}`}],system:'Return only a valid JSON array of 5 strings. Each string is HTML with <strong>short heading:</strong> then guidance text. No markdown, no explanation.'})});
+      const d = await res.json();
+      const text = (d.content?.[0]?.text||'').trim();
+      const match = text.match(/\[[\s\S]*\]/);
+      if (match) {
+        const aiPoints = JSON.parse(match[0].replace(/,(\s*[}\]])/g,'$1'));
+        _guidanceCache[topic] = aiPoints;
+        if (bodyEl && document.body.contains(bodyEl)) {
+          document.getElementById('guidance-loading')?.remove();
+          bodyEl.innerHTML = aiPoints.map(p=>`<div style="display:flex;gap:10px;font-size:12px;color:var(--ink);line-height:1.7;"><span style="color:var(--green);flex-shrink:0;margin-top:3px;">•</span><span>${p}</span></div>`).join('');
+        }
+      }
+    } catch(e) { document.getElementById('guidance-loading')?.remove(); }
+  }
 }
 
 function wfOpenDoc(docId) {
