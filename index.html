@@ -419,6 +419,30 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-toggle a { color: #0066CC; text-decoration: none; font-weight: 600; cursor: pointer; }
 .login-toggle a:hover { text-decoration: underline; }
 @media (max-width: 700px) { .login-left { display: none; } .login-screen { background: white; } .login-right { flex: 1; width: 100%; padding: 40px 24px; display: flex; align-items: center; justify-content: center; min-height: 100vh; } .login-box { width: 100%; max-width: 420px; } .login-input { font-size: 16px; } .shell { display: none !important; } #mobileBlock { display: flex !important; } }
+
+/* ── EMPLOYEE MATCH COMPARE ── */
+.emp-compare-row { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:8px;overflow:hidden;transition:box-shadow 0.12s; }
+.emp-compare-row:hover { box-shadow:var(--shadow-sm); }
+.emp-compare-head { display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;user-select:none; }
+.emp-compare-body { display:none;border-top:1px solid var(--border); }
+.emp-compare-row.has-diff { border-left:3px solid #F59E0B; }
+.emp-compare-row.has-diff .emp-compare-head { background:#FFFBEB; }
+.emp-compare-row.salary-diff { border-left:3px solid #EF4444; }
+.emp-compare-row.salary-diff .emp-compare-head { background:#FFF5F5; }
+.emp-compare-row.row-match { border-left:3px solid var(--green); }
+.emp-compare-row.row-match .emp-compare-head { background:var(--green-bg); }
+.emp-field-table { width:100%;border-collapse:collapse;font-size:12px; }
+.emp-field-table td { padding:7px 16px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.emp-field-table tr:last-child td { border-bottom:none; }
+.emp-field-table .field-name { color:var(--ink3);font-weight:500;width:28%;font-size:11px;text-transform:capitalize; }
+.emp-field-table .field-val { color:var(--ink); }
+.emp-field-table tr.field-diff td { background:#FFFDF0; }
+.emp-field-table tr.field-salary-diff td { background:#FFF5F5; }
+.emp-badge { font-size:9px;font-weight:700;padding:2px 7px;border-radius:20px;white-space:nowrap; }
+.emp-badge-salary { background:#EF4444;color:white; }
+.emp-badge-diff { background:#F59E0B;color:white; }
+.emp-badge-match { background:var(--green);color:white; }
+.emp-badge-missing { background:var(--surface3);color:var(--ink3); }
 </style>
 </head>
 <body>
@@ -1032,8 +1056,16 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- COMPARE -->
 <div class="view compare-view" id="view-compare">
   <div class="manage-topbar">
-    <div><div class="manage-title">Compare documents</div><div class="manage-sub">Upload two Excel or Word files to see exactly what changed.</div></div>
+    <div>
+      <div class="manage-title">Compare documents</div>
+      <div class="manage-sub" id="compareSubTitle">Upload two files to compare — cell-by-cell for general changes, or employee-match to cross-check by name / ID.</div>
+    </div>
     <div style="display:flex;gap:8px;align-items:center;">
+      <select id="compareMode" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);cursor:pointer;" onchange="onCompareModeChange()">
+        <option value="general">General comparison</option>
+        <option value="employee">Employee match (name / ID)</option>
+        <option value="comp">Compensation check</option>
+      </select>
       <button class="btn btn-secondary btn-sm" onclick="resetCompare()">↺ Reset</button>
       <button class="btn btn-primary btn-sm" id="compareBtn" onclick="runCompare()" style="display:none;">Compare</button>
     </div>
@@ -1041,17 +1073,17 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="compare-upload-row">
     <div class="compare-drop" id="dropA" onclick="document.getElementById('fileA').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCompareDrop(event,'A')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ink3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <div class="compare-drop-label">Original file</div>
-      <div class="compare-drop-sub">.xlsx, .xls, .docx, .doc</div>
+      <div class="compare-drop-label" id="compareLabelA">Original file</div>
+      <div class="compare-drop-sub" id="compareSubA">.xlsx, .xls, .docx, .doc</div>
       <div class="compare-drop-file" id="fileAName"></div>
-      <input type="file" id="fileA" accept=".xlsx,.xls,.docx,.doc" style="display:none" onchange="handleCompareFile(this,'A')">
+      <input type="file" id="fileA" accept=".xlsx,.xls,.docx,.doc,.csv" style="display:none" onchange="handleCompareFile(this,'A')">
     </div>
     <div class="compare-drop" id="dropB" onclick="document.getElementById('fileB').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCompareDrop(event,'B')">
       <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ink3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <div class="compare-drop-label">Updated file</div>
-      <div class="compare-drop-sub">.xlsx, .xls, .docx, .doc</div>
+      <div class="compare-drop-label" id="compareLabelB">Updated file</div>
+      <div class="compare-drop-sub" id="compareSubB">.xlsx, .xls, .docx, .doc</div>
       <div class="compare-drop-file" id="fileBName"></div>
-      <input type="file" id="fileB" accept=".xlsx,.xls,.docx,.doc" style="display:none" onchange="handleCompareFile(this,'B')">
+      <input type="file" id="fileB" accept=".xlsx,.xls,.docx,.doc,.csv" style="display:none" onchange="handleCompareFile(this,'B')">
     </div>
   </div>
   <div class="compare-results" id="compareResults"></div>
@@ -6952,6 +6984,11 @@ function resetCompare() {
 }
 
 async function runCompare() {
+  const mode = document.getElementById('compareMode')?.value || 'general';
+  if (mode === 'employee' || mode === 'comp') {
+    await compareEmployeeMatch(mode === 'comp');
+    return;
+  }
   const a = _compareFiles.A, b = _compareFiles.B;
   if (!a || !b) return;
   const results = document.getElementById('compareResults');
@@ -6961,7 +6998,7 @@ async function runCompare() {
   const isExcel = ['xlsx','xls'].includes(extA) && ['xlsx','xls'].includes(extB);
   const isWord  = ['docx','doc'].includes(extA) && ['docx','doc'].includes(extB);
   if (!isExcel && !isWord) {
-    results.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;">Both files must be the same type (both Excel or both Word).</div>';
+    results.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;">Both files must be the same type (both Excel or both Word) for general comparison. Use Employee match mode to compare different file types.</div>';
     return;
   }
   try {
@@ -7153,6 +7190,459 @@ async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
       const data = await res.json();
       summaryEl.textContent = data?.content?.[0]?.text || '';
     } catch(e) { summaryEl.remove(); }
+  }
+}
+
+// ── EMPLOYEE MATCH COMPARE ──
+
+function onCompareModeChange() {
+  const mode = document.getElementById('compareMode')?.value || 'general';
+  const isEmployee = mode !== 'general';
+  const labelA = document.getElementById('compareLabelA');
+  const labelB = document.getElementById('compareLabelB');
+  const subA   = document.getElementById('compareSubA');
+  const subB   = document.getElementById('compareSubB');
+  const subTitle = document.getElementById('compareSubTitle');
+  if (isEmployee) {
+    if (labelA) labelA.textContent = mode === 'comp' ? 'File A — payroll / HR system export' : 'File A — primary source (payroll, HR export)';
+    if (labelB) labelB.textContent = mode === 'comp' ? 'File B — comp letter / second spreadsheet' : 'File B — second source (letter, second spreadsheet)';
+    if (subA) subA.textContent = '.xlsx, .xls, .csv, .docx';
+    if (subB) subB.textContent = '.xlsx, .xls, .csv, .docx';
+    if (subTitle) subTitle.textContent = mode === 'comp'
+      ? 'Match employees by name or ID across two sources, then flag any salary or compensation discrepancies.'
+      : 'Match employees by name or ID, then compare every field row-by-row — even if columns have different names.';
+  } else {
+    if (labelA) labelA.textContent = 'Original file';
+    if (labelB) labelB.textContent = 'Updated file';
+    if (subA) subA.textContent = '.xlsx, .xls, .docx, .doc';
+    if (subB) subB.textContent = '.xlsx, .xls, .docx, .doc';
+    if (subTitle) subTitle.textContent = 'Upload two Excel or Word files to see exactly what changed.';
+  }
+  document.getElementById('compareResults').innerHTML = '';
+}
+
+async function extractExcelRowsForCompare(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type: 'array', cellDates: true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows = XLSX.utils.sheet_to_json(ws, { defval: '' });
+        resolve(rows.map(r => {
+          const norm = {};
+          Object.entries(r).forEach(([k,v]) => { norm[String(k).trim()] = String(v ?? '').trim(); });
+          return norm;
+        }));
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+async function extractCsvRowsForCompare(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const lines = e.target.result.split('\n').filter(l => l.trim());
+        if (lines.length < 2) { resolve([]); return; }
+        const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+        const rows = lines.slice(1).map(line => {
+          const vals = []; let cur = '', inQ = false;
+          for (const ch of line + ',') {
+            if (ch === '"') inQ = !inQ;
+            else if (ch === ',' && !inQ) { vals.push(cur.trim()); cur = ''; }
+            else cur += ch;
+          }
+          const obj = {};
+          headers.forEach((h, i) => { obj[h] = (vals[i] || '').replace(/^"|"$/g, ''); });
+          return obj;
+        }).filter(r => Object.values(r).some(v => v));
+        resolve(rows);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsText(file);
+  });
+}
+
+async function extractDocxRowsForCompare(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+        resolve(parseWordAsEmployeeData(result.value, file.name));
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+function parseWordAsEmployeeData(text, filename) {
+  const rows = [];
+  // Try to split into per-employee sections (page breaks, repeated "Dear" etc.)
+  const splitPoints = [];
+  const dearMatches = [...text.matchAll(/\bDear\s+[A-Z]/g)];
+  if (dearMatches.length > 1) {
+    dearMatches.forEach(m => splitPoints.push(m.index));
+  } else {
+    const ffMatches = [...text.matchAll(/\f/g)];
+    if (ffMatches.length) ffMatches.forEach(m => splitPoints.push(m.index));
+  }
+  if (splitPoints.length > 0) {
+    const boundaries = [0, ...splitPoints, text.length];
+    for (let i = 0; i < boundaries.length - 1; i++) {
+      const section = text.substring(boundaries[i], boundaries[i+1]).trim();
+      if (section.length > 40) {
+        const obj = extractEmployeeFromDocxText(section);
+        if (obj && Object.keys(obj).length > 0) rows.push(obj);
+      }
+    }
+  }
+  if (!rows.length) {
+    const obj = extractEmployeeFromDocxText(text);
+    if (obj && Object.keys(obj).length > 0) rows.push(obj);
+  }
+  if (rows.length === 1 && !rows[0].employee_name) {
+    rows[0].employee_name = filename.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').trim();
+  }
+  return rows;
+}
+
+function extractEmployeeFromDocxText(text) {
+  const obj = {};
+  // Name
+  const namePats = [
+    /\bDear\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/,
+    /\bTo:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/,
+    /(?:employee|name|for)\s*[:\-]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i,
+    /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\s*$/m,
+  ];
+  for (const p of namePats) { const m = text.match(p); if (m) { obj.employee_name = m[1].trim(); break; } }
+  // Employee ID
+  const idPats = [
+    /(?:employee\s*(?:id|no|number|ref)|emp\s*(?:id|no|ref)|staff\s*(?:id|no)|payroll\s*(?:id|no|ref))\s*[:\-#]?\s*(\w[\w-]*)/i,
+    /\b(?:EMP|STAFF|HR|P)[:\s-]?(\d{3,8})\b/i,
+  ];
+  for (const p of idPats) { const m = text.match(p); if (m) { obj.employee_id = m[1].trim(); break; } }
+  // Salary - labeled first, then context
+  const salaryLabeled = text.match(/(?:annual\s+salary|base\s+salary|basic\s+(?:salary|pay)|gross\s+(?:salary|pay)|salary|total\s+(?:remuneration|pay|compensation))\s*[:\-]?\s*([£$€][\d,]+(?:\.\d{2})?|\d[\d,]{4,}(?:\.\d{2})?)/i);
+  if (salaryLabeled) {
+    const v = salaryLabeled[1];
+    obj.salary = v.startsWith('£') || v.startsWith('$') || v.startsWith('€') ? v : '£' + v;
+  } else {
+    const amounts = [...text.matchAll(/[£$€]([\d,]+(?:\.\d{2})?)/g)].filter(m => {
+      const n = parseFloat(m[1].replace(/,/g,''));
+      return n >= 10000 && n <= 1000000;
+    });
+    if (amounts.length === 1) obj.salary = '£' + amounts[0][1];
+    else if (amounts.length > 1) {
+      const sorted = [...amounts].sort((a,b) => parseFloat(b[1].replace(/,/g,'')) - parseFloat(a[1].replace(/,/g,'')));
+      obj.salary = '£' + sorted[0][1];
+    }
+  }
+  // Bonus
+  const bonusM = text.match(/(?:bonus|incentive|variable\s+pay)\s*[:\-]?\s*([£$€][\d,]+(?:\.\d{2})?|\d+%)/i);
+  if (bonusM) obj.bonus = bonusM[1];
+  // Job title
+  const titleM = text.match(/(?:job\s+title|position|role|designation)\s*[:\-]\s*([^\n,]{3,60})/i);
+  if (titleM) obj.job_title = titleM[1].trim();
+  // Department
+  const deptM = text.match(/(?:department|dept|team|division)\s*[:\-]\s*([^\n,]{3,50})/i);
+  if (deptM) obj.department = deptM[1].trim();
+  // Start date
+  const dateM = text.match(/(?:start\s+date|commencement|effective\s+date|joining\s+date)\s*[:\-]\s*([^\n,]{3,30})/i);
+  if (dateM) obj.start_date = dateM[1].trim();
+  // Generic key:value pairs for anything else
+  const kvRx = /^([A-Za-z][A-Za-z\s\/()]{2,35}?)\s*:\s*(.{2,80})$/gm;
+  let m;
+  while ((m = kvRx.exec(text)) !== null) {
+    const k = normalizeCompareKey(m[1].trim());
+    const v = m[2].trim();
+    if (k && v && !obj[k] && k.length > 2 && !/^(the|and|or|this|that|your|our)$/.test(k)) obj[k] = v;
+  }
+  return obj;
+}
+
+function normalizeCompareKey(str) {
+  return str.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').replace(/__+/g,'_').replace(/^_|_$/g,'');
+}
+
+function normalizeName(str) {
+  return (str || '').toLowerCase().trim().replace(/\s+/g,' ').replace(/[^a-z\s]/g,'');
+}
+
+function normalizeSalaryValue(str) {
+  if (str === null || str === undefined || str === '') return null;
+  const n = parseFloat(String(str).replace(/[£$€,\s]/g,''));
+  return isNaN(n) ? null : n;
+}
+
+function isSalaryKey(key) {
+  return /salary|pay|wage|remuneration|compensation|ctc|basic|gross|annual|base/i.test(key);
+}
+
+function detectEmployeeColumns(rows) {
+  if (!rows || !rows.length) return { nameCol: null, idCol: null };
+  const cols = Object.keys(rows[0]);
+  const norm = s => s.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  const nameHits = ['employee_name','full_name','name','employee','staff_name','worker_name','person_name'];
+  const idHits   = ['employee_id','emp_id','employee_no','emp_no','staff_id','staff_no','payroll_id','payroll_no','id','reference','ref','personnel_no','empno'];
+  const nameCol = cols.find(c => nameHits.includes(norm(c)))
+    || cols.find(c => /name|employee|staff|worker/i.test(c) && !/id|no|num|department|title|job/i.test(c));
+  const idCol   = cols.find(c => idHits.includes(norm(c)))
+    || cols.find(c => /\bid\b|emp.?no|staff.?id|payroll/i.test(c));
+  return { nameCol, idCol };
+}
+
+function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
+  const matches = [];
+  const usedB = new Set();
+  for (const rowA of rowsA) {
+    const nameA = colsA.nameCol ? normalizeName(String(rowA[colsA.nameCol] || '')) : '';
+    const idA   = colsA.idCol   ? String(rowA[colsA.idCol]   || '').trim().toLowerCase() : '';
+    let best = null, bestScore = 0;
+    for (let bi = 0; bi < rowsB.length; bi++) {
+      if (usedB.has(bi)) continue;
+      const rowB = rowsB[bi];
+      const nameB = colsB.nameCol ? normalizeName(String(rowB[colsB.nameCol] || '')) : '';
+      const idB   = colsB.idCol   ? String(rowB[colsB.idCol]   || '').trim().toLowerCase() : '';
+      // Also try the generic 'employee_name' and 'employee_id' keys that come from Word doc parsing
+      const nameB2 = normalizeName(String(rowB['employee_name'] || rowB[colsB.nameCol] || ''));
+      const idB2   = String(rowB['employee_id'] || rowB[colsB.idCol] || '').trim().toLowerCase();
+      let score = 0;
+      if (idA && idB  && idA === idB)  score = 100;
+      if (idA && idB2 && idA === idB2) score = 100;
+      if (score < 90 && nameA && nameB  && nameA === nameB)  score = 90;
+      if (score < 90 && nameA && nameB2 && nameA === nameB2) score = 90;
+      if (score < 70 && nameA && (nameB || nameB2)) {
+        const nb = nameB || nameB2;
+        const partsA = nameA.split(' ').filter(p => p.length > 1);
+        const partsB = nb.split(' ').filter(p => p.length > 1);
+        const common = partsA.filter(p => partsB.includes(p)).length;
+        if (common >= 2) score = 65 + common * 3;
+      }
+      if (score > bestScore) { bestScore = score; best = { idx: bi, row: rowsB[bi] }; }
+    }
+    if (best && bestScore >= 65) {
+      usedB.add(best.idx);
+      const displayName = colsA.nameCol ? rowA[colsA.nameCol] : rowA['employee_name'] || '';
+      matches.push({ rowA, rowB: best.row, displayName, matched: true });
+    } else {
+      const displayName = colsA.nameCol ? rowA[colsA.nameCol] : rowA['employee_name'] || '(unknown)';
+      matches.push({ rowA, rowB: null, displayName, matched: false, unmatchedSide: 'A' });
+    }
+  }
+  // Unmatched B rows
+  for (let bi = 0; bi < rowsB.length; bi++) {
+    if (!usedB.has(bi)) {
+      const rowB = rowsB[bi];
+      const dn = colsB.nameCol ? rowB[colsB.nameCol] : rowB['employee_name'] || '(unknown)';
+      matches.push({ rowA: null, rowB, displayName: dn, matched: false, unmatchedSide: 'B' });
+    }
+  }
+  return matches;
+}
+
+function compareMatchedRow(rowA, rowB) {
+  const GROUPS = {
+    salary:     /salary|pay|wage|remuneration|compensation|ctc|basic|gross|annual.*pay|base.*pay/i,
+    bonus:      /bonus|incentive|variable/i,
+    department: /dept|department|team|division|group|function/i,
+    title:      /title|role|position|designation/i,
+    start_date: /start.*date|commencement|hire.*date|join.*date/i,
+    end_date:   /end.*date|termination|leaving/i,
+    hours:      /hours|fte|part.?time|full.?time/i,
+    notice:     /notice/i,
+    location:   /location|office|site|place/i,
+  };
+  const SKIP = new Set(['employee_name','name','full_name','employee_id','emp_id','id','employee_no','emp_no','staff_id','staff_no']);
+  const groupKey = col => {
+    const cn = normalizeCompareKey(col);
+    if (SKIP.has(cn)) return null;
+    for (const [g, rx] of Object.entries(GROUPS)) if (rx.test(cn)) return g;
+    return cn;
+  };
+  const gA = {}, gB = {};
+  Object.entries(rowA || {}).forEach(([k,v]) => { const g = groupKey(k); if (g) gA[g] = { key: k, val: v }; });
+  Object.entries(rowB || {}).forEach(([k,v]) => { const g = groupKey(k); if (g) gB[g] = { key: k, val: v }; });
+  const allGroups = new Set([...Object.keys(gA), ...Object.keys(gB)]);
+  const results = [];
+  for (const g of allGroups) {
+    const entA = gA[g], entB = gB[g];
+    const valA = entA?.val ?? '', valB = entB?.val ?? '';
+    if (!valA && !valB) continue;
+    const isSalary = isSalaryKey(g) || isSalaryKey(entA?.key||'') || isSalaryKey(entB?.key||'');
+    let match;
+    if (isSalary) {
+      const nA = normalizeSalaryValue(valA), nB = normalizeSalaryValue(valB);
+      match = nA !== null && nB !== null && Math.abs(nA - nB) < 1;
+    } else {
+      match = String(valA).toLowerCase().trim().replace(/\s+/g,' ') === String(valB).toLowerCase().trim().replace(/\s+/g,' ');
+    }
+    const displayName = (entA?.key || entB?.key || g).replace(/_/g,' ');
+    results.push({ group: g, displayName, valA: String(valA), valB: String(valB), match, isSalary, onlyInA: !entB, onlyInB: !entA });
+  }
+  return results;
+}
+
+function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
+  const results = document.getElementById('compareResults');
+  const matched     = matches.filter(m => m.matched);
+  const unmatchedA  = matches.filter(m => !m.matched && m.unmatchedSide === 'A');
+  const unmatchedB  = matches.filter(m => !m.matched && m.unmatchedSide === 'B');
+  let totalDiffs = 0, salaryDiffs = 0;
+  matched.forEach(m => {
+    const fields = m.fieldComparisons || [];
+    totalDiffs  += fields.filter(f => !f.match).length;
+    salaryDiffs += fields.filter(f => !f.match && f.isSalary).length;
+  });
+
+  const summaryHtml = `
+    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);padding:5px 13px;border-radius:20px;">${matched.length} matched</div>
+      ${totalDiffs  ? `<div style="font-size:12px;font-weight:600;color:#92400E;background:#FEF3C7;padding:5px 13px;border-radius:20px;">⚠ ${totalDiffs} field difference${totalDiffs!==1?'s':''}</div>` : ''}
+      ${salaryDiffs ? `<div style="font-size:12px;font-weight:700;color:white;background:#EF4444;padding:5px 13px;border-radius:20px;">🔴 ${salaryDiffs} salary mismatch${salaryDiffs!==1?'es':''}</div>` : ''}
+      ${unmatchedA.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedA.length} only in A</div>` : ''}
+      ${unmatchedB.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedB.length} only in B</div>` : ''}
+      <div style="margin-left:auto;display:flex;gap:6px;flex-shrink:0;">
+        <button class="btn btn-secondary btn-sm" id="filterAllBtn"    onclick="filterEmpCompare('all')"    style="background:var(--accent);color:white;border-color:var(--accent);">All</button>
+        ${totalDiffs  ? `<button class="btn btn-secondary btn-sm" id="filterDiffBtn"   onclick="filterEmpCompare('diff')">Differences only</button>` : ''}
+        ${salaryDiffs ? `<button class="btn btn-secondary btn-sm" id="filterSalaryBtn" onclick="filterEmpCompare('salary')">Salary issues</button>` : ''}
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:14px;">Matched ${nameA} vs ${nameB} by employee name/ID. Click any row to expand.</div>`;
+
+  const rowsHtml = matches.map((m, idx) => {
+    if (!m.matched) {
+      const side = m.unmatchedSide === 'A' ? nameA : nameB;
+      return `<div class="emp-compare-row has-diff" data-type="unmatched">
+        <div class="emp-compare-head" style="cursor:default;">
+          <span style="font-size:14px;">❓</span>
+          <span style="font-size:13px;font-weight:600;color:var(--ink);flex:1;">${escapeHtml(m.displayName || '(unknown)')}</span>
+          <span style="font-size:11px;color:var(--ink3);">Only in ${escapeHtml(side)}</span>
+          <span class="emp-badge emp-badge-missing">No match</span>
+        </div>
+      </div>`;
+    }
+    const fields     = m.fieldComparisons || [];
+    const diffFields = fields.filter(f => !f.match);
+    const hasSalDiff = diffFields.some(f => f.isSalary);
+    const hasDiff    = diffFields.length > 0;
+    const cls        = hasSalDiff ? 'salary-diff' : hasDiff ? 'has-diff' : 'row-match';
+    const icon       = hasSalDiff ? '🔴' : hasDiff ? '⚠️' : '✅';
+    const dtype      = hasSalDiff ? 'salary' : hasDiff ? 'diff' : 'match';
+    const diffLabel  = hasDiff
+      ? `<span style="font-size:11px;color:${hasSalDiff?'#EF4444':'#92400E'};font-weight:600;">${diffFields.length} diff${diffFields.length!==1?'s':''}</span>`
+      : `<span style="font-size:11px;color:var(--green);">All match</span>`;
+    const fieldsHtml = fields.length ? `
+      <div class="emp-compare-body" id="emp-body-${idx}">
+        <table class="emp-field-table">
+          <thead><tr>
+            <td class="field-name" style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">Field</td>
+            <td style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">${escapeHtml(nameA)}</td>
+            <td style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">${escapeHtml(nameB)}</td>
+            <td style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">Status</td>
+          </tr></thead>
+          <tbody>
+            ${fields.map(f => {
+              const rc = f.isSalary && !f.match ? 'field-salary-diff' : !f.match ? 'field-diff' : '';
+              const badge = f.match
+                ? '<span class="emp-badge emp-badge-match">Match</span>'
+                : f.isSalary
+                  ? '<span class="emp-badge emp-badge-salary">SALARY</span>'
+                  : '<span class="emp-badge emp-badge-diff">Diff</span>';
+              return `<tr class="${rc}">
+                <td class="field-name">${escapeHtml(f.displayName)}</td>
+                <td class="field-val">${f.onlyInB ? '<span style="color:var(--ink3);">-</span>' : `<span style="${!f.match&&!f.onlyInA?'font-weight:600;':''}">${escapeHtml(f.valA)}</span>`}</td>
+                <td class="field-val">${f.onlyInA ? '<span style="color:var(--ink3);">-</span>' : `<span style="${!f.match&&!f.onlyInB?'font-weight:600;':''}">${escapeHtml(f.valB)}</span>`}</td>
+                <td>${badge}</td>
+              </tr>`;
+            }).join('')}
+          </tbody>
+        </table>
+      </div>` : '';
+    return `<div class="emp-compare-row ${cls}" data-type="${dtype}">
+      <div class="emp-compare-head" onclick="toggleEmpCompareRow(${idx})">
+        <span style="font-size:14px;">${icon}</span>
+        <span style="font-size:13px;font-weight:600;color:var(--ink);flex:1;">${escapeHtml(m.displayName || '(unknown)')}</span>
+        ${diffLabel}
+        ${fields.length ? `<svg id="emp-arrow-${idx}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;flex-shrink:0;color:var(--ink3);margin-left:6px;"><polyline points="6 9 12 15 18 9"/></svg>` : ''}
+      </div>
+      ${fieldsHtml}
+    </div>`;
+  }).join('');
+
+  results.innerHTML = summaryHtml + '<div id="empCompareList">' + rowsHtml + '</div>';
+  // Auto-expand rows that have discrepancies
+  matches.forEach((m, idx) => {
+    if (m.matched && m.fieldComparisons?.some(f => !f.match)) {
+      const body = document.getElementById(`emp-body-${idx}`);
+      const arrow = document.getElementById(`emp-arrow-${idx}`);
+      if (body) body.style.display = 'block';
+      if (arrow) arrow.style.transform = 'rotate(180deg)';
+    }
+  });
+}
+
+function toggleEmpCompareRow(idx) {
+  const body  = document.getElementById(`emp-body-${idx}`);
+  const arrow = document.getElementById(`emp-arrow-${idx}`);
+  if (!body) return;
+  const open = body.style.display === 'block';
+  body.style.display = open ? 'none' : 'block';
+  if (arrow) arrow.style.transform = open ? '' : 'rotate(180deg)';
+}
+
+function filterEmpCompare(type) {
+  ['All','Diff','Salary'].forEach(t => {
+    const btn = document.getElementById(`filter${t}Btn`);
+    if (!btn) return;
+    const active = type === t.toLowerCase();
+    btn.style.background = active ? 'var(--accent)' : '';
+    btn.style.color = active ? 'white' : '';
+    btn.style.borderColor = active ? 'var(--accent)' : '';
+  });
+  document.querySelectorAll('#empCompareList .emp-compare-row').forEach(row => {
+    const dt = row.dataset.type;
+    if (type === 'all') row.style.display = '';
+    else if (type === 'diff')   row.style.display = (dt === 'diff' || dt === 'salary' || dt === 'unmatched') ? '' : 'none';
+    else if (type === 'salary') row.style.display = dt === 'salary' ? '' : 'none';
+  });
+}
+
+async function compareEmployeeMatch(isCompMode) {
+  const a = _compareFiles.A, b = _compareFiles.B;
+  if (!a || !b) return;
+  const results = document.getElementById('compareResults');
+  results.innerHTML = '<div style="padding:20px;color:var(--ink3);font-size:13px;">Reading files and matching employees...</div>';
+  try {
+    const ext = f => f.name.split('.').pop().toLowerCase();
+    const parseFile = async f => {
+      const e = ext(f);
+      if (['xlsx','xls'].includes(e)) return extractExcelRowsForCompare(f);
+      if (e === 'csv')                return extractCsvRowsForCompare(f);
+      return extractDocxRowsForCompare(f);
+    };
+    const [rowsA, rowsB] = await Promise.all([parseFile(a), parseFile(b)]);
+    if (!rowsA.length && !rowsB.length) {
+      results.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;">Could not extract data from either file. Check the files contain employee data with column headers.</div>';
+      return;
+    }
+    const colsA = detectEmployeeColumns(rowsA);
+    const colsB = detectEmployeeColumns(rowsB);
+    const rawMatches = matchEmployeeRows(rowsA, rowsB, colsA, colsB);
+    const matches = rawMatches.map(m => {
+      if (!m.matched) return m;
+      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB) };
+    });
+    renderEmployeeMatchResults(matches, a.name, b.name, isCompMode);
+  } catch(e) {
+    results.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Error: ${escapeHtml(e.message)}</div>`;
   }
 }
 
