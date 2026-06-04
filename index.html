@@ -9073,12 +9073,21 @@ function renderLeaveTracker(body) {
     </div>
 
     <!-- Flags -->
-    ${flags.length ? `<div style="display:flex;flex-direction:column;gap:8px;">${flags.map((f,fi)=>`
-      <div class="trk-flag" id="trk-flag-${fi}" style="${f.type==='info'?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}">
-        <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
-        <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#1e40af':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
-        <button onclick="document.getElementById('trk-flag-${fi}').remove()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#93c5fd':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
-      </div>`).join('')}</div>` : `<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions - all records are up to date.</div>`}
+    ${(()=>{
+      const cid = currentProfile?.company_id||'x';
+      const dismissKey = 'breeze_dismissed_flags_'+cid;
+      const dismissed = new Set(JSON.parse(localStorage.getItem(dismissKey)||'[]'));
+      const visible = flags.filter((f,fi)=>!dismissed.has(fi+':'+f.msg.substring(0,30)));
+      if (!visible.length) return '<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions.</div>';
+      return '<div style="display:flex;flex-direction:column;gap:8px;">'+visible.map((f,fi)=>{
+        const fkey = fi+':'+f.msg.substring(0,30);
+        return `<div class="trk-flag" style="${f.type==='info'?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;'+'':''}">
+          <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
+          <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#1e40af':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
+          <button onclick="(()=>{const k='breeze_dismissed_flags_${currentProfile?.company_id||'x'}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#93c5fd':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
+        </div>`;
+      }).join('')+'</div>';
+    })()}
 
     <!-- Table -->
     <div class="trk-card">
@@ -9173,7 +9182,15 @@ async function submitAddMatPat(btn) {
   mpRecords.push(rec);
   await saveMatPatRecords();
   btn.closest('div[style*=fixed]').remove();
-  renderLeaveTracker(document.getElementById('trackersBody'));
+  // Refresh the tracker view properly
+  const isInTracker = document.getElementById('trackersBody') && document.getElementById('view-trackers')?.classList.contains('active');
+  if (isInTracker) {
+    renderTrackersBody();
+    setTimeout(() => {
+      const cont = document.querySelector('#trackersBody [id*="wf-main-content"], #trackersBody');
+      if (cont) cont.scrollTop = cont.scrollHeight;
+    }, 300);
+  }
 }
 
 // ── VIEW / EDIT RECORD PANEL ──
@@ -9192,23 +9209,26 @@ function openMatPatRecord(id) {
   const status = mpStatus(rec);
   const daysSince = mpDaysSinceContact(rec);
 
-  const logHtml = (rec.contactLog || []).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e => {
+  const mpLogEntry = (e, recId) => {
     const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝'};
-    const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B'};
-    return `<div class="log-entry">
-      <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};"></div>
+    const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+    const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+    const docPart = e.docFilename ? `<span onclick="mpDownloadLogDoc('${recId}','${escapeHtml(e.date)}')" style="font-size:10px;color:var(--accent);margin-left:6px;cursor:pointer;text-decoration:underline;">📎 ${escapeHtml(e.docFilename)}</span>` : '';
+    return `<div class="log-entry" style="align-items:flex-start;">
+      <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div>
       <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
           <span style="font-size:11px;">${iconMap[e.type]||'📝'}</span>
           <span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span>
           <span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span>
+          <button onclick="deleteMpLogEntry('${recId}','${escapeHtml(e.date)}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;padding:0 2px;">✕</button>
         </div>
-        <div class="log-text">${escapeHtml(e.note)}</div>
+        <div class="log-text">${escapeHtml(e.note)}${docPart}</div>
       </div>
     </div>`;
-  }).join('') || '<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
+  };
+  const logHtml = (rec.contactLog || []).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e => mpLogEntry(e, rec.id)).join('') || '<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
 
   panel.innerHTML = `
     <div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
@@ -9268,10 +9288,19 @@ function openMatPatRecord(id) {
                 <option value="call">📞 Call</option>
                 <option value="email" selected>✉️ Email</option>
                 <option value="meeting">👥 Meeting</option>
+                <option value="action">✅ Action</option>
                 <option value="note">📝 Note</option>
               </select>
               <input id="mp-log-note-${rec.id}" placeholder="What was discussed or actioned..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addMpContactLog('${rec.id}')}">
               <button class="btn btn-primary btn-sm" onclick="addMpContactLog('${rec.id}')">Log</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+              <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--ink2);">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+                <span id="mp-log-attach-name-${rec.id}">Attach file (optional)</span>
+                <input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="mpLogAttachFile('${rec.id}',this)">
+              </label>
+              <button id="mp-log-attach-clear-${rec.id}" onclick="mpLogClearAttach('${rec.id}')" style="display:none;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;">✕ Remove</button>
             </div>
           </div>
 
@@ -9401,7 +9430,43 @@ async function mpUpdateField(id, field, value) {
   rec[field] = value;
   await saveMatPatRecords();
   // Refresh the table behind the panel
-  renderLeaveTracker(document.getElementById('trackersBody'));
+  renderTrackersBody();
+}
+
+function mpLogAttachFile(id, input) {
+  const file = input.files[0]; if (!file) return;
+  if (file.size > 1.5*1024*1024) { alert('Max 1.5MB'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    window[`_mpLogAttach_${id}`] = { filename: file.name, base64: e.target.result.split(',')[1], mimeType: file.type };
+    const nameEl = document.getElementById(`mp-log-attach-name-${id}`);
+    const clearEl = document.getElementById(`mp-log-attach-clear-${id}`);
+    if (nameEl) nameEl.textContent = '📎 ' + file.name;
+    if (clearEl) clearEl.style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+function mpLogClearAttach(id) {
+  window[`_mpLogAttach_${id}`] = null;
+  const nameEl = document.getElementById(`mp-log-attach-name-${id}`);
+  const clearEl = document.getElementById(`mp-log-attach-clear-${id}`);
+  if (nameEl) nameEl.textContent = 'Attach file (optional)';
+  if (clearEl) clearEl.style.display = 'none';
+}
+function mpDownloadLogDoc(id, dateStr) {
+  const rec = (mpRecords||[]).find(r=>r.id===id); if (!rec) return;
+  const entry = (rec.contactLog||[]).find(e=>e.date===dateStr); if (!entry?.docBase64) return;
+  const bytes = Uint8Array.from(atob(entry.docBase64),c=>c.charCodeAt(0));
+  const blob = new Blob([bytes],{type:entry.docMimeType||'application/octet-stream'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=entry.docFilename;a.click();URL.revokeObjectURL(a.href);
+}
+async function deleteMpLogEntry(id, dateStr) {
+  const rec = (mpRecords||[]).find(r=>r.id===id); if (!rec) return;
+  if (!confirm('Delete this log entry?')) return;
+  rec.contactLog = (rec.contactLog||[]).filter(e=>e.date!==dateStr);
+  await saveMatPatRecords();
+  const listEl = document.getElementById(`mp-log-list-${id}`);
+  if (listEl) listEl.innerHTML = (rec.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>mpLogEntry(e,id)).join('') || '<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
 }
 
 async function addMpContactLog(id) {
@@ -9412,23 +9477,16 @@ async function addMpContactLog(id) {
   const note = noteEl?.value?.trim();
   if (!note) { if (noteEl) noteEl.style.borderColor='var(--red)'; return; }
   if (!rec.contactLog) rec.contactLog = [];
-  rec.contactLog.push({ date: new Date().toISOString(), type: typeEl?.value || 'note', note });
+  const attach = window[`_mpLogAttach_${id}`];
+  const entry = { date: new Date().toISOString(), type: typeEl?.value || 'note', note };
+  if (attach) { entry.docFilename = attach.filename; entry.docBase64 = attach.base64; entry.docMimeType = attach.mimeType; }
+  rec.contactLog.push(entry);
   await saveMatPatRecords();
   if (noteEl) { noteEl.value = ''; noteEl.style.borderColor='var(--border)'; }
-  // Refresh log list in panel
+  mpLogClearAttach(id);
   const logList = document.getElementById(`mp-log-list-${id}`);
-  if (logList) {
-    const sorted = rec.contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
-    const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝'};
-    const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B'};
-    logList.innerHTML = sorted.map(e => {
-      const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-      const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-      return `<div class="log-entry"><div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};"></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="font-size:11px;">${iconMap[e.type]||'📝'}</span><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span></div><div class="log-text">${escapeHtml(e.note)}</div></div></div>`;
-    }).join('');
-  }
-  // Refresh table
-  renderLeaveTracker(document.getElementById('trackersBody'));
+  if (logList) logList.innerHTML = rec.contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>mpLogEntry(e,id)).join('');
+  renderTrackersBody();
 }
 
 async function deleteMatPatRecord(id) {
@@ -9436,7 +9494,7 @@ async function deleteMatPatRecord(id) {
   mpRecords = mpRecords.filter(r => r.id !== id);
   await saveMatPatRecords();
   document.getElementById('mpRecordPanel')?.remove();
-  renderLeaveTracker(document.getElementById('trackersBody'));
+  renderTrackersBody();
 }
 
 function renderRecruitmentTracker(body) {
@@ -10603,6 +10661,33 @@ const WF_SCENARIOS = [
       {id:4,title:'Hold the grievance meeting',desc:'At least 5 working days notice. Right to be accompanied. Let the employee set out the grievance fully.',timeframe:'After investigation',tag:'legal'},
       {id:5,title:'Communicate outcome in writing',desc:'Outcome: upheld / partially upheld / not upheld. State reasons, any action the company will take, and right to appeal.',timeframe:'Within 5 working days of meeting',tag:'legal'},
       {id:6,title:'Implement any agreed actions',desc:'Carry out actions promptly. Monitor the situation. Consider whether any parallel disciplinary process is needed.',timeframe:'After decision',tag:'recommended'},
+    ]
+  },
+  { id:'ilr-application', cat:'Immigration', icon:'🏡', label:'ILR / Settled Status application',
+    steps:[
+      {id:1,title:'Confirm ILR eligibility',desc:'Employee must have 5 years continuous lawful residence in the UK. Check for any absences over 180 days in any 12-month period that could break continuity. Confirm qualifying immigration route.',timeframe:'Before applying',tag:'legal'},
+      {id:2,title:'Gather required documents',desc:'Passport, BRP cards (all current and previous), payslips/P60s covering qualifying period, bank statements, proof of UK address, any absence records.',timeframe:'4-6 weeks before application',tag:'legal'},
+      {id:3,title:'Complete SET(O) or SET(M) application',desc:'Most work-route ILR applications use form SET(O). Complete online via UKVI or on paper. Pay the application fee (currently £2,885 as of April 2026).',timeframe:'When ready',tag:'legal'},
+      {id:4,title:'Book biometrics appointment',desc:'Book at a UK Visa and Citizenship Application Services (UKVCAS) centre. Upload documents and book a biometric appointment.',timeframe:'On application',tag:'legal'},
+      {id:5,title:'Await Home Office decision',desc:'Standard processing time is 6 months. Premium same-day service available at £500+ extra. Update records once BRP issued.',timeframe:'After submission',tag:'recommended'},
+      {id:6,title:'Update records on grant',desc:'Record ILR grant date and new BRP details. Remove from sponsored worker obligations. Update right to work record.',timeframe:'On grant',tag:'legal',action:{label:'Open immigration tracker',type:'tab',tab:'immigration-wf'}},
+    ]
+  },
+  { id:'visa-renewal', cat:'Immigration', icon:'🔄', label:'Visa renewal / extension',
+    steps:[
+      {id:1,title:'Check renewal eligibility and timing',desc:'Most Skilled Worker extensions should be submitted no earlier than 3 months before current visa expiry. Do not leave the UK between submission and decision if awaiting a BRP.',timeframe:'3 months before expiry',tag:'legal'},
+      {id:2,title:'Confirm salary meets threshold',desc:'From April 2024, Skilled Worker minimum salary is £38,700 or the going rate for the role, whichever is higher. Check current salary meets requirements — if not, may need to increase salary before applying.',timeframe:'Before applying',tag:'legal'},
+      {id:3,title:'Prepare sponsor actions in SMS',desc:'As a sponsor, confirm the employee&#39;s current role and salary are accurately recorded in the Sponsor Management System before the application is submitted.',timeframe:'Before application',tag:'legal'},
+      {id:4,title:'Employee submits extension application',desc:'Employee applies via UKVI online. They need: current BRP, passport, certificate of sponsorship reference, payslips. Application fee applies.',timeframe:'Before visa expiry',tag:'legal'},
+      {id:5,title:'Update expiry date in tracker',desc:'Once new visa/BRP is received, update the expiry date in the immigration tracker. Conduct a new right to work check and file copy of new documents.',timeframe:'On receipt of new visa',tag:'legal',action:{label:'Open immigration tracker',type:'tab',tab:'immigration-wf'}},
+    ]
+  },
+  { id:'rtw-new-starter', cat:'Immigration', icon:'✅', label:'Right to work check (new starter)',
+    steps:[
+      {id:1,title:'Check before first day — no exceptions',desc:'You must check the right to work of every new employee BEFORE their first day. A right to work check cannot be retrospective. Failure = potential civil penalty of up to £60,000 per worker.',timeframe:'Before Day 1',tag:'legal'},
+      {id:2,title:'Carry out the check correctly',desc:'Option 1 (manual): Check original documents in person, confirm they are genuine and belong to the person. Option 2 (online): Use the Home Office online checking service with the employees share code.',timeframe:'Before Day 1',tag:'legal'},
+      {id:3,title:'Copy and retain documents',desc:'Make a clear copy of all documents. Date-stamp with "Right to work check carried out on [date]". Retain for duration of employment plus 2 years after leaving.',timeframe:'Day 1',tag:'legal'},
+      {id:4,title:'Record in immigration tracker',desc:'Add the employee to the immigration tracker with their visa type, expiry date, and check date. Set reminder for any repeat check needed.',timeframe:'Day 1',tag:'legal',action:{label:'Open immigration tracker',type:'tab',tab:'immigration-wf'}},
     ]
   },
   { id:'immigration-check', cat:'Immigration', icon:'🛂', label:'Right to work & immigration compliance',
