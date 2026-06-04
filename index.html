@@ -5300,6 +5300,7 @@ function showView(v,navEl) {
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
   if(v==='orgchart')initOrgChart();
+  if(v==='headcount'){hcRoles=null;loadHCRoles().then(renderHeadcount);}
   if(v==='trackers'){mpRecords=null;_guidanceCache={};wfPolicies=null;wfCases=null;wfActiveCase=null;immigrationRecords=null;customTrackers=null;trackerTab='family-leave';document.querySelectorAll('.tracker-tab-btn').forEach(b=>b.classList.remove('active-tt'));const ftb=document.getElementById('tt-family-leave');if(ftb)ftb.classList.add('active-tt');renderTrackers();}
 }
 
@@ -12037,6 +12038,248 @@ function showBreezeToast(msg) {
   t.textContent = msg;
   t.classList.add('visible');
   setTimeout(()=>t.classList.remove('visible'), 2500);
+}
+
+// ── HEADCOUNT PLANNING ──
+let hcRoles = null;
+
+const HC_STAGES = [
+  {id:'briefing',    label:'Briefing',     color:'#6B7280', bg:'#F3F4F6'},
+  {id:'sourcing',    label:'Sourcing',     color:'#3B82F6', bg:'#EFF6FF'},
+  {id:'shortlisting',label:'Shortlisting', color:'#8B5CF6', bg:'#F5F3FF'},
+  {id:'interviewing',label:'Interviewing', color:'#F59E0B', bg:'#FFFBEB'},
+  {id:'offer',       label:'Offer',        color:'#10B981', bg:'#ECFDF5'},
+  {id:'hired',       label:'Hired',        color:'#059669', bg:'#D1FAE5'},
+  {id:'on-hold',     label:'On hold',      color:'#9CA3AF', bg:'#F9FAFB'},
+  {id:'withdrawn',   label:'Withdrawn',    color:'#EF4444', bg:'#FEF2F2'},
+];
+const HC_SOURCES = ['Direct','LinkedIn','Agency','Job board','Internal transfer','Referral','Other'];
+
+async function loadHCRoles() {
+  if (hcRoles !== null) return;
+  if (!currentProfile) { hcRoles = []; return; }
+  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','SETTING:HeadcountPlanning').maybeSingle();
+  try { hcRoles = data?.content ? JSON.parse(data.content) : []; } catch(e) { hcRoles = []; }
+}
+async function saveHCRoles() {
+  if (!currentProfile) return;
+  const json = JSON.stringify(hcRoles);
+  const { data: ex } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:HeadcountPlanning').maybeSingle();
+  if (ex) await sb.from('policies').update({content:json}).eq('id', ex.id);
+  else await sb.from('policies').insert({company_id:currentProfile.company_id, name:'SETTING:HeadcountPlanning', content:json});
+}
+function hcStageBadge(stageId) {
+  const s = HC_STAGES.find(x=>x.id===stageId)||{label:stageId,color:'#6B7280',bg:'#F3F4F6'};
+  return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.bg};color:${s.color};white-space:nowrap;">${s.label}</span>`;
+}
+function hcFmt(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
+function hcDaysOpen(r) { return Math.floor((new Date()-new Date(r.createdAt))/86400000); }
+function hcFmtComp(r) {
+  if (!r.compMin && !r.compMax) return '—';
+  const lo = r.compMin ? '£'+(r.compMin/1000).toFixed(0)+'k' : '';
+  const hi = r.compMax ? '£'+(r.compMax/1000).toFixed(0)+'k' : '';
+  return lo && hi ? lo+' – '+hi : lo||hi;
+}
+function renderHeadcount() {
+  const body = document.getElementById('headcountBody');
+  if (!body || !hcRoles) return;
+  const closed = ['hired','withdrawn'];
+  const active = hcRoles.filter(r=>!closed.includes(r.stage));
+  const sourcing = active.filter(r=>['sourcing','shortlisting'].includes(r.stage));
+  const interviewing = active.filter(r=>r.stage==='interviewing');
+  const atOffer = active.filter(r=>r.stage==='offer');
+  const thisYear = new Date().getFullYear();
+  const hiredTY = hcRoles.filter(r=>r.stage==='hired'&&new Date(r.updatedAt||r.createdAt).getFullYear()===thisYear);
+  const avgDays = active.length ? Math.round(active.reduce((s,r)=>s+hcDaysOpen(r),0)/active.length) : 0;
+  const rows = hcRoles.map(r=>`<tr style="cursor:pointer;" onclick="openRolePanel('${r.id}')">
+    <td><div style="font-weight:600;color:var(--ink);">${escapeHtml(r.title)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(r.dept||'')}${r.hiringManager?' · '+escapeHtml(r.hiringManager):''}</div></td>
+    <td>${hcStageBadge(r.stage)}</td>
+    <td style="font-size:12px;color:var(--ink2);white-space:nowrap;">${hcFmtComp(r)}</td>
+    <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${hcFmt(r.targetStart)}</td>
+    <td style="font-size:12px;color:${hcDaysOpen(r)>60?'var(--red)':'var(--ink3)'};">${closed.includes(r.stage)?'—':hcDaysOpen(r)+'d'}</td>
+    <td style="font-size:12px;color:var(--ink3);">${escapeHtml(r.source||'—')}</td>
+    <td style="white-space:nowrap;">
+      <button onclick="event.stopPropagation();openRolePanel('${r.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Details →</button>
+      <button onclick="event.stopPropagation();deleteHCRole('${r.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
+    </td>
+  </tr>`).join('');
+  body.innerHTML = `<div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${active.length}</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">Active</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${sourcing.length}</div><div class="trk-kpi-label">Sourcing / shortlisting</div><div class="trk-kpi-sub">Candidate search</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">${interviewing.length}</div><div class="trk-kpi-label">Interviewing</div><div class="trk-kpi-sub">Active interviews</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${atOffer.length}</div><div class="trk-kpi-label">At offer stage</div><div class="trk-kpi-sub">Pending acceptance</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${avgDays}d</div><div class="trk-kpi-label">Avg days open</div><div class="trk-kpi-sub">Active roles</div></div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+      <div style="font-size:15px;font-weight:700;color:var(--ink);">Open roles <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${active.length} active${hiredTY.length?' · '+hiredTY.length+' hired this year':''})</span></div>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="downloadHCCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
+        <button onclick="openAddRoleModal()" class="btn btn-primary btn-sm">+ Add role</button>
+      </div>
+    </div>
+    ${hcRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
+      <thead><tr><th>Role</th><th>Stage</th><th>Comp range</th><th>Target start</th><th>Days open</th><th>Source</th><th></th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table></div>` : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.</div>`}
+  </div>`;
+}
+function openAddRoleModal(existing) {
+  const r = existing || {};
+  const isEdit = !!existing;
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const lbl = 'font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
+  const stageOpts = HC_STAGES.map(s=>`<option value="${s.id}"${(r.stage||'briefing')===s.id?' selected':''}>${s.label}</option>`).join('');
+  const sourceOpts = ['','...'].concat(HC_SOURCES).filter((v,i)=>i===0||v!=='...').map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s||'Select...'}</option>`).join('');
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:580px;max-height:90vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:white;">${isEdit?'Edit':'Add'} open role</div></div>
+    <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="grid-column:1/-1;"><label style="${lbl}">Job title *</label><input id="hc-title" value="${escapeHtml(r.title||'')}" placeholder="e.g. HR Director" style="${inp}" autocomplete="off" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Department</label><input id="hc-dept" value="${escapeHtml(r.dept||'')}" placeholder="e.g. People" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Hiring manager</label><input id="hc-mgr" value="${escapeHtml(r.hiringManager||'')}" placeholder="Name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('hc-mgr').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Stage</label><select id="hc-stage" style="${inp}">${stageOpts}</select></div>
+        <div><label style="${lbl}">Source / channel</label><select id="hc-source" style="${inp}">${HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label style="${lbl}">Comp min (£)</label><input id="hc-cmin" type="number" value="${r.compMin||''}" placeholder="e.g. 80000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Comp max (£)</label><input id="hc-cmax" type="number" value="${r.compMax||''}" placeholder="e.g. 100000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Target start date</label><input id="hc-start" type="date" value="${r.targetStart||''}" style="${inp}"></div>
+        <div><label style="${lbl}">No. of positions</label><input id="hc-hc" type="number" min="1" value="${r.headcount||1}" style="${inp}"></div>
+      </div>
+      <div><label style="${lbl}">Agency name <span style="font-weight:400;color:var(--ink3);">(if applicable)</span></label><input id="hc-agency" value="${escapeHtml(r.agencyName||'')}" placeholder="e.g. Hays, Michael Page..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="${lbl}">Interview process</label><textarea id="hc-process" rows="3" placeholder="e.g. CV screen → 1st interview → task → final panel → offer" style="${inp}resize:vertical;min-height:60px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(r.interviewProcess||'')}</textarea></div>
+      <div><label style="${lbl}">Notes</label><textarea id="hc-notes" rows="2" style="${inp}resize:vertical;min-height:50px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(r.notes||'')}</textarea></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitAddRole(this,'${r.id||''}')">Save role</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  setTimeout(()=>document.getElementById('hc-title')?.focus(), 60);
+}
+async function submitAddRole(btn, existingId) {
+  const title = document.getElementById('hc-title')?.value?.trim();
+  if (!title) { document.getElementById('hc-title').style.borderColor='var(--red)'; return; }
+  btn.textContent='Saving...'; btn.disabled=true;
+  const now = new Date().toISOString();
+  const existing = existingId ? (hcRoles||[]).find(r=>r.id===existingId) : null;
+  const rec = {
+    id: existingId||'hc_'+Date.now(),
+    title, dept:document.getElementById('hc-dept')?.value?.trim()||'',
+    hiringManager:document.getElementById('hc-mgr')?.value?.trim()||'',
+    stage:document.getElementById('hc-stage')?.value||'briefing',
+    source:document.getElementById('hc-source')?.value||'',
+    compMin:parseInt(document.getElementById('hc-cmin')?.value||'0')||0,
+    compMax:parseInt(document.getElementById('hc-cmax')?.value||'0')||0,
+    targetStart:document.getElementById('hc-start')?.value||'',
+    headcount:parseInt(document.getElementById('hc-hc')?.value||'1')||1,
+    agencyName:document.getElementById('hc-agency')?.value?.trim()||'',
+    interviewProcess:document.getElementById('hc-process')?.value?.trim()||'',
+    notes:document.getElementById('hc-notes')?.value?.trim()||'',
+    contactLog:existing?.contactLog||[],
+    createdAt:existing?.createdAt||now,
+    updatedAt:now,
+  };
+  if (existingId) { const idx=(hcRoles||[]).findIndex(r=>r.id===existingId); if(idx>-1) hcRoles[idx]=rec; else hcRoles.push(rec); }
+  else hcRoles.push(rec);
+  await saveHCRoles();
+  btn.closest('div[style*=fixed]').remove();
+  renderHeadcount();
+}
+function openRolePanel(id) {
+  const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
+  document.getElementById('hcRolePanel')?.remove();
+  const panel = document.createElement('div');
+  panel.id='hcRolePanel';
+  panel.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  const lbl='font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;display:block;';
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
+  const contactLog=(r.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const daysSince=contactLog.length?Math.floor((new Date()-new Date(contactLog[0].date))/86400000):null;
+  const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const logHtml=contactLog.map(e=>{
+    const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="log-entry" style="align-items:flex-start;"><div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;"><span style="font-size:11px;">${iconMap[e.type]||'📝'}</span><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span><button onclick="hcDeleteLog('${id}','${escapeHtml(e.date)}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;padding:0 2px;">✕</button></div><div class="log-text">${escapeHtml(e.note)}</div></div></div>`;
+  }).join('')||'<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No updates logged yet</div>';
+  const stageOpts=HC_STAGES.map(s=>`<option value="${s.id}"${r.stage===s.id?' selected':''}>${s.label}</option>`).join('');
+  panel.innerHTML=`<div style="width:700px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
+    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
+      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(r.title)}</div>${hcStageBadge(r.stage)}</div><div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(r.dept||'')}${r.hiringManager?' · Hiring manager: '+escapeHtml(r.hiringManager):''}</div></div>
+      <button onclick="document.getElementById('hcRolePanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:12px;">Role details</div>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
+          <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${inp}">${stageOpts}</select></div>
+          <div><label style="${lbl}">Comp min (£)</label><input type="number" value="${r.compMin||''}" onchange="hcUpdateField('${id}','compMin',parseInt(this.value)||0)" style="${inp}" placeholder="80000"></div>
+          <div><label style="${lbl}">Comp max (£)</label><input type="number" value="${r.compMax||''}" onchange="hcUpdateField('${id}','compMax',parseInt(this.value)||0)" style="${inp}" placeholder="100000"></div>
+          <div><label style="${lbl}">Target start</label><input type="date" value="${r.targetStart||''}" onchange="hcUpdateField('${id}','targetStart',this.value)" style="${inp}"></div>
+          <div><label style="${lbl}">Source</label><input value="${escapeHtml(r.source||'')}" onchange="hcUpdateField('${id}','source',this.value)" style="${inp}" placeholder="LinkedIn, agency..."></div>
+          <div><label style="${lbl}">Agency</label><input value="${escapeHtml(r.agencyName||'')}" onchange="hcUpdateField('${id}','agencyName',this.value)" style="${inp}" placeholder="Agency name"></div>
+        </div>
+        ${r.interviewProcess?`<div style="margin-bottom:10px;"><label style="${lbl}">Interview process</label><div style="font-size:12px;color:var(--ink2);line-height:1.6;background:var(--surface2);border-radius:var(--r-sm);padding:8px 10px;">${escapeHtml(r.interviewProcess)}</div></div>`:''}
+        <div style="display:flex;gap:8px;margin-top:6px;">
+          <button onclick="document.getElementById('hcRolePanel').remove();openAddRoleModal((hcRoles||[]).find(x=>x.id==='${id}'))" class="btn btn-secondary btn-sm" style="font-size:11px;">✏ Edit details</button>
+          <span style="font-size:11px;color:var(--ink3);align-self:center;">Opened ${hcFmt(r.createdAt)} · ${hcDaysOpen(r)} days open</span>
+        </div>
+      </div>
+      <div style="padding:16px 22px;flex:1;">
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:14px;">Updates &amp; contact log ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>14?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(none logged)</span>'}</div>
+        <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;display:flex;gap:8px;">
+          <select id="hc-log-type-${id}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;"><option value="note">📝 Note</option><option value="call">📞 Call</option><option value="email">✉️ Email</option><option value="meeting">👥 Meeting</option><option value="action">✅ Action</option></select>
+          <input id="hc-log-note-${id}" placeholder="Update, candidate feedback, next step..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcAddLog('${id}')}">
+          <button class="btn btn-primary btn-sm" onclick="hcAddLog('${id}')">Log</button>
+        </div>
+        <div id="hc-log-list-${id}">${logHtml}</div>
+      </div>
+      <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHCRole('${id}')">Delete role</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('hcRolePanel').remove()">Close</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(panel);
+  panel.onclick = e => { if(e.target===panel) panel.remove(); };
+}
+async function hcUpdateField(id,field,value) {
+  const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
+  r[field]=value; r.updatedAt=new Date().toISOString();
+  await saveHCRoles(); renderHeadcount();
+}
+async function hcAddLog(id) {
+  const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
+  const note=document.getElementById('hc-log-note-'+id)?.value?.trim(); if(!note){document.getElementById('hc-log-note-'+id)?.focus();return;}
+  const type=document.getElementById('hc-log-type-'+id)?.value||'note';
+  if(!r.contactLog) r.contactLog=[];
+  r.contactLog.push({type,note,date:new Date().toISOString()});
+  r.updatedAt=new Date().toISOString();
+  await saveHCRoles();
+  document.getElementById('hcRolePanel')?.remove();
+  openRolePanel(id); renderHeadcount();
+}
+async function hcDeleteLog(id,date) {
+  const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
+  r.contactLog=(r.contactLog||[]).filter(e=>e.date!==date);
+  await saveHCRoles();
+  document.getElementById('hcRolePanel')?.remove(); openRolePanel(id);
+}
+async function deleteHCRole(id) {
+  if(!confirm('Delete this role? This cannot be undone.')) return;
+  hcRoles=(hcRoles||[]).filter(r=>r.id!==id);
+  await saveHCRoles();
+  document.getElementById('hcRolePanel')?.remove(); renderHeadcount();
+}
+function downloadHCCSV() {
+  const rows=[['Role','Department','Hiring Manager','Stage','Comp Min','Comp Max','Target Start','Days Open','Source','Agency','Positions','Interview Process','Notes']];
+  (hcRoles||[]).forEach(r=>rows.push([r.title,r.dept,r.hiringManager,r.stage,r.compMin||'',r.compMax||'',r.targetStart,hcDaysOpen(r),r.source,r.agencyName,r.headcount,r.interviewProcess,r.notes]));
+  downloadCSV(rows,'Headcount planning '+new Date().toLocaleDateString('en-GB'));
 }
 
 // ── ORG CHART STATE ──
