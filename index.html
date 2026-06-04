@@ -1763,6 +1763,32 @@ async function loadMergeEmployees() {
   return mergeEmployeeCache;
 }
 
+async function showHrisDropdown(inputEl, query, onSelect) {
+  document.getElementById('hris-dd')?.remove();
+  if (!query || query.length < 1) return;
+  const emps = await loadMergeEmployees();
+  if (!emps.length) return;
+  const q = query.toLowerCase();
+  const matches = emps.filter(e => (e.display_full_name||'').toLowerCase().includes(q)).slice(0, 7);
+  if (!matches.length) return;
+  const dd = document.createElement('div');
+  dd.id = 'hris-dd';
+  const rect = inputEl.getBoundingClientRect();
+  dd.style.cssText = `position:fixed;top:${rect.bottom+2}px;left:${rect.left}px;width:${rect.width}px;background:white;border:1px solid var(--border);border-radius:var(--r-sm);box-shadow:var(--shadow-lg);z-index:9999;max-height:200px;overflow-y:auto;`;
+  matches.forEach(emp => {
+    const row = document.createElement('div');
+    row.style.cssText = 'padding:8px 12px;cursor:pointer;border-bottom:1px solid var(--border);';
+    row.innerHTML = `<div style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(emp.display_full_name||'')}</div><div style="font-size:11px;color:var(--ink3);">${escapeHtml(emp.employments?.[0]?.job_title||'')}</div>`;
+    row.onmouseenter = () => row.style.background = 'var(--surface2)';
+    row.onmouseleave = () => row.style.background = '';
+    row.onmousedown = (e) => { e.preventDefault(); onSelect(emp); dd.remove(); };
+    dd.appendChild(row);
+  });
+  document.body.appendChild(dd);
+  const close = (e) => { if (!dd.contains(e.target)) { dd.remove(); document.removeEventListener('mousedown', close); } };
+  setTimeout(() => document.addEventListener('mousedown', close), 10);
+}
+
 function debounceSearchMerge(query) {
   clearTimeout(mergeSearchTimeout);
   const dd = document.getElementById('mergeDropdown');
@@ -9188,7 +9214,7 @@ function openAddMatPatModal() {
     </div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div style="grid-column:1/-1;"><label style="${lbl}">Employee full name</label><input id="mp-name" placeholder="e.g. Sarah Mitchell" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div style="grid-column:1/-1;position:relative;"><label style="${lbl}">Employee full name</label><input id="mp-name" placeholder="e.g. Sarah Mitchell" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('mp-name').value=emp.display_full_name||'';document.getElementById('mp-title').value=emp.employments?.[0]?.job_title||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Job title</label><input id="mp-title" placeholder="e.g. Marketing Manager" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Leave type</label><select id="mp-type" style="${inp}"><option value="Maternity">Maternity</option><option value="Paternity">Paternity</option><option value="Shared Parental">Shared Parental</option></select></div>
         <div><label style="${lbl}">Due / birth date</label><input type="date" id="mp-due" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
@@ -9887,7 +9913,7 @@ function openAddImmigrationModal(existing) {
     <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:white;">${isEdit?'Edit':'Add'} immigration record</div></div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
-        <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="imm-name" value="${escapeHtml(r.employeeName||'')}" placeholder="Full name" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="imm-name" value="${escapeHtml(r.employeeName||'')}" placeholder="Full name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('imm-name').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Nationality</label><input id="imm-nat" value="${escapeHtml(r.nationality||'')}" placeholder="e.g. Indian" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Job title</label><input id="imm-title" value="${escapeHtml(r.jobTitle||'')}" placeholder="e.g. Software Engineer" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Visa / immigration status type</label><select id="imm-visa" style="${inp}">${visaOpts}</select></div>
@@ -11175,7 +11201,7 @@ function wfNewCase(filterScenarioIds) {
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
     <div style="background:#1B2D50;padding:18px 22px;"><div style="font-size:15px;font-weight:700;color:white;">New checklist</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Each employee gets their own progress</div></div>
     <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
-      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="wf-new-name" placeholder="e.g. Sarah Mitchell" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="wf-new-name" placeholder="e.g. Sarah Mitchell" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('wf-new-name').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Checklist type</label><select id="wf-new-scenario" style="${inp}">${opts}</select></div>
     </div>
     <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
