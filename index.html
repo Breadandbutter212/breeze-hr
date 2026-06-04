@@ -6956,13 +6956,25 @@ let _compareFiles = { A: null, B: null };
 function handleCompareDrop(e, side) {
   e.preventDefault();
   document.getElementById(`drop${side}`).classList.remove('drag-over');
-  const file = e.dataTransfer.files[0];
-  if (file) loadCompareFile(file, side);
+  const mode = document.getElementById('compareMode')?.value || 'general';
+  const files = Array.from(e.dataTransfer.files);
+  if (!files.length) return;
+  if (side === 'B' && mode !== 'general' && files.length > 1) {
+    loadCompareMultiple(files);
+  } else {
+    loadCompareFile(files[0], side);
+  }
 }
 
 function handleCompareFile(input, side) {
-  const file = input.files[0];
-  if (file) loadCompareFile(file, side);
+  const mode = document.getElementById('compareMode')?.value || 'general';
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  if (side === 'B' && mode !== 'general' && files.length > 1) {
+    loadCompareMultiple(files);
+  } else {
+    loadCompareFile(files[0], side);
+  }
 }
 
 function loadCompareFile(file, side) {
@@ -6970,6 +6982,16 @@ function loadCompareFile(file, side) {
   document.getElementById(`file${side}Name`).textContent = file.name;
   document.getElementById(`drop${side}`).style.borderColor = 'var(--accent)';
   if (_compareFiles.A && _compareFiles.B) document.getElementById('compareBtn').style.display = '';
+}
+
+function loadCompareMultiple(files) {
+  _compareFiles.B = files;
+  const nameEl = document.getElementById('fileBName');
+  const names = files.slice(0, 4).map(f => `<div style="font-size:10px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(f.name)}</div>`).join('');
+  const extra = files.length > 4 ? `<div style="font-size:10px;color:var(--ink3);">...and ${files.length - 4} more</div>` : '';
+  if (nameEl) nameEl.innerHTML = `<div style="font-size:12px;font-weight:600;color:var(--accent);margin-bottom:3px;">${files.length} letters selected</div>${names}${extra}`;
+  document.getElementById('dropB').style.borderColor = 'var(--accent)';
+  if (_compareFiles.A) document.getElementById('compareBtn').style.display = '';
 }
 
 function resetCompare() {
@@ -7203,20 +7225,23 @@ function onCompareModeChange() {
   const subA   = document.getElementById('compareSubA');
   const subB   = document.getElementById('compareSubB');
   const subTitle = document.getElementById('compareSubTitle');
+  const fB = document.getElementById('fileB');
   if (isEmployee) {
     if (labelA) labelA.textContent = mode === 'comp' ? 'File A — payroll / HR system export' : 'File A — primary source (payroll, HR export)';
-    if (labelB) labelB.textContent = mode === 'comp' ? 'File B — comp letter / second spreadsheet' : 'File B — second source (letter, second spreadsheet)';
-    if (subA) subA.textContent = '.xlsx, .xls, .csv, .docx';
-    if (subB) subB.textContent = '.xlsx, .xls, .csv, .docx';
+    if (labelB) labelB.textContent = mode === 'comp' ? 'File B — comp letters (select multiple .docx)' : 'File B — letters or second spreadsheet (select multiple)';
+    if (subA) subA.textContent = '.xlsx, .xls, .csv';
+    if (subB) subB.textContent = '.docx, .xlsx, .csv — select multiple files at once';
     if (subTitle) subTitle.textContent = mode === 'comp'
-      ? 'Match employees by name or ID across two sources, then flag any salary or compensation discrepancies.'
-      : 'Match employees by name or ID, then compare every field row-by-row — even if columns have different names.';
+      ? 'Upload one spreadsheet + as many comp letters as you like. Matches each letter to the employee row and flags salary discrepancies.'
+      : 'Upload one spreadsheet + multiple files. Matches each to the employee row and compares all fields.';
+    if (fB) fB.setAttribute('multiple', '');
   } else {
     if (labelA) labelA.textContent = 'Original file';
     if (labelB) labelB.textContent = 'Updated file';
     if (subA) subA.textContent = '.xlsx, .xls, .docx, .doc';
     if (subB) subB.textContent = '.xlsx, .xls, .docx, .doc';
     if (subTitle) subTitle.textContent = 'Upload two Excel or Word files to see exactly what changed.';
+    if (fB) fB.removeAttribute('multiple');
   }
   document.getElementById('compareResults').innerHTML = '';
 }
@@ -7570,6 +7595,7 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
       <div class="emp-compare-head" onclick="toggleEmpCompareRow(${idx})">
         <span style="font-size:14px;">${icon}</span>
         <span style="font-size:13px;font-weight:600;color:var(--ink);flex:1;">${escapeHtml(m.displayName || '(unknown)')}</span>
+        ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-right:4px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
         ${diffLabel}
         ${fields.length ? `<svg id="emp-arrow-${idx}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;flex-shrink:0;color:var(--ink3);margin-left:6px;"><polyline points="6 9 12 15 18 9"/></svg>` : ''}
       </div>
@@ -7619,7 +7645,9 @@ async function compareEmployeeMatch(isCompMode) {
   const a = _compareFiles.A, b = _compareFiles.B;
   if (!a || !b) return;
   const results = document.getElementById('compareResults');
-  results.innerHTML = '<div style="padding:20px;color:var(--ink3);font-size:13px;">Reading files and matching employees...</div>';
+  const bFiles = Array.isArray(b) ? b : [b];
+  const bLabel = bFiles.length > 1 ? `${bFiles.length} letters` : bFiles[0].name;
+  results.innerHTML = `<div style="padding:20px;color:var(--ink3);font-size:13px;">Reading files${bFiles.length > 1 ? ` (${bFiles.length} letters)` : ''} and matching employees...</div>`;
   try {
     const ext = f => f.name.split('.').pop().toLowerCase();
     const parseFile = async f => {
@@ -7628,9 +7656,25 @@ async function compareEmployeeMatch(isCompMode) {
       if (e === 'csv')                return extractCsvRowsForCompare(f);
       return extractDocxRowsForCompare(f);
     };
-    const [rowsA, rowsB] = await Promise.all([parseFile(a), parseFile(b)]);
+    // Parse File A (always single — the spreadsheet)
+    const rowsA = await parseFile(a);
+    // Parse File B — single file or multiple letters
+    let rowsB;
+    if (bFiles.length === 1) {
+      rowsB = await parseFile(bFiles[0]);
+    } else {
+      // Parse all letters in parallel, each doc = one employee row
+      const allRows = await Promise.all(bFiles.map(f => parseFile(f)));
+      rowsB = allRows.flat();
+      // Attach source filename to each row so results can show which letter it came from
+      let offset = 0;
+      allRows.forEach((rows, i) => {
+        rows.forEach((_, j) => { rowsB[offset + j]._sourceFile = bFiles[i].name; });
+        offset += rows.length;
+      });
+    }
     if (!rowsA.length && !rowsB.length) {
-      results.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;">Could not extract data from either file. Check the files contain employee data with column headers.</div>';
+      results.innerHTML = '<div style="padding:20px;color:var(--red);font-size:13px;">Could not extract data from either file. Check files contain employee data with column headers.</div>';
       return;
     }
     const colsA = detectEmployeeColumns(rowsA);
@@ -7640,7 +7684,7 @@ async function compareEmployeeMatch(isCompMode) {
       if (!m.matched) return m;
       return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB) };
     });
-    renderEmployeeMatchResults(matches, a.name, b.name, isCompMode);
+    renderEmployeeMatchResults(matches, a.name, bLabel, isCompMode);
   } catch(e) {
     results.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Error: ${escapeHtml(e.message)}</div>`;
   }
