@@ -7814,7 +7814,7 @@ function renderPPWizard() {
 }
 
 function getPPWizardQuestions() {
-  return [
+  const base = [
     { id:'year', q:'What year is this plan for?', sub:'We\'ll map every event across the 12 months.',
       type:'select', options:['2025','2026','2027','2028'], defaultVal: String(new Date().getFullYear()) },
     { id:'fyStart', q:'When does your financial / performance year start?', sub:'This helps us position reviews and cycles correctly.',
@@ -7829,9 +7829,21 @@ function getPPWizardQuestions() {
       type:'months_multi', optional:true },
     { id:'learningCycles', q:'When are major L&D or training cycles?', sub:'Induction, mandatory training, learning weeks - select months.',
       type:'months_multi', optional:true },
-    { id:'extras', q:'Anything else to add?', sub:'Select any other recurring activities to include.',
+    { id:'extras', q:'Anything else to add?', sub:'Select any other recurring activities to include, then you\'ll be asked when each one happens.',
       type:'chips_multi', options:['Compliance training','Succession planning','Workforce planning','Headcount review','OKR setting','Board people report','Pulse survey','Values review','Internship cohort'], optional:true },
   ];
+  // Dynamically append a month question for each selected extra
+  const selectedExtras = ppWizardAnswers.extras || [];
+  selectedExtras.forEach(extra => {
+    base.push({
+      id: `extra_months_${extra}`,
+      q: `When does "${extra}" happen?`,
+      sub: 'Select all months that apply.',
+      type: 'months_multi',
+      optional: true,
+    });
+  });
+  return base;
 }
 
 function renderPPWizardInput(q) {
@@ -7963,7 +7975,10 @@ function buildPlanFromWizard() {
     'OKR setting': 'performance', 'Board people report': 'other',
     'Pulse survey': 'engagement', 'Values review': 'engagement', 'Internship cohort': 'onboarding',
   };
-  extras.forEach(e => addEvent(extraCatMap[e]||'other', e, fyStart));
+  extras.forEach(e => {
+    const months = (a[`extra_months_${e}`] || []).filter(m => m >= 1 && m <= 12);
+    addEvent(extraCatMap[e]||'other', e, months.length ? months : fyStart);
+  });
 
   ppPlan = { year, events };
   ppWizardStep = 0; ppWizardAnswers = {};
