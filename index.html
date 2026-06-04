@@ -1203,6 +1203,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;" id="trackerTabBtns">
       <button onclick="showTrackerTab('leave')" id="tt-leave" class="tracker-tab-btn active-tt">Leave & Absence</button>
       <button onclick="showTrackerTab('recruitment')" id="tt-recruitment" class="tracker-tab-btn">Recruitment</button>
+      <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions & Careers</button>
+      <button onclick="showTrackerTab('immigration')" id="tt-immigration" class="tracker-tab-btn">Immigration</button>
     </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
@@ -7422,12 +7424,52 @@ async function extractDocxRowsForCompare(file) {
     reader.onload = async e => {
       try {
         const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
-        resolve(parseWordAsEmployeeData(result.value, file.name));
+        const rows = await extractLetterFieldsWithAI(result.value, file.name);
+        resolve(rows);
       } catch(err) { reject(err); }
     };
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
+}
+
+async function extractLetterFieldsWithAI(text, filename) {
+  try {
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        system: 'You extract structured data from HR letters. Return only valid JSON, nothing else.',
+        messages: [{ role: 'user', content: `Extract these fields from the HR letter below. Return ONLY a JSON object using exactly these field names.
+
+Fields to extract:
+- employee_name: the recipient full name
+- salary: annual base/gross salary as a plain number (e.g. "£95,000" -> 95000)
+- bonus: performance/target/incentive/variable bonus as a plain number
+- relocation: relocation allowance, moving contribution, removal expenses as a plain number
+- signing_bonus: joining award, welcome bonus, sign-on payment as a plain number
+- job_title: the role or position title only, no company name
+- start_date: start or joining date if mentioned
+
+Rules: monetary values as plain numbers only, no currency symbols, no commas. Omit any field not present in the letter. Return ONLY the JSON object.
+
+Letter:
+${text.substring(0, 3000)}` }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    const obj = JSON.parse(jsonMatch[0].replace(/,(\s*[}\]])/g, '$1'));
+    Object.keys(obj).forEach(k => { if (typeof obj[k] === 'number') obj[k] = String(obj[k]); });
+    obj._sourceFile = filename;
+    return [obj];
+  } catch(e) {
+    // Fallback to regex if AI call fails
+    return parseWordAsEmployeeData(text, filename);
+  }
 }
 
 function parseWordAsEmployeeData(text, filename) {
@@ -8574,6 +8616,8 @@ function renderTrackersBody() {
   const body = document.getElementById('trackersBody');
   if (!body) return;
   if (trackerTab === 'leave') renderLeaveTracker(body);
+  else if (trackerTab === 'careers') renderCareersTracker(body);
+  else if (trackerTab === 'immigration') renderImmigrationTracker(body);
   else renderRecruitmentTracker(body);
 }
 
