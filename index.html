@@ -7433,27 +7433,25 @@ function extractEmployeeFromDocxText(text) {
   ];
   for (const p of idPats) { const m = text.match(p); if (m) { obj.employee_id = m[1].trim(); break; } }
 
-  // ── SALARY ── (search full text, not just body, to catch labeled tables)
-  const salM = text.match(/(?:annual\s+(?:gross\s+|base\s+)?salary|base\s+salary|basic\s+(?:salary|pay)|gross\s+(?:salary|pay)|salary)\s*[:\-]?\s*([£$€][\d,]+(?:\.\d{2})?|\d[\d,]{4,}(?:\.\d{2})?)/i);
+  // ── SALARY ── [\s\S]{0,40}? spans both "Salary: £X" and table "Salary\n£X" and "Salary will be £X"
+  const salM = text.match(/(?:annual\s+(?:gross\s+|base\s+)?salary|base\s+salary|basic\s+(?:salary|pay)|gross\s+(?:salary|pay))\b[\s\S]{0,40}?([£$€][\d,]+(?:\.\d{2})?)/i);
   if (salM) {
-    const v = salM[1];
-    obj.salary = /^[£$€]/.test(v) ? v : '£' + v;
+    obj.salary = salM[1];
   } else {
-    // Context fallback: "salary will be £X" / "salary of £X"
-    const ctx = text.match(/salary\s+(?:will\s+be|is|of)\s+([£$€][\d,]+)/i);
+    const ctx = text.match(/salary\b[\s\S]{0,30}?([£$€][\d,]+)/i);
     if (ctx) obj.salary = ctx[1];
   }
 
-  // ── BONUS ── (target/performance/annual bonus)
-  const bonM = text.match(/(?:(?:target\s+)?(?:annual\s+)?(?:performance\s+)?bonus|incentive)\s*[:\-\(]?\s*(?:target\s+)?([£$€][\d,]+(?:\.\d{2})?|\d+%)/i);
+  // ── BONUS ── handles "Performance Bonus (target)\n£12,000" and "Target Annual Bonus of £15,000"
+  const bonM = text.match(/(?:(?:performance|target|annual)\s+(?:annual\s+)?bonus)\b[\s\S]{0,50}?([£$€][\d,]+(?:\.\d{2})?)/i);
   if (bonM) obj.bonus = bonM[1];
 
-  // ── RELOCATION ── (relocation allowance/payment/support)
-  const relocM = text.match(/relocation\s+(?:allowance|payment|support|assistance|expenses?)\s*[:\-]?\s*(?:of\s+)?([£$€][\d,]+(?:\.\d{2})?)/i);
+  // ── RELOCATION ── handles "Relocation Allowance\n£8,000" and "Relocation Support Payment of £X"
+  const relocM = text.match(/relocation\s+(?:allowance|payment|support|assistance|expenses?)\b[\s\S]{0,30}?([£$€][\d,]+(?:\.\d{2})?)/i);
   if (relocM) obj.relocation = relocM[1];
 
-  // ── SIGNING / WELCOME BONUS ──
-  const signM = text.match(/(?:sign.?on\s+bonus|signing\s+bonus|welcome\s+bonus|joining\s+(?:fee|bonus))\s*[:\-]?\s*(?:of\s+)?([£$€][\d,]+(?:\.\d{2})?)/i);
+  // ── SIGNING / WELCOME BONUS ── handles "Welcome Bonus\n£7,500" and "Sign-On Bonus\n£10,000"
+  const signM = text.match(/(?:sign.?on\s+bonus|signing\s+bonus|welcome\s+bonus|joining\s+(?:fee|bonus))\b[\s\S]{0,30}?([£$€][\d,]+(?:\.\d{2})?)/i);
   if (signM) obj.signing_bonus = signM[1];
 
   // ── START DATE ──
