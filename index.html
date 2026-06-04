@@ -8646,7 +8646,7 @@ function ppShowCalendarInvite(ev) {
       <div style="font-size:11px;color:var(--ink3);margin-bottom:16px;">Invite will be sent to the event owner and HR calendar.</div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('ppCalInviteModal').remove()" class="btn btn-secondary btn-sm">Cancel</button>
-        <button onclick="document.getElementById('ppCalInviteModal').remove();showBreezeToast('📅 Calendar invite sent for \\'${escapeHtml(ev.title).replace(/'/g,'\\'')}\\'');" class="btn btn-primary btn-sm">Send invite</button>
+        <button onclick="document.getElementById('ppCalInviteModal').remove();showBreezeToast('Calendar invite sent');" class="btn btn-primary btn-sm">Send invite</button>
       </div>
     </div>
   </div>`;
