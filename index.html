@@ -9453,6 +9453,26 @@ async function submitAddMatPat(btn) {
 }
 
 // ── VIEW / EDIT RECORD PANEL ──
+function mpLogEntry(e, recId) {
+  const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+  const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const docPart = e.docFilename ? `<span onclick="mpDownloadLogDoc('${recId}','${escapeHtml(e.date)}')" style="font-size:10px;color:var(--accent);margin-left:6px;cursor:pointer;text-decoration:underline;">📎 ${escapeHtml(e.docFilename)}</span>` : '';
+  return `<div class="log-entry" style="align-items:flex-start;">
+    <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div>
+    <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
+        <span style="font-size:11px;">${iconMap[e.type]||'📝'}</span>
+        <span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span>
+        <span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span>
+        <button onclick="deleteMpLogEntry('${recId}','${escapeHtml(e.date)}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;padding:0 2px;">✕</button>
+      </div>
+      <div class="log-text">${escapeHtml(e.note)}${docPart}</div>
+    </div>
+  </div>`;
+}
+
 function openMatPatRecord(id) {
   const rec = mpRecords.find(r => r.id === id);
   if (!rec) return;
@@ -9468,25 +9488,6 @@ function openMatPatRecord(id) {
   const status = mpStatus(rec);
   const daysSince = mpDaysSinceContact(rec);
 
-  const mpLogEntry = (e, recId) => {
-    const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
-    const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-    const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-    const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
-    const docPart = e.docFilename ? `<span onclick="mpDownloadLogDoc('${recId}','${escapeHtml(e.date)}')" style="font-size:10px;color:var(--accent);margin-left:6px;cursor:pointer;text-decoration:underline;">📎 ${escapeHtml(e.docFilename)}</span>` : '';
-    return `<div class="log-entry" style="align-items:flex-start;">
-      <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div>
-      <div style="flex:1;min-width:0;">
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
-          <span style="font-size:11px;">${iconMap[e.type]||'📝'}</span>
-          <span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span>
-          <span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span>
-          <button onclick="deleteMpLogEntry('${recId}','${escapeHtml(e.date)}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;padding:0 2px;">✕</button>
-        </div>
-        <div class="log-text">${escapeHtml(e.note)}${docPart}</div>
-      </div>
-    </div>`;
-  };
   const logHtml = (rec.contactLog || []).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e => mpLogEntry(e, rec.id)).join('') || '<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
 
   panel.innerHTML = `
@@ -12049,11 +12050,19 @@ const HC_STAGES = [
   {id:'shortlisting',label:'Shortlisting', color:'#8B5CF6', bg:'#F5F3FF'},
   {id:'interviewing',label:'Interviewing', color:'#F59E0B', bg:'#FFFBEB'},
   {id:'offer',       label:'Offer',        color:'#10B981', bg:'#ECFDF5'},
-  {id:'hired',       label:'Hired',        color:'#059669', bg:'#D1FAE5'},
+  {id:'hired',       label:'Hired ✓',      color:'#059669', bg:'#D1FAE5'},
   {id:'on-hold',     label:'On hold',      color:'#9CA3AF', bg:'#F9FAFB'},
   {id:'withdrawn',   label:'Withdrawn',    color:'#EF4444', bg:'#FEF2F2'},
 ];
+const HC_PRIORITIES = [
+  {id:'urgent', label:'Urgent', color:'#EF4444', bg:'#FEF2F2'},
+  {id:'high',   label:'High',   color:'#F59E0B', bg:'#FFFBEB'},
+  {id:'normal', label:'Normal', color:'#3B82F6', bg:'#EFF6FF'},
+  {id:'low',    label:'Low',    color:'#9CA3AF', bg:'#F9FAFB'},
+];
 const HC_SOURCES = ['Direct','LinkedIn','Agency','Job board','Internal transfer','Referral','Other'];
+const HC_DEFAULT_INTERVIEW_STAGES = ['CV screen','1st interview','2nd interview','Final panel','Offer'];
+const HC_CAND_FINAL = ['Hired','Rejected','Withdrawn'];
 
 async function loadHCRoles() {
   if (hcRoles !== null) return;
@@ -12072,6 +12081,11 @@ function hcStageBadge(stageId) {
   const s = HC_STAGES.find(x=>x.id===stageId)||{label:stageId,color:'#6B7280',bg:'#F3F4F6'};
   return `<span style="font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;background:${s.bg};color:${s.color};white-space:nowrap;">${s.label}</span>`;
 }
+function hcPriorityBadge(p) {
+  const pr = HC_PRIORITIES.find(x=>x.id===p);
+  if (!pr) return '';
+  return `<span style="font-size:9px;font-weight:700;padding:1px 6px;border-radius:20px;background:${pr.bg};color:${pr.color};text-transform:uppercase;letter-spacing:0.04em;">${pr.label}</span>`;
+}
 function hcFmt(d) { return d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '—'; }
 function hcDaysOpen(r) { return Math.floor((new Date()-new Date(r.createdAt))/86400000); }
 function hcFmtComp(r) {
@@ -12079,6 +12093,13 @@ function hcFmtComp(r) {
   const lo = r.compMin ? '£'+(r.compMin/1000).toFixed(0)+'k' : '';
   const hi = r.compMax ? '£'+(r.compMax/1000).toFixed(0)+'k' : '';
   return lo && hi ? lo+' – '+hi : lo||hi;
+}
+function hcCandSummary(r) {
+  const cands = r.candidates||[];
+  const active = cands.filter(c=>!HC_CAND_FINAL.includes(c.stage));
+  const hired = cands.filter(c=>c.stage==='Hired');
+  if (!cands.length) return '<span style="color:var(--ink3);font-size:11px;">No candidates</span>';
+  return `<span style="font-size:11px;color:var(--ink);">${active.length} active${hired.length?' · '+hired.length+' hired':''}</span>`;
 }
 function renderHeadcount() {
   const body = document.getElementById('headcountBody');
