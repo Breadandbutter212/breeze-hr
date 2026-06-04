@@ -8897,7 +8897,7 @@ function renderTrackersBody() {
   else if (trackerTab === 'leavers') renderWfCategoryTab(body, ['resignation']);
   else if (trackerTab === 'performance') renderWfCategoryTab(body, ['performance-concern']);
   else if (trackerTab === 'conduct') renderWfCategoryTab(body, ['disciplinary','grievance']);
-  else if (trackerTab === 'immigration-wf') renderWfCategoryTab(body, ['immigration-check'], {showImmigration:true});
+  else if (trackerTab === 'immigration-wf') renderWfCategoryTab(body, ['immigration-check','rtw-new-starter','visa-renewal','ilr-application']);
   else if (trackerTab === 'careers') renderCareersCategoryTab(body);
   else renderWfCategoryTab(body, []);
 }
@@ -9491,9 +9491,23 @@ async function addMpContactLog(id) {
 
 async function deleteMatPatRecord(id) {
   if (!confirm('Delete this leave record? This cannot be undone.')) return;
-  mpRecords = mpRecords.filter(r => r.id !== id);
+  const rec = (mpRecords||[]).find(r => r.id === id);
+  mpRecords = (mpRecords||[]).filter(r => r.id !== id);
   await saveMatPatRecords();
+  if (rec?.wfCaseId && wfCases) {
+    wfCases = wfCases.filter(x => x.id !== rec.wfCaseId);
+    await saveWfCases();
+  }
   document.getElementById('mpRecordPanel')?.remove();
+  renderTrackersBody();
+}
+
+async function deleteMatPatAndCase(mpId, caseId) {
+  if (!confirm('Delete this leave record? This cannot be undone.')) return;
+  if (mpId && mpRecords) mpRecords = mpRecords.filter(r => r.id !== mpId);
+  if (mpId) await saveMatPatRecords();
+  if (caseId && wfCases) wfCases = wfCases.filter(x => x.id !== caseId);
+  if (caseId) await saveWfCases();
   renderTrackersBody();
 }
 
@@ -10777,7 +10791,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
   }
 
   // For other tabs: show a clean cases table
-  const catName = tabScenarios[0]?.label || 'Cases';
+  const _allSameCat = tabScenarios.length > 1 && tabScenarios.every(s=>s.cat===tabScenarios[0]?.cat);
+  const catName = _allSameCat ? tabScenarios[0].cat : (tabScenarios[0]?.label || 'Cases');
   const guidanceTopic = scenarioIds[0]?.split('-')[0] || 'leave';
   const rowsHtml = activeCases.length || closedCases.length
     ? `<div class="trk-card" style="overflow-x:auto;">
@@ -10839,7 +10854,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--ink);">${catName.replace(' leave','').replace(' /','/')} cases <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${activeCases.length} active${closedCases.length?' · '+closedCases.length+' closed':''})</span></div>
       <div style="display:flex;gap:8px;align-items:center;">
-        <button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('leave')||scenarioIds[0]?.includes('absence')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')||scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
+        <button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('leave')||scenarioIds[0]?.includes('absence')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')||scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
         <button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm">+ New case</button>
       </div>
     </div>
@@ -10920,20 +10935,21 @@ function wfInjectChecklistButtons(container, activeCases) {
       if (linked) {
         const sc = WF_SCENARIOS.find(s=>s.id===linked.scenarioId)||{steps:[]};
         const pct = sc.steps.length ? Math.round((linked.checkedSteps.length/sc.steps.length)*100) : 0;
+        const mpRecId = row.querySelector('button[onclick*="openMatPatRecord"]')?.getAttribute('onclick')?.match(/openMatPatRecord\('([^']+)'\)/)?.[1] || linked.mpRecordId || '';
         lastTd.style.cssText = 'white-space:nowrap;';
         lastTd.innerHTML = `<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;">
-          <button onclick="event.stopPropagation();openWfCasePanel('${linked.id}')" class="btn btn-primary btn-sm" style="font-size:10px;white-space:nowrap;">Checklist ${pct}% →</button>
-          ${linked.mpRecordId?`<button onclick="event.stopPropagation();openMatPatRecord('${linked.mpRecordId}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Details</button>`:''}
-          <button onclick="event.stopPropagation();wfDeleteCase('${linked.id}')" class="btn btn-ghost btn-sm" style="font-size:10px;color:var(--red);">✕</button>
+          <button onclick="event.stopPropagation();openWfCasePanel('${linked.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">Checklist ${pct}% →</button>
+          ${mpRecId?`<button onclick="event.stopPropagation();openMatPatRecord('${mpRecId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>`:''}
+          <button onclick="event.stopPropagation();deleteMatPatAndCase('${mpRecId}','${linked.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
         </div>`;
       } else {
         // No case yet — replace existing View → with View + Checklist
         lastTd.style.cssText = 'white-space:nowrap;';
-        // Find mpRecord id from row data
         const mpRecId = row.querySelector('button[onclick*="openMatPatRecord"]')?.getAttribute('onclick')?.match(/openMatPatRecord\('([^']+)'\)/)?.[1] || '';
         lastTd.innerHTML = `<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;">
-          <button onclick="event.stopPropagation();createWfCaseForEmployee('${escapeHtml(name)}','maternity-leave')" class="btn btn-primary btn-sm" style="font-size:10px;white-space:nowrap;">+ Checklist</button>
-          <button onclick="event.stopPropagation();openMatPatRecord('${mpRecId}')" class="btn btn-secondary btn-sm" style="font-size:10px;display:${mpRecId?'inline-flex':'none'}">Details</button>
+          <button onclick="event.stopPropagation();createWfCaseForEmployee('${escapeHtml(name)}','maternity-leave')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">+ Checklist</button>
+          ${mpRecId?`<button onclick="event.stopPropagation();openMatPatRecord('${mpRecId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>`:''}
+          ${mpRecId?`<button onclick="event.stopPropagation();deleteMatPatRecord('${mpRecId}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>`:''}
         </div>`;
       }
     });
