@@ -5252,11 +5252,18 @@ function showView(v,navEl) {
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
   if(v==='settings') {
+    const _sv = document.getElementById('view-settings');
+    const _sb = document.getElementById('settingsBody');
+    console.log('[Settings debug] view-settings el:', _sv, '| settingsBody el:', _sb, '| view computed display:', _sv ? getComputedStyle(_sv).display : 'no el');
+    if (_sb) {
+      _sb.style.cssText = 'flex:1;overflow-y:auto;padding:20px;background:white;';
+      _sb.innerHTML = '<div style="padding:20px;background:#FFF3CD;border:2px solid orange;border-radius:8px;font-size:16px;font-weight:bold;color:#333;">⚡ showView reached settings — calling renderSettings now</div>';
+    }
     try {
       renderSettings();
     } catch(e) {
-      const sb = document.getElementById('settingsBody');
-      if (sb) sb.innerHTML = '<div style="padding:24px;background:#FEF2F2;border:1px solid #F0C5C5;border-radius:8px;margin:20px;color:#DC2626;font-size:13px;"><strong>Settings error:</strong> ' + escapeHtml(String(e)) + '<br><br><pre style="font-size:11px;overflow:auto;">' + escapeHtml(e.stack||'') + '</pre></div>';
+      console.error('[Settings] renderSettings threw:', e);
+      if (_sb) _sb.innerHTML = '<div style="padding:24px;background:#FEF2F2;border:2px solid red;border-radius:8px;margin:20px;color:#DC2626;font-size:13px;"><strong>Error in renderSettings:</strong><br>' + String(e) + '<br><pre style="font-size:11px;overflow:auto;">' + (e.stack||'no stack') + '</pre></div>';
     }
   }
   if(v==='chat')renderChatHistory();
