@@ -9154,7 +9154,7 @@ function renderLeaveTracker(body) {
       <div style="overflow-x:auto;">
         <table class="trk-table">
           <thead><tr>
-            <th>Employee</th><th>Type</th><th>Due / Birth</th><th>Leave start</th><th>Expected return</th><th>KIT days</th><th>Dependant</th><th>Status</th><th>Last contact</th><th></th>
+            <th>Employee</th><th>Type</th><th>Due / Birth</th><th>Leave start</th><th>Expected return</th><th>Status</th><th>Last contact</th><th></th>
           </tr></thead>
           <tbody>
             ${recs.map(r => `<tr>
@@ -9163,8 +9163,6 @@ function renderLeaveTracker(body) {
               <td style="white-space:nowrap;">${mpFmt(r.dueDate)}</td>
               <td style="white-space:nowrap;">${mpFmt(r.leaveStart)}</td>
               <td style="white-space:nowrap;">${r.actualReturn?`<span style="color:var(--green);font-size:11px;">Returned ${mpFmt(r.actualReturn)}</span>`:mpFmt(r.expectedReturn)}</td>
-              <td><span style="font-weight:600;color:var(--ink);">${r.kitDaysUsed||0}</span><span style="color:var(--ink3);font-size:11px;"> / ${r.kitDaysMax||10}</span></td>
-              <td>${r.dependantAdded?`<span class="trk-badge trk-badge-green">✓ Added</span>`:`<span class="trk-badge trk-badge-red">⚠ Not added</span>`}</td>
               <td>${statusBadge(r)}</td>
               <td>${contactAge(r)}</td>
               <td><button class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;" onclick="openMatPatRecord('${r.id}')">View →</button></td>
