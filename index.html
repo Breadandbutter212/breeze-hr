@@ -735,15 +735,15 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="app-topbar-greeting" id="appGreeting"></div>
   <div class="app-topbar-right">
     <!-- Gmail -->
-    <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail">
+    <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Open inbox" onclick="if(window._emailProvider)toggleEmailPanel()" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
     </div>
     <!-- Outlook -->
-    <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook">
+    <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Open inbox" onclick="if(window._emailProvider)toggleEmailPanel()" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 7.387v10.478l-4.262-3.632V9.978z" fill="#0078D4"/><path d="M0 5.919l10.218 6.774L24 7.387v-1.81A1.578 1.578 0 0 0 22.422 4H1.578A1.578 1.578 0 0 0 0 5.578z" fill="#0078D4"/><path d="M0 5.919v12.163a1.578 1.578 0 0 0 1.578 1.578H22.42A1.578 1.578 0 0 0 24 17.865v-.478L10.218 12.69z" fill="#1E4F96"/></svg>
     </div>
     <!-- SharePoint -->
-    <div class="app-topbar-integration disconnected" id="topbar-sharepoint" title="SharePoint">
+    <div class="app-topbar-integration disconnected" id="topbar-sharepoint" title="Search SharePoint" onclick="toggleSharePoint()" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="#038387"/><circle cx="15" cy="15" r="6" fill="#0078D4" opacity="0.85"/><circle cx="9" cy="15" r="4" fill="#1E4F96" opacity="0.7"/></svg>
     </div>
     <div class="app-topbar-divider"></div>
@@ -5227,6 +5227,17 @@ async function savePassword() {
 
 // ── NAV ──
 function showView(v,el) {
+  // Close any open fixed overlays/panels so they don't silently block clicks
+  document.getElementById('mpRecordPanel')?.remove();
+  document.querySelectorAll('div[style*="position:fixed"][style*="inset:0"]').forEach(el => {
+    if (el.id !== 'recConsentOverlay' && el.id !== 'tourOverlay') el.remove();
+  });
+  // Close email and sharepoint panels
+  document.getElementById('emailPanel')?.classList.remove('open');
+  document.getElementById('emailOverlay')?.classList.remove('open');
+  document.getElementById('spPanel')?.classList.remove('open');
+  document.getElementById('spOverlay')?.classList.remove('open');
+
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
