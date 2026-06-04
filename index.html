@@ -8924,15 +8924,15 @@ async function submitCreateTracker(btn) {
   if (errEl) errEl.style.display = 'none';
   try {
     const token = await getAuthToken();
-    const prompt = `You are an expert UK HR professional. Generate a practical HR process checklist for tracking: "${name}".${desc?' Context: '+desc:''}
+    const userPrompt = `Generate a practical HR process checklist for tracking: "${name}".${desc?' Context: '+desc:''}
 
-Return ONLY a valid JSON object — no markdown, no explanation — exactly this shape:
-{"icon":"<one emoji>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance for this step.","timeframe":"When to do it","tag":"legal"},…]}
+Return ONLY a valid JSON object, no markdown fences, no explanation:
+{"icon":"<one emoji>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance.","timeframe":"When to do it","tag":"legal"},…]}
 
-Generate 7-10 steps. Tag must be one of: legal, recommended, best-practice. Make steps specific and actionable.`;
-    const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({message:prompt,history:[],systemOverride:'Return only valid JSON. No markdown fences, no explanation.'})});
+Generate 7-10 steps. tag must be one of: legal, recommended, best-practice.`;
+    const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON — no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
     const d = await res.json();
-    const raw = d.reply || d.content || '';
+    const raw = d.content?.[0]?.text || '';
     const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
     const parsed = JSON.parse(jsonStr);
     const tracker = {id:'ct_'+Date.now(), label:name, icon:parsed.icon||'📋', cat:'Custom', steps:(parsed.steps||[]).map((s,i)=>({...s,id:i+1})), createdAt:new Date().toISOString()};
