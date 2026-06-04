@@ -8471,8 +8471,12 @@ function ppAddEvent(defaultCat) {
       </div>
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Notes <span style="color:var(--ink3);font-weight:400;">(optional)</span></div><input id="ppEvtNotes" placeholder="Any details..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
     </div>
-    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;align-items:center;justify-content:flex-end;gap:8px;">
       <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:5px;" onclick="ppSaveAndInvite(this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Add + send invite
+      </button>
       <button class="btn btn-primary btn-sm" onclick="ppSaveNewEvent(this)">Add event</button>
     </div>
   </div>`;
@@ -8533,6 +8537,10 @@ function ppEditEvent(id) {
       <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="ppDeleteEvent(${id},this)">Delete</button>
       <div style="flex:1;"></div>
       <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:5px;" onclick="ppSaveEditAndInvite(${id},this)">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+        Send invite
+      </button>
       <button class="btn btn-primary btn-sm" onclick="ppSaveEditEvent(${id},this)">Save</button>
     </div>
   </div>`;
@@ -8561,6 +8569,89 @@ function ppDeleteEvent(id, btn) {
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
+}
+
+function ppSaveAndInvite(btn) {
+  const title = document.getElementById('ppEvtTitle')?.value?.trim();
+  if (!title) { document.getElementById('ppEvtTitle').style.borderColor='var(--red)'; return; }
+  const catId = document.getElementById('ppEvtCat')?.value;
+  const start = parseInt(document.getElementById('ppEvtStart')?.value);
+  const end = parseInt(document.getElementById('ppEvtEnd')?.value);
+  const notes = document.getElementById('ppEvtNotes')?.value?.trim();
+  const owner = document.getElementById('ppEvtOwner')?.value?.trim();
+  const startDate = document.getElementById('ppEvtStartDate')?.value || '';
+  const endDate = document.getElementById('ppEvtEndDate')?.value || '';
+  const maxId = ppPlan.events.reduce((m,e)=>Math.max(m,e.id),0);
+  const ev = { id: maxId+1, catId, title, startMonth: Math.min(start,end), endMonth: Math.max(start,end), notes, owner, startDate, endDate };
+  ppPlan.events.push(ev);
+  renderPeoplePlanSave();
+  btn.closest('div[style*=fixed]').remove();
+  ppView === 'details' ? renderPPDetails() : renderPPTimeline();
+  ppShowCalendarInvite(ev);
+}
+
+function ppSaveEditAndInvite(id, btn) {
+  const ev = ppPlan.events.find(e => e.id === id); if (!ev) return;
+  ev.title = document.getElementById('ppEditTitle')?.value?.trim() || ev.title;
+  ev.catId = document.getElementById('ppEditCat')?.value || ev.catId;
+  const s = parseInt(document.getElementById('ppEditStart')?.value);
+  const e2 = parseInt(document.getElementById('ppEditEnd')?.value);
+  ev.startMonth = Math.min(s,e2); ev.endMonth = Math.max(s,e2);
+  ev.notes = document.getElementById('ppEditNotes')?.value?.trim() || '';
+  ev.owner = document.getElementById('ppEditOwner')?.value?.trim() || '';
+  ev.startDate = document.getElementById('ppEditStartDate')?.value || '';
+  ev.endDate = document.getElementById('ppEditEndDate')?.value || '';
+  renderPeoplePlanSave();
+  btn.closest('div[style*=fixed]').remove();
+  ppView === 'details' ? renderPPDetails() : renderPPTimeline();
+  ppShowCalendarInvite(ev);
+}
+
+function ppShowCalendarInvite(ev) {
+  const cat = PP_CATS.find(c => c.id === ev.catId) || { label: 'Event', color: '#475569' };
+  const year = ppPlan.year || new Date().getFullYear();
+  const fmtMonth = m => `${PP_MONTHS[(m-1)%12]} ${year}`;
+  const fmtDate  = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : null;
+
+  const events = [];
+  // If specific dates are set, use them; otherwise fall back to months
+  const startLabel = fmtDate(ev.startDate) || fmtMonth(ev.startMonth);
+  const endLabel   = ev.startMonth !== ev.endMonth ? (fmtDate(ev.endDate) || fmtMonth(ev.endMonth)) : null;
+
+  events.push({ icon:'📅', label: ev.title, date: endLabel ? `${startLabel} - ${endLabel}` : startLabel });
+  if (ev.owner) events.push({ icon:'👤', label: `Owner: ${ev.owner}`, date: 'Invite to all sessions' });
+
+  let modal = document.getElementById('ppCalInviteModal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'ppCalInviteModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+    <div style="background:${cat.color};padding:16px 20px 14px;">
+      <div style="font-size:14px;font-weight:700;color:white;">📅 Send calendar invite</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.6);margin-top:2px;">${escapeHtml(cat.label)}</div>
+    </div>
+    <div style="padding:16px 20px;">
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:12px;">The following calendar invite will be sent to the owner and relevant attendees:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        ${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);">
+          <span style="font-size:15px;">${e.icon}</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:var(--ink);">${escapeHtml(e.label)}</div>
+            <div style="font-size:11px;color:var(--ink3);">${escapeHtml(e.date)}</div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:16px;">Invite will be sent to the event owner and HR calendar.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('ppCalInviteModal').remove()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button onclick="document.getElementById('ppCalInviteModal').remove();showBreezeToast('📅 Calendar invite sent for \\'${escapeHtml(ev.title).replace(/'/g,'\\'')}\\'');" class="btn btn-primary btn-sm">Send invite</button>
+      </div>
+    </div>
+  </div>`;
+  modal.onclick = e => { if (e.target === modal) modal.remove(); };
+  document.body.appendChild(modal);
 }
 
 function ppFmtDate(d) {
@@ -9153,6 +9244,13 @@ function openMatPatRecord(id) {
               Dependant added to company benefits
             </label>
           </div>
+          <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+            <button onclick="sendMpCalendarInvites('${rec.id}')" style="display:inline-flex;align-items:center;gap:6px;background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:6px 12px;font-size:12px;font-weight:500;font-family:inherit;cursor:pointer;transition:all 0.12s;" onmouseover="this.style.background='#DBEAFE'" onmouseout="this.style.background='#EFF6FF'">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+              Send calendar invites
+            </button>
+            <span style="font-size:11px;color:var(--ink3);">Leave start, return date + monthly check-ins</span>
+          </div>
           ${rec.notes ? `<div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);font-size:12px;color:var(--ink2);">${escapeHtml(rec.notes)}</div>` : ''}
         </div>
 
@@ -9239,6 +9337,61 @@ function openMatPatRecord(id) {
 
   document.body.appendChild(panel);
   panel.onclick = e => { if (e.target===panel) panel.remove(); };
+}
+
+function sendMpCalendarInvites(id) {
+  const rec = mpRecords.find(r => r.id === id);
+  if (!rec) return;
+
+  const fmt = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : null;
+  const events = [];
+  if (rec.leaveStart)    events.push({ icon:'🟢', label:'Leave starts', date: fmt(rec.leaveStart) });
+  if (rec.dueDate)       events.push({ icon:'👶', label:`${rec.type==='Paternity'?'Partner\'s due date':'Due date'}`, date: fmt(rec.dueDate) });
+  if (rec.expectedReturn) events.push({ icon:'🔁', label:'Expected return', date: fmt(rec.expectedReturn) });
+  // Add monthly check-in placeholders
+  if (rec.leaveStart && rec.expectedReturn) {
+    const start = new Date(rec.leaveStart), end = new Date(rec.expectedReturn);
+    const months = Math.min(Math.round((end-start)/(1000*60*60*24*30)), 12);
+    if (months >= 2) events.push({ icon:'📋', label:`Monthly check-in reminders (${months} months)`, date: 'recurring' });
+  }
+
+  if (!events.length) {
+    showBreezeToast('Add dates first to generate calendar invites');
+    return;
+  }
+
+  // Show a confirmation modal
+  let modal = document.getElementById('calInviteModal');
+  if (modal) modal.remove();
+  modal = document.createElement('div');
+  modal.id = 'calInviteModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);">
+      <div style="font-size:14px;font-weight:700;color:var(--ink);">📅 Send calendar invites</div>
+      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">${escapeHtml(rec.employeeName)} · ${rec.type}</div>
+    </div>
+    <div style="padding:16px 20px;">
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:12px;">The following events will be added to your calendar and sent to relevant attendees:</div>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
+        ${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);">
+          <span style="font-size:16px;">${e.icon}</span>
+          <div style="flex:1;">
+            <div style="font-size:12px;font-weight:500;color:var(--ink);">${e.label}</div>
+            <div style="font-size:11px;color:var(--ink3);">${e.date}</div>
+          </div>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
+        </div>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:16px;">Invites will be sent to the employee, their line manager and HR.</div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('calInviteModal').remove()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button onclick="document.getElementById('calInviteModal').remove();showBreezeToast('📅 ${events.length} calendar invite${events.length>1?'s':''} sent')" class="btn btn-primary btn-sm">Send ${events.length} invite${events.length>1?'s':''}</button>
+      </div>
+    </div>
+  </div>`;
+  modal.onclick = e => { if (e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
 }
 
 async function mpUpdateField(id, field, value) {
@@ -10395,7 +10548,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                     <span style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${pct}%</span>
                   </div>
                 </td>
-                <td><button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">Checklist →</button></td>
+                <td style="white-space:nowrap;"><button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Checklist →</button></td>
               </tr>`;
             }).join('')}
             ${closedCases.map(c => {
@@ -10404,8 +10557,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td><div style="font-weight:600;color:var(--ink);">${escapeHtml(c.employeeName)}</div></td>
                 <td><span style="font-size:13px;">${sc.icon}</span> <span style="font-size:12px;color:var(--ink2);">${sc.label}</span></td>
                 <td style="font-size:12px;color:var(--ink3);">${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
-                <td><span class="trk-badge trk-badge-grey">✓ Closed</span></td>
-                <td><button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">View →</button></td>
+                <td style="white-space:nowrap;"><span class="trk-badge trk-badge-grey" style="margin-right:6px;">✓ Closed</span><button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">View →</button></td>
               </tr>`;
             }).join('')}
           </tbody>
@@ -10444,7 +10596,7 @@ function openWfCasePanel(caseId) {
   panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const inner = document.createElement('div');
   inner.id = 'wf-detail';
-  inner.style.cssText = 'width:760px;max-width:95vw;background:white;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,0.15);';
+  inner.style.cssText = 'width:760px;max-width:95vw;background:white;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,0.15);flex-shrink:0;';
   panel.appendChild(inner);
   document.body.appendChild(panel);
   panel.onclick = e => { if(e.target===panel) panel.remove(); };
@@ -10464,17 +10616,21 @@ function wfInjectChecklistButtons(container, activeCases) {
       const linked = activeCases.find(c => c.employeeName?.toLowerCase().trim() === name?.toLowerCase().trim());
       const lastTd = row.querySelector('td:last-child');
       if (!lastTd) return;
+      lastTd.style.whiteSpace = 'nowrap';
+      lastTd.style.display = 'flex';
+      lastTd.style.alignItems = 'center';
+      lastTd.style.gap = '6px';
       if (linked) {
         const btn = document.createElement('button');
         btn.className = 'btn btn-primary btn-sm';
-        btn.style.cssText = 'font-size:10px;margin-left:4px;white-space:nowrap;';
+        btn.style.cssText = 'font-size:10px;white-space:nowrap;';
         btn.textContent = 'Checklist →';
         btn.onclick = e => { e.stopPropagation(); openWfCasePanel(linked.id); };
         lastTd.appendChild(btn);
       } else if (name && !name.includes('[')) {
         const btn = document.createElement('button');
         btn.className = 'btn btn-ghost btn-sm';
-        btn.style.cssText = 'font-size:10px;margin-left:4px;color:var(--accent);white-space:nowrap;';
+        btn.style.cssText = 'font-size:10px;color:var(--accent);white-space:nowrap;border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:3px 8px;';
         btn.textContent = '+ Checklist';
         btn.onclick = e => {
           e.stopPropagation();
@@ -10519,7 +10675,7 @@ async function wfCreateCase(btn) {
   const scenarioId = document.getElementById('wf-new-scenario')?.value;
   if (!name) { document.getElementById('wf-new-name').style.borderColor='var(--red)'; return; }
   btn.textContent = 'Creating...'; btn.disabled = true;
-  const newCase = { id:'wfc_'+Date.now(), employeeName:name, scenarioId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[] };
+  const newCase = { id:'wfc_'+Date.now(), employeeName:name, scenarioId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
   if (!wfCases) wfCases = [];
   wfCases.push(newCase);
   // Auto-add to mat/pat tracker for family leave scenarios
@@ -10726,7 +10882,7 @@ async function wfAddContactLog(caseId) {
   const typeEl = document.getElementById(`wf-log-type-${caseId}`);
   const note = noteEl?.value?.trim();
   if (!note) { if (noteEl) noteEl.style.borderColor='var(--red)'; return; }
-  if (!c.contactLog) c.contactLog = [];
+  if (!c.contactLog) { c.contactLog = []; saveWfCases(); }
   const attach = window[`_wfLogAttach_${caseId}`];
   const entry = { date: new Date().toISOString(), type: typeEl?.value||'note', note };
   if (attach) {
