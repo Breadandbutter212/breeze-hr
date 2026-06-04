@@ -8010,7 +8010,7 @@ function renderPeoplePlan() {
         ${[ppPlan.year-1,ppPlan.year,ppPlan.year+1].map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
       </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
-      <button class="btn btn-primary btn-sm" onclick="downloadPeoplePlanPPT()">⬇ PPT</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadPeoplePlanXLSX()">⬇ Excel</button>
       <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
     renderPPTimeline();
   }
@@ -8281,9 +8281,8 @@ function renderPPTimeline() {
         const rR = (isEnd   || isSingle) ? '6px' : '0';
         const left  = (isStart || isSingle) ? '3px' : '0';
         const right = (isEnd   || isSingle) ? '3px' : '-1px';
-        // Label: show full text with no clipping — column is wide enough now
-        const label = isStart ? `<span style="white-space:nowrap;">${escapeHtml(ev.title)}</span>` : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-5}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:11px;font-weight:600;color:white;display:flex;align-items:center;padding:0 8px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
+        const label = isStart ? escapeHtml(ev.title) : '';
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-5}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:11px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 8px;line-height:${LANE_H-5}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
@@ -8516,82 +8515,79 @@ function ppSwitchView(v) {
   else renderPPTimeline();
 }
 
-function downloadPeoplePlanPPT() {
+function downloadPeoplePlanXLSX() {
   if (!ppPlan) return;
   const btn = document.querySelector('#ppTopbarBtns .btn-primary');
   if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
 
-  const pptx = new PptxGenJS();
-  pptx.layout = 'LAYOUT_WIDE';
+  const wb = XLSX.utils.book_new();
+  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
-  // ── Slide 1: Cover ──
-  const slide1 = pptx.addSlide();
-  slide1.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'1B2D50'} });
-  slide1.addShape(pptx.ShapeType.rect, { x:0.5, y:3.1, w:1.2, h:0.08, fill:{color:'3B82F6'} });
-  slide1.addText(`${ppPlan.year} People Plan`, { x:0.5, y:1.6, w:12, h:1.2, fontSize:48, bold:true, color:'FFFFFF', fontFace:'Calibri', charSpacing:-1 });
-  slide1.addText(currentProfile?.company_name || '', { x:0.5, y:3.3, w:12, h:0.7, fontSize:18, color:'BFDBFE', fontFace:'Calibri' });
-  slide1.addText(`HR Calendar - ${ppPlan.year}`, { x:0.5, y:6.8, w:12, h:0.4, fontSize:10, color:'475569', fontFace:'Calibri' });
-
-  // ── Slide 2: Annual timeline ──
-  const slide2 = pptx.addSlide();
-  slide2.background = { color:'FFFFFF' };
-  slide2.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.0, fill:{color:'1B2D50'} });
-  slide2.addText('Annual HR Calendar', { x:0.4, y:0.15, w:12, h:0.7, fontSize:22, bold:true, color:'FFFFFF', fontFace:'Calibri' });
-
-  const colW = 12.3/12, startX = 0.5, rowH = 0.52, headerY = 1.1, dataY = 1.55;
-  // Month headers
-  PP_MONTHS.forEach((m,i) => {
-    slide2.addShape(pptx.ShapeType.rect, { x:startX+i*colW, y:headerY, w:colW-0.02, h:0.35, fill:{color:'EFF6FF'}, line:{color:'DBEAFE',width:1} });
-    slide2.addText(m, { x:startX+i*colW, y:headerY, w:colW-0.02, h:0.35, align:'center', fontSize:9, bold:true, color:'1D4ED8', fontFace:'Calibri' });
+  const sorted = [...ppPlan.events].sort((a,b) => {
+    const ca = PP_CATS.findIndex(c=>c.id===a.catId);
+    const cb = PP_CATS.findIndex(c=>c.id===b.catId);
+    if (ca !== cb) return ca - cb;
+    return a.startMonth - b.startMonth;
   });
 
-  const cats = PP_CATS.filter(c => ppPlan.events.some(e => e.catId === c.id));
-  cats.forEach((cat, rowIdx) => {
-    const y = dataY + rowIdx * rowH;
-    // Row label
-    slide2.addText(cat.label, { x:0, y:y+0.05, w:startX-0.05, h:rowH-0.1, fontSize:8, bold:true, color:'374151', fontFace:'Calibri', align:'right' });
-    // Grid cells
-    for (let m=1;m<=12;m++) {
-      slide2.addShape(pptx.ShapeType.rect, { x:startX+(m-1)*colW, y, w:colW-0.02, h:rowH-0.06, fill:{color:rowIdx%2===0?'FAFAFA':'FFFFFF'}, line:{color:'E5E7EB',width:0.5} });
+  // ── Sheet 1: Calendar (Gantt-style) ──
+  const coName = currentProfile?.company_name ? ` - ${currentProfile.company_name}` : '';
+  const calRows = [
+    [`${ppPlan.year} People Plan${coName}`],
+    ['', '', ...months, 'Owner', 'Notes']
+  ];
+
+  let lastCat = null;
+  sorted.forEach(ev => {
+    const cat = PP_CATS.find(c=>c.id===ev.catId);
+    const catLabel = cat?.label || ev.catId;
+    if (catLabel !== lastCat) {
+      if (lastCat !== null) calRows.push(Array(16).fill(''));
+      calRows.push([catLabel]);
+      lastCat = catLabel;
     }
-    // Events
-    ppPlan.events.filter(e=>e.catId===cat.id).forEach(ev => {
-      const span = ev.endMonth - ev.startMonth + 1;
-      const evX = startX+(ev.startMonth-1)*colW;
-      const evW = span*colW - 0.06;
-      slide2.addShape(pptx.ShapeType.roundRect, { x:evX+0.02, y:y+0.06, w:evW, h:rowH-0.18, fill:{color:cat.color.replace('#','')}, rectRadius:0.04 });
-      slide2.addText(ev.title, { x:evX+0.04, y:y+0.06, w:evW-0.04, h:rowH-0.18, fontSize:7.5, bold:true, color:'FFFFFF', fontFace:'Calibri', valign:'middle', wrap:false });
+    const monthCells = months.map((_,i) => {
+      const m = i+1;
+      return (m >= ev.startMonth && m <= ev.endMonth) ? '■' : '';
     });
+    calRows.push(['', ev.title, ...monthCells, ev.owner||'', ev.notes||'']);
   });
 
-  // ── Slide per category ──
-  PP_CATS.forEach(cat => {
-    const catEvts = ppPlan.events.filter(e => e.catId === cat.id);
-    if (!catEvts.length) return;
-    const slide = pptx.addSlide();
-    slide.background = { color:'FFFFFF' };
-    slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{color:cat.color.replace('#','')} });
-    slide.addText(cat.label, { x:0.4, y:0.15, w:12, h:0.8, fontSize:26, bold:true, color:'FFFFFF', fontFace:'Calibri' });
-    catEvts.forEach((ev, i) => {
-      const col = i % 3, row = Math.floor(i / 3);
-      const x = 0.4 + col * 4.35, y = 1.4 + row * 1.6;
-      slide.addShape(pptx.ShapeType.roundRect, { x, y, w:4.0, h:1.4, fill:{color:'F8FAFC'}, line:{color:cat.color.replace('#',''),width:2}, rectRadius:0.1 });
-      slide.addShape(pptx.ShapeType.rect, { x, y, w:0.12, h:1.4, fill:{color:cat.color.replace('#','')}, rectRadius:0 });
-      slide.addText(ev.title, { x:x+0.2, y:y+0.15, w:3.6, h:0.45, fontSize:13, bold:true, color:'1D1D1F', fontFace:'Calibri' });
-      const monthStr = ev.startMonth === ev.endMonth ? PP_MONTHS[ev.startMonth-1] : PP_MONTHS[ev.startMonth-1]+' - '+PP_MONTHS[ev.endMonth-1];
-      slide.addText(monthStr, { x:x+0.2, y:y+0.6, w:3.6, h:0.3, fontSize:11, color:cat.color.replace('#',''), fontFace:'Calibri', bold:true });
-      if (ev.notes) slide.addText(ev.notes, { x:x+0.2, y:y+0.92, w:3.6, h:0.35, fontSize:10, color:'6B7280', fontFace:'Calibri', wrap:true });
-    });
+  const ws1 = XLSX.utils.aoa_to_sheet(calRows);
+  ws1['!cols'] = [
+    {wch:22}, {wch:32},
+    ...Array(12).fill({wch:5}),
+    {wch:20}, {wch:40}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws1, 'Calendar');
+
+  // ── Sheet 2: Details ──
+  const detailRows = [
+    ['Category', 'Event', 'Start Month', 'End Month', 'Start Date', 'End Date', 'Owner', 'Notes']
+  ];
+  sorted.forEach(ev => {
+    const cat = PP_CATS.find(c=>c.id===ev.catId);
+    const startFmt = ev.startDate ? new Date(ev.startDate+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const endFmt   = ev.endDate   ? new Date(ev.endDate  +'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
+    const startM = months[ev.startMonth-1];
+    const endM   = ev.startMonth === ev.endMonth ? startM : months[ev.endMonth-1];
+    detailRows.push([
+      cat?.label || ev.catId,
+      ev.title,
+      startM, endM,
+      startFmt, endFmt,
+      ev.owner||'', ev.notes||''
+    ]);
   });
+  const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
+  ws2['!cols'] = [
+    {wch:22},{wch:32},{wch:12},{wch:12},
+    {wch:14},{wch:14},{wch:20},{wch:40}
+  ];
+  XLSX.utils.book_append_sheet(wb, ws2, 'Details');
 
-  // ── Closing slide ──
-  const slideEnd = pptx.addSlide();
-  slideEnd.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'1B2D50'} });
-  slideEnd.addText('Questions?', { x:0.5, y:2.5, w:12, h:1.0, fontSize:40, bold:true, color:'FFFFFF', fontFace:'Calibri' });
-  slideEnd.addText('Generated by Breeze HR', { x:0.5, y:7.0, w:12, h:0.3, fontSize:9, color:'475569', fontFace:'Calibri' });
-
-  pptx.writeFile({ fileName: `People Plan ${ppPlan.year}.pptx` });
-  if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(()=>btn.textContent='⬇ PPT',2500); }
+  XLSX.writeFile(wb, `People Plan ${ppPlan.year}.xlsx`);
+  if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(()=>btn.textContent='⬇ Excel',2500); }
 }
 
 // ── TRACKERS ──
@@ -9411,8 +9407,10 @@ function openImmigrationRecord(idx) {
 
 // ── ORG CHART ──
 let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
+let _ocRelations = {}; // nodeId -> managerId override (null = top-level)
 let _ocT = { x: 0, y: 0, k: 0.85 };
 let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
+const OC_SNAP = 10; // snap grid in px
 const OC_W = 180, OC_H = 76, OC_HG = 26, OC_VG = 70;
 const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899','#14B8A6','#6366F1'];
 
@@ -9430,6 +9428,7 @@ function initOrgChart() {
       <button onclick="ocZoom(-0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">-</button>
       <button onclick="ocFit()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Fit</button>
       <button onclick="ocReset()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Reset layout</button>
+      <button onclick="ocAddPerson()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+ Add person</button>
       <button onclick="ocExportPpt()" style="font-size:11px;background:var(--accent);color:white;border:none;border-radius:var(--r-sm);padding:0 12px;height:28px;cursor:pointer;font-family:inherit;">&#8659; PPT</button>
     </div>
     <div id="ocLegend" style="padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:34px;flex-shrink:0;"></div>
@@ -9502,7 +9501,9 @@ function ocBuild() {
     const dept = ocExtractDept(emp) || 'General';
     const managerId = ocExtractMgrId(emp);
     if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
-    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId, children: [] };
+    // _ocRelations overrides HRIS manager data
+    const effectiveMgrId = _ocRelations.hasOwnProperty(id) ? _ocRelations[id] : managerId;
+    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: effectiveMgrId, children: [] };
   });
   const roots = [];
   Object.values(nodeMap).forEach(n => {
@@ -9626,8 +9627,9 @@ function ocRender(root) {
     }
     div.onmousedown = e => {
       if (e.button!==0) return; e.stopPropagation();
+      document.getElementById('ocNodeMenu')?.remove();
       const o=_ocOffsets[node.id]||{dx:0,dy:0};
-      _ocDragNode={id:node.id,sx:e.clientX,sy:e.clientY,odx:o.dx,ody:o.dy};
+      _ocDragNode={id:node.id,sx:e.clientX,sy:e.clientY,odx:o.dx,ody:o.dy,moved:false};
       div.classList.add('dragging');
     };
     nd.appendChild(div);
@@ -9665,7 +9667,10 @@ function ocPanDown(e) {
 
 function ocPanMove(e) {
   if(_ocDragNode) {
-    const dx=(e.clientX-_ocDragNode.sx)/_ocT.k, dy=(e.clientY-_ocDragNode.sy)/_ocT.k;
+    const mdx=e.clientX-_ocDragNode.sx, mdy=e.clientY-_ocDragNode.sy;
+    if(Math.abs(mdx)>4||Math.abs(mdy)>4) _ocDragNode.moved=true;
+    if(!_ocDragNode.moved) return;
+    const dx=mdx/_ocT.k, dy=mdy/_ocT.k;
     _ocOffsets[_ocDragNode.id]={dx:_ocDragNode.odx+dx,dy:_ocDragNode.ody+dy};
     const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
     const node=all.find(n=>n.id===_ocDragNode.id);
@@ -9679,8 +9684,25 @@ function ocPanMove(e) {
 }
 
 function ocPanUp(e) {
-  if(_ocDragNode){const d=document.querySelector(`[data-oc="${CSS.escape(_ocDragNode.id)}"]`);if(d)d.classList.remove('dragging');}
-  _ocPanning=false;_ocDragNode=null;_ocPanOrig=null;
+  if(_ocDragNode) {
+    const d=document.querySelector(`[data-oc="${CSS.escape(_ocDragNode.id)}"]`);
+    if(!_ocDragNode.moved) {
+      // Click — show edit menu
+      if(d) d.classList.remove('dragging');
+      const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
+      const node=all.find(n=>n.id===_ocDragNode.id);
+      _ocDragNode=null;
+      if(node) ocShowNodeMenu(node);
+    } else {
+      // Drag ended — snap to grid
+      const off=_ocOffsets[_ocDragNode.id];
+      if(off){off.dx=Math.round(off.dx/OC_SNAP)*OC_SNAP;off.dy=Math.round(off.dy/OC_SNAP)*OC_SNAP;}
+      if(d){d.classList.remove('dragging');const all2=[];const col2=n=>{all2.push(n);(n.children||[]).forEach(col2);};if(_ocTree)col2(_ocTree);const node2=all2.find(n=>n.id===_ocDragNode.id);if(node2){const p=ocPos(node2);d.style.left=p.x+'px';d.style.top=p.y+'px';}}
+      ocRedrawEdges();
+      _ocDragNode=null;
+    }
+  }
+  _ocPanning=false; _ocPanOrig=null;
   const vp=document.getElementById('ocVP'); if(vp) vp.style.cursor='grab';
 }
 
@@ -9807,6 +9829,264 @@ function ocExportPpt() {
   });
   slide.addText('Generated by Breeze HR',{x:0,y:7.2,w:'100%',h:0.3,align:'center',fontSize:8,color:'AEAEB2',fontFace:'Calibri'});
   pptx.writeFile({fileName:`${currentProfile?.company_name||'Org'} Chart.pptx`});
+}
+
+
+// ── WORKFLOWS / NEXT STEPS ──
+const WF_SCENARIOS = [
+  { id:'pregnancy-announced', cat:'Family Leave', icon:'🤰', label:'Employee announces pregnancy',
+    steps:[
+      {id:1,title:'Acknowledge and congratulate privately',desc:'Respond positively. The initial conversation must be private and confidential.',timeframe:'Same day',tag:'recommended'},
+      {id:2,title:'Carry out a DSE / New & Expectant Mothers risk assessment',desc:'Legally required under Regulation 16 of the Management of Health & Safety at Work Regulations 1999. Review workstation, environment, manual handling and any role-specific risks. Record the assessment and control measures.',timeframe:'Within 5 working days',tag:'legal',policyTag:'health-safety'},
+      {id:3,title:'Schedule meeting to walk through the maternity policy',desc:'Explain leave entitlement (up to 52 weeks), SMP rates, how to give notice, KIT days and the right to return. Share the policy in writing. Check whether your policy offers enhanced pay.',timeframe:'Within 2 weeks',tag:'policy',policyTag:'maternity',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+      {id:4,title:'Request MATB1 form',desc:'The MATB1 (from midwife or GP, available from 20 weeks) is required to process SMP. Confirm the earliest date to expect it and the deadline for receipt.',timeframe:'From approx. 20 weeks',tag:'legal'},
+      {id:5,title:'Calculate and confirm SMP entitlement',desc:'SMP = 90% AWE for first 6 weeks, then statutory rate for up to 33 weeks. Check 26 weeks continuous employment by 15th week before EWC. Confirm any enhanced pay under company policy.',timeframe:'Once MATB1 received',tag:'legal',action:{label:'Draft mat leave acknowledgement',type:'doc',docId:'t13'}},
+      {id:6,title:'Add dependant(s) to company benefits',desc:'Review health insurance, life assurance, pension nominations and any other benefits that require updating on arrival of a child. Commonly missed.',timeframe:'Within 2 weeks of announcement',tag:'recommended',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+      {id:7,title:'Confirm maternity leave dates in writing',desc:'Employee must give 28 days notice. Letter must confirm OML start, AML end, expected return date and right to change return date with 8 weeks notice.',timeframe:'Once dates agreed',tag:'legal',action:{label:'Draft mat acknowledgement letter',type:'doc',docId:'t13'}},
+      {id:8,title:'Discuss KIT days',desc:'Up to 10 Keeping in Touch days during leave without breaking it. Must be agreed by both parties. Paid at least at normal rate.',timeframe:'Before leave starts',tag:'policy'},
+      {id:9,title:'Plan cover and handover',desc:'Discuss workload handover and cover plan. Do not assume the employee wants to help recruit their own cover.',timeframe:'4-8 weeks before leave',tag:'recommended'},
+      {id:10,title:'Set keeping-in-touch schedule and log in tracker',desc:'Agree frequency and method of contact during leave. Log all contacts. Over-contacting can constitute detriment.',timeframe:'Before leave starts',tag:'recommended',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+    ]
+  },
+  { id:'paternity-announced', cat:'Family Leave', icon:'👶', label:'Employee announces paternity / SPL intention',
+    steps:[
+      {id:1,title:'Acknowledge and confirm entitlement',desc:'Statutory Paternity Leave = up to 2 weeks within 56 days of birth. SPL allows up to 50 weeks between parents.',timeframe:'Same day',tag:'recommended'},
+      {id:2,title:'Request SC3 form or SPL notice',desc:'For SPP, SC3 form required at least 15 weeks before EWC. For SPL, curtailment notice and SPL notice needed at least 8 weeks before SPL starts.',timeframe:'At least 15 weeks before EWC',tag:'legal'},
+      {id:3,title:'Walk through paternity or SPL policy',desc:'Confirm statutory rates, duration and notice requirements. Check for enhanced pay.',timeframe:'Within 1 week',tag:'policy',policyTag:'paternity',action:{label:'Draft paternity confirmation',type:'doc',docId:'t14'}},
+      {id:4,title:'Add dependant to company benefits',desc:'Update health insurance, life assurance and any other benefits on birth of a child.',timeframe:'On notification',tag:'recommended',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+      {id:5,title:'Confirm leave dates in writing',desc:'Issue written confirmation of start/end dates, SPP calculation and any enhanced pay.',timeframe:'Once dates confirmed',tag:'legal',action:{label:'Draft paternity letter',type:'doc',docId:'t14'}},
+    ]
+  },
+  { id:'employee-sick-day1', cat:'Absence', icon:'🏥', label:'Employee calls in sick (day 1)',
+    steps:[
+      {id:1,title:'Log the absence immediately',desc:'Record: date, time, who reported it, reason given, expected return. Note if pregnancy-related - these must be recorded separately and excluded from trigger-point calculations.',timeframe:'Same day',tag:'recommended'},
+      {id:2,title:'Arrange cover',desc:'Ensure operational cover. Do not pressure the employee to come in or work from home while unwell.',timeframe:'Same day',tag:'recommended'},
+      {id:3,title:'Self-certification days 1-7 / fit note from day 8',desc:'Days 1-7 self-cert is sufficient. From day 8, a GP fit note is legally required. Request promptly.',timeframe:'Day 1-7 self-cert / Day 8+ fit note',tag:'legal',policyTag:'absence'},
+      {id:4,title:'Wellbeing call on day 3-4',desc:'Brief call to check in - not to pressure return. Ask if there is anything the business can do. Document the call.',timeframe:'Day 3-4',tag:'recommended'},
+      {id:5,title:'Return to work interview',desc:'ACAS recommends for all absences. Discuss reason, fitness to return, any adjustments needed and whether further absence is expected.',timeframe:'First day back',tag:'recommended',policyTag:'absence'},
+    ]
+  },
+  { id:'long-term-absence', cat:'Absence', icon:'📋', label:'Absence reaches 4 weeks',
+    steps:[
+      {id:1,title:'Review Equality Act disability definition',desc:'Disability = impairment with substantial, long-term (12+ months) adverse effect on day-to-day activities. If likely to apply, the duty to make reasonable adjustments is triggered.',timeframe:'Week 4',tag:'legal'},
+      {id:2,title:'Refer to Occupational Health',desc:'OH report should cover fitness for work, likely return timescales, possible adjustments. OH advice is not binding but provides strong evidence of a fair process.',timeframe:'Week 4-5',tag:'recommended',policyTag:'absence'},
+      {id:3,title:'Hold a welfare meeting',desc:'Meet with the employee (can be remote). Discuss health, OH report, possible adjustments and phased return. Employee can bring a companion.',timeframe:'After OH report',tag:'recommended'},
+      {id:4,title:'Notify insurance company if PHI/IP policy in place',desc:'Group Income Protection policies typically have a deferred period (13-26 weeks). Notify insurer before the deferred period ends.',timeframe:'Before deferred period',tag:'recommended',action:{label:'Open insurance log',type:'tab',tab:'leave'}},
+      {id:5,title:'Regular documented contact',desc:'Monthly minimum. Over-contacting = harassment risk. Under-contacting undermines any future dismissal process.',timeframe:'Monthly',tag:'recommended'},
+      {id:6,title:'Document reasonable adjustments considered',desc:'Before any capability process, list every adjustment considered and why each was or was not reasonable. This is the most common tribunal failure point in long-term absence cases.',timeframe:'Before formal process',tag:'legal'},
+    ]
+  },
+  { id:'employee-resigns', cat:'Leavers', icon:'🚪', label:'Employee submits resignation',
+    steps:[
+      {id:1,title:'Acknowledge resignation in writing',desc:'Confirm receipt, the notice period, and the last day of employment.',timeframe:'Same day',tag:'legal',action:{label:'Draft resignation acceptance',type:'doc',docId:'t16'}},
+      {id:2,title:'Calculate final pay and accrued holiday',desc:'Any outstanding holiday entitlement must be paid in lieu if it cannot be taken during notice. Check for any PILON clause in the contract.',timeframe:'Within 48 hours',tag:'legal'},
+      {id:3,title:'Book exit interview',desc:'Conduct before the last day. Questions: reasons for leaving, what the company could improve, feedback on management. Keep responses confidential.',timeframe:'Before last day',tag:'recommended'},
+      {id:4,title:'Arrange IT access removal on last day',desc:'Coordinate with IT to revoke access on final working day - not before, as the employee is still employed. Back up work files.',timeframe:'Last day',tag:'recommended'},
+      {id:5,title:'Collect company property',desc:'Laptop, phone, ID, car keys, credit card, uniforms. Issue a receipt.',timeframe:'Last day',tag:'recommended'},
+      {id:6,title:'Issue P45 and confirm reference process',desc:'P45 must be provided on or before the last day. Confirm the company reference policy with the leaver.',timeframe:'Last day / payroll',tag:'legal'},
+      {id:7,title:'Review restrictive covenants',desc:'Check contract for post-termination restrictions (non-compete, non-solicit, confidentiality). Remind the leaver in writing if relevant.',timeframe:'Before last day',tag:'recommended'},
+    ]
+  },
+  { id:'performance-concern', cat:'Performance', icon:'📉', label:'Performance concern identified',
+    steps:[
+      {id:1,title:'Raise informally first',desc:'ACAS strongly recommends an informal conversation before any formal process. Be specific, give examples, listen to the employee. The issue may resolve without escalation.',timeframe:'As soon as concern arises',tag:'recommended',policyTag:'performance'},
+      {id:2,title:'Set clear documented expectations',desc:'Agree what good performance looks like, with measurable targets. Confirm in writing (email is fine at this stage).',timeframe:'Same week',tag:'recommended'},
+      {id:3,title:'Check for underlying reasons',desc:'Consider personal circumstances, health, management or workload factors. Rule out disability or protected characteristic before any formal step - failure to do so is a common tribunal error.',timeframe:'Before formal process',tag:'legal'},
+      {id:4,title:'Issue formal PIP if informal steps fail',desc:'PIP must have SMART objectives, a review date, support to be provided, and stated consequences. Employee must be invited to a meeting with the right to be accompanied.',timeframe:'After informal exhausted',tag:'policy',policyTag:'performance',action:{label:'Generate PIP',type:'doc',docId:'t24'}},
+      {id:5,title:'Regular review meetings during PIP',desc:'Fortnightly minimum. Document every meeting. If improving, say so in writing. If not, document the gap. This paperwork is critical if the matter escalates.',timeframe:'Throughout PIP',tag:'recommended'},
+      {id:6,title:'PIP outcome meeting',desc:'Confirm outcome: improved (close), extension, or no improvement (next step may be dismissal with notice). Inform of right to appeal.',timeframe:'At PIP end date',tag:'legal'},
+    ]
+  },
+  { id:'disciplinary-allegation', cat:'Conduct', icon:'⚖️', label:'Disciplinary allegation raised',
+    steps:[
+      {id:1,title:'Investigate before any action',desc:'Inadequate investigation is the most common reason tribunals find dismissals unfair. Appoint a neutral investigating manager separate from the hearing manager.',timeframe:'Immediately',tag:'legal',policyTag:'disciplinary'},
+      {id:2,title:'Consider suspension only if truly necessary',desc:'Suspension is not a default. Appropriate only if: allegation is serious, employee presence could prejudice the investigation, or there is risk to others. Suspension must be on full pay and reviewed regularly.',timeframe:'Day 1 only if needed',tag:'legal'},
+      {id:3,title:'Gather evidence',desc:'Interview witnesses (take notes), review documents, emails, CCTV. Keep all evidence confidential. The employee must have the opportunity to respond to evidence before any hearing.',timeframe:'Investigation phase',tag:'recommended'},
+      {id:4,title:'Invite to disciplinary hearing in writing',desc:'Invitation must include: nature of the allegation, evidence relied upon, date/time/location (at least 5 working days notice), and right to be accompanied.',timeframe:'After investigation',tag:'legal',action:{label:'Draft hearing invite',type:'doc',docId:'t20'}},
+      {id:5,title:'Hold the disciplinary hearing',desc:'Give the employee full opportunity to respond. Adjourn to consider outcome. Decision made by hearing manager, not the investigator.',timeframe:'After invitation',tag:'legal'},
+      {id:6,title:'Communicate outcome in writing',desc:'Set out: decision, reasons, sanction, right to appeal and appeal process.',timeframe:'Within 5 working days',tag:'legal',action:{label:'Draft first written warning',type:'doc',docId:'t6'}},
+      {id:7,title:'Offer right of appeal',desc:'Employee must be told of right to appeal, deadline (usually 5 working days) and appeal manager (should be more senior).',timeframe:'Within outcome letter',tag:'legal'},
+    ]
+  },
+  { id:'grievance-received', cat:'Conduct', icon:'📣', label:'Formal grievance received',
+    steps:[
+      {id:1,title:'Acknowledge in writing within 5 working days',desc:'Confirm receipt, the process, who will investigate, and an approximate timeline.',timeframe:'Within 5 working days',tag:'legal',action:{label:'Draft grievance acknowledgement',type:'doc',docId:'t8'}},
+      {id:2,title:'Appoint a neutral investigating manager',desc:'No prior involvement. Senior enough to make credible decisions. Different from the grievance hearing manager.',timeframe:'Day 1-2',tag:'recommended',policyTag:'grievance'},
+      {id:3,title:'Investigate impartially',desc:'Interview complainant, respondent and witnesses. Keep conversations confidential. Respondent must be told the nature of the allegation (not necessarily witness identities).',timeframe:'Investigation phase',tag:'recommended'},
+      {id:4,title:'Hold the grievance meeting',desc:'At least 5 working days notice. Right to be accompanied. Let the employee set out the grievance fully.',timeframe:'After investigation',tag:'legal'},
+      {id:5,title:'Communicate outcome in writing',desc:'Outcome: upheld / partially upheld / not upheld. State reasons, any action the company will take, and right to appeal.',timeframe:'Within 5 working days of meeting',tag:'legal'},
+      {id:6,title:'Implement any agreed actions',desc:'Carry out actions promptly. Monitor the situation. Consider whether any parallel disciplinary process is needed.',timeframe:'After decision',tag:'recommended'},
+    ]
+  },
+  { id:'redundancy', cat:'Redundancy', icon:'📋', label:'Redundancy situation identified',
+    steps:[
+      {id:1,title:'Establish and document the genuine business reason',desc:'Redundancy requires a genuine reduction in need for work of a particular kind. Document the business case clearly before any announcement.',timeframe:'Before announcement',tag:'legal',policyTag:'redundancy'},
+      {id:2,title:'Check collective consultation obligations',desc:'20+ redundancies at one establishment within 90 days = mandatory collective consultation and BEIS notification (HR1 form) at least 45 days before first dismissal. 100+ = 45 days.',timeframe:'Before announcement',tag:'legal'},
+      {id:3,title:'Define the selection pool fairly',desc:'Too narrow a pool (e.g. only part-time staff) can constitute indirect discrimination. Document how the pool was determined.',timeframe:'Before individual consultation',tag:'legal'},
+      {id:4,title:'Apply objective selection criteria',desc:'Criteria must be measurable, documented and applied consistently. Adjust attendance figures to remove pregnancy-related and disability-related absence.',timeframe:'Before at-risk letters',tag:'legal'},
+      {id:5,title:'Issue at-risk letters and begin consultation',desc:'All employees in the pool must receive an at-risk notification and have genuine opportunity to comment.',timeframe:'Start of consultation',tag:'legal',action:{label:'Draft at-risk letter',type:'doc',docId:'t9'}},
+      {id:6,title:'Genuinely explore alternatives',desc:'Consider redeployment, voluntary redundancy, reduced hours, unpaid leave. Document each option and why it was or was not viable.',timeframe:'During consultation',tag:'legal'},
+      {id:7,title:'Confirm redundancy and calculate statutory pay',desc:'Statutory pay = 0.5 week per year under 22 / 1 week 22-40 / 1.5 weeks 41+, capped at the statutory weekly amount and 20 years.',timeframe:'End of consultation',tag:'legal',action:{label:'Draft redundancy confirmation',type:'doc',docId:'t10'}},
+      {id:8,title:'Offer right of appeal',desc:'Must be offered in the redundancy confirmation letter. Appeal heard by a more senior manager not involved in the original decision.',timeframe:'In confirmation letter',tag:'legal'},
+    ]
+  },
+  { id:'new-starter', cat:'Onboarding', icon:'👋', label:'New starter joining',
+    steps:[
+      {id:1,title:'Right to work check - before Day 1',desc:'Legally required before employment commences. Check original documents or use the Home Office online service. Copy and retain.',timeframe:'Before first day',tag:'legal'},
+      {id:2,title:'Issue contract and written statement of particulars',desc:'Written statement must be provided on or before Day 1 (Employment Rights Act 1996, as amended April 2020). Ensure signed and returned.',timeframe:'Day 1 or before',tag:'legal',action:{label:'Generate employment contract',type:'doc',docId:'t27'}},
+      {id:3,title:'Set up payroll, pension and benefits',desc:'Employee must be on payroll for their first pay date. Auto-enrolment applies from day 1 if eligible. Share benefits access.',timeframe:'Before first payroll',tag:'legal'},
+      {id:4,title:'Health & Safety induction',desc:'Legally required: fire evacuation, first aid contacts, accident reporting, DSE assessment for screen workers, any role-specific briefing.',timeframe:'Day 1',tag:'legal'},
+      {id:5,title:'IT setup and system access',desc:'Email, systems, equipment, data protection briefing. Provide IT acceptable use policy.',timeframe:'Day 1',tag:'recommended'},
+      {id:6,title:'Introduce to team and assign buddy',desc:'A structured welcome including a named person to ask for help significantly reduces early attrition.',timeframe:'Day 1',tag:'recommended'},
+      {id:7,title:'Schedule probation review meetings',desc:'Book 1-month, 3-month and end-of-probation reviews now. Give the employee clarity on what success looks like.',timeframe:'Week 1',tag:'recommended',policyTag:'probation'},
+      {id:8,title:'Confirm successful probation in writing',desc:'Issue a probation passed letter once successfully completed.',timeframe:'End of probation',tag:'recommended',action:{label:'Draft probation passed letter',type:'doc',docId:'t4'}},
+    ]
+  },
+];
+
+let wfActiveScenario = null;
+let wfCheckedSteps = {};
+let wfPolicies = null;
+
+async function loadWfPolicies() {
+  if (wfPolicies !== null) return;
+  if (!currentProfile) { wfPolicies = []; return; }
+  const { data } = await sb.from('policies').select('name,content')
+    .eq('company_id', currentProfile.company_id)
+    .not('name','like','TEMPLATE:%').not('name','like','CHAT:%')
+    .not('name','like','SETTING:%').not('name','like','TRACKER:%');
+  wfPolicies = data || [];
+}
+
+function wfFindPolicy(tag) {
+  if (!wfPolicies?.length) return null;
+  const tagMap = { maternity:['maternity','family leave','parental'], paternity:['paternity','parental'], absence:['absence','sickness','sick'], performance:['performance','pip','capability'], disciplinary:['disciplinary','conduct'], grievance:['grievance'], redundancy:['redundancy'], 'health-safety':['health','safety','dse'], probation:['probation'] };
+  const kws = tagMap[tag] || [tag];
+  return wfPolicies.find(p => kws.some(k => (p.name+' '+(p.content||'')).toLowerCase().includes(k)));
+}
+
+function wfStepKey(scenarioId) { return 'breeze_wf_'+(currentProfile?.company_id||'x')+'_'+scenarioId; }
+
+function wfLoadChecked(id) {
+  try { const s=localStorage.getItem(wfStepKey(id)); return new Set(s?JSON.parse(s):[]); } catch(e){ return new Set(); }
+}
+
+function wfSaveChecked(id) {
+  try { localStorage.setItem(wfStepKey(id), JSON.stringify([...wfCheckedSteps[id]])); } catch(e){}
+}
+
+function wfToggleStep(scenarioId, stepId) {
+  if (!wfCheckedSteps[scenarioId]) wfCheckedSteps[scenarioId] = new Set();
+  const s = wfCheckedSteps[scenarioId];
+  if (s.has(stepId)) s.delete(stepId); else s.add(stepId);
+  wfSaveChecked(scenarioId);
+  const row = document.getElementById('wf-step-'+stepId);
+  if (row) {
+    const done = s.has(stepId);
+    row.style.opacity = done?'0.5':'1';
+    const cb = row.querySelector('input[type=checkbox]'); if(cb) cb.checked=done;
+    const t = row.querySelector('.wf-step-title'); if(t) t.style.textDecoration=done?'line-through':'';
+  }
+  const sc = WF_SCENARIOS.find(x=>x.id===scenarioId);
+  if (sc) {
+    const pct = Math.round((s.size/sc.steps.length)*100);
+    const bar=document.getElementById('wf-progress-fill'); if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
+    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=s.size+' / '+sc.steps.length+' steps complete';
+  }
+}
+
+function wfTagBadge(tag) {
+  if (tag==='legal') return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:#FEE2E2;color:#991B1B;white-space:nowrap;">Legal requirement</span>';
+  if (tag==='policy') return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:#EFF6FF;color:#1D4ED8;white-space:nowrap;">Policy step</span>';
+  return '<span style="font-size:9px;font-weight:700;padding:2px 6px;border-radius:8px;background:#F3F4F6;color:#6B7280;white-space:nowrap;">Recommended</span>';
+}
+
+async function renderWorkflowsTab(body) {
+  await loadWfPolicies();
+  const catGroups = {};
+  WF_SCENARIOS.forEach(s=>{ if(!catGroups[s.cat]) catGroups[s.cat]=[]; catGroups[s.cat].push(s); });
+
+  body.innerHTML = '<div style="flex:1;display:flex;overflow:hidden;min-height:0;"><div style="width:260px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);overflow-y:auto;display:flex;flex-direction:column;"><div style="padding:12px 14px;border-bottom:1px solid var(--border);flex-shrink:0;"><input id="wf-search" placeholder="Search scenarios..." oninput="wfFilterScenarios(this.value)" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;" onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'"></div><div id="wf-scenario-list" style="flex:1;overflow-y:auto;padding:8px 0;">'
+  + Object.entries(catGroups).map(([cat,scenarios])=>`<div style="font-size:9px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--ink3);padding:10px 14px 4px;">${cat}</div>`+scenarios.map(s=>{const ck=wfLoadChecked(s.id);const pct=Math.round((ck.size/s.steps.length)*100);return `<div id="wf-scenario-item-${s.id}" class="wf-scenario-item" onclick="wfSelectScenario('${s.id}')" style="padding:9px 14px;cursor:pointer;display:flex;gap:10px;align-items:flex-start;border-radius:var(--r-sm);margin:1px 6px;transition:background 0.1s;"><span style="font-size:18px;flex-shrink:0;margin-top:1px;">${s.icon}</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;color:var(--ink);line-height:1.35;">${s.label}</div>${pct>0?`<div style="margin-top:4px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:2px;"></div></div>`:''}</div></div>`;}).join('')).join('')
+  + '</div></div><div id="wf-detail" style="flex:1;overflow-y:auto;background:var(--bg);"><div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);padding:40px;text-align:center;"><div style="font-size:40px;">✦</div><div style="font-size:15px;font-weight:600;color:var(--ink);">Select a scenario</div><div style="font-size:13px;max-width:360px;line-height:1.7;">Choose a situation from the left and get a step-by-step checklist of what to do next, referencing your policies and UK employment law.</div></div></div></div>';
+}
+
+function wfFilterScenarios(q) {
+  const lower = q.toLowerCase();
+  document.querySelectorAll('.wf-scenario-item').forEach(el=>{
+    el.style.display = (!q||el.textContent.toLowerCase().includes(lower))?'':'none';
+  });
+}
+
+async function wfSelectScenario(id) {
+  wfActiveScenario = id;
+  document.querySelectorAll('.wf-scenario-item').forEach(el=>{
+    const a = el.id==='wf-scenario-item-'+id;
+    el.style.background = a?'var(--accent-bg)':'';
+    el.style.borderLeft = a?'3px solid var(--accent)':'';
+    el.style.paddingLeft = a?'11px':'';
+  });
+  const scenario = WF_SCENARIOS.find(s=>s.id===id); if (!scenario) return;
+  if (!wfCheckedSteps[id]) wfCheckedSteps[id] = wfLoadChecked(id);
+  const checked = wfCheckedSteps[id];
+  const detail = document.getElementById('wf-detail'); if (!detail) return;
+  const total = scenario.steps.length, done=checked.size, pct=Math.round((done/total)*100);
+
+  const stepsHtml = scenario.steps.map(step=>{
+    const isDone = checked.has(step.id);
+    const policy = step.policyTag ? wfFindPolicy(step.policyTag) : null;
+    const policyBadge = policy?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);white-space:nowrap;">📋 ${policy.name}</span>`:'';
+    let actionBtn = '';
+    if (step.action) {
+      if (step.action.type==='doc') actionBtn=`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
+      else if (step.action.type==='tab') actionBtn=`<button onclick="event.stopPropagation();showTrackerTab('${step.action.tab}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
+    }
+    return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${id}',${step.id})">
+      <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation();wfToggleStep('${id}',${step.id})" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
+          <div class="wf-step-title" style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;${isDone?'text-decoration:line-through;':''}">${step.title}</div>
+          ${wfTagBadge(step.tag)} ${policyBadge}
+        </div>
+        <div style="font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:${actionBtn?'10px':'0'};">${step.desc}</div>
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
+          <span style="font-size:10px;font-weight:600;color:var(--ink3);background:var(--surface2);padding:2px 8px;border-radius:20px;">⏱ ${step.timeframe}</span>
+          ${actionBtn}
+        </div>
+      </div>
+    </div>`;
+  }).join('');
+
+  detail.innerHTML = `<div style="padding:24px;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+    <div>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
+        <span style="font-size:28px;">${scenario.icon}</span>
+        <div><div style="font-size:17px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${scenario.label}</div><div style="font-size:11px;color:var(--ink3);">${scenario.cat} - ${total} steps</div></div>
+        <button onclick="wfResetChecklist('${id}')" class="btn btn-ghost btn-sm" style="margin-left:auto;color:var(--ink3);font-size:11px;">↺ Reset</button>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <span style="font-size:11px;font-weight:600;color:var(--ink);">Progress</span>
+          <span id="wf-progress-pct" style="font-size:11px;color:var(--ink3);">${done} / ${total} steps complete</span>
+        </div>
+        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
+      </div>
+      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:9px 12px;font-size:11px;color:var(--amber);display:flex;align-items:center;gap:8px;">No policies uploaded - steps use ACAS statutory guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;margin-left:4px;">Upload policies</a></div>`:`<div style="margin-top:10px;background:var(--green-bg);border:1px solid #A7F3D0;border-radius:var(--r-sm);padding:9px 12px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} policies loaded - steps marked 📋 reference your specific policies.</div>`}
+    </div>
+    <div style="display:flex;flex-direction:column;gap:8px;">${stepsHtml}</div>
+  </div>`;
+}
+
+function wfResetChecklist(id) {
+  if (!confirm('Reset all steps for this checklist?')) return;
+  wfCheckedSteps[id] = new Set();
+  wfSaveChecked(id);
+  wfSelectScenario(id);
+}
+
+function wfOpenDoc(docId) {
+  const tmpl = tmpls.find(t=>t.id===docId);
+  if (tmpl) { showView('docs',document.querySelector('.ni[onclick*=docs]')); setTimeout(()=>openTmpl(tmpl),100); }
 }
 
 // ── INIT ──
