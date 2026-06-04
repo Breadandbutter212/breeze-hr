@@ -63,16 +63,16 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .logo-icon { width: 28px; height: 28px; background: rgba(255,255,255,0.15); border-radius: 7px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
 .logo-name { font-size: 15px; font-weight: 600; color: white; letter-spacing: -0.03em; }
 .logo-sub { font-size: 9px; color: rgba(255,255,255,0.35); letter-spacing: 0.08em; text-transform: uppercase; margin-top: 1px; }
-.nav { padding: 10px 10px; flex: 1; }
-.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 0 8px; margin: 14px 0 5px; }
-.nav-label:first-child { margin-top: 4px; }
-.ni { display: flex; align-items: center; gap: 9px; padding: 7px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.9); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
+.nav { padding: 6px 10px 4px; flex: 1; overflow-y: auto; overflow-x: hidden; }
+.nav-label { font-size: 9px; font-weight: 500; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.6); padding: 0 8px; margin: 9px 0 3px; }
+.nav-label:first-child { margin-top: 2px; }
+.ni { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.9); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
 .ni:hover { background: rgba(255,255,255,0.07); color: white; }
 .ni.active { background: rgba(59,130,246,0.25); color: white; font-weight: 500; border-left: 2px solid var(--accent); padding-left: 6px; }
 .ni svg { flex-shrink: 0; opacity: 0.5; }
 .ni.active svg { opacity: 1; }
 .ni-badge { margin-left: auto; background: var(--accent); color: #0A1628; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
-.sidebar-foot { padding: 12px; border-top: 1px solid rgba(255,255,255,0.07); }
+.sidebar-foot { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
 .int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.06); font-size: 11px; color: rgba(255,255,255,0.4); }
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
@@ -702,8 +702,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       FAQs
     </div>
   </div>
-  <div style="padding:10px;">
-    <div onclick="toggleSharePoint()" style="display:flex;align-items:center;gap:8px;padding:8px 8px;border-radius:var(--r-sm);cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.07);transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
+  <div style="padding:8px 10px;flex-shrink:0;">
+    <div onclick="toggleSharePoint()" style="display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--r-sm);cursor:pointer;border:1px solid rgba(255,255,255,0.1);background:rgba(255,255,255,0.07);transition:all 0.15s;" onmouseover="this.style.background='rgba(255,255,255,0.13)'" onmouseout="this.style.background='rgba(255,255,255,0.07)'">
       <div style="width:20px;height:20px;background:#0078D4;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="2.5"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
       </div>
