@@ -9708,10 +9708,108 @@ function ocPanUp(e) {
 
 function ocWheel(e) {
   e.preventDefault();
+  document.getElementById('ocNodeMenu')?.remove();
   const vp=document.getElementById('ocVP'); if(!vp) return;
   const r=vp.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
   const ok=_ocT.k,nk=Math.max(0.12,Math.min(2.5,ok+(e.deltaY>0?-0.1:0.1)));
   _ocT.x=mx-(mx-_ocT.x)*(nk/ok);_ocT.y=my-(my-_ocT.y)*(nk/ok);_ocT.k=nk;ocApplyT();
+}
+
+function ocAllNodes() {
+  const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
+  return all.filter(n=>!n.id.startsWith('__'));
+}
+
+function ocShowNodeMenu(node) {
+  const vp=document.getElementById('ocVP'); if(!vp) return;
+  document.getElementById('ocNodeMenu')?.remove();
+  const pos=ocPos(node);
+  const sx=(pos.x+OC_W)*_ocT.k+_ocT.x, sy=pos.y*_ocT.k+_ocT.y;
+  const menuLeft=sx+8+244>vp.offsetWidth ? sx-256 : sx+8;
+  const menuTop=Math.max(8, Math.min(sy, vp.offsetHeight-310));
+  const all=ocAllNodes();
+  const mgrId=_ocRelations.hasOwnProperty(node.id)?_ocRelations[node.id]:node.managerId;
+  const mgr=all.find(p=>p.id===mgrId);
+  const isManual=node.id.startsWith('manual-');
+  const av=node.name.split(' ').filter(Boolean).map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const safeId=node.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+  const menu=document.createElement('div');
+  menu.id='ocNodeMenu';
+  menu.style.cssText=`position:absolute;left:${menuLeft}px;top:${menuTop}px;width:244px;background:white;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:500;overflow:hidden;font-family:inherit;`;
+  menu.onclick=e=>e.stopPropagation();
+  menu.innerHTML=`
+    <div style="padding:12px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;">
+      <div style="width:32px;height:32px;border-radius:7px;background:${node.color};color:white;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${av}</div>
+      <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(node.name)}</div><div style="font-size:11px;color:var(--ink3);">${escapeHtml(node.title||'')}</div></div>
+      <button onclick="document.getElementById('ocNodeMenu').remove()" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:16px;line-height:1;flex-shrink:0;padding:0;">&#215;</button>
+    </div>
+    <div style="padding:10px 14px;">
+      <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;">Reports to</div>
+      <div style="font-size:12px;color:${mgr?'var(--ink)':'var(--ink3)'};margin-bottom:9px;padding:5px 8px;background:var(--surface2);border-radius:var(--r-sm);">${mgr?escapeHtml(mgr.name):'&#8212; Top level'}</div>
+      <div style="position:relative;margin-bottom:6px;">
+        <input id="ocMgrInp" placeholder="Search to change manager..." autocomplete="off"
+          style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 9px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;"
+          oninput="ocMgrSearch(this.value,'${safeId}')"
+          onfocus="this.style.borderColor='var(--accent)';ocMgrSearch(this.value,'${safeId}')"
+          onblur="setTimeout(()=>{const d=document.getElementById('ocMgrDrop');if(d)d.style.display='none'},200)">
+        <div id="ocMgrDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);max-height:160px;overflow-y:auto;z-index:600;box-shadow:var(--shadow);"></div>
+      </div>
+      <button onclick="ocSetManager('${safeId}',null)"
+        style="width:100%;font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;font-family:inherit;text-align:left;margin-bottom:4px;"
+        onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--surface2)'">
+        &#x2B06; Make top-level (no manager)
+      </button>
+      ${isManual?`<button onclick="ocRemovePerson('${safeId}')"
+        style="width:100%;font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;font-family:inherit;text-align:left;"
+        onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='var(--red-bg)'">
+        &#x2715; Remove from chart</button>`:''}
+    </div>`;
+  vp.appendChild(menu);
+  setTimeout(()=>document.getElementById('ocMgrInp')?.focus(),50);
+}
+
+function ocMgrSearch(q, excludeId) {
+  const drop=document.getElementById('ocMgrDrop'); if(!drop) return;
+  const people=ocAllNodes().filter(p=>p.id!==excludeId);
+  if(!q.trim()){drop.style.display='none';return;}
+  const matches=people.filter(p=>
+    p.name.toLowerCase().includes(q.toLowerCase())||
+    (p.title||'').toLowerCase().includes(q.toLowerCase())||
+    (p.dept||'').toLowerCase().includes(q.toLowerCase())
+  ).slice(0,8);
+  if(!matches.length){drop.innerHTML='<div style="padding:8px 10px;font-size:12px;color:var(--ink3);">No matches</div>';drop.style.display='block';return;}
+  drop.innerHTML=matches.map(p=>{
+    const pav=p.name.split(' ').filter(Boolean).map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    return `<div onmousedown="ocSetManager('${excludeId}','${p.id}')"
+      style="padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;gap:8px;align-items:center;"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="width:24px;height:24px;border-radius:5px;background:${p.color};color:white;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;flex-shrink:0;">${pav}</div>
+      <div><div style="font-size:12px;font-weight:500;color:var(--ink);">${escapeHtml(p.name)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(p.title||p.dept||'')}</div></div>
+    </div>`;}).join('');
+  drop.style.display='block';
+}
+
+function ocSetManager(nodeId, newManagerId) {
+  _ocRelations[nodeId]=newManagerId;
+  document.getElementById('ocNodeMenu')?.remove();
+  if(_ocEmps) ocBuild();
+}
+
+function ocRemovePerson(nodeId) {
+  document.getElementById('ocNodeMenu')?.remove();
+  _ocEmps=(_ocEmps||[]).filter(e=>String(e.id)!==nodeId);
+  delete _ocRelations[nodeId];
+  if(_ocEmps?.length) ocBuild();
+}
+
+function ocAddPerson() {
+  const name=prompt('New person\'s name:'); if(!name?.trim()) return;
+  const title=prompt('Job title (optional):') || '';
+  const dept=prompt('Department (optional):') || 'General';
+  const id='manual-'+Date.now();
+  if(!_ocEmps) _ocEmps=[];
+  _ocEmps.push({id, display_full_name:name.trim(), employments:[{job_title:title.trim(), department:dept.trim()}], manager:null});
+  ocBuild();
 }
 
 function ocZoom(d) {
