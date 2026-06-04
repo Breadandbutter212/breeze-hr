@@ -10900,14 +10900,14 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${started}</td>
                 <td style="min-width:140px;">
                   <div style="display:flex;align-items:center;gap:8px;">
-                    <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div>
-                    <span style="font-size:12px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink)'};">${pct}%</span>
+                    <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px;"><div data-wf-bar="${c.id}" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div>
+                    <span data-wf-pct="${c.id}" style="font-size:12px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink)'};">${pct}%</span>
                   </div>
                 </td>
                 <td><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● Active</span></td>
                 <td style="white-space:nowrap;">
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:118px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist ${pct}% →</button>
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>
+                  <button data-wf-btn="${c.id}" onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:118px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist ${pct}% →</button>
+                  <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
                 </td>
               </tr>`;
@@ -10923,7 +10923,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td><span class="trk-badge trk-badge-grey">✓ Closed</span></td>
                 <td style="white-space:nowrap;">
                   <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;min-width:118px;text-align:center;">Checklist ${pct}% →</button>
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Details</button>
+                  <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:10px;color:var(--red);margin-left:4px;">Delete</button>
                 </td>
               </tr>`;
@@ -11387,13 +11387,106 @@ async function wfToggleStep(caseId, stepId) {
 function wfUpdateSidebarCase(c) {
   const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
   const pct = sc.steps.length?Math.round((c.checkedSteps.length/sc.steps.length)*100):0;
+  // Update table row button
+  const btn = document.querySelector(`[data-wf-btn="${c.id}"]`);
+  if (btn) { btn.textContent=`Checklist ${pct}% →`; btn.style.background=pct===100?'var(--green)':''; btn.style.borderColor=pct===100?'var(--green)':''; }
+  // Update table row progress bar and pct text
+  const bar = document.querySelector(`[data-wf-bar="${c.id}"]`);
+  if (bar) { bar.style.width=pct+'%'; bar.style.background=pct===100?'var(--green)':'var(--accent)'; }
+  const pctEl = document.querySelector(`[data-wf-pct="${c.id}"]`);
+  if (pctEl) { pctEl.textContent=pct+'%'; pctEl.style.color=pct===100?'var(--green)':'var(--ink)'; }
+  // Legacy sidebar (if present)
   const item = document.querySelector(`[onclick="wfOpenCase('${c.id}')"]`);
   if (item) {
-    const pctEl = item.querySelector('div[style*="margin-left:auto"]');
-    if(pctEl){pctEl.textContent=pct+'%';pctEl.style.color=pct===100?'var(--green)':'var(--ink3)';}
-    const bar = item.querySelector('div[style*="height:100%;background"]');
-    if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
+    const sEl = item.querySelector('div[style*="margin-left:auto"]');
+    if(sEl){sEl.textContent=pct+'%';sEl.style.color=pct===100?'var(--green)':'var(--ink3)';}
+    const sBar = item.querySelector('div[style*="height:100%;background"]');
+    if(sBar){sBar.style.width=pct+'%';sBar.style.background=pct===100?'var(--green)':'var(--accent)';}
   }
+}
+
+function openWfDetailsPanel(caseId) {
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  document.getElementById('wfDetailPanel')?.remove();
+  const panel = document.createElement('div');
+  panel.id = 'wfDetailPanel';
+  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[],icon:'📋',label:'Unknown'};
+  const pct = sc.steps.length?Math.round((c.checkedSteps.length/sc.steps.length)*100):0;
+  const contactLog = (c.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const daysSince = contactLog.length?Math.floor((new Date()-new Date(contactLog[0].date))/86400000):null;
+  const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const docs = c.docs||[];
+  const logHtml = contactLog.map(e=>{
+    const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    return `<div class="log-entry" style="align-items:flex-start;"><div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;"><span style="font-size:11px;">${iconMap[e.type]||'📝'}</span><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span><button onclick="wfDetDeleteLog('${caseId}','${escapeHtml(e.date)}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;padding:0 2px;">✕</button></div><div class="log-text">${escapeHtml(e.note)}</div></div></div>`;
+  }).join('')||'<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
+  const stepsPreview = sc.steps.slice(0,5).map(step=>{
+    const done=c.checkedSteps.includes(step.id);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;">${done?'✅':'⬜'}</span><span style="font-size:11px;${done?'text-decoration:line-through;color:var(--ink3);':'color:var(--ink);'}">${escapeHtml(step.title)}</span></div>`;
+  }).join('');
+  panel.innerHTML=`<div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
+    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
+      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(c.employeeName)}</div><span class="trk-badge trk-badge-blue">${sc.icon} ${sc.label}</span><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● ${pct===100?'Complete':'Active'}</span></div><div style="font-size:12px;color:rgba(255,255,255,0.55);">Started ${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
+      <button onclick="document.getElementById('wfDetailPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
+      <div style="padding:18px 22px;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:14px;">Contact log ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>42?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(no contact logged)</span>'}</div>
+        <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;">
+          <div style="display:flex;gap:8px;">
+            <select id="wf-det-type-${caseId}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;"><option value="call">📞 Call</option><option value="email" selected>✉️ Email</option><option value="meeting">👥 Meeting</option><option value="action">✅ Action</option><option value="note">📝 Note</option></select>
+            <input id="wf-det-note-${caseId}" placeholder="What was discussed or actioned..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();wfDetAddLog('${caseId}')}">
+            <button class="btn btn-primary btn-sm" onclick="wfDetAddLog('${caseId}')">Log</button>
+          </div>
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--ink2);"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>Attach file (optional)<input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfDetAttachFile('${caseId}',this)"></label>
+        </div>
+        <div id="wf-det-log-${caseId}">${logHtml}</div>
+      </div>
+      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:12px;font-weight:700;color:var(--ink);">Next Steps checklist</div><button onclick="document.getElementById('wfDetailPanel').remove();setTimeout(()=>openWfCasePanel('${caseId}'),100)" class="btn btn-secondary btn-sm" style="font-size:10px;">View full checklist →</button></div>
+        <div style="margin-bottom:8px;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--ink2);">Progress</span><span style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${c.checkedSteps.length} / ${sc.steps.length}</span></div><div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div></div>
+        ${stepsPreview}
+        ${sc.steps.length>5?`<div style="font-size:11px;color:var(--ink3);margin-top:6px;">+ ${sc.steps.length-5} more steps</div>`:''}
+      </div>
+      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:12px;font-weight:700;color:var(--ink);">Documents (${docs.length})</div><label class="btn btn-primary btn-sm" style="cursor:pointer;font-size:10px;">+ Upload<input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfUploadDoc('${caseId}',this)"></label></div>
+        ${docs.length?docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);"><span>${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.(docx?)/i)?'📝':'📎'}</span><div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.filename)}</div></div><button onclick="wfDownloadDoc('${caseId}','${d.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇</button></div>`).join(''):`<div style="font-size:11px;color:var(--ink3);">No documents yet — use Upload to add files.</div>`}
+      </div>
+      <div style="padding:14px 22px;display:flex;align-items:center;gap:8px;margin-top:auto;">
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="if(confirm('Delete this case? Cannot be undone.')){document.getElementById('wfDetailPanel').remove();wfDeleteCase('${caseId}')}">Delete record</button>
+        <div style="flex:1;"></div>
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfDetailPanel').remove()">Close</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(panel);
+  panel.onclick = e => { if(e.target===panel) panel.remove(); };
+}
+async function wfDetAddLog(caseId) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const note=document.getElementById('wf-det-note-'+caseId)?.value?.trim(); if(!note){document.getElementById('wf-det-note-'+caseId)?.focus();return;}
+  const type=document.getElementById('wf-det-type-'+caseId)?.value||'note';
+  if(!c.contactLog) c.contactLog=[];
+  c.contactLog.push({type,note,date:new Date().toISOString()});
+  await saveWfCases();
+  document.getElementById('wfDetailPanel')?.remove();
+  openWfDetailsPanel(caseId);
+  renderTrackersBody();
+}
+async function wfDetDeleteLog(caseId, date) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  c.contactLog=(c.contactLog||[]).filter(e=>e.date!==date);
+  await saveWfCases();
+  document.getElementById('wfDetailPanel')?.remove();
+  openWfDetailsPanel(caseId);
+}
+function wfDetAttachFile(caseId, input) {
+  const f=input.files[0]; if(!f) return;
+  const lbl=input.closest('label').querySelector('span')||input.closest('label');
+  if(lbl) lbl.textContent='📎 '+f.name;
 }
 
 async function wfCloseCase(id) {
