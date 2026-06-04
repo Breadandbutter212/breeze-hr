@@ -12100,6 +12100,32 @@ function hcCandSummary(r) {
   if (!cands.length) return '<span style="color:var(--ink3);font-size:11px;">No candidates</span>';
   return `<span style="font-size:11px;color:var(--ink);">${active.length} active${hired.length?' · '+hired.length+' hired':''}</span>`;
 }
+function hcStageDurationHtml(r) {
+  const history = r.stageHistory;
+  if (!history || history.length === 0) return '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">Stage durations will be recorded from the next stage change.</div>';
+  const now = new Date();
+  const entries = history.map((h,i) => {
+    const start = new Date(h.startedAt);
+    const end = history[i+1] ? new Date(history[i+1].startedAt) : now;
+    const days = Math.max(0, Math.ceil((end - start) / 86400000));
+    return { stage: h.stage, days, isCurrent: i === history.length-1 };
+  });
+  const maxDays = Math.max(...entries.map(e=>e.days), 1);
+  const totalDays = entries.reduce((s,e)=>s+e.days, 0);
+  const bars = entries.map(e=>{
+    const pct = Math.round((e.days/maxDays)*100);
+    const st = HC_STAGES.find(s=>s.id===e.stage)||{label:e.stage,color:'#6B7280'};
+    return `<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+      <div style="width:88px;font-size:11px;color:var(--ink2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(st.label.replace(' ✓',''))}</div>
+      <div style="flex:1;height:16px;background:var(--border);border-radius:3px;overflow:hidden;">
+        <div style="width:${pct}%;height:100%;background:${st.color};border-radius:3px;opacity:${e.isCurrent?1:0.65};"></div>
+      </div>
+      <div style="font-size:11px;font-weight:600;color:${e.isCurrent?'var(--accent)':'var(--ink3)'};width:60px;text-align:right;">${e.days}d${e.isCurrent?' (now)':''}</div>
+    </div>`;
+  }).join('');
+  return `<div>${bars}<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);">Total time open: <strong style="color:var(--ink);">${totalDays} days</strong></div></div>`;
+}
+
 function renderHeadcount() {
   const body = document.getElementById('headcountBody');
   if (!body || !hcRoles) return;
@@ -12230,6 +12256,7 @@ async function submitAddRole(btn, existingId) {
     notes:document.getElementById('hc-notes')?.value?.trim()||'',
     candidates:existing?.candidates||[],
     contactLog:existing?.contactLog||[],
+    stageHistory:existing?.stageHistory||[{stage:rec.stage,startedAt:now}],
     createdAt:existing?.createdAt||now,
     updatedAt:now,
   };
@@ -12318,6 +12345,12 @@ function openRolePanel(id) {
       </div>
 
       ${r.interviewProcess?`<div style="padding:10px 22px;border-bottom:1px solid var(--border);background:var(--surface2);"><span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Interview process: </span><span style="font-size:12px;color:var(--ink2);">${escapeHtml(r.interviewProcess)}</span></div>`:''}
+
+      <!-- Stage timeline -->
+      <div style="padding:14px 22px;border-bottom:1px solid var(--border);">
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:10px;">Stage timeline</div>
+        ${hcStageDurationHtml(r)}
+      </div>
 
       <!-- Candidates section -->
       <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
@@ -12409,6 +12442,10 @@ async function hcDeleteCand(roleId,candId) {
 }
 async function hcUpdateField(id,field,value) {
   const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
+  if (field==='stage' && r.stage!==value) {
+    if (!r.stageHistory) r.stageHistory=[{stage:r.stage,startedAt:r.createdAt||new Date().toISOString()}];
+    r.stageHistory.push({stage:value, startedAt:new Date().toISOString()});
+  }
   r[field]=value; r.updatedAt=new Date().toISOString();
   await saveHCRoles(); renderHeadcount();
 }
