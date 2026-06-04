@@ -10117,7 +10117,8 @@ function ocBuild() {
   emps.forEach(emp => {
     const id = String(emp.id || emp.display_full_name || Math.random());
     const empl = emp.employments?.[0];
-    const dept = ocExtractDept(emp) || 'General';
+    const baseDept = ocExtractDept(emp) || 'General';
+    const dept = _ocDeptOverrides.hasOwnProperty(id) ? _ocDeptOverrides[id] : baseDept;
     const managerId = ocExtractMgrId(emp);
     if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
     // _ocRelations overrides HRIS manager data
@@ -10400,6 +10401,21 @@ function ocShowNodeMenu(node) {
         style="width:100%;font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;font-family:inherit;text-align:left;"
         onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='var(--red-bg)'">
         &#x2715; Remove from chart</button>`:''}
+      <div style="border-top:1px solid var(--border);margin:8px -14px 0;padding:10px 14px 0;">
+        <div style="font-size:10px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:5px;">Team</div>
+        <div style="font-size:12px;color:var(--ink);margin-bottom:9px;padding:5px 8px;background:var(--surface2);border-radius:var(--r-sm);display:flex;align-items:center;gap:6px;">
+          <div style="width:9px;height:9px;border-radius:3px;background:${node.color};flex-shrink:0;"></div>${escapeHtml(node.dept||'—')}
+        </div>
+        <div style="position:relative;">
+          <input id="ocTeamInp" placeholder="Search or type new team..." autocomplete="off"
+            style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 9px;font-size:12px;font-family:inherit;outline:none;box-sizing:border-box;"
+            oninput="ocTeamSearch(this.value,'${safeId}')"
+            onfocus="this.style.borderColor='var(--accent)';ocTeamSearch(this.value,'${safeId}')"
+            onblur="setTimeout(()=>{const d=document.getElementById('ocTeamDrop');if(d)d.style.display='none'},200)"
+            onkeydown="if(event.key==='Enter'&&this.value.trim()){ocSetTeam('${safeId}',this.value.trim())}">
+          <div id="ocTeamDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);max-height:140px;overflow-y:auto;z-index:600;box-shadow:var(--shadow);"></div>
+        </div>
+      </div>
     </div>`;
   vp.appendChild(menu);
   setTimeout(()=>document.getElementById('ocMgrInp')?.focus(),50);
@@ -10432,10 +10448,43 @@ function ocSetManager(nodeId, newManagerId) {
   if(_ocEmps) ocBuild();
 }
 
+function ocTeamSearch(q, nodeId) {
+  const drop=document.getElementById('ocTeamDrop'); if(!drop) return;
+  const depts=Object.keys(_ocDeptColors);
+  const filtered=q.trim()?depts.filter(d=>d.toLowerCase().includes(q.toLowerCase())):depts;
+  const exactMatch=depts.some(d=>d.toLowerCase()===q.trim().toLowerCase());
+  const items=filtered.map(d=>{
+    const safeD=d.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<div onmousedown="ocSetTeam('${nodeId}','${safeD}')"
+      style="padding:7px 10px;cursor:pointer;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:8px;"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="width:9px;height:9px;border-radius:3px;background:${_ocDeptColors[d]||'#6B7280'};flex-shrink:0;"></div>
+      <div style="font-size:12px;color:var(--ink);">${escapeHtml(d)}</div>
+    </div>`;
+  });
+  if(q.trim()&&!exactMatch){
+    const safeQ=q.trim().replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    items.push(`<div onmousedown="ocSetTeam('${nodeId}','${safeQ}')"
+      style="padding:7px 10px;cursor:pointer;display:flex;align-items:center;gap:8px;"
+      onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <span style="font-size:12px;color:var(--accent);">+ Create "${escapeHtml(q.trim())}"</span>
+    </div>`);
+  }
+  drop.innerHTML=items.join('');
+  drop.style.display=items.length?'block':'none';
+}
+
+function ocSetTeam(nodeId, newTeam) {
+  _ocDeptOverrides[nodeId]=newTeam;
+  document.getElementById('ocNodeMenu')?.remove();
+  if(_ocEmps) ocBuild();
+}
+
 function ocRemovePerson(nodeId) {
   document.getElementById('ocNodeMenu')?.remove();
   _ocEmps=(_ocEmps||[]).filter(e=>String(e.id)!==nodeId);
   delete _ocRelations[nodeId];
+  delete _ocDeptOverrides[nodeId];
   if(_ocEmps?.length) ocBuild();
 }
 
@@ -10490,6 +10539,7 @@ function ocInitialView() {
 function ocReset() {
   _ocOffsets={};
   _ocRelations={};
+  _ocDeptOverrides={};
   _ocEmps=ocGetDemoData();
   ocBuild();
 }
@@ -11242,7 +11292,6 @@ function wfRenderCase(c) {
         <div style="margin-top:8px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
         <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--ink3);">
           <span id="wf-progress-pct">${done} / ${total} steps complete</span>
-          ${c.mpRecordId?`<button onclick="document.getElementById('wfCaseSlidePanel')?.remove();showTrackerTab('leave');setTimeout(()=>openMatPatRecord('${c.mpRecordId}'),200)" style="font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;">📋 Leave record →</button>`:''}
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
@@ -11683,7 +11732,7 @@ function showBreezeToast(msg) {
 
 // ── ORG CHART STATE ──
 let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
-let _ocRelations = {};
+let _ocRelations = {}, _ocDeptOverrides = {};
 let _ocT = { x: 0, y: 0, k: 0.85 };
 let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
 const OC_SNAP = 10;
@@ -11692,7 +11741,7 @@ const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','
 
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
-  _ocEmps=null; _ocRelations={}; _ocOffsets={}; _ocTree=null;
+  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null;
   const root = document.getElementById('orgChartRoot'); if (!root) return;
   root.innerHTML = `
     <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
