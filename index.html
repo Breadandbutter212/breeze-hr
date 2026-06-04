@@ -12106,29 +12106,43 @@ function renderHeadcount() {
   if (!body || !hcRoles) return;
   const closed = ['hired','withdrawn'];
   const active = hcRoles.filter(r=>!closed.includes(r.stage));
-  const sourcing = active.filter(r=>['sourcing','shortlisting'].includes(r.stage));
+  const urgent = active.filter(r=>r.priority==='urgent'||r.priority==='high');
   const interviewing = active.filter(r=>r.stage==='interviewing');
   const atOffer = active.filter(r=>r.stage==='offer');
+  const allCands = hcRoles.flatMap(r=>r.candidates||[]);
+  const activeCands = allCands.filter(c=>!HC_CAND_FINAL.includes(c.stage));
   const thisYear = new Date().getFullYear();
   const hiredTY = hcRoles.filter(r=>r.stage==='hired'&&new Date(r.updatedAt||r.createdAt).getFullYear()===thisYear);
   const avgDays = active.length ? Math.round(active.reduce((s,r)=>s+hcDaysOpen(r),0)/active.length) : 0;
-  const rows = hcRoles.map(r=>`<tr style="cursor:pointer;" onclick="openRolePanel('${r.id}')">
-    <td><div style="font-weight:600;color:var(--ink);">${escapeHtml(r.title)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(r.dept||'')}${r.hiringManager?' · '+escapeHtml(r.hiringManager):''}</div></td>
-    <td>${hcStageBadge(r.stage)}</td>
-    <td style="font-size:12px;color:var(--ink2);white-space:nowrap;">${hcFmtComp(r)}</td>
-    <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${hcFmt(r.targetStart)}</td>
-    <td style="font-size:12px;color:${hcDaysOpen(r)>60?'var(--red)':'var(--ink3)'};">${closed.includes(r.stage)?'—':hcDaysOpen(r)+'d'}</td>
-    <td style="font-size:12px;color:var(--ink3);">${escapeHtml(r.source||'—')}</td>
-    <td style="white-space:nowrap;">
-      <button onclick="event.stopPropagation();openRolePanel('${r.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Details →</button>
-      <button onclick="event.stopPropagation();deleteHCRole('${r.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
-    </td>
-  </tr>`).join('');
+
+  const rows = hcRoles.map(r=>{
+    const st = HC_STAGES.find(x=>x.id===r.stage)||{label:r.stage,color:'#6B7280',bg:'#F3F4F6'};
+    const stageOpts = HC_STAGES.map(s=>`<option value="${s.id}"${r.stage===s.id?' selected':''}>${s.label}</option>`).join('');
+    return `<tr onclick="openRolePanel('${r.id}')" style="cursor:pointer;">
+      <td>
+        <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">${hcPriorityBadge(r.priority)}</div>
+        <div style="font-weight:600;color:var(--ink);">${escapeHtml(r.title)}${r.headcount>1?` <span style="font-size:10px;font-weight:400;color:var(--ink3);">×${r.headcount}</span>`:''}</div>
+        <div style="font-size:10px;color:var(--ink3);">${escapeHtml(r.dept||'')}${r.hiringManager?' · '+escapeHtml(r.hiringManager):''}</div>
+      </td>
+      <td onclick="event.stopPropagation()">
+        <select onchange="hcUpdateField('${r.id}','stage',this.value)" style="border:1px solid ${st.color}40;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;background:${st.bg};color:${st.color};">${stageOpts}</select>
+      </td>
+      <td style="font-size:12px;color:var(--ink2);white-space:nowrap;">${hcFmtComp(r)}</td>
+      <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${hcFmt(r.targetStart)}</td>
+      <td>${hcCandSummary(r)}</td>
+      <td style="font-size:12px;color:${hcDaysOpen(r)>60?'var(--red)':'var(--ink3)'};">${closed.includes(r.stage)?'—':hcDaysOpen(r)+'d'}</td>
+      <td style="white-space:nowrap;">
+        <button onclick="event.stopPropagation();openRolePanel('${r.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Details →</button>
+        <button onclick="event.stopPropagation();deleteHCRole('${r.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
+      </td>
+    </tr>`;
+  }).join('');
+
   body.innerHTML = `<div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${active.length}</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">Active</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${sourcing.length}</div><div class="trk-kpi-label">Sourcing / shortlisting</div><div class="trk-kpi-sub">Candidate search</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">${interviewing.length}</div><div class="trk-kpi-label">Interviewing</div><div class="trk-kpi-sub">Active interviews</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${active.length}</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">${hiredTY.length} hired this year</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EF4444;">${urgent.length}</div><div class="trk-kpi-label">Urgent / high priority</div><div class="trk-kpi-sub">Need action</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">${interviewing.length}</div><div class="trk-kpi-label">Interviewing</div><div class="trk-kpi-sub">${activeCands.length} active candidates</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${atOffer.length}</div><div class="trk-kpi-label">At offer stage</div><div class="trk-kpi-sub">Pending acceptance</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${avgDays}d</div><div class="trk-kpi-label">Avg days open</div><div class="trk-kpi-sub">Active roles</div></div>
     </div>
@@ -12140,7 +12154,7 @@ function renderHeadcount() {
       </div>
     </div>
     ${hcRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
-      <thead><tr><th>Role</th><th>Stage</th><th>Comp range</th><th>Target start</th><th>Days open</th><th>Source</th><th></th></tr></thead>
+      <thead><tr><th>Role</th><th>Stage</th><th>Comp range</th><th>Target start</th><th>Candidates</th><th>Days open</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>` : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.</div>`}
   </div>`;
@@ -12151,10 +12165,12 @@ function openAddRoleModal(existing) {
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const lbl = 'font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
   const stageOpts = HC_STAGES.map(s=>`<option value="${s.id}"${(r.stage||'briefing')===s.id?' selected':''}>${s.label}</option>`).join('');
-  const sourceOpts = ['','...'].concat(HC_SOURCES).filter((v,i)=>i===0||v!=='...').map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s||'Select...'}</option>`).join('');
+  const priorOpts = HC_PRIORITIES.map(p=>`<option value="${p.id}"${(r.priority||'normal')===p.id?' selected':''}>${p.label}</option>`).join('');
+  const srcOpts = HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('');
+  const defaultStages = (r.interviewStages||HC_DEFAULT_INTERVIEW_STAGES).join(', ');
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
-  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:580px;max-height:90vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:600px;max-height:92vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
     <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:white;">${isEdit?'Edit':'Add'} open role</div></div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -12162,15 +12178,19 @@ function openAddRoleModal(existing) {
         <div><label style="${lbl}">Department</label><input id="hc-dept" value="${escapeHtml(r.dept||'')}" placeholder="e.g. People" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Hiring manager</label><input id="hc-mgr" value="${escapeHtml(r.hiringManager||'')}" placeholder="Name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('hc-mgr').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Stage</label><select id="hc-stage" style="${inp}">${stageOpts}</select></div>
-        <div><label style="${lbl}">Source / channel</label><select id="hc-source" style="${inp}">${HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label style="${lbl}">Priority</label><select id="hc-priority" style="${inp}">${priorOpts}</select></div>
         <div><label style="${lbl}">Comp min (£)</label><input id="hc-cmin" type="number" value="${r.compMin||''}" placeholder="e.g. 80000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Comp max (£)</label><input id="hc-cmax" type="number" value="${r.compMax||''}" placeholder="e.g. 100000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Target start date</label><input id="hc-start" type="date" value="${r.targetStart||''}" style="${inp}"></div>
         <div><label style="${lbl}">No. of positions</label><input id="hc-hc" type="number" min="1" value="${r.headcount||1}" style="${inp}"></div>
+        <div><label style="${lbl}">Source / channel</label><select id="hc-source" style="${inp}">${srcOpts}</select></div>
+        <div><label style="${lbl}">Agency name</label><input id="hc-agency" value="${escapeHtml(r.agencyName||'')}" placeholder="e.g. Hays, Michael Page..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Agency fee %</label><input id="hc-fee" type="number" min="0" max="30" value="${r.agencyFee||''}" placeholder="e.g. 20" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Budget (£)</label><input id="hc-budget" type="number" value="${r.budget||''}" placeholder="e.g. 25000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       </div>
-      <div><label style="${lbl}">Agency name <span style="font-weight:400;color:var(--ink3);">(if applicable)</span></label><input id="hc-agency" value="${escapeHtml(r.agencyName||'')}" placeholder="e.g. Hays, Michael Page..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
-      <div><label style="${lbl}">Interview process</label><textarea id="hc-process" rows="3" placeholder="e.g. CV screen → 1st interview → task → final panel → offer" style="${inp}resize:vertical;min-height:60px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(r.interviewProcess||'')}</textarea></div>
-      <div><label style="${lbl}">Notes</label><textarea id="hc-notes" rows="2" style="${inp}resize:vertical;min-height:50px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(r.notes||'')}</textarea></div>
+      <div><label style="${lbl}">Interview stages <span style="font-weight:400;color:var(--ink3);">(comma-separated, in order)</span></label><input id="hc-istages" value="${escapeHtml(defaultStages)}" placeholder="CV screen, 1st interview, 2nd interview, Final panel, Offer" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="${lbl}">Interview process notes</label><textarea id="hc-process" rows="2" placeholder="e.g. CV screen by HR → 1st interview with hiring manager → take-home task → final panel → offer" style="${inp}resize:vertical;min-height:55px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(r.interviewProcess||'')}</textarea></div>
+      <div><label style="${lbl}">Role brief / notes</label><textarea id="hc-notes" rows="2" style="${inp}resize:vertical;min-height:50px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(r.notes||'')}</textarea></div>
     </div>
     <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
       <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
@@ -12187,19 +12207,26 @@ async function submitAddRole(btn, existingId) {
   btn.textContent='Saving...'; btn.disabled=true;
   const now = new Date().toISOString();
   const existing = existingId ? (hcRoles||[]).find(r=>r.id===existingId) : null;
+  const stagesRaw = document.getElementById('hc-istages')?.value||'';
+  const interviewStages = stagesRaw.split(',').map(s=>s.trim()).filter(Boolean);
   const rec = {
     id: existingId||'hc_'+Date.now(),
     title, dept:document.getElementById('hc-dept')?.value?.trim()||'',
     hiringManager:document.getElementById('hc-mgr')?.value?.trim()||'',
     stage:document.getElementById('hc-stage')?.value||'briefing',
+    priority:document.getElementById('hc-priority')?.value||'normal',
     source:document.getElementById('hc-source')?.value||'',
     compMin:parseInt(document.getElementById('hc-cmin')?.value||'0')||0,
     compMax:parseInt(document.getElementById('hc-cmax')?.value||'0')||0,
     targetStart:document.getElementById('hc-start')?.value||'',
     headcount:parseInt(document.getElementById('hc-hc')?.value||'1')||1,
     agencyName:document.getElementById('hc-agency')?.value?.trim()||'',
+    agencyFee:parseFloat(document.getElementById('hc-fee')?.value||'0')||0,
+    budget:parseInt(document.getElementById('hc-budget')?.value||'0')||0,
+    interviewStages: interviewStages.length ? interviewStages : HC_DEFAULT_INTERVIEW_STAGES,
     interviewProcess:document.getElementById('hc-process')?.value?.trim()||'',
     notes:document.getElementById('hc-notes')?.value?.trim()||'',
+    candidates:existing?.candidates||[],
     contactLog:existing?.contactLog||[],
     createdAt:existing?.createdAt||now,
     updatedAt:now,
@@ -12218,6 +12245,41 @@ function openRolePanel(id) {
   panel.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const lbl='font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;display:block;';
   const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
+  const stageOpts=HC_STAGES.map(s=>`<option value="${s.id}"${r.stage===s.id?' selected':''}>${s.label}</option>`).join('');
+  const priorOpts=HC_PRIORITIES.map(p=>`<option value="${p.id}"${(r.priority||'normal')===p.id?' selected':''}>${p.label}</option>`).join('');
+  const stages = r.interviewStages||HC_DEFAULT_INTERVIEW_STAGES;
+  const allStages = [...stages, ...HC_CAND_FINAL];
+  const cands = r.candidates||[];
+  // Pipeline counts
+  const pipelineHtml = stages.map(st=>{
+    const count = cands.filter(c=>c.stage===st).length;
+    const maxCount = Math.max(...stages.map(s=>cands.filter(c=>c.stage===s).length),1);
+    const pct = Math.round((count/maxCount)*100);
+    return `<div style="display:flex;align-items:center;gap:8px;padding:4px 0;">
+      <div style="width:100px;font-size:11px;color:var(--ink2);flex-shrink:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(st)}</div>
+      <div style="flex:1;height:14px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:var(--accent);border-radius:3px;"></div></div>
+      <div style="font-size:12px;font-weight:700;color:var(--ink);width:20px;text-align:right;">${count}</div>
+    </div>`;
+  }).join('');
+  const hiredCount = cands.filter(c=>c.stage==='Hired').length;
+  const rejectedCount = cands.filter(c=>c.stage==='Rejected'||c.stage==='Withdrawn').length;
+  const activeCandCount = cands.filter(c=>!HC_CAND_FINAL.includes(c.stage)).length;
+  // Candidate list grouped by stage
+  const candsByStage = allStages.map(st=>{
+    const list = cands.filter(c=>c.stage===st);
+    if (!list.length) return '';
+    return `<div style="margin-bottom:10px;">
+      <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">${escapeHtml(st)} (${list.length})</div>
+      ${list.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:var(--r-sm);margin-bottom:4px;">
+        <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(c.name)}</div>${c.source?`<div style="font-size:10px;color:var(--ink3);">via ${escapeHtml(c.source)}</div>`:''}</div>
+        <select onchange="hcMoveCand('${id}','${c.id}',this.value)" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 6px;font-size:10px;font-family:inherit;outline:none;background:white;cursor:pointer;">
+          ${allStages.map(s=>`<option value="${s}"${c.stage===s?' selected':''}>${escapeHtml(s)}</option>`).join('')}
+        </select>
+        <button onclick="hcDeleteCand('${id}','${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;padding:0 2px;flex-shrink:0;">✕</button>
+      </div>`).join('')}
+    </div>`;
+  }).join('');
+  // Contact log
   const contactLog=(r.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   const daysSince=contactLog.length?Math.floor((new Date()-new Date(contactLog[0].date))/86400000):null;
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
@@ -12226,48 +12288,118 @@ function openRolePanel(id) {
     const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
     return `<div class="log-entry" style="align-items:flex-start;"><div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;"><span style="font-size:11px;">${iconMap[e.type]||'📝'}</span><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span><button onclick="hcDeleteLog('${id}','${escapeHtml(e.date)}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:12px;padding:0 2px;">✕</button></div><div class="log-text">${escapeHtml(e.note)}</div></div></div>`;
-  }).join('')||'<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No updates logged yet</div>';
-  const stageOpts=HC_STAGES.map(s=>`<option value="${s.id}"${r.stage===s.id?' selected':''}>${s.label}</option>`).join('');
-  panel.innerHTML=`<div style="width:700px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
+  }).join('')||'<div style="text-align:center;padding:16px 0;color:var(--ink3);font-size:12px;">No updates logged yet</div>';
+
+  panel.innerHTML=`<div style="width:740px;max-width:96vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
     <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
-      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;"><div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(r.title)}</div>${hcStageBadge(r.stage)}</div><div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(r.dept||'')}${r.hiringManager?' · Hiring manager: '+escapeHtml(r.hiringManager):''}</div></div>
+      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
+        <div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(r.title)}${r.headcount>1?` <span style="font-size:12px;font-weight:400;opacity:0.6;">×${r.headcount}</span>`:''}</div>
+        ${hcStageBadge(r.stage)} ${hcPriorityBadge(r.priority)}
+      </div>
+      <div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(r.dept||'')}${r.hiringManager?' · HM: '+escapeHtml(r.hiringManager):''} · Opened ${hcFmt(r.createdAt)} · ${hcDaysOpen(r)} days open</div></div>
       <button onclick="document.getElementById('hcRolePanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
-      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
-        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:12px;">Role details</div>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px;">
-          <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${inp}">${stageOpts}</select></div>
-          <div><label style="${lbl}">Comp min (£)</label><input type="number" value="${r.compMin||''}" onchange="hcUpdateField('${id}','compMin',parseInt(this.value)||0)" style="${inp}" placeholder="80000"></div>
-          <div><label style="${lbl}">Comp max (£)</label><input type="number" value="${r.compMax||''}" onchange="hcUpdateField('${id}','compMax',parseInt(this.value)||0)" style="${inp}" placeholder="100000"></div>
-          <div><label style="${lbl}">Target start</label><input type="date" value="${r.targetStart||''}" onchange="hcUpdateField('${id}','targetStart',this.value)" style="${inp}"></div>
-          <div><label style="${lbl}">Source</label><input value="${escapeHtml(r.source||'')}" onchange="hcUpdateField('${id}','source',this.value)" style="${inp}" placeholder="LinkedIn, agency..."></div>
-          <div><label style="${lbl}">Agency</label><input value="${escapeHtml(r.agencyName||'')}" onchange="hcUpdateField('${id}','agencyName',this.value)" style="${inp}" placeholder="Agency name"></div>
-        </div>
-        ${r.interviewProcess?`<div style="margin-bottom:10px;"><label style="${lbl}">Interview process</label><div style="font-size:12px;color:var(--ink2);line-height:1.6;background:var(--surface2);border-radius:var(--r-sm);padding:8px 10px;">${escapeHtml(r.interviewProcess)}</div></div>`:''}
-        <div style="display:flex;gap:8px;margin-top:6px;">
-          <button onclick="document.getElementById('hcRolePanel').remove();openAddRoleModal((hcRoles||[]).find(x=>x.id==='${id}'))" class="btn btn-secondary btn-sm" style="font-size:11px;">✏ Edit details</button>
-          <span style="font-size:11px;color:var(--ink3);align-self:center;">Opened ${hcFmt(r.createdAt)} · ${hcDaysOpen(r)} days open</span>
-        </div>
+
+      <!-- Quick details row -->
+      <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+        <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${inp}">${stageOpts}</select></div>
+        <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${inp}">${priorOpts}</select></div>
+        <div><label style="${lbl}">Comp range</label><div style="font-size:13px;font-weight:600;color:var(--ink);padding:7px 0;">${hcFmtComp(r)||'Not set'}</div></div>
+        <div><label style="${lbl}">Target start</label><input type="date" value="${r.targetStart||''}" onchange="hcUpdateField('${id}','targetStart',this.value)" style="${inp}"></div>
+        <div><label style="${lbl}">Source</label><div style="font-size:12px;color:var(--ink2);padding:7px 0;">${escapeHtml(r.source||'—')}${r.agencyName?' ('+escapeHtml(r.agencyName)+')':''}</div></div>
+        <div><label style="${lbl}">Budget</label><div style="font-size:12px;color:var(--ink2);padding:7px 0;">${r.budget?'£'+r.budget.toLocaleString():'—'}${r.agencyFee?' · '+r.agencyFee+'% fee':''}</div></div>
       </div>
+
+      ${r.interviewProcess?`<div style="padding:10px 22px;border-bottom:1px solid var(--border);background:var(--surface2);"><span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Interview process: </span><span style="font-size:12px;color:var(--ink2);">${escapeHtml(r.interviewProcess)}</span></div>`:''}
+
+      <!-- Candidates section -->
+      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+          <div style="font-size:12px;font-weight:700;color:var(--ink);">Candidates <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${cands.length} total · ${activeCandCount} active${hiredCount?' · '+hiredCount+' hired':''}${rejectedCount?' · '+rejectedCount+' rejected/withdrawn':''})</span></div>
+          <button onclick="hcAddCandidateModal('${id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Add candidate</button>
+        </div>
+        ${activeCandCount>0?`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r);"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pipeline</div>${pipelineHtml}</div>`:''}
+        ${cands.length?candsByStage:`<div style="padding:20px 0;text-align:center;color:var(--ink3);font-size:12px;">No candidates yet — click <strong>+ Add candidate</strong> to start tracking.</div>`}
+      </div>
+
+      <!-- Contact log -->
       <div style="padding:16px 22px;flex:1;">
-        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:14px;">Updates &amp; contact log ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>14?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(none logged)</span>'}</div>
+        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:14px;">Updates &amp; notes ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>14?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(none logged)</span>'}</div>
         <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;display:flex;gap:8px;">
           <select id="hc-log-type-${id}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;"><option value="note">📝 Note</option><option value="call">📞 Call</option><option value="email">✉️ Email</option><option value="meeting">👥 Meeting</option><option value="action">✅ Action</option></select>
-          <input id="hc-log-note-${id}" placeholder="Update, candidate feedback, next step..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcAddLog('${id}')}">
+          <input id="hc-log-note-${id}" placeholder="Update, interview feedback, next step..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcAddLog('${id}')}">
           <button class="btn btn-primary btn-sm" onclick="hcAddLog('${id}')">Log</button>
         </div>
-        <div id="hc-log-list-${id}">${logHtml}</div>
+        <div>${logHtml}</div>
       </div>
+
       <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
         <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHCRole('${id}')">Delete role</button>
         <div style="flex:1;"></div>
+        <button onclick="document.getElementById('hcRolePanel').remove();openAddRoleModal((hcRoles||[]).find(x=>x.id==='${id}'))" class="btn btn-secondary btn-sm" style="font-size:11px;">✏ Edit details</button>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('hcRolePanel').remove()">Close</button>
       </div>
     </div>
   </div>`;
   document.body.appendChild(panel);
   panel.onclick = e => { if(e.target===panel) panel.remove(); };
+}
+function hcAddCandidateModal(roleId) {
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  const stages=r.interviewStages||HC_DEFAULT_INTERVIEW_STAGES;
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const lbl='font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
+  const stageOpts=stages.map(s=>`<option value="${s}">${escapeHtml(s)}</option>`).join('');
+  const srcOpts=HC_SOURCES.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:white;">Add candidate</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${escapeHtml(r.title)}</div></div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="${lbl}">Name *</label><input id="hc-cand-name" placeholder="Full name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('hc-cand-name').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><label style="${lbl}">Starting stage</label><select id="hc-cand-stage" style="${inp}">${stageOpts}</select></div>
+        <div><label style="${lbl}">Source</label><select id="hc-cand-source" style="${inp}">${srcOpts}</select></div>
+      </div>
+      <div><label style="${lbl}">Email <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><input id="hc-cand-email" type="email" placeholder="candidate@email.com" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="${lbl}">Notes <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><input id="hc-cand-notes" placeholder="e.g. Strong on culture fit, weak on technical" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="hcSubmitCandidate(this,'${roleId}')">Add candidate</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  setTimeout(()=>document.getElementById('hc-cand-name')?.focus(),60);
+}
+async function hcSubmitCandidate(btn,roleId) {
+  const name=document.getElementById('hc-cand-name')?.value?.trim();
+  if(!name){document.getElementById('hc-cand-name').style.borderColor='var(--red)';return;}
+  btn.textContent='Saving...';btn.disabled=true;
+  const r=(hcRoles||[]).find(x=>x.id===roleId);if(!r)return;
+  if(!r.candidates)r.candidates=[];
+  r.candidates.push({id:'c_'+Date.now(),name,stage:document.getElementById('hc-cand-stage')?.value||'CV screen',source:document.getElementById('hc-cand-source')?.value||'',email:document.getElementById('hc-cand-email')?.value?.trim()||'',notes:document.getElementById('hc-cand-notes')?.value?.trim()||'',addedAt:new Date().toISOString()});
+  r.updatedAt=new Date().toISOString();
+  await saveHCRoles();
+  btn.closest('div[style*=fixed]').remove();
+  document.getElementById('hcRolePanel')?.remove();
+  openRolePanel(roleId);renderHeadcount();
+}
+async function hcMoveCand(roleId,candId,newStage) {
+  const r=(hcRoles||[]).find(x=>x.id===roleId);if(!r)return;
+  const c=(r.candidates||[]).find(x=>x.id===candId);if(!c)return;
+  c.stage=newStage;r.updatedAt=new Date().toISOString();
+  await saveHCRoles();
+  document.getElementById('hcRolePanel')?.remove();openRolePanel(roleId);renderHeadcount();
+}
+async function hcDeleteCand(roleId,candId) {
+  const r=(hcRoles||[]).find(x=>x.id===roleId);if(!r)return;
+  r.candidates=(r.candidates||[]).filter(c=>c.id!==candId);
+  r.updatedAt=new Date().toISOString();
+  await saveHCRoles();
+  document.getElementById('hcRolePanel')?.remove();openRolePanel(roleId);renderHeadcount();
 }
 async function hcUpdateField(id,field,value) {
   const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
@@ -12298,8 +12430,11 @@ async function deleteHCRole(id) {
   document.getElementById('hcRolePanel')?.remove(); renderHeadcount();
 }
 function downloadHCCSV() {
-  const rows=[['Role','Department','Hiring Manager','Stage','Comp Min','Comp Max','Target Start','Days Open','Source','Agency','Positions','Interview Process','Notes']];
-  (hcRoles||[]).forEach(r=>rows.push([r.title,r.dept,r.hiringManager,r.stage,r.compMin||'',r.compMax||'',r.targetStart,hcDaysOpen(r),r.source,r.agencyName,r.headcount,r.interviewProcess,r.notes]));
+  const rows=[['Role','Dept','Hiring Manager','Stage','Priority','Comp Min','Comp Max','Target Start','Days Open','Source','Agency','Fee %','Budget','Positions','Total Candidates','Active Candidates','Hired','Interview Process','Notes']];
+  (hcRoles||[]).forEach(r=>{
+    const cands=r.candidates||[];
+    rows.push([r.title,r.dept,r.hiringManager,r.stage,r.priority||'normal',r.compMin||'',r.compMax||'',r.targetStart,hcDaysOpen(r),r.source,r.agencyName,r.agencyFee||'',r.budget||'',r.headcount,cands.length,cands.filter(c=>!HC_CAND_FINAL.includes(c.stage)).length,cands.filter(c=>c.stage==='Hired').length,r.interviewProcess,r.notes]);
+  });
   downloadCSV(rows,'Headcount planning '+new Date().toLocaleDateString('en-GB'));
 }
 
