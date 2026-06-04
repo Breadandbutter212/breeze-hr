@@ -5226,11 +5226,11 @@ async function savePassword() {
 }
 
 // ── NAV ──
-function showView(v,el) {
+function showView(v,navEl) {
   // Close any open fixed overlays/panels so they don't silently block clicks
   document.getElementById('mpRecordPanel')?.remove();
-  document.querySelectorAll('div[style*="position:fixed"][style*="inset:0"]').forEach(el => {
-    if (el.id !== 'recConsentOverlay' && el.id !== 'tourOverlay') el.remove();
+  document.querySelectorAll('div[style*="position:fixed"][style*="inset:0"]').forEach(ov => {
+    if (ov.id !== 'recConsentOverlay' && ov.id !== 'tourOverlay') ov.remove();
   });
   // Close email and sharepoint panels
   document.getElementById('emailPanel')?.classList.remove('open');
@@ -5241,7 +5241,7 @@ function showView(v,el) {
   document.querySelectorAll('.view').forEach(x=>x.classList.remove('active'));
   document.getElementById('view-'+v).classList.add('active');
   document.querySelectorAll('.ni').forEach(n=>n.classList.remove('active'));
-  if(el)el.classList.add('active');
+  if(navEl)navEl.classList.add('active');
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
