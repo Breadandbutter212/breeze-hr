@@ -8807,7 +8807,7 @@ function renderTrackersBody() {
   else if (trackerTab === 'performance') renderWfCategoryTab(body, ['performance-concern']);
   else if (trackerTab === 'conduct') renderWfCategoryTab(body, ['disciplinary','grievance']);
   else if (trackerTab === 'immigration-wf') renderWfCategoryTab(body, ['immigration-check'], {showImmigration:true});
-  else if (trackerTab === 'careers') renderCareersTracker(body);
+  else if (trackerTab === 'careers') renderCareersCategoryTab(body);
   else renderWfCategoryTab(body, []);
 }
 
@@ -9419,6 +9419,36 @@ function renderRecruitmentTracker(body) {
 
 
 // ── CAREERS TRACKER ──
+function renderCareersCategoryTab(body) {
+  const DEMO = [
+    {name:'Grace Nwosu',role:'Senior Software Engineer',stage:'Promotion approved',icon:'🟢'},
+    {name:'Tom Briggs',role:'DevOps Engineer',stage:'Eligible - no action',icon:'🟡'},
+    {name:'Remi Adeyemi',role:'Finance Manager',stage:'In review cycle',icon:'🔵'},
+    {name:'Lucia Ferrara',role:'HR Business Partner',stage:'PIP complete',icon:'🟣'},
+    {name:'Dan Kowalski',role:'Senior Account Manager',stage:'Succession candidate',icon:'⚫'},
+  ];
+  const listHtml = DEMO.map((e,i) =>
+    `<div onclick="renderCareersDetail(${i})" style="padding:10px 14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background=''">
+      <div style="font-size:12px;font-weight:600;color:var(--ink);">${e.name}</div>
+      <div style="font-size:11px;color:var(--ink3);">${e.role}</div>
+      <div style="font-size:10px;margin-top:3px;">${e.icon} ${e.stage}</div>
+    </div>`
+  ).join('');
+  body.innerHTML =
+    '<div style="position:absolute;top:0;left:0;bottom:0;width:220px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">'
+    + '<div style="padding:11px 14px;border-bottom:1px solid var(--border);font-size:12px;font-weight:600;color:var(--ink);">Employees</div>'
+    + '<div style="flex:1;overflow-y:auto;">' + listHtml + '</div>'
+    + '</div>'
+    + '<div id="careers-detail" style="position:absolute;top:0;left:220px;right:0;bottom:0;overflow-y:auto;background:var(--bg);"></div>';
+  renderCareersTracker(document.getElementById('careers-detail'));
+}
+
+window._demoCareersData = null;
+function renderCareersDetail(idx) {
+  // Just open the career map modal
+  if (window._demoCareers) openCareerMap(idx);
+}
+
 function renderCareersTracker(body) {
   const DEMO_CAREERS = [
     { name:'Grace Nwosu', title:'Senior Software Engineer', dept:'Engineering', band:'L5', hireDate:'2021-03-14', lastReview:'2025-11-01', reviewScore:'Exceeds', nextPromoEligible:'2026-03-14', stage:'Promotion approved', cvLinked:true, hrisLinked:true, careerMap:[{date:'2021-03-14',role:'Software Engineer L3',note:'Joined from recruitment'},{date:'2022-09-01',role:'Software Engineer L4',note:'Promoted - exceeded targets 2 cycles'},{date:'2024-06-01',role:'Senior Software Engineer L5',note:'Performance review led promotion'}] },
@@ -10389,12 +10419,18 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
         }).join('')
     : '';
 
-  const defaultRight = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);padding:40px;text-align:center;">'
-    + '<div style="font-size:36px;">' + (tabScenarios[0]?.icon||'\u{1F4CB}') + '</div>'
-    + '<div style="font-size:15px;font-weight:600;color:var(--ink);">' + (activeCases.length?'Select a case':'Start your first case') + '</div>'
-    + '<div style="font-size:13px;max-width:320px;line-height:1.7;">' + (activeCases.length?'Click a name on the left to open their checklist.':'Choose a checklist type from the left to create a case for an employee.') + '</div>'
-    + (!activeCases.length?'<button onclick="wfNewCaseForTab()" class="btn btn-primary" style="margin-top:4px;">+ New case</button>':'')
-    + '</div>';
+  // For Family Leave: show mat/pat tracker as default right content
+  let defaultRight;
+  if (opts.showMatPat) {
+    defaultRight = '<div style="padding:20px;overflow-y:auto;height:100%;box-sizing:border-box;" id="wf-matpat-default"></div>';
+  } else {
+    defaultRight = '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);padding:40px;text-align:center;">'
+      + '<div style="font-size:36px;">' + (tabScenarios[0]?.icon||'\u{1F4CB}') + '</div>'
+      + '<div style="font-size:15px;font-weight:600;color:var(--ink);">' + (activeCases.length?'Select a case':'Start your first case') + '</div>'
+      + '<div style="font-size:13px;max-width:320px;line-height:1.7;">' + (activeCases.length?'Click a name on the left to open their checklist.':'Choose a checklist type from the left to create a case for an employee.') + '</div>'
+      + (!activeCases.length?'<button onclick="wfNewCaseForTab()" class="btn btn-primary" style="margin-top:4px;">+ New case</button>':'')
+      + '</div>';
+  }
 
   body.innerHTML =
     '<div style="position:absolute;top:0;left:0;bottom:0;width:258px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">'
@@ -10411,7 +10447,11 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     + '</div></div></div></div>'
     + '<div id="wf-detail" style="position:absolute;top:0;left:258px;right:0;bottom:0;overflow-y:auto;background:var(--bg);">' + defaultRight + '</div>';
 
-  console.log('[Tracker] body.innerHTML set, trackersBody offsetHeight:', body.offsetHeight, 'width:', body.offsetWidth);
+  // Fill mat/pat tracker into right panel for Family Leave
+  if (opts.showMatPat) {
+    const mpEl = document.getElementById('wf-matpat-default');
+    if (mpEl) renderLeaveTracker(mpEl);
+  }
 
   const currentCase = wfActiveCase && activeCases.find(c=>c.id===wfActiveCase.id);
   if (currentCase) wfRenderCase(currentCase);
