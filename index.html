@@ -1218,7 +1218,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div><div class="manage-title">Org Structure</div><div class="manage-sub">Dynamic org chart - auto-populated from your HRIS. Drag nodes to rearrange.</div></div>
     <div style="display:flex;gap:6px;align-items:center;" id="orgTopBtns"></div>
   </div>
-  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;" id="orgChartRoot"></div>
+  <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;" id="orgChartRoot"></div>
 </div>
 
 <!-- TRACKERS -->
@@ -7797,7 +7797,12 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
     }
 
     const fields     = m.fieldComparisons || [];
-    const diffFields = fields.filter(f => !f.match);
+    // For spreadsheet vs spreadsheet: "onlyIn" rows are just different columns between systems — not real discrepancies.
+    // Only surface them in comp/letter mode where "only in letter" means a payment wasn't captured.
+    const realDiffs  = fields.filter(f => !f.match && !f.onlyInA && !f.onlyInB);  // both sides have a value but they differ
+    const onlyFields = fields.filter(f => !f.match && (f.onlyInA || f.onlyInB));  // exists in one side only
+    // In comp mode show everything; in spreadsheet mode hide onlyIn fields (just different columns, not errors)
+    const diffFields = isCompMode ? fields.filter(f => !f.match) : realDiffs;
     const hasDiff    = diffFields.length > 0;
     const hasSalDiff = diffFields.some(f => f.isSalary);
     const dtype      = hasSalDiff ? 'salary' : hasDiff ? 'diff' : 'match';
@@ -7809,23 +7814,27 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
         <div class="emp-flat-head">
           <span style="font-size:13px;">✅</span>
           <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
-          <span style="font-size:11px;color:var(--green);margin-left:8px;">All fields match</span>
+          <span style="font-size:11px;color:var(--green);margin-left:8px;">All shared fields match</span>
         </div>
       </div>`;
     }
 
-    // Has differences: show flat table of ONLY the differing fields
+    // Has differences: show flat table of differing fields
     const diffRows = diffFields.map(f => {
       const isSal = f.isSalary;
-      const valA = f.onlyInB ? '<span style="color:var(--ink3);font-style:italic;">not in spreadsheet</span>' : `<strong>${escapeHtml(f.valA)}</strong>`;
-      const valB = f.onlyInA ? '<span style="color:var(--ink3);font-style:italic;">not in letter</span>'      : `<strong style="color:${isSal?'#EF4444':'#D97706'};">${escapeHtml(f.valB)}</strong>`;
+      const sideA = isCompMode ? 'Spreadsheet' : nameA.replace(/\.[^.]+$/,'');
+      const sideB = isCompMode ? 'Letter'       : nameB.replace(/\.[^.]+$/,'');
+      const valA = f.onlyInB ? `<span style="color:var(--ink3);font-style:italic;">not in ${sideA}</span>` : `<strong>${escapeHtml(f.valA)}</strong>`;
+      const valB = f.onlyInA ? `<span style="color:var(--ink3);font-style:italic;">not in ${sideB}</span>` : `<strong style="color:${isSal?'#EF4444':'#D97706'};">${escapeHtml(f.valB)}</strong>`;
+      const badge = isSal ? '<span class="emp-badge emp-badge-salary">SALARY</span>'
+        : f.onlyInA ? `<span class="emp-badge emp-badge-missing">Only in ${sideB}</span>`
+        : f.onlyInB ? `<span class="emp-badge emp-badge-missing">Only in ${sideA}</span>`
+        : '<span class="emp-badge emp-badge-diff">Diff</span>';
       return `<tr>
         <td style="padding:7px 14px;font-size:12px;font-weight:500;color:var(--ink2);width:26%;border-bottom:1px solid var(--border);text-transform:capitalize;">${escapeHtml(f.displayName)}</td>
         <td style="padding:7px 14px;font-size:12px;color:var(--ink);border-bottom:1px solid var(--border);">${valA}</td>
         <td style="padding:7px 14px;font-size:12px;border-bottom:1px solid var(--border);">${valB}</td>
-        <td style="padding:7px 14px;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">
-          ${isSal ? '<span class="emp-badge emp-badge-salary">SALARY</span>' : f.onlyInA ? '<span class="emp-badge emp-badge-missing">Only in letter</span>' : f.onlyInB ? '<span class="emp-badge emp-badge-missing">Only in sheet</span>' : '<span class="emp-badge emp-badge-diff">Diff</span>'}
-        </td>
+        <td style="padding:7px 14px;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">${badge}</td>
       </tr>`;
     }).join('');
 
@@ -7850,8 +7859,8 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
       <table style="width:100%;border-collapse:collapse;background:var(--surface);">
         <thead><tr style="background:var(--surface2);">
           <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);width:26%;">Field</td>
-          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Spreadsheet</td>
-          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Letter</td>
+          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">${escapeHtml(nameA.replace(/\.[^.]+$/,''))}</td>
+          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">${escapeHtml(nameB.replace(/\.[^.]+$/,''))}</td>
           <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Status</td>
         </tr></thead>
         <tbody>${diffRows}${matchRows}</tbody>
@@ -9398,7 +9407,7 @@ function initOrgChart() {
       <button onclick="ocExportPpt()" style="font-size:11px;background:var(--accent);color:white;border:none;border-radius:var(--r-sm);padding:0 12px;height:28px;cursor:pointer;font-family:inherit;">&#8659; PPT</button>
     </div>
     <div id="ocLegend" style="padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:34px;flex-shrink:0;"></div>
-    <div id="ocVP" style="flex:1;overflow:hidden;position:relative;background:linear-gradient(135deg,#F8FAFC 0%,#EFF6FF 100%);cursor:grab;user-select:none;"
+    <div id="ocVP" style="flex:1;min-height:0;overflow:hidden;position:relative;background:linear-gradient(135deg,#F8FAFC 0%,#EFF6FF 100%);cursor:grab;user-select:none;"
       onmousedown="ocPanDown(event)" onmousemove="ocPanMove(event)" onmouseup="ocPanUp(event)" onmouseleave="ocPanUp(event)"
       onwheel="ocWheel(event)">
       <div id="ocWorld" style="position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;">
