@@ -7661,10 +7661,16 @@ function compareMatchedRow(rowA, rowB, extraSkip) {
     const valA = entA?.val ?? '', valB = entB?.val ?? '';
     if (!valA && !valB) continue;
     const isSalary = isSalaryKey(g) || isSalaryKey(entA?.key||'') || isSalaryKey(entB?.key||'');
+    const nA = normalizeSalaryValue(valA), nB = normalizeSalaryValue(valB);
+    // Use numeric comparison for salary fields OR whenever both sides are plain numbers / £ amounts ≥ 100
+    // This handles spreadsheet "15000" vs letter "£15,000" for bonus, relocation, signing etc.
+    const isDate = /\d{4}-\d{2}-\d{2}/.test(valA) || /\d{4}-\d{2}-\d{2}/.test(valB);
+    const hasLetters = (v => /[a-zA-Z]/.test(v.replace(/[£$€]/g,'')));
+    const useNumeric = !isDate && nA !== null && nB !== null && nA >= 1 && nB >= 1
+      && !hasLetters(String(valA)) && !hasLetters(String(valB));
     let match;
-    if (isSalary) {
-      const nA = normalizeSalaryValue(valA), nB = normalizeSalaryValue(valB);
-      match = nA !== null && nB !== null && Math.abs(nA - nB) < 1;
+    if (useNumeric) {
+      match = Math.abs(nA - nB) < 1;
     } else {
       match = String(valA).toLowerCase().trim().replace(/\s+/g,' ') === String(valB).toLowerCase().trim().replace(/\s+/g,' ');
     }
