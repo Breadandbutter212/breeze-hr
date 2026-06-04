@@ -9061,7 +9061,7 @@ function renderLeaveTracker(body) {
   };
 
   body.innerHTML = `
-  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;">
+  <div style="display:flex;flex-direction:column;gap:18px;">
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity').length} upcoming</div></div>
@@ -9093,6 +9093,7 @@ function renderLeaveTracker(body) {
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div class="trk-section-head" style="margin:0;">Maternity, Paternity &amp; Shared Parental Leave</div>
         <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="downloadMatPatCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
           <button onclick="openTrackerGuidance('leave')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
           <button class="btn btn-primary btn-sm" onclick="openAddMatPatModal()">+ Add record</button>
         </div>
@@ -9678,6 +9679,7 @@ function renderCareersTracker(body) {
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div class="trk-section-head" style="margin:0;">Promotions &amp; Career Progression</div>
         <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="downloadCareersCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
           <button onclick="openTrackerGuidance('careers')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
           <button class="btn btn-primary btn-sm">+ Add employee</button>
         </div>
@@ -10768,6 +10770,37 @@ function wfTagBadge(tag) {
 
 let _wfCurrentTabScenarios = [];
 
+function downloadCSV(rows, filename) {
+  const csv = rows.map(r => r.map(c => {
+    const s = String(c ?? '');
+    return s.includes(',') || s.includes('"') || s.includes('\n') ? '"' + s.replace(/"/g,'""') + '"' : s;
+  }).join(',')).join('\n');
+  const blob = new Blob(['﻿' + csv], {type:'text/csv;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href = url; a.download = filename + '.csv'; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+function downloadTabCSVByScenarios(scenarioIdsStr, label) {
+  const ids = scenarioIdsStr.split(',');
+  const rows = [['Employee','Type','Started','Checklist %','Status','Contact logs','Documents']];
+  (wfCases||[]).filter(c => ids.includes(c.scenarioId)).forEach(c => {
+    const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{label:'Unknown',steps:[]};
+    const pct = sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0;
+    rows.push([c.employeeName, sc.label, new Date(c.startedAt).toLocaleDateString('en-GB'), pct+'%', c.status==='closed'?'Closed':'Active', (c.contactLog||[]).length, (c.docs||[]).length]);
+  });
+  downloadCSV(rows, label + ' ' + new Date().toLocaleDateString('en-GB'));
+}
+function downloadMatPatCSV() {
+  const rows = [['Employee','Job Title','Type','Due / Birth','Leave Start','Expected Return','Actual Return','KIT Used','KIT Max','Dependant Added','Status']];
+  (mpRecords||[]).forEach(r => rows.push([r.employeeName, r.jobTitle||'', r.type, r.dueDate||'', r.leaveStart||'', r.expectedReturn||'', r.actualReturn||'', r.kitDaysUsed||0, r.kitDaysMax||10, r.dependantAdded?'Yes':'No', mpStatus(r)]));
+  downloadCSV(rows, 'Family leave tracker ' + new Date().toLocaleDateString('en-GB'));
+}
+function downloadCareersCSV() {
+  const rows = [['Employee','Title','Dept','Band','Last Review','Score','Next Eligible','Career Steps','CV','HRIS','Stage']];
+  (window._demoCareers||[]).forEach(c => rows.push([c.name, c.title, c.dept, c.band, c.lastReview, c.reviewScore, c.nextPromoEligible, c.careerMap.length, c.cvLinked?'Yes':'No', c.hrisLinked?'Yes':'No', c.stage]));
+  downloadCSV(rows, 'Careers tracker ' + new Date().toLocaleDateString('en-GB'));
+}
+
 function buildTabKpisHtml(activeCases, closedCases, scenarioIds) {
   const noContact = activeCases.filter(c => !(c.contactLog||[]).length);
   const thisYear = new Date().getFullYear();
@@ -10873,7 +10906,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 </td>
                 <td><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● Active</span></td>
                 <td style="white-space:nowrap;">
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">View →</button>
+                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">Checklist ${pct}% →</button>
+                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
                 </td>
               </tr>`;
@@ -10888,7 +10922,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td><span style="font-size:12px;font-weight:600;color:var(--green);">${pct}%</span></td>
                 <td><span class="trk-badge trk-badge-grey">✓ Closed</span></td>
                 <td style="white-space:nowrap;">
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">View →</button>
+                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">Checklist ${pct}% →</button>
+                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:10px;color:var(--red);margin-left:4px;">Delete</button>
                 </td>
               </tr>`;
@@ -10908,6 +10943,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--ink);">${catName.replace(' leave','').replace(' /','/')} cases <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${activeCases.length} active${closedCases.length?' · '+closedCases.length+' closed':''})</span></div>
       <div style="display:flex;gap:8px;align-items:center;">
+        <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         <button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('leave')||scenarioIds[0]?.includes('absence')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')||scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
         <button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm">+ New case</button>
       </div>
