@@ -8955,6 +8955,58 @@ const TRACKER_GUIDANCE_FALLBACK = {
       '<strong>ILR - settlement:</strong> Most migrants become eligible for Indefinite Leave to Remain (ILR) after 5 years continuous residence. Absences over 180 days in any 12-month period can break continuity - flag this risk proactively.',
       '<strong>Passport expiry:</strong> An expired passport does not automatically invalidate existing leave to remain. However, expired travel documents should be noted and employees encouraged to renew promptly.',
     ]
+  },
+  absence: {
+    title: 'Sickness Absence Management',
+    source: 'ACAS & Equality Act 2010',
+    acasUrl: 'https://www.acas.org.uk/absence-from-work',
+    points: [
+      '<strong>Statutory Sick Pay (SSP):</strong> Payable from day 1 of absence (from April 2026) at £123.25/week for up to 28 weeks. Employees must earn above the Lower Earnings Limit to qualify. Always verify the current rate before confirming entitlement.',
+      '<strong>Self-certification:</strong> Employees can self-certify for the first 7 calendar days. After that, a fit note from a GP or relevant healthcare professional is required before sick pay continues.',
+      '<strong>Return to work interview:</strong> Conduct a brief return to work discussion after every absence, however short. It is your single most effective tool for managing short-term absence and signalling you take it seriously.',
+      '<strong>Trigger points:</strong> Document trigger points in your absence policy (e.g. Bradford Factor, number of episodes, or recurring patterns) and apply them consistently. Inconsistent application is your biggest tribunal risk.',
+      '<strong>Long-term absence (4+ weeks):</strong> Obtain a fit note, consider an Occupational Health referral, and assess whether the Equality Act 2010 applies. A condition with a substantial, long-term effect on daily activities may constitute a disability — requiring reasonable adjustments before any capability process begins.',
+      '<strong>Capability vs conduct:</strong> Persistent short-term absence is generally managed as a capability issue, not disciplinary. Maintain regular contact during absence, document all meetings, and give the employee a genuine opportunity to improve before escalating.',
+    ]
+  },
+  leavers: {
+    title: 'Leavers & Resignation Management',
+    source: 'ACAS & Employment Rights Act 1996',
+    acasUrl: 'https://www.acas.org.uk/resignations',
+    points: [
+      '<strong>Acknowledging resignation:</strong> Confirm the resignation in writing — including last working day, notice period, and any conditions — promptly. Delaying acknowledgement creates ambiguity and risk.',
+      '<strong>Notice periods:</strong> Statutory minimum is 1 week per complete year of service (up to 12 weeks). Contractual periods override statutory. Either party may agree to waive notice. Withholding final pay as leverage is unlawful.',
+      '<strong>Holiday accrual:</strong> Employees are entitled to pay for all accrued but untaken statutory holiday on termination. Any excess holiday taken may be recovered via final pay only if the contract permits it.',
+      '<strong>Garden leave:</strong> On garden leave, the employee remains employed — all rights accrue and full pay must continue. Restrictive covenants run from the last day of employment, not from garden leave start.',
+      '<strong>Return of property:</strong> Log and confirm return of all company equipment (laptop, phone, fobs, cards) in writing before or on the final day. Revoke system and email access promptly on departure.',
+      '<strong>Exit checklist:</strong> Notify payroll, cease benefits, confirm reference policy, complete knowledge handover, and deactivate accounts. A missed step (especially IT access) creates security and data protection exposure.',
+    ]
+  },
+  performance: {
+    title: 'Performance Management',
+    source: 'ACAS & Employment Rights Act 1996',
+    acasUrl: 'https://www.acas.org.uk/performance-management',
+    points: [
+      '<strong>Informal first:</strong> Address performance concerns informally before initiating any formal process. A documented, frank conversation at this stage resolves the majority of issues and demonstrates good faith at tribunal.',
+      '<strong>Performance Improvement Plan (PIP):</strong> Set SMART targets — Specific, Measurable, Achievable, Relevant, Time-bound. A realistic timeframe is typically 4–12 weeks. The employee must receive active support, not simply be monitored.',
+      '<strong>Documentation:</strong> Record every review meeting in writing. If the employee disputes a note, invite them to add their own comments rather than rewriting yours. Your notes are your primary evidence if the case escalates.',
+      '<strong>Disability and health:</strong> Before or during a formal process, consider whether underperformance may be linked to a health condition. Seek Occupational Health advice. Reasonable adjustments must be explored before capability dismissal can be considered.',
+      '<strong>Right to be accompanied:</strong> Employees have a statutory right to be accompanied at any formal hearing by a colleague or trade union representative. Denying this right can render any outcome automatically unfair.',
+      '<strong>Outcome and appeal:</strong> After a PIP, if performance remains inadequate despite genuine support, capability dismissal may be fair. Always confirm the outcome in writing and give a right of appeal to an independent manager.',
+    ]
+  },
+  conduct: {
+    title: 'Disciplinary & Grievance',
+    source: 'ACAS Code of Practice on Disciplinary and Grievance Procedures',
+    acasUrl: 'https://www.acas.org.uk/disciplinary-and-grievance-procedures',
+    points: [
+      '<strong>ACAS Code of Practice:</strong> Tribunals take the ACAS Code into account when assessing fairness. Failure to follow it can result in up to a 25% uplift in any compensation award — in either direction.',
+      '<strong>Investigation before hearing:</strong> Carry out a reasonable investigation before any formal disciplinary hearing. The investigating manager should not also be the hearing manager. Document all witness accounts and preserve evidence.',
+      '<strong>Right to be accompanied:</strong> Employees must be informed of their right to be accompanied (by a colleague or union rep) at all formal hearings. Denying or overlooking this right can make any outcome automatically unfair.',
+      '<strong>The hearing:</strong> Give at least 5 working days notice. Share all evidence in advance. Give the employee a full opportunity to respond to the allegations before any decision is made.',
+      '<strong>Sanctions and proportionality:</strong> Sanctions must be proportionate to the misconduct. Typical progression: first written warning → final written warning → dismissal. Gross misconduct may justify summary dismissal, but still requires investigation and a hearing first.',
+      '<strong>Grievances:</strong> Acknowledge all formal grievances within 5 working days. Appoint a neutral manager to investigate. Respond in writing with outcome and right of appeal. Ignoring a grievance gives the employee grounds to resign and claim constructive dismissal.',
+    ]
   }
 };
 
@@ -8973,7 +9025,7 @@ async function loadTrackerGuidance(topic, containerId) {
   // Search uploaded policies for relevance
   let matchedPolicy = null;
   if (currentProfile) {
-    const keywords = { leave:['maternity','paternity','parental','family leave'], recruitment:['recruitment','hiring','selection','ats'], careers:['performance','promotion','career','grading','pip'], immigration:['right to work','immigration','visa','sponsor'] };
+    const keywords = { leave:['maternity','paternity','parental','family leave','shared parental'], absence:['sickness','absence','sick leave','ssP','fit note','bradford'], leavers:['resignation','leaver','notice period','garden leave','termination'], performance:['performance','pip','performance improvement','capability'], conduct:['disciplinary','grievance','misconduct','acas code'], recruitment:['recruitment','hiring','selection','ats'], careers:['promotion','career','grading','succession'], immigration:['right to work','immigration','visa','sponsor'] };
     const { data: pols } = await sb.from('policies').select('name,content').eq('company_id', currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','CHAT:%').not('name','like','SETTING:%').not('name','like','TRACKER:%');
     if (pols?.length) {
       const kws = keywords[topic] || [];
@@ -8990,7 +9042,7 @@ async function loadTrackerGuidance(topic, containerId) {
   }
 
   // Policy found - ask Claude to extract the 5 most actionable points for this tracker
-  const topicLabel = { leave:'maternity, paternity and shared parental leave tracking', recruitment:'recruitment management and candidate tracking', careers:'performance reviews, promotions and career progression', immigration:'right to work, visa and immigration compliance' }[topic];
+  const topicLabel = { leave:'maternity, paternity and shared parental leave tracking', absence:'sickness absence management', leavers:'leaver and resignation management', performance:'performance management and PIPs', conduct:'disciplinary and grievance handling', recruitment:'recruitment management and candidate tracking', careers:'promotions and career progression', immigration:'right to work, visa and immigration compliance' }[topic]||topic;
   try {
     const token = await getAuthToken();
     const res = await fetch('/api/chat', {
@@ -9673,7 +9725,7 @@ function renderCareersTracker(body) {
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${DEMO_CAREERS.filter(c=>c.stage==='Succession candidate').length}</div><div class="trk-kpi-label">Succession candidates</div></div>
     </div>
     ${DEMO_CAREERS.filter(c=>c.stage.includes('Eligible')||!c.cvLinked).map(c=>
-      `<div class="trk-flag" style="${!c.stage.includes('Eligible')?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}"><span class="trk-flag-icon">${c.stage.includes('Eligible')?'⚠️':'ℹ️'}</span><div><strong>${c.name}</strong> - ${c.stage.includes('Eligible')?'eligible for promotion but no action taken.':'original CV from recruitment not attached to employee record.'}</div></div>`
+      `<div class="trk-flag" style="${!c.stage.includes('Eligible')?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}"><span class="trk-flag-icon">${c.stage.includes('Eligible')?'⚠️':'ℹ️'}</span><div style="flex:1;"><strong>${c.name}</strong> - ${c.stage.includes('Eligible')?'eligible for promotion but no action taken.':'original CV from recruitment not attached to employee record.'}</div><button onclick="this.closest('.trk-flag').remove()" style="background:none;border:none;cursor:pointer;color:${c.stage.includes('Eligible')?'#fbbf24':'#93c5fd'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button></div>`
     ).join('')}
     <div class="trk-card">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
@@ -10944,7 +10996,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
       <div style="font-size:15px;font-weight:700;color:var(--ink);">${catName.replace(' leave','').replace(' /','/')} cases <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${activeCases.length} active${closedCases.length?' · '+closedCases.length+' closed':''})</span></div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
-        <button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('leave')||scenarioIds[0]?.includes('absence')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')||scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
+        <button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
         <button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm">+ New case</button>
       </div>
     </div>
