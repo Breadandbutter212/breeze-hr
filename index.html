@@ -12126,6 +12126,7 @@ function renderHeadcount() {
       <td onclick="event.stopPropagation()">
         <select onchange="hcUpdateField('${r.id}','stage',this.value)" style="border:1px solid ${st.color}40;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;background:${st.bg};color:${st.color};">${stageOpts}</select>
       </td>
+      <td style="font-size:12px;color:var(--ink3);">${escapeHtml(r.country||'—')}</td>
       <td style="font-size:12px;color:var(--ink2);white-space:nowrap;">${hcFmtComp(r)}</td>
       <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${hcFmt(r.targetStart)}</td>
       <td>${hcCandSummary(r)}</td>
@@ -12153,7 +12154,7 @@ function renderHeadcount() {
       </div>
     </div>
     ${hcRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
-      <thead><tr><th>Role</th><th>Stage</th><th>Comp range</th><th>Target start</th><th>Candidates</th><th>Days open</th><th></th></tr></thead>
+      <thead><tr><th>Role</th><th>Stage</th><th>Location</th><th>Comp range</th><th>Target start</th><th>Candidates</th><th>Days open</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>` : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.</div>`}
   </div>`;
@@ -12310,8 +12311,10 @@ function openRolePanel(id) {
         <div><label style="${lbl}">Comp min (£)</label><input type="number" value="${r.compMin||''}" onchange="hcUpdateField('${id}','compMin',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 80000"></div>
         <div><label style="${lbl}">Comp max (£)</label><input type="number" value="${r.compMax||''}" onchange="hcUpdateField('${id}','compMax',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 100000"></div>
         <div><label style="${lbl}">Target start</label><input type="date" value="${r.targetStart||''}" onchange="hcUpdateField('${id}','targetStart',this.value)" style="${inp}"></div>
-        <div><label style="${lbl}">Source</label><div style="font-size:12px;color:var(--ink2);padding:7px 0;">${escapeHtml(r.source||'—')}${r.agencyName?' ('+escapeHtml(r.agencyName)+')':''}</div></div>
-        <div><label style="${lbl}">Budget</label><div style="font-size:12px;color:var(--ink2);padding:7px 0;">${r.budget?'£'+r.budget.toLocaleString():'—'}${r.agencyFee?' · '+r.agencyFee+'% fee':''}</div></div>
+        <div><label style="${lbl}">Source</label><select onchange="hcUpdateField('${id}','source',this.value)" style="${inp}">${HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label style="${lbl}">Agency name</label><input value="${escapeHtml(r.agencyName||'')}" onchange="hcUpdateField('${id}','agencyName',this.value)" style="${inp}" placeholder="e.g. Hays, Michael Page..."></div>
+        <div><label style="${lbl}">Budget (£)</label><input type="number" value="${r.budget||''}" onchange="hcUpdateField('${id}','budget',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 25000"></div>
+        <div><label style="${lbl}">Agency fee %</label><input type="number" min="0" max="30" value="${r.agencyFee||''}" onchange="hcUpdateField('${id}','agencyFee',parseFloat(this.value)||0)" style="${inp}" placeholder="e.g. 20"></div>
       </div>
 
       ${r.interviewProcess?`<div style="padding:10px 22px;border-bottom:1px solid var(--border);background:var(--surface2);"><span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Interview process: </span><span style="font-size:12px;color:var(--ink2);">${escapeHtml(r.interviewProcess)}</span></div>`:''}
