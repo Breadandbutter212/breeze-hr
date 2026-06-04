@@ -11251,7 +11251,7 @@ function wfRenderCase(c) {
     let actionBtn = '';
     if (step.action) {
       if (step.action.type==='doc') actionBtn=`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
-      else if (step.action.type==='tab') actionBtn=`<button onclick="event.stopPropagation();showTrackerTab('${step.action.tab}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
+      // tab-type actions removed — user is already in the tracker
     }
     return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${c.id}',${step.id})">
       <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation();wfToggleStep('${c.id}',${step.id})" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
