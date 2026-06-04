@@ -9746,7 +9746,6 @@ async function addMpContactLog(id) {
   mpLogClearAttach(id);
   const logList = document.getElementById(`mp-log-list-${id}`);
   if (logList) logList.innerHTML = rec.contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>mpLogEntry(e,id)).join('');
-  renderTrackersBody();
 }
 
 async function deleteMatPatRecord(id) {
