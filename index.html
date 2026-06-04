@@ -1172,7 +1172,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="manage-topbar">
     <div>
       <div class="manage-title">Compare documents</div>
-      <div class="manage-sub" id="compareSubTitle">Upload two files to compare — cell-by-cell for general changes, or employee-match to cross-check by name / ID.</div>
+      <div class="manage-sub" id="compareSubTitle">Select a mode to get started.</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <select id="compareMode" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);cursor:pointer;" onchange="onCompareModeChange()">
@@ -1182,6 +1182,17 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       </select>
       <button class="btn btn-secondary btn-sm" onclick="resetCompare()">↺ Reset</button>
       <button class="btn btn-primary btn-sm" id="compareBtn" onclick="runCompare()" style="display:none;">Compare</button>
+    </div>
+  </div>
+  <!-- Mode guidance card -->
+  <div id="compareModeHelp" style="margin:0 20px 0;display:none;">
+    <div style="background:#F8FAFC;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;display:flex;gap:14px;align-items:flex-start;">
+      <div id="compareModeIcon" style="font-size:22px;flex-shrink:0;margin-top:1px;"></div>
+      <div style="flex:1;">
+        <div id="compareModeTitle" style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;"></div>
+        <div id="compareModeDesc" style="font-size:12px;color:var(--ink2);line-height:1.7;"></div>
+        <div id="compareModeSteps" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
+      </div>
     </div>
   </div>
   <div class="compare-upload-row">
@@ -5226,7 +5237,7 @@ function showView(v,el) {
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
-  if(v==='compare') { /* no init needed */ }
+  if(v==='compare') { initCompareHelp(); }
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
@@ -7369,6 +7380,27 @@ async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
 
 // ── EMPLOYEE MATCH COMPARE ──
 
+const COMPARE_MODE_INFO = {
+  general: {
+    icon: '📄',
+    title: 'General comparison — spot exactly what changed between two files',
+    desc: 'Upload two versions of the same Excel or Word document. Breeze HR compares them cell-by-cell (Excel) or line-by-line (Word) and shows every addition, removal and change.',
+    steps: ['Good for: contract redlines, policy updates, spotting edits between two versions', 'Both files should be the same type and roughly the same structure', 'Excel: compares each cell across matching sheets · Word: LCS diff on paragraph text']
+  },
+  comp: {
+    icon: '💰',
+    title: 'Compensation statement — cross-check comp letters against your payroll data',
+    desc: 'Upload your HR or payroll spreadsheet as File A, then select one or more compensation letters (.docx) as File B. Breeze HR matches each letter to the employee row by name, reads the letter using AI regardless of its format, and flags any discrepancies in salary, bonus, allowances or other payments.',
+    steps: ['Good for: checking offer letters match what\'s in your system, auditing comp statements before issue', 'Handles any letter format — formal tables, prose, informal — AI extracts the numbers', 'Select multiple letters at once to check your whole cohort in one run']
+  },
+  employee: {
+    icon: '📊',
+    title: 'Spreadsheet vs spreadsheet — compare two systems for the same employees',
+    desc: 'Upload two Excel files that both contain employee data — for example your HR system export and your payroll export. Breeze HR matches rows by employee name or ID and compares only the columns that exist in both files, so you only see real discrepancies, not just different column structures.',
+    steps: ['Good for: cross-checking HR system vs payroll, validating a data migration, audit trail comparison', 'Only columns with the same name in both files are compared — different columns are ignored', 'Employee names don\'t need to match exactly — middle initials and minor differences are handled']
+  }
+};
+
 function onCompareModeChange() {
   const mode = document.getElementById('compareMode')?.value || 'general';
   const isEmployee = mode !== 'general';
@@ -7383,19 +7415,35 @@ function onCompareModeChange() {
     if (labelB) labelB.textContent = mode === 'comp' ? 'File B — compensation statements (select multiple .docx)' : 'File B — spreadsheet B';
     if (subA) subA.textContent = '.xlsx, .xls, .csv';
     if (subB) subB.textContent = mode === 'comp' ? '.docx — select multiple files at once' : '.xlsx, .xls, .csv';
-    if (subTitle) subTitle.textContent = mode === 'comp'
-      ? 'Upload your payroll spreadsheet + as many compensation statements as you like. AI reads each letter regardless of format and flags any differences.'
-      : 'Upload two spreadsheets. Matches rows by employee name or ID and compares every field, even if column names differ.';
+    if (subTitle) subTitle.textContent = '';
     if (fB) fB.setAttribute('multiple', '');
   } else {
     if (labelA) labelA.textContent = 'Original file';
     if (labelB) labelB.textContent = 'Updated file';
     if (subA) subA.textContent = '.xlsx, .xls, .docx, .doc';
     if (subB) subB.textContent = '.xlsx, .xls, .docx, .doc';
-    if (subTitle) subTitle.textContent = 'Upload two Excel or Word files to see exactly what changed.';
+    if (subTitle) subTitle.textContent = '';
     if (fB) fB.removeAttribute('multiple');
   }
+  // Update the help card
+  const info = COMPARE_MODE_INFO[mode];
+  const helpCard = document.getElementById('compareModeHelp');
+  if (helpCard && info) {
+    document.getElementById('compareModeIcon').textContent = info.icon;
+    document.getElementById('compareModeTitle').textContent = info.title;
+    document.getElementById('compareModeDesc').textContent = info.desc;
+    document.getElementById('compareModeSteps').innerHTML = info.steps
+      .map(s => `<div style="font-size:11px;color:var(--ink3);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;line-height:1.5;">${escapeHtml(s)}</div>`)
+      .join('');
+    helpCard.style.display = 'block';
+  }
   document.getElementById('compareResults').innerHTML = '';
+}
+
+// Show help card for the default mode on page load
+function initCompareHelp() {
+  const sel = document.getElementById('compareMode');
+  if (sel) onCompareModeChange();
 }
 
 async function extractExcelRowsForCompare(file) {
@@ -8009,7 +8057,7 @@ function renderPeoplePlan() {
         ${[ppPlan.year-1,ppPlan.year,ppPlan.year+1].map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
       </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
-      <button class="btn btn-primary btn-sm" onclick="downloadPeoplePlanXLSX()">⬇ Excel</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadPeoplePlanPPT()">⬇ PPT</button>
       <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
     renderPPTimeline();
   }
@@ -8281,7 +8329,7 @@ function renderPPTimeline() {
         const left  = (isStart || isSingle) ? '3px' : '0';
         const right = (isEnd   || isSingle) ? '3px' : '-1px';
         const label = isStart ? escapeHtml(ev.title) : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-5}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:11px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 8px;line-height:${LANE_H-5}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-5}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:10px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 7px;line-height:${LANE_H-5}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
@@ -8304,7 +8352,7 @@ function renderPPTimeline() {
         </div>
       </div>
       <div style="overflow-x:auto;">
-        <div class="pp-grid" style="grid-template-columns:150px repeat(12,minmax(100px,1fr));min-width:1360px;">${gridHtml}</div>
+        <div class="pp-grid" style="grid-template-columns:150px repeat(12,minmax(130px,1fr));min-width:1710px;">${gridHtml}</div>
       </div>
     </div>
     <div class="pp-legend">${legendHtml}</div>`;
