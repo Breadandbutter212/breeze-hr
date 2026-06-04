@@ -9664,7 +9664,7 @@ function renderCareersTracker(body) {
   const stageColor = s => s.includes('approved')?'trk-badge-green':s.includes('Eligible')?'trk-badge-amber':s.includes('review')?'trk-badge-blue':s.includes('PIP')?'trk-badge-red':'trk-badge-grey';
   const scoreColor = s => s==='Exceeds'?'trk-badge-green':s==='Meets'?'trk-badge-blue':'trk-badge-amber';
   body.innerHTML = `
-  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+  <div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column;gap:20px;">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
