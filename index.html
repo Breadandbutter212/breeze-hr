@@ -5202,7 +5202,7 @@ function showView(v,el) {
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
-  if(v==='trackers'){renderTrackers();}
+  if(v==='trackers'){mpRecords=null;renderTrackers();}
 }
 
 // ── BULK MAIL MERGE ──
@@ -8493,7 +8493,69 @@ function downloadPeoplePlanPPT() {
 }
 
 // ── TRACKERS ──
+// ── MAT/PAT DATA LAYER ──
+let mpRecords = null; // null = not loaded yet
 let trackerTab = 'leave';
+
+async function loadMatPatRecords() {
+  if (mpRecords !== null) return;
+  if (!currentProfile) { mpRecords = []; return; }
+  const { data } = await sb.from('policies')
+    .select('content').eq('company_id', currentProfile.company_id)
+    .eq('name', 'TRACKER:MatPat').maybeSingle();
+  try { mpRecords = data?.content ? JSON.parse(data.content) : []; }
+  catch(e) { mpRecords = []; }
+}
+
+async function saveMatPatRecords() {
+  if (!currentProfile) return;
+  const json = JSON.stringify(mpRecords);
+  const { data: ex } = await sb.from('policies').select('id')
+    .eq('company_id', currentProfile.company_id).eq('name','TRACKER:MatPat').maybeSingle();
+  if (ex) await sb.from('policies').update({ content: json }).eq('id', ex.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'TRACKER:MatPat', content: json });
+}
+
+function mpStatus(rec) {
+  const now = new Date();
+  if (rec.actualReturn) return 'returned';
+  if (rec.leaveStart && new Date(rec.leaveStart) > now) return 'upcoming';
+  return 'active';
+}
+
+function mpDaysSinceContact(rec) {
+  if (!rec.contactLog?.length) return null;
+  const last = rec.contactLog.slice().sort((a,b) => new Date(b.date)-new Date(a.date))[0];
+  return Math.floor((new Date() - new Date(last.date)) / 86400000);
+}
+
+function mpFlags(records) {
+  const flags = [];
+  records.forEach(r => {
+    const status = mpStatus(r);
+    if (status === 'returned') return;
+    if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity')) {
+      flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave — dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
+    }
+    const days = mpDaysSinceContact(r);
+    if (status === 'active' && (days === null || days > 42)) {
+      const ago = days === null ? 'never contacted' : `${days} days ago`;
+      flags.push({ type:'info', msg:`<strong>KIT day check-in:</strong> ${r.employeeName} (${r.type.toLowerCase()}) — last contact ${ago}. Consider reaching out.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'Log contact →' });
+    }
+    if (r.expectedReturn) {
+      const daysToReturn = Math.floor((new Date(r.expectedReturn) - new Date()) / 86400000);
+      if (daysToReturn > 0 && daysToReturn <= 28) {
+        flags.push({ type:'info', msg:`<strong>Return planning:</strong> ${r.employeeName} is expected back in ${daysToReturn} days (${new Date(r.expectedReturn).toLocaleDateString('en-GB',{day:'numeric',month:'short'})}). Confirm arrangements.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
+      }
+    }
+  });
+  return flags;
+}
+
+function mpFmt(d) {
+  if (!d) return '—';
+  return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+}
 
 function showTrackerTab(tab) {
   trackerTab = tab;
@@ -8503,7 +8565,8 @@ function showTrackerTab(tab) {
   renderTrackersBody();
 }
 
-function renderTrackers() {
+async function renderTrackers() {
+  await loadMatPatRecords();
   renderTrackersBody();
 }
 
@@ -8515,216 +8578,294 @@ function renderTrackersBody() {
 }
 
 function renderLeaveTracker(body) {
+  const recs = mpRecords || [];
+  const active  = recs.filter(r => mpStatus(r) === 'active');
+  const upcoming= recs.filter(r => mpStatus(r) === 'upcoming');
+  const returned= recs.filter(r => mpStatus(r) === 'returned');
+  const matActive = active.filter(r => r.type==='Maternity');
+  const patActive = active.filter(r => r.type==='Paternity' || r.type==='Shared Parental');
+  const flags = mpFlags(recs);
+
+  const statusBadge = (r) => {
+    const s = mpStatus(r);
+    if (s==='returned') return `<span class="trk-badge trk-badge-grey">Returned</span>`;
+    if (s==='upcoming') return `<span class="trk-badge trk-badge-blue">● Upcoming</span>`;
+    return `<span class="trk-badge trk-badge-green">● Active</span>`;
+  };
+  const typeBadge = (t) => t==='Maternity'?`<span class="trk-badge trk-badge-purple">Maternity</span>`:t==='Paternity'?`<span class="trk-badge trk-badge-blue">Paternity</span>`:`<span class="trk-badge trk-badge-amber">Shared Parental</span>`;
+  const contactAge = (r) => {
+    const d = mpDaysSinceContact(r);
+    if (d===null) return `<span style="color:var(--red);font-size:11px;">Never</span>`;
+    if (d>42) return `<span style="color:var(--amber);font-size:11px;">${d}d ago</span>`;
+    return `<span style="color:var(--ink3);font-size:11px;">${d}d ago</span>`;
+  };
+
   body.innerHTML = `
-  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;">
 
-    <!-- KPI row -->
+    <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">3</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">2 returning in 2026</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">1</div><div class="trk-kpi-label">On paternity leave</div><div class="trk-kpi-sub">Returns 14 Jun</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">7</div><div class="trk-kpi-label">Current absences</div><div class="trk-kpi-sub">3 with sick notes</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EF4444;">2</div><div class="trk-kpi-label">Long-term absences</div><div class="trk-kpi-sub">4+ weeks</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">4</div><div class="trk-kpi-label">Insurance cases open</div><div class="trk-kpi-sub">1 awaiting response</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity').length} upcoming</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${patActive.length}</div><div class="trk-kpi-label">On paternity / SPL</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type!=='Maternity').length} upcoming</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${recs.filter(r=>r.kitDaysUsed>0).reduce((s,r)=>s+r.kitDaysUsed,0)}</div><div class="trk-kpi-label">KIT days used</div><div class="trk-kpi-sub">Across all active</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length>0?'var(--red)':'var(--green)'};">${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length}</div><div class="trk-kpi-label">Missing dependant</div><div class="trk-kpi-sub">Need adding to benefits</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${returned.length}</div><div class="trk-kpi-label">Returned to work</div><div class="trk-kpi-sub">This year</div></div>
     </div>
 
-    <!-- Auto-flags -->
-    <div style="display:flex;flex-direction:column;gap:8px;">
-      <div class="trk-flag"><span class="trk-flag-icon">⚠️</span><div><strong>Action needed:</strong> Sarah Mitchell is on maternity leave — dependant has not been added to company benefits. <a style="color:#92400E;font-weight:600;cursor:pointer;text-decoration:underline;">Add now →</a></div></div>
-      <div class="trk-flag" style="background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;"><span class="trk-flag-icon" style="font-size:16px;">ℹ️</span><div><strong>KIT day available:</strong> Emma Clarke (mat leave) has 8 KIT days remaining — last contact 6 weeks ago. Consider reaching out. <a style="color:#1e40af;font-weight:600;cursor:pointer;text-decoration:underline;">Log contact →</a></div></div>
-    </div>
+    <!-- Flags -->
+    ${flags.length ? `<div style="display:flex;flex-direction:column;gap:8px;">${flags.map(f=>`
+      <div class="trk-flag" style="${f.type==='info'?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}">
+        <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
+        <div>${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#1e40af':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
+      </div>`).join('')}</div>` : `<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions — all records are up to date.</div>`}
 
-    <!-- Maternity / Paternity tracker -->
+    <!-- Table -->
     <div class="trk-card">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <div class="trk-section-head" style="margin:0;">Maternity & Paternity Leave</div>
-        <button class="btn btn-primary btn-sm">+ Add record</button>
+        <div class="trk-section-head" style="margin:0;">Maternity, Paternity &amp; Shared Parental Leave</div>
+        <button class="btn btn-primary btn-sm" onclick="openAddMatPatModal()">+ Add record</button>
       </div>
+      ${recs.length === 0 ? `<div style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No records yet. Click <strong>+ Add record</strong> to get started.</div>` : `
       <div style="overflow-x:auto;">
         <table class="trk-table">
           <thead><tr>
-            <th>Employee</th><th>Type</th><th>Due / Birth date</th><th>Leave start</th><th>Expected return</th><th>KIT days used</th><th>Dependant added</th><th>Status</th><th>Contact log</th><th></th>
+            <th>Employee</th><th>Type</th><th>Due / Birth</th><th>Leave start</th><th>Expected return</th><th>KIT days</th><th>Dependant</th><th>Status</th><th>Last contact</th><th></th>
           </tr></thead>
           <tbody>
-            <tr>
-              <td><div style="font-weight:600;color:var(--ink);">Sarah Mitchell</div><div style="font-size:10px;color:var(--ink3);">Marketing Manager</div></td>
-              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
-              <td>12 Feb 2026</td>
-              <td>19 Jan 2026</td>
-              <td>19 Jan 2027</td>
-              <td><span style="font-weight:600;color:var(--ink);">0</span> / 10</td>
-              <td><span class="trk-badge trk-badge-red">⚠ Not added</span></td>
-              <td><span class="trk-badge trk-badge-green">● Active</span></td>
-              <td><span style="font-size:11px;color:var(--ink3);">2 weeks ago</span></td>
-              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
-            </tr>
-            <tr>
-              <td><div style="font-weight:600;color:var(--ink);">Emma Clarke</div><div style="font-size:10px;color:var(--ink3);">Senior Developer</div></td>
-              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
-              <td>5 Oct 2025</td>
-              <td>22 Sep 2025</td>
-              <td>22 Sep 2026</td>
-              <td><span style="font-weight:600;color:var(--ink);">2</span> / 10</td>
-              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
-              <td><span class="trk-badge trk-badge-green">● Active</span></td>
-              <td><span style="font-size:11px;color:var(--amber);">6 weeks ago</span></td>
-              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
-            </tr>
-            <tr>
-              <td><div style="font-weight:600;color:var(--ink);">Priya Sharma</div><div style="font-size:10px;color:var(--ink3);">Finance Analyst</div></td>
-              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
-              <td>30 Apr 2026</td>
-              <td>7 Apr 2026</td>
-              <td>7 Apr 2027</td>
-              <td><span style="font-weight:600;color:var(--ink);">0</span> / 10</td>
-              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
-              <td><span class="trk-badge trk-badge-blue">● Upcoming</span></td>
-              <td><span style="font-size:11px;color:var(--ink3);">1 week ago</span></td>
-              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
-            </tr>
-            <tr>
-              <td><div style="font-weight:600;color:var(--ink);">James O'Brien</div><div style="font-size:10px;color:var(--ink3);">Operations Lead</div></td>
-              <td><span class="trk-badge trk-badge-blue">Paternity</span></td>
-              <td>1 Jun 2026</td>
-              <td>2 Jun 2026</td>
-              <td>14 Jun 2026</td>
-              <td><span style="font-weight:600;color:var(--ink);">—</span></td>
-              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
-              <td><span class="trk-badge trk-badge-green">● Active</span></td>
-              <td><span style="font-size:11px;color:var(--ink3);">3 days ago</span></td>
-              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
-            </tr>
-            <tr style="opacity:0.6;">
-              <td><div style="font-weight:600;color:var(--ink);">Amara Diallo</div><div style="font-size:10px;color:var(--ink3);">People Partner</div></td>
-              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
-              <td>14 Jun 2025</td>
-              <td>19 May 2025</td>
-              <td>3 Apr 2026</td>
-              <td><span style="font-weight:600;color:var(--ink);">5</span> / 10</td>
-              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
-              <td><span class="trk-badge trk-badge-grey">Returned</span></td>
-              <td><span style="font-size:11px;color:var(--ink3);">Closed</span></td>
-              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
-            </tr>
+            ${recs.map(r => `<tr>
+              <td><div style="font-weight:600;color:var(--ink);">${escapeHtml(r.employeeName)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(r.jobTitle||'')}</div></td>
+              <td>${typeBadge(r.type)}</td>
+              <td style="white-space:nowrap;">${mpFmt(r.dueDate)}</td>
+              <td style="white-space:nowrap;">${mpFmt(r.leaveStart)}</td>
+              <td style="white-space:nowrap;">${r.actualReturn?`<span style="color:var(--green);font-size:11px;">Returned ${mpFmt(r.actualReturn)}</span>`:mpFmt(r.expectedReturn)}</td>
+              <td><span style="font-weight:600;color:var(--ink);">${r.kitDaysUsed||0}</span><span style="color:var(--ink3);font-size:11px;"> / ${r.kitDaysMax||10}</span></td>
+              <td>${r.dependantAdded?`<span class="trk-badge trk-badge-green">✓ Added</span>`:`<span class="trk-badge trk-badge-red">⚠ Not added</span>`}</td>
+              <td>${statusBadge(r)}</td>
+              <td>${contactAge(r)}</td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;" onclick="openMatPatRecord('${r.id}')">View →</button></td>
+            </tr>`).join('')}
           </tbody>
         </table>
-      </div>
+      </div>`}
     </div>
-
-    <!-- Sick absence log -->
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
-
-      <div class="trk-card">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-          <div class="trk-section-head" style="margin:0;">Current Absences</div>
-          <button class="btn btn-primary btn-sm">+ Log absence</button>
-        </div>
-        <div style="overflow-x:auto;">
-          <table class="trk-table">
-            <thead><tr><th>Employee</th><th>Since</th><th>Days</th><th>Sick note</th><th>Trigger</th></tr></thead>
-            <tbody>
-              <tr>
-                <td><div style="font-weight:600;">Tom Hargreaves</div><div style="font-size:10px;color:var(--ink3);">Sales Exec</div></td>
-                <td style="white-space:nowrap;">28 May</td>
-                <td><span style="font-weight:700;color:var(--red);">6</span></td>
-                <td><span class="trk-badge trk-badge-green">✓ Received</span></td>
-                <td><span class="trk-badge trk-badge-amber">Bradford 8</span></td>
-              </tr>
-              <tr>
-                <td><div style="font-weight:600;">Nadia Osei</div><div style="font-size:10px;color:var(--ink3);">HR Coordinator</div></td>
-                <td style="white-space:nowrap;">2 Jun</td>
-                <td><span style="font-weight:700;color:var(--amber);">2</span></td>
-                <td><span class="trk-badge trk-badge-grey">Self-cert</span></td>
-                <td>—</td>
-              </tr>
-              <tr>
-                <td><div style="font-weight:600;">Leon Forde</div><div style="font-size:10px;color:var(--ink3);">Warehouse</div></td>
-                <td style="white-space:nowrap;">15 Apr</td>
-                <td><span style="font-weight:700;color:var(--red);">50</span></td>
-                <td><span class="trk-badge trk-badge-green">✓ Received</span></td>
-                <td><span class="trk-badge trk-badge-red">Long-term</span></td>
-              </tr>
-              <tr>
-                <td><div style="font-weight:600;">Chloe Watts</div><div style="font-size:10px;color:var(--ink3);">Accounts</div></td>
-                <td style="white-space:nowrap;">20 Mar</td>
-                <td><span style="font-weight:700;color:var(--red);">76</span></td>
-                <td><span class="trk-badge trk-badge-green">✓ Received</span></td>
-                <td><span class="trk-badge trk-badge-red">Long-term</span></td>
-              </tr>
-              <tr>
-                <td><div style="font-weight:600;">Ryan Booth</div><div style="font-size:10px;color:var(--ink3);">IT Support</div></td>
-                <td style="white-space:nowrap;">3 Jun</td>
-                <td><span style="font-weight:700;color:var(--ink3);">1</span></td>
-                <td><span class="trk-badge trk-badge-grey">Pending</span></td>
-                <td>—</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- Insurance outreach -->
-      <div class="trk-card">
-        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-          <div class="trk-section-head" style="margin:0;">Insurance Company Outreach</div>
-          <button class="btn btn-secondary btn-sm">+ Log contact</button>
-        </div>
-        <div style="padding:14px 18px;display:flex;flex-direction:column;gap:0;">
-
-          <div style="padding:12px 0;border-bottom:1px solid var(--border);">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="font-size:12px;font-weight:600;color:var(--ink);">Leon Forde — Zurich</div>
-              <span class="trk-badge trk-badge-amber">Awaiting response</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <div class="log-entry" style="padding:4px 0;">
-                <div class="log-dot" style="background:#3B82F6;"></div>
-                <div class="log-time">4 Jun, 09:14</div>
-                <div class="log-text">Chased claim update by email — ref #ZUR-20482</div>
-              </div>
-              <div class="log-entry" style="padding:4px 0;">
-                <div class="log-dot" style="background:#10B981;"></div>
-                <div class="log-time">28 May, 14:30</div>
-                <div class="log-text">Initial claim submitted. Medical evidence sent.</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="padding:12px 0;border-bottom:1px solid var(--border);">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="font-size:12px;font-weight:600;color:var(--ink);">Chloe Watts — Aviva</div>
-              <span class="trk-badge trk-badge-blue">In assessment</span>
-            </div>
-            <div style="display:flex;flex-direction:column;gap:4px;">
-              <div class="log-entry" style="padding:4px 0;">
-                <div class="log-dot" style="background:#8B5CF6;"></div>
-                <div class="log-time">2 Jun, 11:00</div>
-                <div class="log-text">IP assessment booked for 18 Jun with case manager</div>
-              </div>
-              <div class="log-entry" style="padding:4px 0;">
-                <div class="log-dot" style="background:#10B981;"></div>
-                <div class="log-time">10 Apr, 16:45</div>
-                <div class="log-text">Claim approved in principle. Waiting on OH report.</div>
-              </div>
-            </div>
-          </div>
-
-          <div style="padding:12px 0;">
-            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
-              <div style="font-size:12px;font-weight:600;color:var(--ink);">Tom Hargreaves — Vitality</div>
-              <span class="trk-badge trk-badge-grey">Monitoring</span>
-            </div>
-            <div class="log-entry" style="padding:4px 0;">
-              <div class="log-dot" style="background:#F59E0B;"></div>
-              <div class="log-time">1 Jun, 10:00</div>
-              <div class="log-text">Day 6 — monitoring. Not yet eligible for claim. Review if reaches day 28.</div>
-            </div>
-          </div>
-
-        </div>
-      </div>
-    </div>
-
   </div>`;
+}
+
+// ── ADD RECORD MODAL ──
+function openAddMatPatModal() {
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const lbl = 'font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
+      <div style="font-size:15px;font-weight:700;color:white;">New leave record</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Maternity, paternity or shared parental leave</div>
+    </div>
+    <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div style="grid-column:1/-1;"><label style="${lbl}">Employee full name</label><input id="mp-name" placeholder="e.g. Sarah Mitchell" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Job title</label><input id="mp-title" placeholder="e.g. Marketing Manager" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Leave type</label><select id="mp-type" style="${inp}"><option value="Maternity">Maternity</option><option value="Paternity">Paternity</option><option value="Shared Parental">Shared Parental</option></select></div>
+        <div><label style="${lbl}">Due / birth date</label><input type="date" id="mp-due" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Leave start date</label><input type="date" id="mp-start" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">Expected return date</label><input type="date" id="mp-return" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        <div><label style="${lbl}">KIT days maximum</label><input type="number" id="mp-kitmax" value="10" min="0" max="20" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      </div>
+      <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:13px;color:var(--ink);">
+        <input type="checkbox" id="mp-dep" style="width:15px;height:15px;accent-color:var(--accent);">
+        Dependant already added to company benefits
+      </label>
+      <div><label style="${lbl}">Notes (optional)</label><textarea id="mp-notes" rows="2" placeholder="Any additional context..." style="${inp}min-height:60px;resize:vertical;"></textarea></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="submitAddMatPat(this)">Save record</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target===ov) ov.remove(); };
+  setTimeout(() => document.getElementById('mp-name')?.focus(), 60);
+}
+
+async function submitAddMatPat(btn) {
+  const name = document.getElementById('mp-name')?.value?.trim();
+  if (!name) { document.getElementById('mp-name').style.borderColor='var(--red)'; return; }
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  const rec = {
+    id: 'mp_' + Date.now(),
+    employeeName: name,
+    jobTitle: document.getElementById('mp-title')?.value?.trim() || '',
+    type: document.getElementById('mp-type')?.value || 'Maternity',
+    dueDate: document.getElementById('mp-due')?.value || '',
+    leaveStart: document.getElementById('mp-start')?.value || '',
+    expectedReturn: document.getElementById('mp-return')?.value || '',
+    actualReturn: '',
+    kitDaysUsed: 0,
+    kitDaysMax: parseInt(document.getElementById('mp-kitmax')?.value || '10'),
+    dependantAdded: document.getElementById('mp-dep')?.checked || false,
+    contactLog: [],
+    notes: document.getElementById('mp-notes')?.value?.trim() || '',
+    createdAt: new Date().toISOString(),
+  };
+  mpRecords.push(rec);
+  await saveMatPatRecords();
+  btn.closest('div[style*=fixed]').remove();
+  renderLeaveTracker(document.getElementById('trackersBody'));
+}
+
+// ── VIEW / EDIT RECORD PANEL ──
+function openMatPatRecord(id) {
+  const rec = mpRecords.find(r => r.id === id);
+  if (!rec) return;
+  let existing = document.getElementById('mpRecordPanel');
+  if (existing) existing.remove();
+
+  const panel = document.createElement('div');
+  panel.id = 'mpRecordPanel';
+  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
+  const lbl = 'font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;text-transform:uppercase;letter-spacing:0.05em;';
+  const status = mpStatus(rec);
+  const daysSince = mpDaysSinceContact(rec);
+
+  const logHtml = (rec.contactLog || []).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e => {
+    const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝'};
+    const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B'};
+    return `<div class="log-entry">
+      <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;">
+          <span style="font-size:11px;">${iconMap[e.type]||'📝'}</span>
+          <span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span>
+          <span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span>
+        </div>
+        <div class="log-text">${escapeHtml(e.note)}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
+
+  panel.innerHTML = `
+    <div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
+
+      <!-- Header -->
+      <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
+        <div style="flex:1;">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
+            <div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(rec.employeeName)}</div>
+            <span class="trk-badge ${rec.type==='Maternity'?'trk-badge-purple':rec.type==='Paternity'?'trk-badge-blue':'trk-badge-amber'}">${rec.type}</span>
+            <span class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
+          </div>
+          <div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(rec.jobTitle||'')}</div>
+        </div>
+        <button onclick="document.getElementById('mpRecordPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      </div>
+
+      <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
+
+        <!-- Details section -->
+        <div style="padding:18px 22px;border-bottom:1px solid var(--border);">
+          <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:12px;">Leave details</div>
+          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:14px;">
+            <div><label style="${lbl}">Due / birth date</label><input type="date" value="${rec.dueDate||''}" onchange="mpUpdateField('${rec.id}','dueDate',this.value)" style="${inp}"></div>
+            <div><label style="${lbl}">Leave start</label><input type="date" value="${rec.leaveStart||''}" onchange="mpUpdateField('${rec.id}','leaveStart',this.value)" style="${inp}"></div>
+            <div><label style="${lbl}">Expected return</label><input type="date" value="${rec.expectedReturn||''}" onchange="mpUpdateField('${rec.id}','expectedReturn',this.value)" style="${inp}"></div>
+            <div><label style="${lbl}">Actual return</label><input type="date" value="${rec.actualReturn||''}" onchange="mpUpdateField('${rec.id}','actualReturn',this.value)" style="${inp}" title="Fill in when employee returns"></div>
+            <div><label style="${lbl}">KIT days used</label><input type="number" value="${rec.kitDaysUsed||0}" min="0" max="${rec.kitDaysMax||10}" onchange="mpUpdateField('${rec.id}','kitDaysUsed',parseInt(this.value)||0)" style="${inp}"></div>
+            <div><label style="${lbl}">KIT days max</label><input type="number" value="${rec.kitDaysMax||10}" min="0" max="20" onchange="mpUpdateField('${rec.id}','kitDaysMax',parseInt(this.value)||10)" style="${inp}"></div>
+          </div>
+          <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
+            <label style="display:flex;align-items:center;gap:7px;cursor:pointer;font-size:12px;color:var(--ink);">
+              <input type="checkbox" ${rec.dependantAdded?'checked':''} onchange="mpUpdateField('${rec.id}','dependantAdded',this.checked)" style="width:14px;height:14px;accent-color:var(--accent);">
+              Dependant added to company benefits
+            </label>
+          </div>
+          ${rec.notes ? `<div style="margin-top:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);font-size:12px;color:var(--ink2);">${escapeHtml(rec.notes)}</div>` : ''}
+        </div>
+
+        <!-- Contact log -->
+        <div style="padding:18px 22px;flex:1;">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+            <div style="font-size:12px;font-weight:700;color:var(--ink);">Contact log ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>42?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(no contact logged)</span>'}</div>
+          </div>
+
+          <!-- Add entry form -->
+          <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;display:flex;flex-direction:column;gap:8px;">
+            <div style="display:flex;gap:8px;">
+              <select id="mp-log-type-${rec.id}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;">
+                <option value="call">📞 Call</option>
+                <option value="email" selected>✉️ Email</option>
+                <option value="meeting">👥 Meeting</option>
+                <option value="note">📝 Note</option>
+              </select>
+              <input id="mp-log-note-${rec.id}" placeholder="What was discussed or actioned..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();addMpContactLog('${rec.id}')}">
+              <button class="btn btn-primary btn-sm" onclick="addMpContactLog('${rec.id}')">Log</button>
+            </div>
+          </div>
+
+          <!-- Log entries -->
+          <div id="mp-log-list-${rec.id}" style="display:flex;flex-direction:column;">${logHtml}</div>
+        </div>
+
+        <!-- Danger zone -->
+        <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteMatPatRecord('${rec.id}')">Delete record</button>
+          <div style="flex:1;"></div>
+          <button class="btn btn-secondary btn-sm" onclick="document.getElementById('mpRecordPanel').remove()">Close</button>
+        </div>
+
+      </div>
+    </div>`;
+
+  document.body.appendChild(panel);
+  panel.onclick = e => { if (e.target===panel) panel.remove(); };
+}
+
+async function mpUpdateField(id, field, value) {
+  const rec = mpRecords.find(r => r.id === id);
+  if (!rec) return;
+  rec[field] = value;
+  await saveMatPatRecords();
+  // Refresh the table behind the panel
+  renderLeaveTracker(document.getElementById('trackersBody'));
+}
+
+async function addMpContactLog(id) {
+  const rec = mpRecords.find(r => r.id === id);
+  if (!rec) return;
+  const noteEl = document.getElementById(`mp-log-note-${id}`);
+  const typeEl = document.getElementById(`mp-log-type-${id}`);
+  const note = noteEl?.value?.trim();
+  if (!note) { if (noteEl) noteEl.style.borderColor='var(--red)'; return; }
+  if (!rec.contactLog) rec.contactLog = [];
+  rec.contactLog.push({ date: new Date().toISOString(), type: typeEl?.value || 'note', note });
+  await saveMatPatRecords();
+  if (noteEl) { noteEl.value = ''; noteEl.style.borderColor='var(--border)'; }
+  // Refresh log list in panel
+  const logList = document.getElementById(`mp-log-list-${id}`);
+  if (logList) {
+    const sorted = rec.contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+    const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝'};
+    const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B'};
+    logList.innerHTML = sorted.map(e => {
+      const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      return `<div class="log-entry"><div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};"></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;"><span style="font-size:11px;">${iconMap[e.type]||'📝'}</span><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span></div><div class="log-text">${escapeHtml(e.note)}</div></div></div>`;
+    }).join('');
+  }
+  // Refresh table
+  renderLeaveTracker(document.getElementById('trackersBody'));
+}
+
+async function deleteMatPatRecord(id) {
+  if (!confirm('Delete this leave record? This cannot be undone.')) return;
+  mpRecords = mpRecords.filter(r => r.id !== id);
+  await saveMatPatRecords();
+  document.getElementById('mpRecordPanel')?.remove();
+  renderLeaveTracker(document.getElementById('trackersBody'));
 }
 
 function renderRecruitmentTracker(body) {
