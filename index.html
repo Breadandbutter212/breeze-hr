@@ -10590,58 +10590,182 @@ function wfRenderCase(c) {
   }).join('');
 
   const startedDate = new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const contactLog = c.contactLog || [];
+  const daysSinceLast = contactLog.length ? Math.floor((new Date()-new Date(contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0].date))/86400000) : null;
+  const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
 
-  detail.innerHTML = `<div style="padding:22px;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
-    <!-- Case header -->
-    <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <span style="font-size:26px;flex-shrink:0;">${scenario.icon}</span>
-        <div style="flex:1;">
-          <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${c.employeeName}</div>
-          <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${scenario.label} · Started ${startedDate}</div>
-          ${c.mpRecordId ? `<button onclick="showTrackerTab('leave');setTimeout(()=>openMatPatRecord('${c.mpRecordId}'),200)" style="margin-top:6px;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;">📋 View mat/pat tracker record →</button>` : ''}
+  const logHtml = contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e => {
+    const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const docPart = e.docFilename ? `<span style="font-size:10px;color:var(--accent);margin-left:6px;">📎 ${escapeHtml(e.docFilename)}</span>` : '';
+    return `<div class="log-entry">
+      <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};"></div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;">
+          <span style="font-size:11px;">${iconMap[e.type]||'📝'}</span>
+          <span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span>
+          <span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span>
         </div>
-        <div style="display:flex;gap:6px;">
-          ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);">✓ Close case</button>`:''}
-          <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:11px;">Delete</button>
+        <div class="log-text">${escapeHtml(e.note)}${docPart}</div>
+      </div>
+    </div>`;
+  }).join('') || '<div style="text-align:center;padding:16px 0;color:var(--ink3);font-size:12px;">No contacts or actions logged yet</div>';
+
+  detail.innerHTML = `<div style="padding:20px;display:flex;flex-direction:column;gap:14px;max-width:720px;margin:0 auto;box-sizing:border-box;">
+
+    <!-- Case header with big % -->
+    <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;display:flex;align-items:center;gap:16px;">
+      <div style="background:${pct===100?'var(--green-bg)':'var(--accent-bg)'};border-radius:12px;padding:12px 16px;text-align:center;flex-shrink:0;min-width:72px;">
+        <div style="font-size:26px;font-weight:800;color:${pct===100?'var(--green)':'var(--accent)'};line-height:1;">${pct}%</div>
+        <div style="font-size:9px;font-weight:600;color:${pct===100?'var(--green)':'var(--accent)'};margin-top:2px;text-transform:uppercase;letter-spacing:0.06em;">done</div>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:2px;">${escapeHtml(c.employeeName)}</div>
+        <div style="font-size:12px;color:var(--ink3);">${scenario.icon} ${scenario.label} · ${startedDate}</div>
+        <div style="margin-top:8px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--ink3);">
+          <span id="wf-progress-pct">${done} / ${total} steps complete</span>
+          ${c.mpRecordId?`<button onclick="document.getElementById('wfCaseSlidePanel')?.remove();showTrackerTab('leave');setTimeout(()=>openMatPatRecord('${c.mpRecordId}'),200)" style="font-size:10px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;">📋 Leave record →</button>`:''}
         </div>
       </div>
-      <div style="margin-top:12px;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
-          <span style="font-size:11px;font-weight:600;color:var(--ink);">Progress</span>
-          <span id="wf-progress-pct" style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${done} / ${total} complete${pct===100?' — all steps done ✓':''}</span>
-        </div>
-        <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
+      <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
+        ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);font-size:11px;">✓ Close</button>`:''}
+        <button onclick="document.getElementById('wfCaseSlidePanel')?.remove()" class="btn btn-secondary btn-sm" style="font-size:11px;">✕ Close</button>
+        <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">Delete</button>
       </div>
-      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:7px 12px;font-size:11px;color:var(--amber);">No policies uploaded — using ACAS guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;">Upload policies</a></div>`
-      :`<div style="margin-top:10px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} company policies loaded — steps marked 📋 reference your policies.</div>`}
     </div>
 
     <!-- Checklist steps -->
-    <div style="display:flex;flex-direction:column;gap:8px;">${stepsHtml}</div>
+    <div>
+      <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Checklist</div>
+      <div style="display:flex;flex-direction:column;gap:6px;">${stepsHtml}</div>
+    </div>
+
+    <!-- Contact / Action log -->
+    <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
+      <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:700;color:var(--ink);">Contact &amp; action log${daysSinceLast!==null?` <span style="font-size:11px;font-weight:400;color:${daysSinceLast>42?'var(--amber)':'var(--ink3)'};">(last: ${daysSinceLast}d ago)</span>`:' <span style="font-size:11px;font-weight:400;color:var(--red);">(none yet)</span>'}</div>
+      </div>
+      <!-- Log entry form -->
+      <div style="padding:12px 14px;background:var(--surface2);border-bottom:1px solid var(--border);">
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <select id="wf-log-type-${c.id}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;">
+            <option value="email">✉️ Email</option>
+            <option value="call">📞 Call</option>
+            <option value="meeting">👥 Meeting</option>
+            <option value="action">✅ Action</option>
+            <option value="note">📝 Note</option>
+          </select>
+          <input id="wf-log-note-${c.id}" placeholder="What was discussed, decided or actioned..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();wfAddContactLog('${c.id}')}">
+          <button class="btn btn-primary btn-sm" onclick="wfAddContactLog('${c.id}')">Log</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:11px;color:var(--ink2);">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+            <span id="wf-log-attach-name-${c.id}">Attach document (optional)</span>
+            <input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfLogAttachFile('${c.id}',this)">
+          </label>
+          <button id="wf-log-attach-clear-${c.id}" onclick="wfLogClearAttach('${c.id}')" style="display:none;font-size:10px;color:var(--red);background:none;border:none;cursor:pointer;font-family:inherit;">✕ Remove</button>
+        </div>
+      </div>
+      <!-- Log entries -->
+      <div id="wf-log-list-${c.id}" style="padding:12px 14px;display:flex;flex-direction:column;">${logHtml}</div>
+    </div>
 
     <!-- Documents -->
     <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
       <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <div style="font-size:13px;font-weight:700;color:var(--ink);">Documents <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${(c.docs||[]).length} file${(c.docs||[]).length!==1?'s':''})</span></div>
-        <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload file<input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfUploadDoc('${c.id}',this)"></label>
+        <div style="font-size:13px;font-weight:700;color:var(--ink);">Documents <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${(c.docs||[]).length})</span></div>
+        <label class="btn btn-primary btn-sm" style="cursor:pointer;font-size:11px;">+ Upload<input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfUploadDoc('${c.id}',this)"></label>
       </div>
-      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:0;" id="wf-docs-${c.id}">
+      <div style="padding:10px 14px;display:flex;flex-direction:column;gap:0;" id="wf-docs-${c.id}">
         ${(c.docs||[]).length ? (c.docs||[]).map(d=>`
           <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
-            <span style="font-size:16px;">${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.(docx?|doc)$/)?'📝':d.filename.match(/\.(png|jpe?g)$/)?'🖼️':'📎'}</span>
-            <div style="flex:1;min-width:0;">
-              <div style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.filename)}</div>
-              <div style="font-size:10px;color:var(--ink3);">${escapeHtml(d.type)} · ${new Date(d.uploadedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
-            </div>
-            <button onclick="wfDownloadDoc('${c.id}','${d.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇ Download</button>
+            <span>${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.(docx?)/)?'📝':'📎'}</span>
+            <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.filename)}</div><div style="font-size:10px;color:var(--ink3);">${d.type}</div></div>
+            <button onclick="wfDownloadDoc('${c.id}','${d.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇</button>
             <button onclick="wfDeleteDoc('${c.id}','${d.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">✕</button>
           </div>`).join('')
-        : '<div style="padding:16px 0;text-align:center;color:var(--ink3);font-size:12px;">No documents uploaded yet — upload sick notes, MATB1 forms, letters or any relevant files.</div>'}
+        : '<div style="padding:12px 0;text-align:center;color:var(--ink3);font-size:12px;">No documents yet</div>'}
       </div>
     </div>
 
   </div>`;
+
+  // Wire up attach state
+  window[`_wfLogAttach_${c.id}`] = null;
+}
+
+// Contact log attachment helpers
+function wfLogAttachFile(caseId, input) {
+  const file = input.files[0]; if (!file) return;
+  const MAX = 1.5*1024*1024;
+  if (file.size > MAX) { alert('Max 1.5MB'); input.value=''; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    window[`_wfLogAttach_${caseId}`] = { filename: file.name, base64: e.target.result.split(',')[1], mimeType: file.type };
+    const nameEl = document.getElementById(`wf-log-attach-name-${caseId}`);
+    const clearEl = document.getElementById(`wf-log-attach-clear-${caseId}`);
+    if (nameEl) nameEl.textContent = '📎 ' + file.name;
+    if (clearEl) clearEl.style.display = '';
+  };
+  reader.readAsDataURL(file);
+}
+function wfLogClearAttach(caseId) {
+  window[`_wfLogAttach_${caseId}`] = null;
+  const nameEl = document.getElementById(`wf-log-attach-name-${caseId}`);
+  const clearEl = document.getElementById(`wf-log-attach-clear-${caseId}`);
+  if (nameEl) nameEl.textContent = 'Attach document (optional)';
+  if (clearEl) clearEl.style.display = 'none';
+}
+
+async function wfAddContactLog(caseId) {
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  const noteEl = document.getElementById(`wf-log-note-${caseId}`);
+  const typeEl = document.getElementById(`wf-log-type-${caseId}`);
+  const note = noteEl?.value?.trim();
+  if (!note) { if (noteEl) noteEl.style.borderColor='var(--red)'; return; }
+  if (!c.contactLog) c.contactLog = [];
+  const attach = window[`_wfLogAttach_${caseId}`];
+  const entry = { date: new Date().toISOString(), type: typeEl?.value||'note', note };
+  if (attach) {
+    entry.docFilename = attach.filename;
+    entry.docBase64 = attach.base64;
+    entry.docMimeType = attach.mimeType;
+    // Also add to docs array
+    if (!c.docs) c.docs = [];
+    c.docs.push({ id:'doc_'+Date.now(), filename:attach.filename, type:'From contact log', base64:attach.base64, mimeType:attach.mimeType, uploadedAt:new Date().toISOString() });
+  }
+  c.contactLog.push(entry);
+  await saveWfCases();
+  if (noteEl) { noteEl.value=''; noteEl.style.borderColor='var(--border)'; }
+  wfLogClearAttach(caseId);
+  // Refresh log list
+  const listEl = document.getElementById(`wf-log-list-${caseId}`);
+  if (listEl) {
+    const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+    const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+    const sorted = c.contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+    listEl.innerHTML = sorted.map(e=>{
+      const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+      const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+      const docPart = e.docFilename?`<span style="font-size:10px;color:var(--accent);margin-left:6px;">📎 ${escapeHtml(e.docFilename)}</span>`:'';
+      return `<div class="log-entry"><div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};"></div><div style="flex:1;min-width:0;"><div style="display:flex;align-items:center;gap:6px;margin-bottom:2px;flex-wrap:wrap;"><span style="font-size:11px;">${iconMap[e.type]||'📝'}</span><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${e.type}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span></div><div class="log-text">${escapeHtml(e.note)}${docPart}</div></div></div>`;
+    }).join('');
+  }
+  // Refresh docs section if attachment was added
+  if (attach) {
+    const docsEl = document.getElementById(`wf-docs-${caseId}`);
+    if (docsEl) {
+      const newRow = document.createElement('div');
+      newRow.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+      newRow.innerHTML = `<span>📎</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(attach.filename)}</div><div style="font-size:10px;color:var(--ink3);">From contact log · just now</div></div>`;
+      const empty = docsEl.querySelector('div[style*="No documents"]');
+      if (empty) empty.remove();
+      docsEl.appendChild(newRow);
+    }
+  }
 }
 
 async function wfToggleStep(caseId, stepId) {
