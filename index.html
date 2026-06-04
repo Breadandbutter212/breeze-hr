@@ -5230,7 +5230,7 @@ function showView(v,el) {
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
   if(v==='orgchart')initOrgChart();
-  if(v==='trackers'){mpRecords=null;renderTrackers();}
+  if(v==='trackers'){mpRecords=null;_guidanceCache={};renderTrackers();}
 }
 
 // ── BULK MAIL MERGE ──
@@ -8647,6 +8647,141 @@ function renderTrackersBody() {
   else renderRecruitmentTracker(body);
 }
 
+// ── TRACKER GUIDANCE ENGINE ──
+const TRACKER_GUIDANCE_FALLBACK = {
+  leave: {
+    title: 'Maternity, Paternity & Shared Parental Leave',
+    source: 'ACAS & UK statutory guidance',
+    acasUrl: 'https://www.acas.org.uk/maternity-paternity-and-adoption',
+    points: [
+      '<strong>Eligibility — SMP/SPP:</strong> Employees need 26 weeks continuous employment by the 15th week before the expected week of childbirth. SMP = 90% AWE for 6 weeks, then £184.03/week (or 90% AWE if lower) for up to 33 weeks.',
+      '<strong>Leave entitlement:</strong> Maternity — up to 52 weeks (26 OML + 26 AML). Paternity — up to 2 weeks, taken within 56 days of birth. Shared Parental Leave — up to 50 weeks between parents once maternity is curtailed.',
+      '<strong>Keeping in Touch (KIT) days:</strong> Employees can work up to 10 KIT days during maternity leave without breaking or ending it. Shared Parental Leave allows up to 20 SPLIT days. KIT days must be agreed — the employee cannot be compelled to work.',
+      '<strong>Dependants:</strong> When an employee starts family leave, review whether dependants need adding to health insurance, death-in-service or other company benefits schemes.',
+      '<strong>Contact during leave:</strong> Maintain reasonable, agreed contact — typically monthly. Over-contacting or pressuring employees to return early may constitute detriment and give rise to a tribunal claim.',
+      '<strong>Return to work:</strong> Employees returning from OML (first 26 weeks) have an absolute right to return to the same role. Returning from AML — same or suitable alternative. A phased return can be agreed but cannot reduce pay without consent.',
+    ]
+  },
+  recruitment: {
+    title: 'Recruitment & Selection',
+    source: 'ACAS & Equality Act 2010',
+    acasUrl: 'https://www.acas.org.uk/recruitment',
+    points: [
+      '<strong>Job descriptions:</strong> Should be based on objective, measurable criteria. Avoid requirements that could indirectly discriminate against protected characteristics (e.g. "must be able to work Sundays" may disadvantage some religions).',
+      '<strong>Shortlisting:</strong> Use a consistent scoring matrix applied equally to all candidates. Keep records of decisions — especially for rejected candidates — for at least 6 months.',
+      '<strong>Interview questions:</strong> Do not ask about pregnancy, childcare, religion, disability, age or any other protected characteristic. Questions must relate to the requirements of the role.',
+      '<strong>Pre-employment checks:</strong> Right to work check is a legal requirement before the first day. References, DBS and occupational health checks should only be completed once a conditional offer is made.',
+      '<strong>Offers:</strong> Conditional offers must state clearly what conditions apply. Withdrawing an offer after a candidate has resigned their current role may create a breach of contract claim.',
+      '<strong>Carry-forward to employee record:</strong> On hire, CV, interview notes and assessment records should be transferred to the employee file and retained for the duration of employment plus reasonable period after.',
+    ]
+  },
+  careers: {
+    title: 'Promotions, Performance & Career Development',
+    source: 'ACAS, Equality Act 2010 & best practice',
+    acasUrl: 'https://www.acas.org.uk/performance-management',
+    points: [
+      '<strong>Promotion criteria:</strong> Must be objective, documented and applied consistently. Vague criteria ("cultural fit", "leadership presence") create indirect discrimination risk under the Equality Act 2010.',
+      '<strong>Performance reviews:</strong> Should be documented, two-way conversations with measurable objectives. SMART targets. No surprises at formal review — issues should be raised informally as they arise.',
+      '<strong>Performance Improvement Plans:</strong> Set clear, measurable, achievable targets with a realistic timeframe (typically 30-90 days). Provide active support and document all meetings. Failure to support a PIP adequately undermines any subsequent dismissal.',
+      '<strong>Pay and grading:</strong> Ensure pay bands are transparent and applied consistently. Equal pay obligations under the Equality Act mean men and women doing equal work must receive equal pay. Unexplained gender pay gaps in grades create legal exposure.',
+      '<strong>Succession planning:</strong> Identify high-potential employees across all demographics — not just those most visible to senior leaders. Sponsorship and mentoring programmes support equitable progression.',
+      '<strong>Records:</strong> Keep all performance review documentation and promotion decision records. These are your primary defence in any tribunal claim involving unfair dismissal or discrimination in promotion.',
+    ]
+  },
+  immigration: {
+    title: 'Right to Work & Immigration Compliance',
+    source: 'UK Home Office guidance & Immigration Act 2014',
+    acasUrl: 'https://www.gov.uk/check-an-employees-right-to-work-documents',
+    points: [
+      '<strong>Right to work check — legal duty:</strong> Employers must check every employee\'s right to work before they start. Failure to do so, or knowingly employing someone without the right to work, can result in a civil penalty of up to £60,000 per worker (from Jan 2024).',
+      '<strong>Document checks:</strong> Check original documents (or use the online Home Office checking service for time-limited rights). Copy and retain securely for the duration of employment plus 2 years after leaving.',
+      '<strong>Repeat checks:</strong> For employees on time-limited visas (List B), set a calendar reminder to repeat the check before their current permission expires. A missed repeat check removes the statutory excuse.',
+      '<strong>Skilled Worker sponsorship:</strong> As a licensed sponsor, you must report changes in employment (role change, salary reduction, absence, termination) to UKVI via the Sponsor Management System (SMS) within 10 working days.',
+      '<strong>ILR — settlement:</strong> Most migrants become eligible for Indefinite Leave to Remain (ILR) after 5 years continuous residence. Absences over 180 days in any 12-month period can break continuity — flag this risk proactively.',
+      '<strong>Passport expiry:</strong> An expired passport does not automatically invalidate existing leave to remain. However, expired travel documents should be noted and employees encouraged to renew promptly.',
+    ]
+  }
+};
+
+let _guidanceCache = {};
+
+async function loadTrackerGuidance(topic, containerId) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  // Show loading skeleton
+  container.innerHTML = `<div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;animation:pulse 1.5s infinite;"><div style="height:12px;background:var(--border);border-radius:4px;width:40%;margin-bottom:10px;"></div><div style="height:9px;background:var(--border);border-radius:4px;width:80%;margin-bottom:6px;"></div><div style="height:9px;background:var(--border);border-radius:4px;width:70%;margin-bottom:6px;"></div><div style="height:9px;background:var(--border);border-radius:4px;width:75%;"></div></div>`;
+
+  // Return cached result immediately
+  if (_guidanceCache[topic]) { renderGuidancePanel(container, _guidanceCache[topic]); return; }
+
+  // Search uploaded policies for relevance
+  let matchedPolicy = null;
+  if (currentProfile) {
+    const keywords = { leave:['maternity','paternity','parental','family leave'], recruitment:['recruitment','hiring','selection','ats'], careers:['performance','promotion','career','grading','pip'], immigration:['right to work','immigration','visa','sponsor'] };
+    const { data: pols } = await sb.from('policies').select('name,content').eq('company_id', currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','CHAT:%').not('name','like','SETTING:%').not('name','like','TRACKER:%');
+    if (pols?.length) {
+      const kws = keywords[topic] || [];
+      matchedPolicy = pols.find(p => kws.some(k => (p.name+' '+(p.content||'')).toLowerCase().includes(k)));
+    }
+  }
+
+  if (!matchedPolicy) {
+    // No policy — use hardcoded ACAS guidance
+    const fallback = TRACKER_GUIDANCE_FALLBACK[topic];
+    _guidanceCache[topic] = { ...fallback, fromPolicy: false };
+    renderGuidancePanel(container, _guidanceCache[topic]);
+    return;
+  }
+
+  // Policy found — ask Claude to extract the 5 most actionable points for this tracker
+  const topicLabel = { leave:'maternity, paternity and shared parental leave tracking', recruitment:'recruitment management and candidate tracking', careers:'performance reviews, promotions and career progression', immigration:'right to work, visa and immigration compliance' }[topic];
+  try {
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method:'POST', headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},
+      body: JSON.stringify({
+        messages:[{role:'user',content:`Extract the 5 most actionable points from this policy that are relevant to ${topicLabel}. Format as a JSON array of strings, each starting with a bold <strong>heading:</strong> then the guidance. Return only valid JSON array.\n\nPolicy: "${matchedPolicy.name}"\n\n${(matchedPolicy.content||'').substring(0,6000)}`}],
+        system:'You are extracting policy guidance. Return only a valid JSON array of 5 strings. Each string should be plain HTML with <strong>short heading:</strong> then guidance. No markdown, no explanation.'
+      })
+    });
+    const data = await res.json();
+    const text = (data.content?.[0]?.text||'').trim();
+    const match = text.match(/\[[\s\S]*\]/);
+    const points = match ? JSON.parse(match[0]) : TRACKER_GUIDANCE_FALLBACK[topic].points;
+    const result = { title: TRACKER_GUIDANCE_FALLBACK[topic].title, source: `Your policy: ${matchedPolicy.name}`, points, fromPolicy: true, acasUrl: TRACKER_GUIDANCE_FALLBACK[topic].acasUrl };
+    _guidanceCache[topic] = result;
+    renderGuidancePanel(container, result);
+  } catch(e) {
+    const fallback = TRACKER_GUIDANCE_FALLBACK[topic];
+    _guidanceCache[topic] = { ...fallback, fromPolicy: false };
+    renderGuidancePanel(container, _guidanceCache[topic]);
+  }
+}
+
+function renderGuidancePanel(container, g) {
+  const isOpen = container.dataset.open !== 'false';
+  container.innerHTML = `
+    <div style="background:${g.fromPolicy?'#F0FFF4':'#F8FAFC'};border:1px solid ${g.fromPolicy?'#A7F3D0':'var(--border)'};border-radius:var(--r-lg);overflow:hidden;">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;user-select:none;" onclick="this.closest('[data-guidance]').dataset.open=this.closest('[data-guidance]').dataset.open==='false'?'true':'false';this.querySelector('svg').style.transform=this.closest('[data-guidance]').dataset.open==='false'?'rotate(0deg)':'rotate(90deg)';this.nextElementSibling.style.display=this.closest('[data-guidance]').dataset.open==='false'?'none':'block';">
+        <span style="font-size:14px;">${g.fromPolicy?'📋':'ℹ️'}</span>
+        <div style="flex:1;">
+          <div style="font-size:12px;font-weight:700;color:var(--ink);">Guidance — ${g.title}</div>
+          <div style="font-size:10px;color:${g.fromPolicy?'var(--green)':'var(--ink3)'};margin-top:1px;">${g.fromPolicy?'✓ Based on your uploaded policy':'ACAS statutory guidance — <a href="'+g.acasUrl+'" target="_blank" style="color:var(--accent);">view on ACAS.org.uk ↗</a>'}</div>
+        </div>
+        ${!g.fromPolicy?`<a onclick="event.stopPropagation();showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="font-size:10px;color:var(--accent);cursor:pointer;white-space:nowrap;border:1px solid var(--accent-mid);background:var(--accent-bg);padding:3px 8px;border-radius:20px;">Upload policy ↗</a>`:''}
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
+      </div>
+      <div style="display:${isOpen?'block':'none'};border-top:1px solid ${g.fromPolicy?'#A7F3D0':'var(--border)'};">
+        <div style="padding:14px 16px;display:flex;flex-direction:column;gap:8px;">
+          ${g.points.map(p=>`<div style="display:flex;gap:8px;font-size:12px;color:var(--ink);line-height:1.6;"><span style="color:${g.fromPolicy?'var(--green)':'var(--accent)'};flex-shrink:0;margin-top:2px;">•</span><span>${p}</span></div>`).join('')}
+        </div>
+      </div>
+    </div>`;
+  container.dataset.open = isOpen ? 'true' : 'false';
+  container.setAttribute('data-guidance','');
+}
+
 function renderLeaveTracker(body) {
   const recs = mpRecords || [];
   const active  = recs.filter(r => mpStatus(r) === 'active');
@@ -8672,6 +8807,7 @@ function renderLeaveTracker(body) {
 
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;">
+    <div id="tracker-guidance-leave"></div>
 
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
@@ -8719,6 +8855,7 @@ function renderLeaveTracker(body) {
       </div>`}
     </div>
   </div>`;
+  loadTrackerGuidance('leave', 'tracker-guidance-leave');
 }
 
 // ── ADD RECORD MODAL ──
@@ -8941,6 +9078,7 @@ async function deleteMatPatRecord(id) {
 function renderRecruitmentTracker(body) {
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+    <div id="tracker-guidance-recruitment"></div>
 
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
@@ -9067,6 +9205,7 @@ function renderRecruitmentTracker(body) {
     </div>
 
   </div>`;
+  loadTrackerGuidance('recruitment', 'tracker-guidance-recruitment');
 }
 
 
@@ -9084,6 +9223,7 @@ function renderCareersTracker(body) {
   const scoreColor = s => s==='Exceeds'?'trk-badge-green':s==='Meets'?'trk-badge-blue':'trk-badge-amber';
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+    <div id="tracker-guidance-careers"></div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
@@ -9117,6 +9257,7 @@ function renderCareersTracker(body) {
       </table></div>
     </div>
   </div>`;
+  loadTrackerGuidance('careers', 'tracker-guidance-careers');
 }
 
 function openCareerMap(idx) {
@@ -9169,6 +9310,7 @@ function renderImmigrationTracker(body) {
   const urgent = DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)<90||daysUntil(p.rightToWork)<90);
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+    <div id="tracker-guidance-immigration"></div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_IMMI.length}</div><div class="trk-kpi-label">Visa holders tracked</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--red);">${DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)<0).length}</div><div class="trk-kpi-label">Expired</div></div>
@@ -9198,6 +9340,7 @@ function renderImmigrationTracker(body) {
       </table></div>
     </div>
   </div>`;
+  loadTrackerGuidance('immigration', 'tracker-guidance-immigration');
 }
 
 function openImmigrationRecord(idx) {
@@ -9229,6 +9372,354 @@ function openImmigrationRecord(idx) {
   </div>`;
   document.body.appendChild(ov);
   ov.onclick = e => { if (e.target===ov) ov.remove(); };
+}
+
+// ── ORG CHART ──
+let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
+let _ocT = { x: 0, y: 0, k: 0.85 };
+let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
+const OC_W = 180, OC_H = 76, OC_HG = 26, OC_VG = 70;
+const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899','#14B8A6','#6366F1'];
+
+function initOrgChart() {
+  const root = document.getElementById('orgChartRoot'); if (!root) return;
+  root.innerHTML = `
+    <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
+      <input id="ocSearch" placeholder="Search name, title or department..."
+        style="border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);width:230px;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        oninput="ocHighlight(this.value)">
+      <span id="ocCnt" style="font-size:11px;color:var(--ink3);white-space:nowrap;"></span>
+      <div style="flex:1;"></div>
+      <button onclick="ocZoom(0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+</button>
+      <button onclick="ocZoom(-0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">-</button>
+      <button onclick="ocFit()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Fit</button>
+      <button onclick="ocReset()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Reset layout</button>
+      <button onclick="ocExportPpt()" style="font-size:11px;background:var(--accent);color:white;border:none;border-radius:var(--r-sm);padding:0 12px;height:28px;cursor:pointer;font-family:inherit;">&#8659; PPT</button>
+    </div>
+    <div id="ocLegend" style="padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:34px;flex-shrink:0;"></div>
+    <div id="ocVP" style="flex:1;overflow:hidden;position:relative;background:linear-gradient(135deg,#F8FAFC 0%,#EFF6FF 100%);cursor:grab;user-select:none;"
+      onmousedown="ocPanDown(event)" onmousemove="ocPanMove(event)" onmouseup="ocPanUp(event)" onmouseleave="ocPanUp(event)"
+      onwheel="ocWheel(event)">
+      <div id="ocWorld" style="position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;">
+        <svg id="ocSVG" style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none;"></svg>
+        <div id="ocNodes" style="position:absolute;top:0;left:0;"></div>
+      </div>
+      <div id="ocSpinner" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);">
+        <div style="animation:spin 1s linear infinite;font-size:24px;opacity:0.4;">&#10227;</div>
+        <div style="font-size:13px;">Loading org chart...</div>
+      </div>
+    </div>`;
+  ocLoadData();
+}
+
+async function ocLoadData() {
+  const spinner = document.getElementById('ocSpinner');
+  try {
+    const emps = await loadMergeEmployees();
+    if (emps && emps.length) { _ocEmps = emps; ocBuild(); return; }
+  } catch(e) {}
+  if (spinner) spinner.innerHTML = `
+    <div style="text-align:center;max-width:360px;padding:0 24px;">
+      <div style="font-size:40px;margin-bottom:16px;">&#127970;</div>
+      <div style="font-size:16px;font-weight:600;color:var(--ink);margin-bottom:8px;">Build your org chart</div>
+      <div style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:24px;">Connect your HRIS for an auto-populated chart, upload a CSV (Name, Job Title, Department, Manager), or view a demo.</div>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+        <button onclick="ocConnectHRIS()" class="btn btn-primary btn-sm">Connect HRIS</button>
+        <label class="btn btn-secondary btn-sm" style="cursor:pointer;">Upload CSV<input type="file" accept=".csv,.xlsx,.xls" style="display:none" onchange="ocLoadCSV(event)"></label>
+        <button onclick="ocLoadDemo()" class="btn btn-ghost btn-sm" style="color:var(--accent);">View demo</button>
+      </div>
+    </div>`;
+}
+
+function ocBuild() {
+  const emps = _ocEmps; if (!emps?.length) return;
+  _ocDeptColors = {}; let dci = 0;
+  const nodeMap = {};
+  emps.forEach(emp => {
+    const id = String(emp.id || emp.display_full_name || Math.random());
+    const dept = (emp.employments?.[0]?.department || emp.department || 'General').trim();
+    if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
+    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: emp.employments?.[0]?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: emp.manager || null, children: [] };
+  });
+  const roots = [];
+  Object.values(nodeMap).forEach(n => {
+    const mgr = n.managerId ? String(n.managerId) : null;
+    if (mgr && nodeMap[mgr]) nodeMap[mgr].children.push(n); else roots.push(n);
+  });
+  const hasReal = Object.values(nodeMap).some(n => n.managerId && nodeMap[String(n.managerId)]);
+  let root;
+  if (hasReal && roots.length <= 4) {
+    root = roots.length === 1 ? roots[0] : { id:'__org__', name: currentProfile?.company_name || 'Organisation', title:'', dept:'', color:'#1D1D1F', children: roots };
+  } else {
+    root = ocBuildDeptTree(Object.values(nodeMap));
+  }
+  _ocTree = root; _ocOffsets = {};
+  ocLayout(root, 0, 0);
+  ocRender(root);
+  setTimeout(() => ocFit(), 60);
+}
+
+function ocBuildDeptTree(nodes) {
+  const depts = {};
+  nodes.forEach(n => { if (!depts[n.dept]) depts[n.dept]=[]; depts[n.dept].push({...n, children:[]}); });
+  const coName = currentProfile?.company_name || 'Organisation';
+  const entries = Object.entries(depts).sort((a,b) => b[1].length - a[1].length);
+  if (entries.length === 1) return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:entries[0][1] };
+  const deptNodes = entries.map(([dept,ns]) => ({
+    id:'__dept__'+dept, name:dept, title:`${ns.length} ${ns.length===1?'person':'people'}`,
+    dept, color:_ocDeptColors[dept]||'#6B7280', isDept:true, children:ns
+  }));
+  return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:deptNodes };
+}
+
+function ocSubW(n) {
+  if (!n.children?.length) return OC_W + OC_HG;
+  return n.children.reduce((s,c) => s + ocSubW(c), 0);
+}
+
+function ocLayout(n, depth, sx) {
+  const sw = ocSubW(n);
+  n._x = sx + sw/2 - OC_W/2; n._y = depth * (OC_H + OC_VG);
+  let cx = sx; (n.children||[]).forEach(c => { ocLayout(c, depth+1, cx); cx += ocSubW(c); });
+}
+
+function ocPos(n) {
+  const o = _ocOffsets[n.id] || {dx:0,dy:0};
+  return { x: n._x + o.dx, y: n._y + o.dy };
+}
+
+function ocRender(root) {
+  const spinner = document.getElementById('ocSpinner');
+  const svg = document.getElementById('ocSVG'), nd = document.getElementById('ocNodes');
+  const cnt = document.getElementById('ocCnt');
+  if (!svg || !nd) return;
+  if (spinner) spinner.style.display = 'none';
+  svg.innerHTML = ''; nd.innerHTML = '';
+  const all = []; const collect = n => { all.push(n); (n.children||[]).forEach(collect); }; collect(root);
+  if (cnt) cnt.textContent = all.filter(n=>!n.id.startsWith('__')).length + ' people';
+
+  // Edges
+  const lines = [];
+  const drawE = n => {
+    const pp = ocPos(n);
+    (n.children||[]).forEach(c => {
+      const cp=ocPos(c), x1=pp.x+OC_W/2, y1=pp.y+OC_H, x2=cp.x+OC_W/2, y2=cp.y, my=(y1+y2)/2;
+      lines.push(`<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>`);
+      drawE(c);
+    });
+  };
+  drawE(root); svg.innerHTML = lines.join('');
+
+  // Nodes
+  all.forEach(node => {
+    const pos = ocPos(node);
+    const initials = node.name.split(' ').filter(Boolean).map(w=>w[0]).join('').substring(0,2).toUpperCase()||'?';
+    const isVirtual = node.id === '__org__', isDept = !!node.isDept;
+    const div = document.createElement('div');
+    div.className = 'org-node';
+    div.setAttribute('data-oc', node.id);
+    div.style.left=pos.x+'px'; div.style.top=pos.y+'px';
+    div.style.height=OC_H+'px'; div.style.width=OC_W+'px';
+    if (isVirtual) {
+      div.style.background='#1D1D1F'; div.style.borderColor='#1D1D1F';
+      div.innerHTML=`<div style="width:100%;text-align:center;font-size:13px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(node.name)}</div>`;
+    } else if (isDept) {
+      div.style.background=node.color+'11'; div.style.borderColor=node.color+'55';
+      div.innerHTML=`<div class="org-avatar" style="background:${node.color}">${escapeHtml(node.name.substring(0,2).toUpperCase())}</div>
+        <div style="flex:1;min-width:0;"><div class="org-name">${escapeHtml(node.name)}</div><div class="org-title">${escapeHtml(node.title)}</div></div>`;
+    } else {
+      div.style.borderColor=node.color+'44';
+      div.innerHTML=`<div class="org-avatar" style="background:${node.color}">${initials}</div>
+        <div style="flex:1;min-width:0;">
+          <div class="org-name">${escapeHtml(node.name)}</div>
+          <div class="org-title">${escapeHtml(node.title||node.dept||'')}</div>
+          ${node.dept&&node.title?`<div class="org-dept-badge" style="background:${node.color}22;color:${node.color};">${escapeHtml(node.dept)}</div>`:''}
+        </div>`;
+    }
+    div.onmousedown = e => {
+      if (e.button!==0) return; e.stopPropagation();
+      const o=_ocOffsets[node.id]||{dx:0,dy:0};
+      _ocDragNode={id:node.id,sx:e.clientX,sy:e.clientY,odx:o.dx,ody:o.dy};
+      div.classList.add('dragging');
+    };
+    nd.appendChild(div);
+  });
+
+  // Legend
+  const leg=document.getElementById('ocLegend');
+  if(leg) leg.innerHTML=Object.entries(_ocDeptColors).map(([d,c])=>
+    `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);">
+      <div style="width:9px;height:9px;border-radius:3px;background:${c};flex-shrink:0;"></div>${escapeHtml(d)}</div>`).join('');
+}
+
+function ocRedrawEdges() {
+  const svg=document.getElementById('ocSVG'); if(!svg||!_ocTree) return;
+  const lines=[]; const drawE=n=>{
+    const pp=ocPos(n);
+    (n.children||[]).forEach(c=>{
+      const cp=ocPos(c),x1=pp.x+OC_W/2,y1=pp.y+OC_H,x2=cp.x+OC_W/2,y2=cp.y,my=(y1+y2)/2;
+      lines.push(`<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>`);
+      drawE(c);
+    });
+  }; drawE(_ocTree); svg.innerHTML=lines.join('');
+}
+
+function ocApplyT() {
+  const w=document.getElementById('ocWorld');
+  if(w) w.style.transform=`translate(${_ocT.x}px,${_ocT.y}px) scale(${_ocT.k})`;
+}
+
+function ocPanDown(e) {
+  if(e.button!==0||_ocDragNode) return;
+  _ocPanning=true; _ocPanOrig={mx:e.clientX,my:e.clientY,tx:_ocT.x,ty:_ocT.y};
+  const vp=document.getElementById('ocVP'); if(vp) vp.style.cursor='grabbing';
+}
+
+function ocPanMove(e) {
+  if(_ocDragNode) {
+    const dx=(e.clientX-_ocDragNode.sx)/_ocT.k, dy=(e.clientY-_ocDragNode.sy)/_ocT.k;
+    _ocOffsets[_ocDragNode.id]={dx:_ocDragNode.odx+dx,dy:_ocDragNode.ody+dy};
+    const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
+    const node=all.find(n=>n.id===_ocDragNode.id);
+    if(node){const p=ocPos(node);const d=document.querySelector(`[data-oc="${CSS.escape(node.id)}"]`);if(d){d.style.left=p.x+'px';d.style.top=p.y+'px';}}
+    ocRedrawEdges(); return;
+  }
+  if(!_ocPanning||!_ocPanOrig) return;
+  _ocT.x=_ocPanOrig.tx+(e.clientX-_ocPanOrig.mx);
+  _ocT.y=_ocPanOrig.ty+(e.clientY-_ocPanOrig.my);
+  ocApplyT();
+}
+
+function ocPanUp(e) {
+  if(_ocDragNode){const d=document.querySelector(`[data-oc="${CSS.escape(_ocDragNode.id)}"]`);if(d)d.classList.remove('dragging');}
+  _ocPanning=false;_ocDragNode=null;_ocPanOrig=null;
+  const vp=document.getElementById('ocVP'); if(vp) vp.style.cursor='grab';
+}
+
+function ocWheel(e) {
+  e.preventDefault();
+  const vp=document.getElementById('ocVP'); if(!vp) return;
+  const r=vp.getBoundingClientRect(),mx=e.clientX-r.left,my=e.clientY-r.top;
+  const ok=_ocT.k,nk=Math.max(0.12,Math.min(2.5,ok+(e.deltaY>0?-0.1:0.1)));
+  _ocT.x=mx-(mx-_ocT.x)*(nk/ok);_ocT.y=my-(my-_ocT.y)*(nk/ok);_ocT.k=nk;ocApplyT();
+}
+
+function ocZoom(d) {
+  const vp=document.getElementById('ocVP'); if(!vp) return;
+  const r=vp.getBoundingClientRect(),cx=r.width/2,cy=r.height/2;
+  const ok=_ocT.k,nk=Math.max(0.12,Math.min(2.5,ok+d));
+  _ocT.x=cx-(cx-_ocT.x)*(nk/ok);_ocT.y=cy-(cy-_ocT.y)*(nk/ok);_ocT.k=nk;ocApplyT();
+}
+
+function ocFit() {
+  if(!_ocTree) return;
+  const vp=document.getElementById('ocVP'); if(!vp) return;
+  const r=vp.getBoundingClientRect();
+  const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; col(_ocTree);
+  let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
+  all.forEach(n=>{const p=ocPos(n);minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x+OC_W);maxY=Math.max(maxY,p.y+OC_H);});
+  const pad=40,pw=maxX-minX+pad*2,ph=maxY-minY+pad*2;
+  const k=Math.min(0.95,Math.min(r.width/pw,r.height/ph));
+  _ocT.k=k;_ocT.x=(r.width-pw*k)/2-minX*k+pad*k;_ocT.y=(r.height-ph*k)/2-minY*k+pad*k;ocApplyT();
+}
+
+function ocReset() {
+  _ocOffsets={};
+  if(_ocTree){ocLayout(_ocTree,0,0);ocRender(_ocTree);}
+  setTimeout(()=>ocFit(),60);
+}
+
+function ocHighlight(q) {
+  document.querySelectorAll('.org-node').forEach(d=>{
+    if(!q){d.classList.remove('dimmed','highlighted');return;}
+    if(d.textContent.toLowerCase().includes(q.toLowerCase())){d.classList.remove('dimmed');d.classList.add('highlighted');}
+    else{d.classList.add('dimmed');d.classList.remove('highlighted');}
+  });
+}
+
+async function ocConnectHRIS() {
+  const sp=document.getElementById('ocSpinner');
+  if(sp)sp.innerHTML='<div style="animation:spin 1s linear infinite;font-size:24px;opacity:0.4;">&#10227;</div><div style="font-size:13px;">Connecting to HRIS...</div>';
+  mergeEmployeeCache=null;await ocLoadData();
+}
+
+async function ocLoadCSV(event) {
+  const file=event.target.files[0]; if(!file) return;
+  try {
+    let rows;
+    if(/\.(xlsx|xls)$/i.test(file.name)&&typeof XLSX!=='undefined'){
+      const wb=XLSX.read(await file.arrayBuffer());rows=XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]],{defval:''});
+    } else {
+      const lines=(await file.text()).split('\n').filter(l=>l.trim());
+      if(lines.length<2) return;
+      const hdrs=lines[0].split(',').map(h=>h.trim().replace(/^"|"$/g,'').toLowerCase().replace(/\s+/g,'_'));
+      rows=lines.slice(1).map(line=>{const vals=[];let cur='',inQ=false;for(const ch of line+','){if(ch==='"')inQ=!inQ;else if(ch===','&&!inQ){vals.push(cur.trim());cur='';}else cur+=ch;}const o={};hdrs.forEach((h,i)=>o[h]=(vals[i]||'').replace(/^"|"$/g,''));return o;}).filter(r=>Object.values(r).some(v=>v));
+    }
+    const nk=k=>Object.keys(rows[0]||{}).find(h=>h.includes(k));
+    const nameKey=nk('name')||'name',titleKey=nk('title')||nk('role')||nk('position')||'job_title',deptKey=nk('dept')||nk('team')||nk('division')||'department',mgrKey=nk('manager')||nk('reports')||'manager';
+    _ocEmps=rows.map((r,i)=>({id:'csv-'+i,display_full_name:r[nameKey]||r.name||'Person '+(i+1),employments:[{job_title:r[titleKey]||'',department:r[deptKey]||'General'}],manager:r[mgrKey]?'csv-'+rows.findIndex(x=>(x[nameKey]||x.name||'')===r[mgrKey]):null}));
+    ocBuild();
+  } catch(e){alert('Could not read file: '+e.message);}
+  event.target.value='';
+}
+
+function ocLoadDemo() {
+  _ocEmps=[
+    {id:'o1',display_full_name:'Alex Thompson',employments:[{job_title:'Chief Executive Officer',department:'Leadership'}],manager:null},
+    {id:'o2',display_full_name:'Sarah Chen',employments:[{job_title:'VP Engineering',department:'Engineering'}],manager:'o1'},
+    {id:'o3',display_full_name:'James Miller',employments:[{job_title:'VP People',department:'People'}],manager:'o1'},
+    {id:'o4',display_full_name:'Emily Davis',employments:[{job_title:'VP Sales',department:'Sales'}],manager:'o1'},
+    {id:'o5',display_full_name:'Tom Wilson',employments:[{job_title:'Senior Engineer',department:'Engineering'}],manager:'o2'},
+    {id:'o6',display_full_name:'Lisa Park',employments:[{job_title:'Product Manager',department:'Engineering'}],manager:'o2'},
+    {id:'o7',display_full_name:'Michael Brown',employments:[{job_title:'HR Business Partner',department:'People'}],manager:'o3'},
+    {id:'o8',display_full_name:'Jessica Lee',employments:[{job_title:'L&D Manager',department:'People'}],manager:'o3'},
+    {id:'o9',display_full_name:'David Martinez',employments:[{job_title:'Account Executive',department:'Sales'}],manager:'o4'},
+    {id:'o10',display_full_name:'Rachel Taylor',employments:[{job_title:'Account Executive',department:'Sales'}],manager:'o4'},
+    {id:'o11',display_full_name:'Chris Anderson',employments:[{job_title:'Junior Engineer',department:'Engineering'}],manager:'o5'},
+    {id:'o12',display_full_name:'Amy Johnson',employments:[{job_title:'Talent Acquisition',department:'People'}],manager:'o3'},
+  ];
+  ocBuild();
+}
+
+function ocExportPpt() {
+  if(!_ocTree) return;
+  const pptx=new PptxGenJS();pptx.layout='LAYOUT_WIDE';
+  const slide=pptx.addSlide();slide.background={color:'FFFFFF'};
+  slide.addShape(pptx.ShapeType.rect,{x:0,y:0,w:'100%',h:1.0,fill:{color:'1B2D50'}});
+  slide.addText(currentProfile?.company_name||'Organisation Chart',{x:0.4,y:0.1,w:12,h:0.6,fontSize:22,bold:true,color:'FFFFFF',fontFace:'Calibri'});
+  const all=[];const col=n=>{all.push(n);(n.children||[]).forEach(col);};col(_ocTree);
+  let mnX=Infinity,mnY=Infinity,mxX=-Infinity,mxY=-Infinity;
+  all.forEach(n=>{const p=ocPos(n);mnX=Math.min(mnX,p.x);mnY=Math.min(mnY,p.y);mxX=Math.max(mxX,p.x+OC_W);mxY=Math.max(mxY,p.y+OC_H);});
+  const SW=12.5,SH=5.5,STOP=1.05,pad=10;
+  const pw=mxX-mnX+pad*2,ph=mxY-mnY+pad*2;
+  const k=Math.min(SW/pw,SH/ph,1);
+  const ox=(SW-pw*k)/2+0.4,oy=STOP+(SH-ph*k)/2;
+  const tx=(v,isy)=>((isy?(v-mnY):(v-mnX))*k+(isy?oy:ox));
+  const nw=OC_W*k,nh=OC_H*k;
+  function drawE(node){
+    const pp=ocPos(node);
+    (node.children||[]).forEach(child=>{
+      const cp=ocPos(child),x1=tx(pp.x+OC_W/2,false),y1=tx(pp.y+OC_H,true),x2=tx(cp.x+OC_W/2,false),y2=tx(cp.y,true),my=(y1+y2)/2;
+      slide.addShape(pptx.ShapeType.line,{x:x1,y:y1,w:0,h:my-y1,line:{color:'CBD5E1',width:1.2}});
+      if(Math.abs(x1-x2)>0.01){const xl=Math.min(x1,x2);slide.addShape(pptx.ShapeType.line,{x:xl,y:my,w:Math.abs(x1-x2),h:0,line:{color:'CBD5E1',width:1.2}});}
+      slide.addShape(pptx.ShapeType.line,{x:x2,y:my,w:0,h:y2-my,line:{color:'CBD5E1',width:1.2}});
+      drawE(child);
+    });
+  }
+  drawE(_ocTree);
+  all.forEach(node=>{
+    const p=ocPos(node);const nx=tx(p.x,false),ny=tx(p.y,true);
+    const fill=(node.id==='__org__'?'1B2D50':(node.color||'3B82F6').replace('#',''));
+    const fs=Math.max(6,Math.min(10,nw*28));
+    slide.addShape(pptx.ShapeType.rect,{x:nx,y:ny,w:nw*0.05,h:nh,fill:{color:fill},line:{color:fill}});
+    slide.addShape(pptx.ShapeType.rect,{x:nx+nw*0.05,y:ny,w:nw*0.95,h:nh,fill:{color:'FFFFFF'},line:{color:'E5E7EB',width:0.5}});
+    const fsz=Math.max(6,Math.min(10,nw*28));
+    slide.addText(node.name||'',{x:nx+nw*0.1,y:ny+nh*0.08,w:nw*0.86,h:nh*0.48,fontSize:fsz,bold:true,color:'1A202C',fontFace:'Calibri',valign:'bottom',wrap:true});
+    if(node.title)slide.addText(node.title,{x:nx+nw*0.1,y:ny+nh*0.52,w:nw*0.86,h:nh*0.42,fontSize:Math.max(5,fsz-1.5),color:'6B7280',fontFace:'Calibri',valign:'top',wrap:true});
+  });
+  slide.addText('Generated by Breeze HR',{x:0,y:7.2,w:'100%',h:0.3,align:'center',fontSize:8,color:'AEAEB2',fontFace:'Calibri'});
+  pptx.writeFile({fileName:`${currentProfile?.company_name||'Org'} Chart.pptx`});
 }
 
 // ── INIT ──
