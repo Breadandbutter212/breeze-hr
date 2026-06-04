@@ -231,9 +231,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
    MANAGE VIEWS
 ══════════════════════ */
 .manage-view { flex-direction: column; background: var(--bg); }
-/* All manage-views use absolute positioning so they don't depend on the flex height chain */
-.main { position: relative; }
-.view.active.manage-view { position: absolute; inset: 52px 0 0 0; display: flex; flex-direction: column; overflow: hidden; }
+/* Fix: manage-views use absolute positioning to bypass broken flex height chain */
+.main { position: relative !important; }
+.main > .view.manage-view { display: none; }
+.main > .view.manage-view.active { display: flex !important; flex-direction: column !important; position: absolute !important; top: 52px !important; left: 0 !important; right: 0 !important; bottom: 0 !important; overflow: hidden; }
 /* ── COMPARE ── */
 .compare-view { flex-direction: column; }
 .compare-upload-row { display: flex; gap: 16px; padding: 20px; }
@@ -5249,7 +5250,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='settings') renderSettings();
+  if(v==='settings') { try { renderSettings(); } catch(e) { console.error('[Settings]',e); const b=document.getElementById('settingsBody'); if(b) b.innerHTML='<div style="padding:20px;color:red;">'+String(e)+'</div>'; } }
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
