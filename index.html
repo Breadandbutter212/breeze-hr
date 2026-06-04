@@ -443,6 +443,36 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .emp-badge-diff { background:#F59E0B;color:white; }
 .emp-badge-match { background:var(--green);color:white; }
 .emp-badge-missing { background:var(--surface3);color:var(--ink3); }
+
+/* ── PEOPLE PLAN ── */
+.pp-timeline { flex:1;overflow:auto;padding:20px; }
+.pp-grid { display:grid; grid-template-columns: 160px repeat(12, 1fr); gap:0; border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; background:white; box-shadow:var(--shadow); }
+.pp-month-header { background:#1B2D50; color:white; font-size:10px; font-weight:600; text-align:center; padding:9px 4px; letter-spacing:0.04em; border-right:1px solid rgba(255,255,255,0.1); }
+.pp-month-header:last-child { border-right:none; }
+.pp-cat-label { display:flex; align-items:center; gap:8px; padding:10px 12px; font-size:11px; font-weight:600; color:var(--ink); background:var(--surface2); border-right:1px solid var(--border); border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
+.pp-cat-label:last-child { border-bottom:none; }
+.pp-cat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
+.pp-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); min-height:52px; position:relative; padding:4px 3px; background:white; }
+.pp-cell:nth-child(2n) { background:#FAFAFA; }
+.pp-cell:last-child { border-right:none; }
+.pp-row:last-child .pp-cell { border-bottom:none; }
+.pp-event { border-radius:5px; padding:4px 7px; font-size:10px; font-weight:600; color:white; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; transition:filter 0.12s; line-height:1.3; }
+.pp-event:hover { filter:brightness(1.12); }
+.pp-event-span { border-radius:5px; padding:4px 7px; font-size:10px; font-weight:600; color:white; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:filter 0.12s; line-height:1.3; position:absolute; top:4px; z-index:2; }
+.pp-event-span:hover { filter:brightness(1.12); }
+.pp-wizard { max-width:640px; margin:48px auto; padding:0 24px; }
+.pp-wizard-step { background:white; border:1px solid var(--border); border-radius:var(--r-xl); padding:32px 36px; box-shadow:var(--shadow); }
+.pp-wizard-q { font-size:15px; font-weight:600; color:var(--ink); margin-bottom:6px; letter-spacing:-0.01em; }
+.pp-wizard-sub { font-size:12px; color:var(--ink3); margin-bottom:20px; line-height:1.6; }
+.pp-chip-grid { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:20px; }
+.pp-chip { padding:6px 14px; border-radius:20px; border:1.5px solid var(--border); background:white; font-size:12px; color:var(--ink2); cursor:pointer; transition:all 0.12s; font-family:inherit; }
+.pp-chip:hover { border-color:var(--accent); color:var(--accent); }
+.pp-chip.sel { border-color:var(--accent); background:var(--accent-bg); color:var(--accent); font-weight:600; }
+.pp-month-chip { padding:5px 10px; border-radius:8px; border:1.5px solid var(--border); background:white; font-size:11px; font-weight:500; color:var(--ink2); cursor:pointer; transition:all 0.12s; font-family:inherit; min-width:40px; text-align:center; }
+.pp-month-chip:hover { border-color:var(--accent); color:var(--accent); }
+.pp-month-chip.sel { border-color:var(--accent); background:var(--accent); color:white; }
+.pp-legend { display:flex; flex-wrap:wrap; gap:10px; padding:14px 20px; border-top:1px solid var(--border); background:var(--surface2); flex-shrink:0; }
+.pp-legend-item { display:flex; align-items:center; gap:5px; font-size:11px; color:var(--ink2); }
 </style>
 </head>
 <body>
@@ -577,6 +607,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="ni" onclick="showView('compare',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
       Compare
+    </div>
+    <div class="ni" onclick="showView('peopleplan',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="7" y="14" width="3" height="3" rx="0.5"/><rect x="14" y="14" width="3" height="3" rx="0.5"/></svg>
+      People Plan
     </div>
     <div class="nav-label">Admin</div>
     <div class="ni" onclick="showView('settings',this)">
@@ -1087,6 +1121,15 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     </div>
   </div>
   <div class="compare-results" id="compareResults"></div>
+</div>
+
+<!-- PEOPLE PLAN -->
+<div class="view manage-view" id="view-peopleplan">
+  <div class="manage-topbar">
+    <div><div class="manage-title">People Plan</div><div class="manage-sub">Your annual HR calendar - visualise every key people event across the year.</div></div>
+    <div style="display:flex;gap:8px;align-items:center;" id="ppTopbarBtns"></div>
+  </div>
+  <div class="manage-body" id="peoplePlanBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -5080,6 +5123,7 @@ function showView(v,el) {
   if(v==='compare') { /* no init needed */ }
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
+  if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
 }
 
 // ── BULK MAIL MERGE ──
@@ -7475,7 +7519,8 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
 
 function compareMatchedRow(rowA, rowB) {
   const GROUPS = {
-    salary:     /salary|pay|wage|remuneration|compensation|ctc|basic|gross|annual.*pay|base.*pay/i,
+    // pay\b matches "pay","basic pay","annual pay" — NOT "payment","relocation_payment"
+    salary:     /salary|pay\b|wage|remuneration|compensation|ctc/i,
     bonus:      /bonus|incentive|variable/i,
     department: /dept|department|team|division|group|function/i,
     title:      /title|role|position|designation/i,
@@ -7493,8 +7538,9 @@ function compareMatchedRow(rowA, rowB) {
     return cn;
   };
   const gA = {}, gB = {};
-  Object.entries(rowA || {}).forEach(([k,v]) => { const g = groupKey(k); if (g) gA[g] = { key: k, val: v }; });
-  Object.entries(rowB || {}).forEach(([k,v]) => { const g = groupKey(k); if (g) gB[g] = { key: k, val: v }; });
+  // First-wins: specific extractors (salary, bonus, title) run before generic KV, so they land first and win
+  Object.entries(rowA || {}).forEach(([k,v]) => { const g = groupKey(k); if (g && !gA[g]) gA[g] = { key: k, val: v }; });
+  Object.entries(rowB || {}).forEach(([k,v]) => { const g = groupKey(k); if (g && !gB[g]) gB[g] = { key: k, val: v }; });
   const allGroups = new Set([...Object.keys(gA), ...Object.keys(gB)]);
   const results = [];
   for (const g of allGroups) {
@@ -7688,6 +7734,457 @@ async function compareEmployeeMatch(isCompMode) {
   } catch(e) {
     results.innerHTML = `<div style="padding:20px;color:var(--red);font-size:13px;">Error: ${escapeHtml(e.message)}</div>`;
   }
+}
+
+// ── PEOPLE PLAN ──
+const PP_CATS = [
+  { id:'performance',  label:'Performance',     color:'#3B82F6', bg:'#EFF6FF' },
+  { id:'salary',       label:'Salary & Comp',   color:'#10B981', bg:'#ECFDF5' },
+  { id:'benefits',     label:'Benefits',        color:'#8B5CF6', bg:'#F5F3FF' },
+  { id:'learning',     label:'L&D / Training',  color:'#F59E0B', bg:'#FFFBEB' },
+  { id:'engagement',   label:'Engagement',      color:'#EC4899', bg:'#FDF2F8' },
+  { id:'onboarding',   label:'Onboarding',      color:'#14B8A6', bg:'#F0FDFA' },
+  { id:'compliance',   label:'Compliance',      color:'#EF4444', bg:'#FEF2F2' },
+  { id:'other',        label:'Other',           color:'#6B7280', bg:'#F9FAFB' },
+];
+const PP_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+let ppPlan = null; // { year, events: [{id,catId,title,startMonth,endMonth,notes}] }
+let ppWizardStep = 0, ppWizardAnswers = {}, ppEditingEvent = null;
+
+function showView_peopleplan() { renderPeoplePlan(); }
+
+function renderPeoplePlan() {
+  const body = document.getElementById('peoplePlanBody');
+  const btns = document.getElementById('ppTopbarBtns');
+  if (!body) return;
+  if (!ppPlan) {
+    if (btns) btns.innerHTML = '';
+    renderPPWizard();
+  } else {
+    if (btns) btns.innerHTML = `
+      <select id="ppYearSel" onchange="ppChangeYear(this.value)" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);">
+        ${[ppPlan.year-1,ppPlan.year,ppPlan.year+1].map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
+      <button class="btn btn-primary btn-sm" onclick="downloadPeoplePlanPPT()">⬇ PPT</button>
+      <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
+    renderPPTimeline();
+  }
+}
+
+function ppChangeYear(y) { ppPlan.year = parseInt(y); renderPeoplePlanSave(); renderPPTimeline(); }
+
+function ppReset() {
+  if (!confirm('Reset the people plan and start over?')) return;
+  ppPlan = null; ppWizardStep = 0; ppWizardAnswers = {};
+  renderPeoplePlan();
+}
+
+function renderPPWizard() {
+  const body = document.getElementById('peoplePlanBody');
+  const questions = getPPWizardQuestions();
+  const step = ppWizardStep;
+  if (step >= questions.length) { buildPlanFromWizard(); return; }
+  const q = questions[step];
+  body.innerHTML = `
+    <div class="pp-wizard">
+      <div style="font-size:11px;color:var(--ink3);margin-bottom:20px;font-weight:500;">Step ${step+1} of ${questions.length}</div>
+      <div style="height:3px;background:var(--border);border-radius:2px;margin-bottom:28px;overflow:hidden;">
+        <div style="width:${Math.round(((step)/questions.length)*100)}%;height:100%;background:var(--accent);border-radius:2px;transition:width 0.3s;"></div>
+      </div>
+      <div class="pp-wizard-step">
+        <div class="pp-wizard-q">${q.q}</div>
+        <div class="pp-wizard-sub">${q.sub||''}</div>
+        ${renderPPWizardInput(q)}
+        <div style="display:flex;justify-content:space-between;margin-top:24px;">
+          ${step > 0 ? `<button class="btn btn-ghost btn-sm" onclick="ppWizardBack()">← Back</button>` : '<div></div>'}
+          <button class="btn btn-primary" onclick="ppWizardNext()" id="ppWizardNextBtn">${step === questions.length-1 ? 'Build my plan →' : 'Next →'}</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function getPPWizardQuestions() {
+  return [
+    { id:'year', q:'What year is this plan for?', sub:'We\'ll map every event across the 12 months.',
+      type:'select', options:['2025','2026','2027','2028'], defaultVal: String(new Date().getFullYear()) },
+    { id:'fyStart', q:'When does your financial / performance year start?', sub:'This helps us position reviews and cycles correctly.',
+      type:'chips', options:['January','April','July','October'], defaultVal:'January' },
+    { id:'perfReviews', q:'When do you run performance reviews?', sub:'Select all months that apply.',
+      type:'months_multi' },
+    { id:'salaryReview', q:'When is the annual salary review?', sub:'Select the month when pay changes take effect.',
+      type:'months_multi' },
+    { id:'benefitsRenewal', q:'When do benefits renew or are reviewed?', sub:'Health insurance, pension, perks - when are these reviewed?',
+      type:'months_multi' },
+    { id:'engagementSurvey', q:'When do you run engagement surveys?', sub:'Select all months that apply. Skip if you don\'t run surveys.',
+      type:'months_multi', optional:true },
+    { id:'learningCycles', q:'When are major L&D or training cycles?', sub:'Induction, mandatory training, learning weeks - select months.',
+      type:'months_multi', optional:true },
+    { id:'extras', q:'Anything else to add?', sub:'Select any other recurring activities to include.',
+      type:'chips_multi', options:['Compliance training','Succession planning','Workforce planning','Headcount review','OKR setting','Board people report','Pulse survey','Values review','Internship cohort'], optional:true },
+  ];
+}
+
+function renderPPWizardInput(q) {
+  const saved = ppWizardAnswers[q.id];
+  if (q.type === 'select') {
+    return `<div class="pp-chip-grid">${q.options.map(o=>`<button class="pp-chip${(saved||q.defaultVal)===o?' sel':''}" onclick="ppWizardToggleChip(this,'${q.id}','${o}',true)">${o}</button>`).join('')}</div>`;
+  }
+  if (q.type === 'chips') {
+    return `<div class="pp-chip-grid">${q.options.map(o=>`<button class="pp-chip${(saved||q.defaultVal)===o?' sel':''}" onclick="ppWizardToggleChip(this,'${q.id}','${o}',true)">${o}</button>`).join('')}</div>`;
+  }
+  if (q.type === 'months_multi') {
+    const selArr = saved || [];
+    return `<div class="pp-chip-grid">${PP_MONTHS.map((m,i)=>`<button class="pp-month-chip${selArr.includes(i+1)?' sel':''}" onclick="ppWizardToggleMonth(this,'${q.id}',${i+1})">${m}</button>`).join('')}</div>`;
+  }
+  if (q.type === 'chips_multi') {
+    const selArr = saved || [];
+    return `<div class="pp-chip-grid">${q.options.map(o=>`<button class="pp-chip${selArr.includes(o)?' sel':''}" onclick="ppWizardToggleChipMulti(this,'${q.id}','${o}')">${o}</button>`).join('')}</div>`;
+  }
+  return '';
+}
+
+function ppWizardToggleChip(btn, id, val, single) {
+  btn.closest('.pp-chip-grid').querySelectorAll('.pp-chip').forEach(b=>b.classList.remove('sel'));
+  btn.classList.add('sel');
+  ppWizardAnswers[id] = val;
+}
+
+function ppWizardToggleChipMulti(btn, id, val) {
+  let arr = ppWizardAnswers[id] || [];
+  if (arr.includes(val)) { arr = arr.filter(x=>x!==val); btn.classList.remove('sel'); }
+  else { arr.push(val); btn.classList.add('sel'); }
+  ppWizardAnswers[id] = arr;
+}
+
+function ppWizardToggleMonth(btn, id, month) {
+  let arr = ppWizardAnswers[id] || [];
+  if (arr.includes(month)) { arr = arr.filter(x=>x!==month); btn.classList.remove('sel'); }
+  else { arr.push(month); btn.classList.add('sel'); }
+  ppWizardAnswers[id] = arr;
+}
+
+function ppWizardNext() {
+  const qs = getPPWizardQuestions();
+  const q = qs[ppWizardStep];
+  // Set default if nothing selected
+  if (!ppWizardAnswers[q.id]) {
+    if (q.defaultVal) ppWizardAnswers[q.id] = q.defaultVal;
+    else if (!q.optional) { ppWizardAnswers[q.id] = q.type.includes('multi') ? [] : ''; }
+  }
+  ppWizardStep++;
+  renderPPWizard();
+}
+
+function ppWizardBack() { if (ppWizardStep > 0) { ppWizardStep--; renderPPWizard(); } }
+
+function buildPlanFromWizard() {
+  const a = ppWizardAnswers;
+  const year = parseInt(a.year) || new Date().getFullYear();
+  const fyMonthMap = { January:1, April:4, July:7, October:10 };
+  const fyStart = fyMonthMap[a.fyStart] || 1;
+  const events = [];
+  let idCounter = 1;
+  const addEvent = (catId, title, months, notes='') => {
+    (Array.isArray(months)?months:[months]).forEach(m => {
+      if (m < 1 || m > 12) return;
+      events.push({ id: idCounter++, catId, title, startMonth: m, endMonth: m, notes });
+    });
+  };
+  const addSpan = (catId, title, start, end, notes='') => {
+    events.push({ id: idCounter++, catId, title, startMonth: Math.max(1,start), endMonth: Math.min(12,end), notes });
+  };
+
+  // Performance reviews
+  const perfMonths = a.perfReviews || [];
+  if (perfMonths.length) {
+    perfMonths.forEach(m => {
+      const isMid = perfMonths.length > 1 && m !== Math.max(...perfMonths);
+      addEvent('performance', isMid ? 'Mid-year review' : 'Annual review', m);
+    });
+  } else {
+    addEvent('performance', 'Annual review', fyStart > 6 ? fyStart-1 : 12);
+  }
+  // Goal setting at FY start
+  addEvent('performance', 'Goal setting', fyStart);
+
+  // Salary
+  const salMonths = a.salaryReview || [];
+  if (salMonths.length) {
+    salMonths.forEach(m => addEvent('salary', 'Salary review', m));
+  } else {
+    addEvent('salary', 'Salary review', fyStart);
+  }
+  addEvent('salary', 'Bonus pay', salMonths.length ? ((salMonths[0] % 12) + 1) : ((fyStart % 12)+1));
+
+  // Benefits
+  const benMonths = a.benefitsRenewal || [];
+  if (benMonths.length) {
+    benMonths.forEach(m => addSpan('benefits', 'Benefits renewal', m, Math.min(12, m+1)));
+  } else {
+    addEvent('benefits', 'Benefits review', 11);
+  }
+  addEvent('benefits', 'Open enrolment', benMonths.length ? ((benMonths[0] % 12)+1) : 12);
+
+  // Engagement surveys
+  const engMonths = a.engagementSurvey || [];
+  engMonths.forEach(m => addEvent('engagement', 'Engagement survey', m));
+  if (!engMonths.length) {
+    addEvent('engagement', 'Engagement survey', 3);
+    addEvent('engagement', 'Engagement survey', 9);
+  }
+
+  // L&D
+  const lrnMonths = a.learningCycles || [];
+  lrnMonths.forEach(m => addEvent('learning', 'Learning cycle', m));
+  if (!lrnMonths.length) {
+    addEvent('learning', 'Mandatory training', 1);
+    addEvent('learning', 'L&D planning', fyStart);
+  }
+
+  // Always: onboarding window (Q1 and Q3)
+  addEvent('onboarding', 'Induction cohort', fyStart);
+  addEvent('onboarding', 'Induction cohort', fyStart > 6 ? fyStart - 6 : fyStart + 6);
+
+  // Extras
+  const extras = a.extras || [];
+  const extraCatMap = {
+    'Compliance training': 'compliance', 'Succession planning': 'performance',
+    'Workforce planning': 'other', 'Headcount review': 'other',
+    'OKR setting': 'performance', 'Board people report': 'other',
+    'Pulse survey': 'engagement', 'Values review': 'engagement', 'Internship cohort': 'onboarding',
+  };
+  extras.forEach(e => addEvent(extraCatMap[e]||'other', e, fyStart));
+
+  ppPlan = { year, events };
+  ppWizardStep = 0; ppWizardAnswers = {};
+  renderPeoplePlanSave();
+  renderPeoplePlan();
+}
+
+async function renderPeoplePlanSave() {
+  if (!currentProfile || !ppPlan) return;
+  const json = JSON.stringify(ppPlan);
+  const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:PeoplePlan').maybeSingle();
+  if (existing) { await sb.from('policies').update({ content: json }).eq('id', existing.id); }
+  else { await sb.from('policies').insert({ company_id: currentProfile.company_id, name: 'SETTING:PeoplePlan', content: json }); }
+}
+
+async function loadPeoplePlan() {
+  if (!currentProfile || ppPlan) return;
+  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','SETTING:PeoplePlan').maybeSingle();
+  if (data?.content) { try { ppPlan = JSON.parse(data.content); } catch(e) {} }
+}
+
+function renderPPTimeline() {
+  const body = document.getElementById('peoplePlanBody');
+  if (!body || !ppPlan) return;
+  const { year, events } = ppPlan;
+  const cats = PP_CATS.filter(c => events.some(e => e.catId === c.id));
+  if (!cats.length) { body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No events yet. <a onclick="ppAddEvent()" style="color:var(--accent);cursor:pointer;">Add an event</a></div>'; return; }
+
+  let gridHtml = `<div style="background:#1B2D50;padding:9px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.04em;display:flex;align-items:center;">CATEGORY</div>`;
+  PP_MONTHS.forEach(m => gridHtml += `<div class="pp-month-header">${m}</div>`);
+
+  cats.forEach(cat => {
+    gridHtml += `<div class="pp-cat-label" onclick="ppAddEvent('${cat.id}')"><div class="pp-cat-dot" style="background:${cat.color};"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
+    const catEvents = events.filter(e => e.catId === cat.id);
+    for (let m = 1; m <= 12; m++) {
+      const cellEvts = catEvents.filter(e => e.startMonth === e.endMonth && e.startMonth === m);
+      const spanStartEvts = catEvents.filter(e => e.startMonth !== e.endMonth && e.startMonth === m);
+      let inner = cellEvts.map(ev =>
+        `<div class="pp-event" style="background:${cat.color};" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${escapeHtml(ev.title)}</div>`
+      ).join('');
+      // For span events, use absolute positioning via a wrapper
+      spanStartEvts.forEach(ev => {
+        const span = ev.endMonth - ev.startMonth + 1;
+        inner += `<div class="pp-event-span" style="background:${cat.color};width:calc(${span*100}% + ${(span-1)*1}px - 6px);" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>`;
+      });
+      gridHtml += `<div class="pp-cell" style="position:relative;">${inner}</div>`;
+    }
+  });
+
+  const legendHtml = PP_CATS.filter(c => events.some(e => e.catId === c.id)).map(c =>
+    `<div class="pp-legend-item"><div style="width:10px;height:10px;border-radius:3px;background:${c.color};flex-shrink:0;"></div>${c.label}</div>`
+  ).join('');
+
+  body.innerHTML = `
+    <div class="pp-timeline">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+        <div style="font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${ppPlan.year} People Plan${currentProfile?.company_name?' - '+currentProfile.company_name:''}</div>
+        <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
+      </div>
+      <div class="pp-grid" style="grid-template-columns:160px repeat(12,1fr);">${gridHtml}</div>
+    </div>
+    <div class="pp-legend">${legendHtml}</div>`;
+}
+
+function ppAddEvent(defaultCat) {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const catOptions = PP_CATS.map(c => `<option value="${c.id}"${c.id===defaultCat?' selected':''}>${c.label}</option>`).join('');
+  const monthOptions = PP_MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
+  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:20px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add event</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Add a new activity to your people plan</div></div>
+    <div style="padding:22px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEvtTitle" placeholder="e.g. Annual performance review" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEvtCat" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${catOptions}</select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start month</div><select id="ppEvtStart" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOptions}</select></div>
+        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End month</div><select id="ppEvtEnd" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOptions}</select></div>
+      </div>
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Notes (optional)</div><input id="ppEvtNotes" placeholder="Any details..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="ppSaveNewEvent(this)">Add event</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  setTimeout(() => document.getElementById('ppEvtTitle')?.focus(), 60);
+}
+
+function ppSaveNewEvent(btn) {
+  const title = document.getElementById('ppEvtTitle')?.value?.trim();
+  if (!title) { document.getElementById('ppEvtTitle').style.borderColor='var(--red)'; return; }
+  const catId = document.getElementById('ppEvtCat')?.value;
+  const start = parseInt(document.getElementById('ppEvtStart')?.value);
+  const end = parseInt(document.getElementById('ppEvtEnd')?.value);
+  const notes = document.getElementById('ppEvtNotes')?.value?.trim();
+  const maxId = ppPlan.events.reduce((m,e)=>Math.max(m,e.id),0);
+  ppPlan.events.push({ id: maxId+1, catId, title, startMonth: Math.min(start,end), endMonth: Math.max(start,end), notes });
+  renderPeoplePlanSave();
+  btn.closest('div[style*=fixed]').remove();
+  renderPPTimeline();
+}
+
+function ppEditEvent(id) {
+  const ev = ppPlan.events.find(e => e.id === id); if (!ev) return;
+  const cat = PP_CATS.find(c => c.id === ev.catId);
+  const catOptions = PP_CATS.map(c => `<option value="${c.id}"${c.id===ev.catId?' selected':''}>${c.label}</option>`).join('');
+  const monthOpts = (sel) => PP_MONTHS.map((m,i)=>`<option value="${i+1}"${i+1===sel?' selected':''}>${m}</option>`).join('');
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:${cat?.color||'#1B2D50'};padding:20px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Edit event</div></div>
+    <div style="padding:22px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEditTitle" value="${escapeHtml(ev.title)}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEditCat" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${catOptions}</select></div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start month</div><select id="ppEditStart" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOpts(ev.startMonth)}</select></div>
+        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End month</div><select id="ppEditEnd" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOpts(ev.endMonth)}</select></div>
+      </div>
+      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Notes (optional)</div><input id="ppEditNotes" value="${escapeHtml(ev.notes||'')}" placeholder="Any details..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="ppDeleteEvent(${id},this)">Delete</button>
+      <div style="flex:1;"></div>
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="ppSaveEditEvent(${id},this)">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+}
+
+function ppSaveEditEvent(id, btn) {
+  const ev = ppPlan.events.find(e => e.id === id); if (!ev) return;
+  ev.title = document.getElementById('ppEditTitle')?.value?.trim() || ev.title;
+  ev.catId = document.getElementById('ppEditCat')?.value || ev.catId;
+  const s = parseInt(document.getElementById('ppEditStart')?.value);
+  const e2 = parseInt(document.getElementById('ppEditEnd')?.value);
+  ev.startMonth = Math.min(s,e2); ev.endMonth = Math.max(s,e2);
+  ev.notes = document.getElementById('ppEditNotes')?.value?.trim() || '';
+  renderPeoplePlanSave();
+  btn.closest('div[style*=fixed]').remove();
+  renderPPTimeline();
+}
+
+function ppDeleteEvent(id, btn) {
+  ppPlan.events = ppPlan.events.filter(e => e.id !== id);
+  renderPeoplePlanSave();
+  btn.closest('div[style*=fixed]').remove();
+  renderPPTimeline();
+}
+
+function downloadPeoplePlanPPT() {
+  if (!ppPlan) return;
+  const btn = document.querySelector('#ppTopbarBtns .btn-primary');
+  if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
+
+  const pptx = new PptxGenJS();
+  pptx.layout = 'LAYOUT_WIDE';
+
+  // ── Slide 1: Cover ──
+  const slide1 = pptx.addSlide();
+  slide1.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'1B2D50'} });
+  slide1.addShape(pptx.ShapeType.rect, { x:0.5, y:3.1, w:1.2, h:0.08, fill:{color:'3B82F6'} });
+  slide1.addText(`${ppPlan.year} People Plan`, { x:0.5, y:1.6, w:12, h:1.2, fontSize:48, bold:true, color:'FFFFFF', fontFace:'Calibri', charSpacing:-1 });
+  slide1.addText(currentProfile?.company_name || '', { x:0.5, y:3.3, w:12, h:0.7, fontSize:18, color:'BFDBFE', fontFace:'Calibri' });
+  slide1.addText(`HR Calendar - ${ppPlan.year}`, { x:0.5, y:6.8, w:12, h:0.4, fontSize:10, color:'475569', fontFace:'Calibri' });
+
+  // ── Slide 2: Annual timeline ──
+  const slide2 = pptx.addSlide();
+  slide2.background = { color:'FFFFFF' };
+  slide2.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.0, fill:{color:'1B2D50'} });
+  slide2.addText('Annual HR Calendar', { x:0.4, y:0.15, w:12, h:0.7, fontSize:22, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+
+  const colW = 12.3/12, startX = 0.5, rowH = 0.52, headerY = 1.1, dataY = 1.55;
+  // Month headers
+  PP_MONTHS.forEach((m,i) => {
+    slide2.addShape(pptx.ShapeType.rect, { x:startX+i*colW, y:headerY, w:colW-0.02, h:0.35, fill:{color:'EFF6FF'}, line:{color:'DBEAFE',width:1} });
+    slide2.addText(m, { x:startX+i*colW, y:headerY, w:colW-0.02, h:0.35, align:'center', fontSize:9, bold:true, color:'1D4ED8', fontFace:'Calibri' });
+  });
+
+  const cats = PP_CATS.filter(c => ppPlan.events.some(e => e.catId === c.id));
+  cats.forEach((cat, rowIdx) => {
+    const y = dataY + rowIdx * rowH;
+    // Row label
+    slide2.addText(cat.label, { x:0, y:y+0.05, w:startX-0.05, h:rowH-0.1, fontSize:8, bold:true, color:'374151', fontFace:'Calibri', align:'right' });
+    // Grid cells
+    for (let m=1;m<=12;m++) {
+      slide2.addShape(pptx.ShapeType.rect, { x:startX+(m-1)*colW, y, w:colW-0.02, h:rowH-0.06, fill:{color:rowIdx%2===0?'FAFAFA':'FFFFFF'}, line:{color:'E5E7EB',width:0.5} });
+    }
+    // Events
+    ppPlan.events.filter(e=>e.catId===cat.id).forEach(ev => {
+      const span = ev.endMonth - ev.startMonth + 1;
+      const evX = startX+(ev.startMonth-1)*colW;
+      const evW = span*colW - 0.06;
+      slide2.addShape(pptx.ShapeType.roundRect, { x:evX+0.02, y:y+0.06, w:evW, h:rowH-0.18, fill:{color:cat.color.replace('#','')}, rectRadius:0.04 });
+      slide2.addText(ev.title, { x:evX+0.04, y:y+0.06, w:evW-0.04, h:rowH-0.18, fontSize:7.5, bold:true, color:'FFFFFF', fontFace:'Calibri', valign:'middle', wrap:false });
+    });
+  });
+
+  // ── Slide per category ──
+  PP_CATS.forEach(cat => {
+    const catEvts = ppPlan.events.filter(e => e.catId === cat.id);
+    if (!catEvts.length) return;
+    const slide = pptx.addSlide();
+    slide.background = { color:'FFFFFF' };
+    slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{color:cat.color.replace('#','')} });
+    slide.addText(cat.label, { x:0.4, y:0.15, w:12, h:0.8, fontSize:26, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+    catEvts.forEach((ev, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = 0.4 + col * 4.35, y = 1.4 + row * 1.6;
+      slide.addShape(pptx.ShapeType.roundRect, { x, y, w:4.0, h:1.4, fill:{color:'F8FAFC'}, line:{color:cat.color.replace('#',''),width:2}, rectRadius:0.1 });
+      slide.addShape(pptx.ShapeType.rect, { x, y, w:0.12, h:1.4, fill:{color:cat.color.replace('#','')}, rectRadius:0 });
+      slide.addText(ev.title, { x:x+0.2, y:y+0.15, w:3.6, h:0.45, fontSize:13, bold:true, color:'1D1D1F', fontFace:'Calibri' });
+      const monthStr = ev.startMonth === ev.endMonth ? PP_MONTHS[ev.startMonth-1] : PP_MONTHS[ev.startMonth-1]+' - '+PP_MONTHS[ev.endMonth-1];
+      slide.addText(monthStr, { x:x+0.2, y:y+0.6, w:3.6, h:0.3, fontSize:11, color:cat.color.replace('#',''), fontFace:'Calibri', bold:true });
+      if (ev.notes) slide.addText(ev.notes, { x:x+0.2, y:y+0.92, w:3.6, h:0.35, fontSize:10, color:'6B7280', fontFace:'Calibri', wrap:true });
+    });
+  });
+
+  // ── Closing slide ──
+  const slideEnd = pptx.addSlide();
+  slideEnd.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'1B2D50'} });
+  slideEnd.addText('Questions?', { x:0.5, y:2.5, w:12, h:1.0, fontSize:40, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+  slideEnd.addText('Generated by Breeze HR', { x:0.5, y:7.0, w:12, h:0.3, fontSize:9, color:'475569', fontFace:'Calibri' });
+
+  pptx.writeFile({ fileName: `People Plan ${ppPlan.year}.pptx` });
+  if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(()=>btn.textContent='⬇ PPT',2500); }
 }
 
 // ── INIT ──
