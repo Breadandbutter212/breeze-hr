@@ -12100,6 +12100,65 @@ function hcCandSummary(r) {
   if (!cands.length) return '<span style="color:var(--ink3);font-size:11px;">No candidates</span>';
   return `<span style="font-size:11px;color:var(--ink);">${active.length} active${hired.length?' · '+hired.length+' hired':''}</span>`;
 }
+async function hcLoadDemoData() {
+  const daysAgo = n => new Date(Date.now()-n*86400000).toISOString();
+  hcRoles = [
+    {
+      id:'hc_demo1', title:'HR Director', dept:'People & Culture', country:'UK',
+      hiringManager:'Sarah Thompson', stage:'interviewing', priority:'urgent',
+      source:'Agency', agencyName:'Hays', agencyFee:20, budget:24000,
+      compMin:90000, compMax:120000, targetStart:'2026-09-01', headcount:1,
+      interviewStages:['CV screen','1st interview','2nd interview','Offer'],
+      interviewProcess:'CV screen by HR → 1st interview with CEO → 2nd interview with Board → offer',
+      notes:'Critical hire — must be CIPD qualified, ideally FS sector experience.',
+      stageHistory:[
+        {stage:'briefing',    startedAt:daysAgo(32)},
+        {stage:'sourcing',    startedAt:daysAgo(26)},
+        {stage:'shortlisting',startedAt:daysAgo(16)},
+        {stage:'interviewing',startedAt:daysAgo(5)},
+      ],
+      candidates:[
+        {id:'c1',name:'Emma Clarke',    email:'emma@example.com',  source:'Agency',   stage:'1st interview', notes:'Strong generalist background, Ex-Goldman.',    addedAt:daysAgo(14)},
+        {id:'c2',name:'James Okafor',   email:'james@example.com', source:'Agency',   stage:'2nd interview', notes:'Impressive culture transformation track record.',addedAt:daysAgo(12)},
+        {id:'c3',name:'Priya Nair',     email:'priya@example.com', source:'LinkedIn', stage:'CV screen',     notes:'Good CV, awaiting HR screen.',                 addedAt:daysAgo(4)},
+        {id:'c4',name:'Tom Walsh',      email:'',                  source:'Agency',   stage:'Rejected',      notes:'Not enough senior leadership experience.',      addedAt:daysAgo(18)},
+      ],
+      contactLog:[
+        {type:'call',   note:'Briefing call with Hays — JD agreed and shared. Starting active search.',        date:daysAgo(26)},
+        {type:'meeting',note:'1st interview with Emma Clarke — positive. Moving to 2nd interview with CEO.',   date:daysAgo(7)},
+        {type:'email',  note:'Sent availability for 2nd interview panel to James Okafor and Emma Clarke.',     date:daysAgo(3)},
+      ],
+      createdAt:daysAgo(32), updatedAt:daysAgo(1),
+    },
+    {
+      id:'hc_demo2', title:'Senior Software Engineer', dept:'Engineering', country:'UK',
+      hiringManager:'Tom Briggs', stage:'shortlisting', priority:'high',
+      source:'LinkedIn', agencyName:'', agencyFee:0, budget:0,
+      compMin:75000, compMax:95000, targetStart:'2026-08-01', headcount:2,
+      interviewStages:['CV screen','Technical task','1st interview','Final panel','Offer'],
+      interviewProcess:'CV screen by engineering lead → 90-min technical task → 1st interview (team fit) → final panel with CTO → offer',
+      notes:'Two positions — one backend-focused (Node/Python), one fullstack (React + Node). Remote-first.',
+      stageHistory:[
+        {stage:'briefing',    startedAt:daysAgo(18)},
+        {stage:'sourcing',    startedAt:daysAgo(14)},
+        {stage:'shortlisting',startedAt:daysAgo(4)},
+      ],
+      candidates:[
+        {id:'c5',name:'Raj Patel',      email:'raj@example.com',   source:'LinkedIn', stage:'Technical task',notes:'Strong GitHub profile, React + Node background.',addedAt:daysAgo(6)},
+        {id:'c6',name:'Lucy Chen',      email:'lucy@example.com',  source:'Direct',   stage:'CV screen',    notes:'Inbound application — 6 years backend Python.',  addedAt:daysAgo(2)},
+        {id:'c7',name:'Marcus Webb',    email:'',                  source:'LinkedIn', stage:'Withdrawn',    notes:'Withdrew — accepted another offer.',              addedAt:daysAgo(8)},
+      ],
+      contactLog:[
+        {type:'note',  note:'Posted on LinkedIn and Stack Overflow jobs. 22 applications received in first week.',date:daysAgo(14)},
+        {type:'action',note:'Shortlisted 4 candidates. Sent technical task to Raj Patel and Lucy Chen.',         date:daysAgo(4)},
+      ],
+      createdAt:daysAgo(18), updatedAt:daysAgo(1),
+    },
+  ];
+  await saveHCRoles();
+  renderHeadcount();
+}
+
 function hcStageDurationHtml(r) {
   const history = r.stageHistory;
   if (!history || history.length === 0) return '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">Stage durations will be recorded from the next stage change.</div>';
@@ -12182,7 +12241,7 @@ function renderHeadcount() {
     ${hcRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
       <thead><tr><th>Role</th><th>Stage</th><th>Location</th><th>Comp range</th><th>Target start</th><th>Candidates</th><th>Days open</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
-    </table></div>` : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.</div>`}
+    </table></div>` : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.<br><br><button onclick="hcLoadDemoData()" style="font-size:12px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:5px 14px;cursor:pointer;font-family:inherit;">Load sample data</button></div>`}
   </div>`;
 }
 function openAddRoleModal(existing) {
