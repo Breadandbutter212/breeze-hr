@@ -1215,7 +1215,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- ORG STRUCTURE -->
 <div class="view manage-view" id="view-orgchart">
   <div class="manage-topbar">
-    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Dynamic org chart - auto-populated from your HRIS. Drag nodes to rearrange.</div></div>
+    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Click any node to change reporting lines. Drag to reposition. Demo data — replace with your own via CSV or HRIS.</div></div>
     <div style="display:flex;gap:6px;align-items:center;" id="orgTopBtns"></div>
   </div>
   <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;" id="orgChartRoot"></div>
@@ -7787,108 +7787,107 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
   });
   const allClear = diffEmployees === 0 && unmatchedA.length === 0 && unmatchedB.length === 0;
 
+  const hdrA = nameA.replace(/\.[^.]+$/,'');
+  const hdrB = nameB.replace(/\.[^.]+$/,'');
+
   // ── SUMMARY BAR ──
   const summaryHtml = `
-    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
-      <div style="font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);padding:5px 13px;border-radius:20px;">✓ ${matched.length} matched</div>
-      ${diffEmployees ? `<div style="font-size:12px;font-weight:600;color:#92400E;background:#FEF3C7;padding:5px 13px;border-radius:20px;">⚠ ${diffEmployees} with differences</div>` : ''}
-      ${salaryDiffs   ? `<div style="font-size:12px;font-weight:700;color:white;background:#EF4444;padding:5px 13px;border-radius:20px;">🔴 ${salaryDiffs} salary mismatch${salaryDiffs!==1?'es':''}</div>` : ''}
-      ${unmatchedA.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedA.length} not found in letters</div>` : ''}
-      ${unmatchedB.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedB.length} not found in spreadsheet</div>` : ''}
+    <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:12px;font-weight:500;color:var(--green);background:var(--green-bg);padding:5px 12px;border-radius:6px;border:1px solid #C6E8D2;">${matched.length} matched</div>
+      ${diffEmployees ? `<div style="font-size:12px;font-weight:500;color:#92400E;background:#FEF9EE;padding:5px 12px;border-radius:6px;border:1px solid #F5D28A;">${diffEmployees} with discrepancies</div>` : ''}
+      ${salaryDiffs   ? `<div style="font-size:12px;font-weight:500;color:#991B1B;background:#FFF5F5;padding:5px 12px;border-radius:6px;border:1px solid #FECACA;">${salaryDiffs} salary discrepanc${salaryDiffs!==1?'ies':'y'}</div>` : ''}
+      ${unmatchedA.length ? `<div style="font-size:12px;font-weight:500;color:#991B1B;background:#FFF5F5;padding:5px 12px;border-radius:6px;border:1px solid #FECACA;">${unmatchedA.length} not found in ${hdrB}</div>` : ''}
+      ${unmatchedB.length ? `<div style="font-size:12px;font-weight:500;color:#991B1B;background:#FFF5F5;padding:5px 12px;border-radius:6px;border:1px solid #FECACA;">${unmatchedB.length} not found in ${hdrA}</div>` : ''}
       <div style="margin-left:auto;display:flex;gap:6px;flex-shrink:0;">
         <button class="btn btn-secondary btn-sm" id="filterIssuesBtn" onclick="filterEmpCompare('diff')" style="${diffEmployees||unmatchedA.length||unmatchedB.length?'background:var(--accent);color:white;border-color:var(--accent);':''}">Issues only</button>
-        <button class="btn btn-secondary btn-sm" id="filterAllBtn"    onclick="filterEmpCompare('all')">Show all</button>
+        <button class="btn btn-secondary btn-sm" id="filterAllBtn" onclick="filterEmpCompare('all')">Show all</button>
       </div>
     </div>`;
 
   if (allClear) {
-    results.innerHTML = summaryHtml + `<div style="text-align:center;padding:32px;color:var(--green);font-size:14px;font-weight:600;">✅ All ${matched.length} employees match — no discrepancies found.</div>`;
+    results.innerHTML = summaryHtml + `<div style="text-align:center;padding:32px;color:var(--green);font-size:14px;font-weight:500;">All ${matched.length} employees — no discrepancies found.</div>`;
     return;
   }
 
+  // ── SHARED TABLE HEADER (fixed col widths so every employee table aligns) ──
+  const tableHead = () => `<table style="width:100%;border-collapse:collapse;table-layout:fixed;">
+    <colgroup><col style="width:22%"><col style="width:30%"><col style="width:30%"><col style="width:18%"></colgroup>
+    <thead><tr style="background:var(--surface2);border-bottom:1px solid var(--border);">
+      <td style="padding:7px 14px;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink3);">Field</td>
+      <td style="padding:7px 14px;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink3);">${escapeHtml(hdrA)}</td>
+      <td style="padding:7px 14px;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink3);">${escapeHtml(hdrB)}</td>
+      <td style="padding:7px 14px;font-size:10px;font-weight:700;letter-spacing:0.05em;text-transform:uppercase;color:var(--ink3);">Status</td>
+    </tr></thead>`;
+
   // ── PER-EMPLOYEE ROWS ──
   const rowsHtml = matches.map((m, idx) => {
-    // Unmatched employees
     if (!m.matched) {
-      const side = m.unmatchedSide === 'A' ? `not found in letters` : `not found in spreadsheet`;
-      return `<div class="emp-flat-row emp-flat-issue" data-type="unmatched">
+      const side = m.unmatchedSide === 'A' ? `Not found in ${hdrB}` : `Not found in ${hdrA}`;
+      return `<div class="emp-flat-row" data-type="unmatched" style="border-left:3px solid var(--border2);">
         <div class="emp-flat-head">
-          <span style="font-size:13px;">❓</span>
           <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
-          <span style="font-size:11px;color:var(--ink3);margin-left:8px;">${side}</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:10px;">${side}</span>
         </div>
       </div>`;
     }
 
     const fields     = m.fieldComparisons || [];
-    // For spreadsheet vs spreadsheet: "onlyIn" rows are just different columns between systems — not real discrepancies.
-    // Only surface them in comp/letter mode where "only in letter" means a payment wasn't captured.
-    const realDiffs  = fields.filter(f => !f.match && !f.onlyInA && !f.onlyInB);  // both sides have a value but they differ
-    const onlyFields = fields.filter(f => !f.match && (f.onlyInA || f.onlyInB));  // exists in one side only
-    // In comp mode show everything; in spreadsheet mode hide onlyIn fields (just different columns, not errors)
+    const realDiffs  = fields.filter(f => !f.match && !f.onlyInA && !f.onlyInB);
     const diffFields = isCompMode ? fields.filter(f => !f.match) : realDiffs;
     const hasDiff    = diffFields.length > 0;
     const hasSalDiff = diffFields.some(f => f.isSalary);
     const dtype      = hasSalDiff ? 'salary' : hasDiff ? 'diff' : 'match';
-    const icon       = hasSalDiff ? '🔴' : hasDiff ? '⚠️' : '✅';
 
-    // All-match: just a single compact green line
     if (!hasDiff) {
       return `<div class="emp-flat-row emp-flat-ok" data-type="match">
         <div class="emp-flat-head">
-          <span style="font-size:13px;">✅</span>
           <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
-          <span style="font-size:11px;color:var(--green);margin-left:8px;">All shared fields match</span>
+          <span style="font-size:11px;color:var(--green);margin-left:10px;">All fields match</span>
         </div>
       </div>`;
     }
 
-    // Has differences: show flat table of differing fields
+    const accentCol = hasSalDiff ? '#DC2626' : '#D97706';
+    const accentBg  = hasSalDiff ? '#FFF5F5' : '#FEF9EE';
+    const accentBdr = hasSalDiff ? '#FECACA' : '#F5D28A';
+
     const diffRows = diffFields.map(f => {
       const isSal = f.isSalary;
-      const sideA = isCompMode ? 'Spreadsheet' : nameA.replace(/\.[^.]+$/,'');
-      const sideB = isCompMode ? 'Letter'       : nameB.replace(/\.[^.]+$/,'');
-      const valA = f.onlyInB ? `<span style="color:var(--ink3);font-style:italic;">not in ${sideA}</span>` : `<strong>${escapeHtml(f.valA)}</strong>`;
-      const valB = f.onlyInA ? `<span style="color:var(--ink3);font-style:italic;">not in ${sideB}</span>` : `<strong style="color:${isSal?'#EF4444':'#D97706'};">${escapeHtml(f.valB)}</strong>`;
-      const badge = isSal ? '<span class="emp-badge emp-badge-salary">SALARY</span>'
-        : f.onlyInA ? `<span class="emp-badge emp-badge-missing">Only in ${sideB}</span>`
-        : f.onlyInB ? `<span class="emp-badge emp-badge-missing">Only in ${sideA}</span>`
-        : '<span class="emp-badge emp-badge-diff">Diff</span>';
-      return `<tr>
-        <td style="padding:7px 14px;font-size:12px;font-weight:500;color:var(--ink2);width:26%;border-bottom:1px solid var(--border);text-transform:capitalize;">${escapeHtml(f.displayName)}</td>
-        <td style="padding:7px 14px;font-size:12px;color:var(--ink);border-bottom:1px solid var(--border);">${valA}</td>
-        <td style="padding:7px 14px;font-size:12px;border-bottom:1px solid var(--border);">${valB}</td>
-        <td style="padding:7px 14px;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">${badge}</td>
+      const sideA = isCompMode ? 'spreadsheet' : hdrA;
+      const sideB = isCompMode ? 'letter'       : hdrB;
+      const valA = f.onlyInB ? `<span style="color:var(--ink3);">—</span>` : `<span style="font-weight:500;">${escapeHtml(f.valA)}</span>`;
+      const valB = f.onlyInA ? `<span style="color:var(--ink3);">—</span>` : `<span style="font-weight:500;color:${isSal?'#DC2626':'#D97706'};">${escapeHtml(f.valB)}</span>`;
+      const status = f.onlyInA
+        ? `<span style="font-size:11px;color:var(--ink3);">Only in ${sideB}</span>`
+        : f.onlyInB
+          ? `<span style="font-size:11px;color:var(--ink3);">Only in ${sideA}</span>`
+          : `<span style="font-size:11px;font-weight:500;color:${accentCol};">Doesn't match</span>`;
+      return `<tr style="border-bottom:1px solid var(--border);">
+        <td style="padding:9px 14px;font-size:12px;color:var(--ink2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.displayName)}</td>
+        <td style="padding:9px 14px;font-size:12px;color:var(--ink);">${valA}</td>
+        <td style="padding:9px 14px;font-size:12px;">${valB}</td>
+        <td style="padding:9px 14px;">${status}</td>
       </tr>`;
     }).join('');
 
-    // "Show all fields" toggle
     const matchRows = fields.filter(f => f.match).map(f =>
-      `<tr data-match="1" style="display:none;">
-        <td style="padding:5px 14px;font-size:11px;color:var(--ink3);border-bottom:1px solid var(--border);text-transform:capitalize;">${escapeHtml(f.displayName)}</td>
-        <td style="padding:5px 14px;font-size:11px;color:var(--ink2);border-bottom:1px solid var(--border);">${escapeHtml(f.valA)}</td>
-        <td style="padding:5px 14px;font-size:11px;color:var(--ink2);border-bottom:1px solid var(--border);">${escapeHtml(f.valB)}</td>
-        <td style="padding:5px 14px;font-size:11px;border-bottom:1px solid var(--border);"><span class="emp-badge emp-badge-match">✓</span></td>
+      `<tr data-match="1" style="display:none;border-bottom:1px solid var(--border);">
+        <td style="padding:7px 14px;font-size:11px;color:var(--ink3);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(f.displayName)}</td>
+        <td style="padding:7px 14px;font-size:11px;color:var(--ink3);">${escapeHtml(f.valA)}</td>
+        <td style="padding:7px 14px;font-size:11px;color:var(--ink3);">${escapeHtml(f.valB)}</td>
+        <td style="padding:7px 14px;font-size:11px;color:var(--green);">Matches</td>
       </tr>`
     ).join('');
 
-    return `<div class="emp-flat-row emp-flat-issue" data-type="${dtype}">
+    const countPill = `<span style="font-size:11px;font-weight:500;color:${accentCol};background:${accentBg};border:1px solid ${accentBdr};padding:1px 9px;border-radius:20px;margin-left:10px;">${diffFields.length} discrepanc${diffFields.length!==1?'ies':'y'}</span>`;
+
+    return `<div class="emp-flat-row emp-flat-issue" data-type="${dtype}" style="border-left:3px solid ${accentCol};">
       <div class="emp-flat-head">
-        <span style="font-size:13px;">${icon}</span>
         <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
-        <span style="font-size:11px;color:${hasSalDiff?'#EF4444':'#D97706'};font-weight:600;margin-left:8px;">${diffFields.length} difference${diffFields.length!==1?'s':''}</span>
-        ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
-        ${matchRows ? `<button onclick="toggleMatchRows(this)" style="margin-left:auto;font-size:10px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:2px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Show matching fields</button>` : ''}
+        ${countPill}
+        ${matchRows ? `<button onclick="toggleMatchRows(this)" style="margin-left:auto;font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;text-decoration:underline;">Show matching fields</button>` : ''}
       </div>
-      <table style="width:100%;border-collapse:collapse;background:var(--surface);">
-        <thead><tr style="background:var(--surface2);">
-          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);width:26%;">Field</td>
-          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">${escapeHtml(nameA.replace(/\.[^.]+$/,''))}</td>
-          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">${escapeHtml(nameB.replace(/\.[^.]+$/,''))}</td>
-          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Status</td>
-        </tr></thead>
-        <tbody>${diffRows}${matchRows}</tbody>
-      </table>
+      ${tableHead()}<tbody>${diffRows}${matchRows}</tbody></table>
     </div>`;
   }).join('');
 
