@@ -12121,7 +12121,7 @@ function renderHeadcount() {
       <td>
         <div style="display:flex;align-items:center;gap:5px;margin-bottom:3px;">${hcPriorityBadge(r.priority)}</div>
         <div style="font-weight:600;color:var(--ink);">${escapeHtml(r.title)}${r.headcount>1?` <span style="font-size:10px;font-weight:400;color:var(--ink3);">×${r.headcount}</span>`:''}</div>
-        <div style="font-size:10px;color:var(--ink3);">${escapeHtml(r.dept||'')}${r.hiringManager?' · '+escapeHtml(r.hiringManager):''}</div>
+        <div style="font-size:10px;color:var(--ink3);">${escapeHtml(r.dept||'')}${r.country?' · '+escapeHtml(r.country):''}${r.hiringManager?' · '+escapeHtml(r.hiringManager):''}</div>
       </td>
       <td onclick="event.stopPropagation()">
         <select onchange="hcUpdateField('${r.id}','stage',this.value)" style="border:1px solid ${st.color}40;border-radius:20px;padding:3px 8px;font-size:10px;font-weight:600;font-family:inherit;outline:none;cursor:pointer;background:${st.bg};color:${st.color};">${stageOpts}</select>
@@ -12178,6 +12178,7 @@ function openAddRoleModal(existing) {
         <div><label style="${lbl}">Hiring manager</label><input id="hc-mgr" value="${escapeHtml(r.hiringManager||'')}" placeholder="Name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('hc-mgr').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Stage</label><select id="hc-stage" style="${inp}">${stageOpts}</select></div>
         <div><label style="${lbl}">Priority</label><select id="hc-priority" style="${inp}">${priorOpts}</select></div>
+        <div><label style="${lbl}">Country</label><input id="hc-country" value="${escapeHtml(r.country||'')}" placeholder="e.g. UK, USA, Germany..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Comp min (£)</label><input id="hc-cmin" type="number" value="${r.compMin||''}" placeholder="e.g. 80000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Comp max (£)</label><input id="hc-cmax" type="number" value="${r.compMax||''}" placeholder="e.g. 100000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Target start date</label><input id="hc-start" type="date" value="${r.targetStart||''}" style="${inp}"></div>
@@ -12214,6 +12215,7 @@ async function submitAddRole(btn, existingId) {
     hiringManager:document.getElementById('hc-mgr')?.value?.trim()||'',
     stage:document.getElementById('hc-stage')?.value||'briefing',
     priority:document.getElementById('hc-priority')?.value||'normal',
+    country:document.getElementById('hc-country')?.value?.trim()||'',
     source:document.getElementById('hc-source')?.value||'',
     compMin:parseInt(document.getElementById('hc-cmin')?.value||'0')||0,
     compMax:parseInt(document.getElementById('hc-cmax')?.value||'0')||0,
@@ -12304,7 +12306,9 @@ function openRolePanel(id) {
       <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
         <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${inp}">${stageOpts}</select></div>
         <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${inp}">${priorOpts}</select></div>
-        <div><label style="${lbl}">Comp range</label><div style="font-size:13px;font-weight:600;color:var(--ink);padding:7px 0;">${hcFmtComp(r)||'Not set'}</div></div>
+        <div><label style="${lbl}">Country</label><input value="${escapeHtml(r.country||'')}" onchange="hcUpdateField('${id}','country',this.value)" style="${inp}" placeholder="e.g. UK, USA, Germany..."></div>
+        <div><label style="${lbl}">Comp min (£)</label><input type="number" value="${r.compMin||''}" onchange="hcUpdateField('${id}','compMin',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 80000"></div>
+        <div><label style="${lbl}">Comp max (£)</label><input type="number" value="${r.compMax||''}" onchange="hcUpdateField('${id}','compMax',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 100000"></div>
         <div><label style="${lbl}">Target start</label><input type="date" value="${r.targetStart||''}" onchange="hcUpdateField('${id}','targetStart',this.value)" style="${inp}"></div>
         <div><label style="${lbl}">Source</label><div style="font-size:12px;color:var(--ink2);padding:7px 0;">${escapeHtml(r.source||'—')}${r.agencyName?' ('+escapeHtml(r.agencyName)+')':''}</div></div>
         <div><label style="${lbl}">Budget</label><div style="font-size:12px;color:var(--ink2);padding:7px 0;">${r.budget?'£'+r.budget.toLocaleString():'—'}${r.agencyFee?' · '+r.agencyFee+'% fee':''}</div></div>
@@ -12429,10 +12433,10 @@ async function deleteHCRole(id) {
   document.getElementById('hcRolePanel')?.remove(); renderHeadcount();
 }
 function downloadHCCSV() {
-  const rows=[['Role','Dept','Hiring Manager','Stage','Priority','Comp Min','Comp Max','Target Start','Days Open','Source','Agency','Fee %','Budget','Positions','Total Candidates','Active Candidates','Hired','Interview Process','Notes']];
+  const rows=[['Role','Dept','Country','Hiring Manager','Stage','Priority','Comp Min','Comp Max','Target Start','Days Open','Source','Agency','Fee %','Budget','Positions','Total Candidates','Active Candidates','Hired','Interview Process','Notes']];
   (hcRoles||[]).forEach(r=>{
     const cands=r.candidates||[];
-    rows.push([r.title,r.dept,r.hiringManager,r.stage,r.priority||'normal',r.compMin||'',r.compMax||'',r.targetStart,hcDaysOpen(r),r.source,r.agencyName,r.agencyFee||'',r.budget||'',r.headcount,cands.length,cands.filter(c=>!HC_CAND_FINAL.includes(c.stage)).length,cands.filter(c=>c.stage==='Hired').length,r.interviewProcess,r.notes]);
+    rows.push([r.title,r.dept,r.country||'',r.hiringManager,r.stage,r.priority||'normal',r.compMin||'',r.compMax||'',r.targetStart,hcDaysOpen(r),r.source,r.agencyName,r.agencyFee||'',r.budget||'',r.headcount,cands.length,cands.filter(c=>!HC_CAND_FINAL.includes(c.stage)).length,cands.filter(c=>c.stage==='Hired').length,r.interviewProcess,r.notes]);
   });
   downloadCSV(rows,'Headcount planning '+new Date().toLocaleDateString('en-GB'));
 }
