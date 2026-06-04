@@ -7523,8 +7523,8 @@ function extractEmployeeFromDocxText(text) {
   const dateM = text.match(/(?:start\s+date|anticipated\s+start|commencement|joining\s+date)\s*[:\-]?\s*([0-9]{1,2}[\s/\-][A-Za-z]+[\s/\-][0-9]{4}|[0-9]{1,2}[\s/\-][0-9]{1,2}[\s/\-][0-9]{4})/i);
   if (dateM) obj.start_date = dateM[1].trim();
 
-  // ── JOB TITLE ──
-  const titleM = text.match(/position\s+of\s+([A-Z][A-Za-z\s]{2,50})(?:\sat\b|,|\.|$)/);
+  // ── JOB TITLE ── non-greedy, stops at "at [Company]", "reporting to", comma, full stop
+  const titleM = text.match(/position\s+of\s+([A-Z][A-Za-z\s]{2,50}?)(?:\s+at\b|\s+reporting\b|\s+based\b|,|\.|$)/i);
   if (titleM) obj.job_title = titleM[1].trim();
 
   // ── GENERIC KEY:VALUE from body only (avoids table header false positives) ──
@@ -7652,8 +7652,9 @@ function compareMatchedRow(rowA, rowB, extraSkip) {
   };
   const gA = {}, gB = {};
   // First-wins: specific extractors (salary, bonus, title) run before generic KV
-  Object.entries(rowA || {}).forEach(([k,v]) => { const g = groupKey(k); if (g && !gA[g]) gA[g] = { key: k, val: v }; });
-  Object.entries(rowB || {}).forEach(([k,v]) => { const g = groupKey(k); if (g && !gB[g]) gB[g] = { key: k, val: v }; });
+  // Skip keys starting with _ (internal metadata like _sourceFile)
+  Object.entries(rowA || {}).forEach(([k,v]) => { if (k.startsWith('_')) return; const g = groupKey(k); if (g && !gA[g]) gA[g] = { key: k, val: v }; });
+  Object.entries(rowB || {}).forEach(([k,v]) => { if (k.startsWith('_')) return; const g = groupKey(k); if (g && !gB[g]) gB[g] = { key: k, val: v }; });
   const allGroups = new Set([...Object.keys(gA), ...Object.keys(gB)]);
   const results = [];
   for (const g of allGroups) {
