@@ -1245,7 +1245,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <button onclick="showTrackerTab('immigration-wf')" id="tt-immigration-wf" class="tracker-tab-btn">Immigration</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
   </div>
-  <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;flex:1;display:flex;min-height:0;"></div>
+  <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;flex:1;position:relative;"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -10366,8 +10366,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     + (!activeCases.length?'<button onclick="wfNewCaseForTab()" class="btn btn-primary" style="margin-top:4px;">+ New case</button>':'')
     + '</div>';
 
-  // Put panels directly inside trackersBody (which is already display:flex)
-  body.innerHTML = '<div style="width:258px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;">'
+  body.innerHTML =
+    '<div style="position:absolute;top:0;left:0;bottom:0;width:258px;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;">'
     + '<div style="padding:11px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">'
     + '<div style="font-size:12px;font-weight:600;color:var(--ink);">Cases <span style="font-size:11px;font-weight:400;color:var(--ink3);">(' + activeCases.length + ')</span></div>'
     + '<button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm" style="font-size:11px;">+ New</button>'
@@ -10379,7 +10379,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     + '<div style="font-size:9px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:4px;">Checklists</div>'
     + scenarioBtns
     + '</div></div></div>'
-    + '<div id="wf-detail" style="flex:1;overflow-y:auto;background:var(--bg);">' + defaultRight + '</div>';
+    + '<div id="wf-detail" style="position:absolute;top:0;left:258px;right:0;bottom:0;overflow-y:auto;background:var(--bg);">' + defaultRight + '</div>';
 
   const currentCase = wfActiveCase && activeCases.find(c=>c.id===wfActiveCase.id);
   if (currentCase) wfRenderCase(currentCase);
