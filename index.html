@@ -814,7 +814,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         Bulk generate
       </button>
       <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="uploadTemplate(event)"></label>
-      <span class="info-tip" style="color:var(--ink3);font-size:13px;margin-left:-2px;">ⓘ<span class="tip-box">Mark fields with {curly}, [square] or &lt;&lt;angle&gt;&gt; brackets.<br>e.g. [Employee Name] or {salary} — Breeze detects them automatically.</span></span>
+      <span class="info-tip" style="color:var(--ink3);font-size:13px;margin-left:-2px;">ⓘ<span class="tip-box">Mark fields with {curly}, [square] or &lt;&lt;angle&gt;&gt; brackets.<br>e.g. [Employee Name] or {salary} - Breeze detects them automatically.</span></span>
       <label class="btn btn-secondary btn-sm" style="cursor:pointer;display:none;" title="Upload a filled document and AI will convert it into a reusable template">✦ Convert to template<input type="file" accept=".docx,.txt,.pdf" style="display:none" onchange="convertToTemplate(event)"></label>
     </div>
   </div>
@@ -884,7 +884,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div style="padding:20px;flex:1;display:flex;flex-direction:column;gap:14px;">
 
         <!-- Topic -->
-        <textarea id="pres-topic" rows="4" placeholder="Describe what you need — e.g. 'New hire induction for our London office' or 'Update our performance training deck'..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);resize:none;line-height:1.6;box-sizing:border-box;color:var(--ink);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generatePresentation()}"></textarea>
+        <textarea id="pres-topic" rows="4" placeholder="Describe what you need - e.g. 'New hire induction for our London office' or 'Update our performance training deck'..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;font-size:13px;font-family:inherit;outline:none;background:var(--bg);resize:none;line-height:1.6;box-sizing:border-box;color:var(--ink);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();generatePresentation()}"></textarea>
 
         <!-- Upload -->
         <label style="display:flex;align-items:center;gap:7px;padding:8px 12px;border:1px solid var(--border);border-radius:var(--r-sm);cursor:pointer;font-size:12px;color:var(--ink2);background:var(--bg);white-space:nowrap;">
@@ -916,7 +916,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
         <!-- AI edit chat (always shown, placeholder hints it activates after build) -->
         <div>
           <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;letter-spacing:0.03em;text-transform:uppercase;">Edit with AI</div>
-          <textarea id="pres-chat-input" rows="3" placeholder='Build a deck first, then ask AI to edit it — e.g. "translate to French", "make slide 3 shorter", "add a slide on onboarding"'
+          <textarea id="pres-chat-input" rows="3" placeholder='Build a deck first, then ask AI to edit it - e.g. "translate to French", "make slide 3 shorter", "add a slide on onboarding"'
             style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:12px;font-family:inherit;outline:none;background:var(--bg);color:var(--ink);resize:none;line-height:1.5;box-sizing:border-box;"
             onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();presAiEdit();}"></textarea>
@@ -1226,7 +1226,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <!-- ORG STRUCTURE -->
 <div class="view manage-view" id="view-orgchart">
   <div class="manage-topbar">
-    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Click any node to change reporting lines. Drag to reposition. Demo data — replace with your own via CSV or HRIS.</div></div>
+    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Click any node to change reporting lines. Drag to reposition. Demo data - replace with your own via CSV or HRIS.</div></div>
     <div style="display:flex;gap:6px;align-items:center;" id="orgTopBtns"></div>
   </div>
   <div style="flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;" id="orgChartRoot"></div>
@@ -1461,7 +1461,7 @@ async function handleAuth() {
       await onSignedIn(data.user);
       return;
     }
-    // Email confirmation on — account will be set up on first sign-in via onSignedIn
+    // Email confirmation on - account will be set up on first sign-in via onSignedIn
     errEl.style.color = 'var(--green)';
     errEl.textContent = 'Account created - check your email to confirm, then sign in.';
     btn.textContent = 'Create account'; btn.disabled = false;
@@ -1477,7 +1477,7 @@ async function onSignedIn(user) {
   const emailEl = document.getElementById('userEmail');
   if (emailEl) emailEl.textContent = user.email;
   let { data: profile } = await sb.from('profiles').select('*').eq('id', user.id).single();
-  // First login after email confirmation — create company + profile via server (bypasses RLS)
+  // First login after email confirmation - create company + profile via server (bypasses RLS)
   if (!profile) {
     const { data: { session } } = await sb.auth.getSession();
     if (session) {
@@ -2003,7 +2003,7 @@ ${textContent.substring(0, 5000)}`;
     tmpls.unshift({ id:'t_'+Date.now(), name, emoji:'📄', type:'Your uploads', isCustom:true, isDocx: true, base64: docxBase64||'', content: templateText, flow: uniqueFields });
     renderTmpls();
     toast.remove();
-    alert(`✓ "${name}" converted — ${uniqueFields.length} fields detected. Downloads as .docx with original formatting preserved.`);
+    alert(`✓ "${name}" converted - ${uniqueFields.length} fields detected. Downloads as .docx with original formatting preserved.`);
   } catch(e) {
     toast.remove();
     alert('Conversion failed: ' + e.message);
@@ -2047,7 +2047,7 @@ async function uploadTemplate(event) {
   if(error){alert('Upload failed: '+error.message);return;}
   tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx:true,base64:finalBase64,content:displayContent,flow:fields});
   renderTmpls();
-  alert(`✓ "${name}" uploaded — ${fields.length} fields detected.`);
+  alert(`✓ "${name}" uploaded - ${fields.length} fields detected.`);
   event.target.value='';
 }
 
@@ -3043,7 +3043,7 @@ async function _downloadPresentationPython(btn) {
     btn.textContent = '✓ Downloaded'; btn.disabled = false;
     setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
   } catch(e) {
-    presLog('Python engine failed: ' + e.message + ' — falling back to client-side', 'error');
+    presLog('Python engine failed: ' + e.message + ' - falling back to client-side', 'error');
     console.warn('Python pptx failed, falling back:', e.message);
     _downloadPresentationClient(btn);
   }
@@ -3592,7 +3592,7 @@ ${transcript.substring(0, 8000)}`;
     const data = await res.json();
     const notes = data.content?.[0]?.text?.replace(/[—–]/g,'-') || 'Could not generate notes.';
 
-    // Auto-save to Supabase — name: "19 May - Meeting Type"
+    // Auto-save to Supabase - name: "19 May - Meeting Type"
     const shortDate = now.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
     const meetingType = notes.match(/\*\*Meeting type:\*\*\s*([^\n*]+)/)?.[1]?.trim() || 'Meeting Notes';
     const meetingName = `MEETING: ${shortDate} - ${meetingType}`;
@@ -4603,7 +4603,7 @@ async function uploadNamedPolicy(event,policyName,existingId) {
   let storageContent;
   if(isPdf){
     const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
-    // Timeout pdf.js text extraction — it can hang if CDN worker fails
+    // Timeout pdf.js text extraction - it can hang if CDN worker fails
     const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(''),ms))]);
     const [b64,txt]=await Promise.all([readBase64(file),withTimeout(readFileAsText(file),5000)]);
     storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
@@ -4613,11 +4613,11 @@ async function uploadNamedPolicy(event,policyName,existingId) {
   }
   const content=storageContent.substring(0,500000);
   const cid=currentProfile.company_id;
-  // Delete old record first, then insert fresh — avoids all RLS update issues
+  // Delete old record first, then insert fresh - avoids all RLS update issues
   if(existingId){
     await sb.from('policies').delete().eq('id',existingId).eq('company_id',cid);
   } else {
-    // No ID passed — try to find any existing record by name and delete it
+    // No ID passed - try to find any existing record by name and delete it
     const{data:found}=await sb.from('policies').select('id').eq('company_id',cid).eq('name',policyName).maybeSingle();
     if(found) await sb.from('policies').delete().eq('id',found.id).eq('company_id',cid);
   }
@@ -5712,7 +5712,7 @@ async function buildChatSystemPrompt() {
   return `You are Breeze HR, an AI HR advisor with the knowledge and judgement of a senior HR professional with 20+ years of UK experience. You are chatting with an HR professional.
 
 ━━━ LANGUAGE & FORMATTING ━━━
-Use UK English throughout. payslip (not paycheck), holiday (not vacation), CV (not resume), redundancy (not layoff), authorise/organise/recognise (not -ize). NEVER use em dashes (— or –) anywhere — use a regular hyphen (-) instead. Single dash (-) never double (--). Bullet points use •. Use **bold** for headings.
+Use UK English throughout. payslip (not paycheck), holiday (not vacation), CV (not resume), redundancy (not layoff), authorise/organise/recognise (not -ize). NEVER use em dashes (- or -) anywhere - use a regular hyphen (-) instead. Single dash (-) never double (--). Bullet points use •. Use **bold** for headings.
 
 ━━━ TRIAGE ━━━
 TIER 1 - TRANSACTIONAL: factual policy question, no emotional language. Answer in 2-4 sentences. No draft needed.
@@ -6559,7 +6559,7 @@ async function connectIntegration(app) {
             if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
           }
         } catch(e) {}
-        // After 2 minutes just refresh — they may have connected but polling missed it
+        // After 2 minutes just refresh - they may have connected but polling missed it
         if (attempts >= 40) { clearInterval(poll); loadIntegrations(); }
       }, 3000);
     }
@@ -6945,7 +6945,7 @@ async function downloadAnalyticsPPT() {
   title.addText(`Source: ${analyticsSource}  |  ${analyticsData.length} rows`, { x:0.8,y:3.9,w:11,h:0.5, fontSize:14, color:'63B3FF', fontFace:'Inter' });
   title.addText('Breeze HR', { x:0.8,y:6.7,w:4,h:0.4, fontSize:11, color:'FFFFFF', fontFace:'Inter', transparency:50 });
 
-  // One chart per slide — use native pptxgenjs charts (not canvas screenshots)
+  // One chart per slide - use native pptxgenjs charts (not canvas screenshots)
   const typeMap = { bar:'bar', horizontalBar:'bar', line:'line', pie:'pie', doughnut:'doughnut' };
   const COLORS = ['3B82F6','10B981','F59E0B','EF4444','8B5CF6','F97316','06B6D4','EC4899'];
   const entries = Object.entries(analyticsCharts);
@@ -7383,21 +7383,21 @@ async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
 const COMPARE_MODE_INFO = {
   general: {
     icon: '📄',
-    title: 'General comparison — spot exactly what changed between two files',
+    title: 'General comparison - spot exactly what changed between two files',
     desc: 'Upload two versions of the same Excel or Word document. Breeze HR compares them cell-by-cell (Excel) or line-by-line (Word) and shows every addition, removal and change.',
     steps: ['Good for: contract redlines, policy updates, spotting edits between two versions', 'Both files should be the same type and roughly the same structure', 'Excel: compares each cell across matching sheets · Word: LCS diff on paragraph text']
   },
   comp: {
     icon: '💰',
-    title: 'Compensation statement — cross-check comp letters against your payroll data',
+    title: 'Compensation statement - cross-check comp letters against your payroll data',
     desc: 'Upload your HR or payroll spreadsheet as File A, then select one or more compensation letters (.docx) as File B. Breeze HR matches each letter to the employee row by name, reads the letter using AI regardless of its format, and flags any discrepancies in salary, bonus, allowances or other payments.',
-    steps: ['Good for: checking offer letters match what\'s in your system, auditing comp statements before issue', 'Handles any letter format — formal tables, prose, informal — AI extracts the numbers', 'Select multiple letters at once to check your whole cohort in one run']
+    steps: ['Good for: checking offer letters match what\'s in your system, auditing comp statements before issue', 'Handles any letter format - formal tables, prose, informal - AI extracts the numbers', 'Select multiple letters at once to check your whole cohort in one run']
   },
   employee: {
     icon: '📊',
-    title: 'Spreadsheet vs spreadsheet — compare two systems for the same employees',
-    desc: 'Upload two Excel files that both contain employee data — for example your HR system export and your payroll export. Breeze HR matches rows by employee name or ID and compares only the columns that exist in both files, so you only see real discrepancies, not just different column structures.',
-    steps: ['Good for: cross-checking HR system vs payroll, validating a data migration, audit trail comparison', 'Only columns with the same name in both files are compared — different columns are ignored', 'Employee names don\'t need to match exactly — middle initials and minor differences are handled']
+    title: 'Spreadsheet vs spreadsheet - compare two systems for the same employees',
+    desc: 'Upload two Excel files that both contain employee data - for example your HR system export and your payroll export. Breeze HR matches rows by employee name or ID and compares only the columns that exist in both files, so you only see real discrepancies, not just different column structures.',
+    steps: ['Good for: cross-checking HR system vs payroll, validating a data migration, audit trail comparison', 'Only columns with the same name in both files are compared - different columns are ignored', 'Employee names don\'t need to match exactly - middle initials and minor differences are handled']
   }
 };
 
@@ -7411,10 +7411,10 @@ function onCompareModeChange() {
   const subTitle = document.getElementById('compareSubTitle');
   const fB = document.getElementById('fileB');
   if (isEmployee) {
-    if (labelA) labelA.textContent = mode === 'comp' ? 'File A — payroll / HR spreadsheet' : 'File A — spreadsheet A';
-    if (labelB) labelB.textContent = mode === 'comp' ? 'File B — compensation statements (select multiple .docx)' : 'File B — spreadsheet B';
+    if (labelA) labelA.textContent = mode === 'comp' ? 'File A - payroll / HR spreadsheet' : 'File A - spreadsheet A';
+    if (labelB) labelB.textContent = mode === 'comp' ? 'File B - compensation statements (select multiple .docx)' : 'File B - spreadsheet B';
     if (subA) subA.textContent = '.xlsx, .xls, .csv';
-    if (subB) subB.textContent = mode === 'comp' ? '.docx — select multiple files at once' : '.xlsx, .xls, .csv';
+    if (subB) subB.textContent = mode === 'comp' ? '.docx - select multiple files at once' : '.xlsx, .xls, .csv';
     if (subTitle) subTitle.textContent = '';
     if (fB) fB.setAttribute('multiple', '');
   } else {
@@ -7738,7 +7738,7 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
 }
 
 function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
-  // exactMatch: only compare columns sharing the same name — for spreadsheet vs spreadsheet
+  // exactMatch: only compare columns sharing the same name - for spreadsheet vs spreadsheet
   if (exactMatch) {
     const SKIP_NORM = new Set([
       'employee_name','name','full_name','employee_id','emp_id','id','emp_name','staff_id','staff_no',
@@ -7762,7 +7762,7 @@ function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
     return results;
   }
   const GROUPS = {
-    // pay\b matches "pay","basic pay","annual pay" — NOT "payment","relocation_payment"
+    // pay\b matches "pay","basic pay","annual pay" - NOT "payment","relocation_payment"
     salary:     /salary|pay\b|wage|remuneration|compensation|ctc/i,
     bonus:      /^bonus$|performance.*bonus|target.*bonus|annual.*bonus|incentive/i,
     relocation: /reloc|removal.*allowance/i,
@@ -7775,7 +7775,7 @@ function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
     notice:     /notice/i,
     location:   /location|office|site|place/i,
   };
-  // Skip any column that was used to match employees — those aren't data fields to compare
+  // Skip any column that was used to match employees - those aren't data fields to compare
   // extraSkip contains the actual column names detected as name/ID by detectEmployeeColumns
   const SKIP_KEYS = new Set([
     'employee_name','name','full_name','employee_id','emp_id','id',
@@ -7853,7 +7853,7 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
     </div>`;
 
   if (allClear) {
-    results.innerHTML = summaryHtml + `<div style="text-align:center;padding:32px;color:var(--green);font-size:14px;font-weight:500;">All ${matched.length} employees — no discrepancies found.</div>`;
+    results.innerHTML = summaryHtml + `<div style="text-align:center;padding:32px;color:var(--green);font-size:14px;font-weight:500;">All ${matched.length} employees - no discrepancies found.</div>`;
     return;
   }
 
@@ -7903,8 +7903,8 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
       const isSal = f.isSalary;
       const sideA = isCompMode ? 'spreadsheet' : hdrA;
       const sideB = isCompMode ? 'letter'       : hdrB;
-      const valA = f.onlyInB ? `<span style="color:var(--ink3);">—</span>` : `<span style="font-weight:500;">${escapeHtml(f.valA)}</span>`;
-      const valB = f.onlyInA ? `<span style="color:var(--ink3);">—</span>` : `<span style="font-weight:500;color:${isSal?'#DC2626':'#D97706'};">${escapeHtml(f.valB)}</span>`;
+      const valA = f.onlyInB ? `<span style="color:var(--ink3);">-</span>` : `<span style="font-weight:500;">${escapeHtml(f.valA)}</span>`;
+      const valB = f.onlyInA ? `<span style="color:var(--ink3);">-</span>` : `<span style="font-weight:500;color:${isSal?'#DC2626':'#D97706'};">${escapeHtml(f.valB)}</span>`;
       const status = f.onlyInA
         ? `<span style="font-size:11px;color:var(--ink3);">Only in ${sideB}</span>`
         : f.onlyInB
@@ -7989,9 +7989,9 @@ async function compareEmployeeMatch(isCompMode) {
       if (e === 'csv')                return extractCsvRowsForCompare(f);
       return extractDocxRowsForCompare(f);
     };
-    // Parse File A (always single — the spreadsheet)
+    // Parse File A (always single - the spreadsheet)
     const rowsA = await parseFile(a);
-    // Parse File B — single file or multiple letters
+    // Parse File B - single file or multiple letters
     let rowsB;
     if (bFiles.length === 1) {
       rowsB = await parseFile(bFiles[0]);
@@ -8057,7 +8057,6 @@ function renderPeoplePlan() {
         ${[ppPlan.year-1,ppPlan.year,ppPlan.year+1].map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
       </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
-      <button class="btn btn-primary btn-sm" onclick="downloadPeoplePlanPPT()">⬇ PPT</button>
       <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
     renderPPTimeline();
   }
@@ -8515,8 +8514,8 @@ function renderPPDetails() {
       </td>
       <td style="padding:11px 14px;font-size:13px;font-weight:500;color:var(--ink);">${escapeHtml(ev.title)}</td>
       <td style="padding:11px 14px;font-size:12px;color:var(--ink2);white-space:nowrap;">${monthStr}</td>
-      <td style="padding:11px 14px;font-size:12px;color:${startFmt?'var(--ink)':'var(--ink3)'};white-space:nowrap;">${startFmt || '<span style="color:var(--ink3);">—</span>'}</td>
-      <td style="padding:11px 14px;font-size:12px;color:${endFmt?'var(--ink)':'var(--ink3)'};white-space:nowrap;">${endFmt || '<span style="color:var(--ink3);">—</span>'}</td>
+      <td style="padding:11px 14px;font-size:12px;color:${startFmt?'var(--ink)':'var(--ink3)'};white-space:nowrap;">${startFmt || '<span style="color:var(--ink3);">-</span>'}</td>
+      <td style="padding:11px 14px;font-size:12px;color:${endFmt?'var(--ink)':'var(--ink3)'};white-space:nowrap;">${endFmt || '<span style="color:var(--ink3);">-</span>'}</td>
       <td style="padding:11px 14px;font-size:12px;color:var(--ink2);">${escapeHtml(ev.owner||'')}</td>
       <td style="padding:11px 14px;font-size:12px;color:var(--ink3);max-width:240px;">${escapeHtml(ev.notes||'')}</td>
       <td style="padding:11px 10px;text-align:right;white-space:nowrap;">
@@ -8578,7 +8577,7 @@ function downloadPeoplePlanPPT() {
   slide1.addText(currentProfile?.company_name || '', { x:0.5, y:3.3, w:12, h:0.7, fontSize:18, color:'BFDBFE', fontFace:'Calibri' });
   slide1.addText(`HR Calendar - ${ppPlan.year}`, { x:0.5, y:6.8, w:12, h:0.4, fontSize:10, color:'475569', fontFace:'Calibri' });
 
-  // Gantt slide — rowH increased to 0.62 so text can wrap to 2 lines without clipping
+  // Gantt slide - rowH increased to 0.62 so text can wrap to 2 lines without clipping
   const slide2 = pptx.addSlide();
   slide2.background = { color:'FFFFFF' };
   slide2.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.0, fill:{color:'1B2D50'} });
@@ -8679,12 +8678,12 @@ function mpFlags(records) {
     const status = mpStatus(r);
     if (status === 'returned') return;
     if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity')) {
-      flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave — dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
+      flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave - dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
     }
     const days = mpDaysSinceContact(r);
     if (status === 'active' && (days === null || days > 42)) {
       const ago = days === null ? 'never contacted' : `${days} days ago`;
-      flags.push({ type:'info', msg:`<strong>KIT day check-in:</strong> ${r.employeeName} (${r.type.toLowerCase()}) — last contact ${ago}. Consider reaching out.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'Log contact →' });
+      flags.push({ type:'info', msg:`<strong>KIT day check-in:</strong> ${r.employeeName} (${r.type.toLowerCase()}) - last contact ${ago}. Consider reaching out.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'Log contact →' });
     }
     if (r.expectedReturn) {
       const daysToReturn = Math.floor((new Date(r.expectedReturn) - new Date()) / 86400000);
@@ -8697,7 +8696,7 @@ function mpFlags(records) {
 }
 
 function mpFmt(d) {
-  if (!d) return '—';
+  if (!d) return '-';
   return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 }
 
@@ -8731,12 +8730,12 @@ const TRACKER_GUIDANCE_FALLBACK = {
     source: 'ACAS & UK statutory guidance',
     acasUrl: 'https://www.acas.org.uk/maternity-paternity-and-adoption',
     points: [
-      '<strong>Eligibility — SMP/SPP:</strong> Employees need 26 weeks continuous employment by the 15th week before the expected week of childbirth. SMP = 90% AWE for 6 weeks, then £184.03/week (or 90% AWE if lower) for up to 33 weeks.',
-      '<strong>Leave entitlement:</strong> Maternity — up to 52 weeks (26 OML + 26 AML). Paternity — up to 2 weeks, taken within 56 days of birth. Shared Parental Leave — up to 50 weeks between parents once maternity is curtailed.',
-      '<strong>Keeping in Touch (KIT) days:</strong> Employees can work up to 10 KIT days during maternity leave without breaking or ending it. Shared Parental Leave allows up to 20 SPLIT days. KIT days must be agreed — the employee cannot be compelled to work.',
+      '<strong>Eligibility - SMP/SPP:</strong> Employees need 26 weeks continuous employment by the 15th week before the expected week of childbirth. SMP = 90% AWE for 6 weeks, then £184.03/week (or 90% AWE if lower) for up to 33 weeks.',
+      '<strong>Leave entitlement:</strong> Maternity - up to 52 weeks (26 OML + 26 AML). Paternity - up to 2 weeks, taken within 56 days of birth. Shared Parental Leave - up to 50 weeks between parents once maternity is curtailed.',
+      '<strong>Keeping in Touch (KIT) days:</strong> Employees can work up to 10 KIT days during maternity leave without breaking or ending it. Shared Parental Leave allows up to 20 SPLIT days. KIT days must be agreed - the employee cannot be compelled to work.',
       '<strong>Dependants:</strong> When an employee starts family leave, review whether dependants need adding to health insurance, death-in-service or other company benefits schemes.',
-      '<strong>Contact during leave:</strong> Maintain reasonable, agreed contact — typically monthly. Over-contacting or pressuring employees to return early may constitute detriment and give rise to a tribunal claim.',
-      '<strong>Return to work:</strong> Employees returning from OML (first 26 weeks) have an absolute right to return to the same role. Returning from AML — same or suitable alternative. A phased return can be agreed but cannot reduce pay without consent.',
+      '<strong>Contact during leave:</strong> Maintain reasonable, agreed contact - typically monthly. Over-contacting or pressuring employees to return early may constitute detriment and give rise to a tribunal claim.',
+      '<strong>Return to work:</strong> Employees returning from OML (first 26 weeks) have an absolute right to return to the same role. Returning from AML - same or suitable alternative. A phased return can be agreed but cannot reduce pay without consent.',
     ]
   },
   recruitment: {
@@ -8745,7 +8744,7 @@ const TRACKER_GUIDANCE_FALLBACK = {
     acasUrl: 'https://www.acas.org.uk/recruitment',
     points: [
       '<strong>Job descriptions:</strong> Should be based on objective, measurable criteria. Avoid requirements that could indirectly discriminate against protected characteristics (e.g. "must be able to work Sundays" may disadvantage some religions).',
-      '<strong>Shortlisting:</strong> Use a consistent scoring matrix applied equally to all candidates. Keep records of decisions — especially for rejected candidates — for at least 6 months.',
+      '<strong>Shortlisting:</strong> Use a consistent scoring matrix applied equally to all candidates. Keep records of decisions - especially for rejected candidates - for at least 6 months.',
       '<strong>Interview questions:</strong> Do not ask about pregnancy, childcare, religion, disability, age or any other protected characteristic. Questions must relate to the requirements of the role.',
       '<strong>Pre-employment checks:</strong> Right to work check is a legal requirement before the first day. References, DBS and occupational health checks should only be completed once a conditional offer is made.',
       '<strong>Offers:</strong> Conditional offers must state clearly what conditions apply. Withdrawing an offer after a candidate has resigned their current role may create a breach of contract claim.',
@@ -8758,10 +8757,10 @@ const TRACKER_GUIDANCE_FALLBACK = {
     acasUrl: 'https://www.acas.org.uk/performance-management',
     points: [
       '<strong>Promotion criteria:</strong> Must be objective, documented and applied consistently. Vague criteria ("cultural fit", "leadership presence") create indirect discrimination risk under the Equality Act 2010.',
-      '<strong>Performance reviews:</strong> Should be documented, two-way conversations with measurable objectives. SMART targets. No surprises at formal review — issues should be raised informally as they arise.',
+      '<strong>Performance reviews:</strong> Should be documented, two-way conversations with measurable objectives. SMART targets. No surprises at formal review - issues should be raised informally as they arise.',
       '<strong>Performance Improvement Plans:</strong> Set clear, measurable, achievable targets with a realistic timeframe (typically 30-90 days). Provide active support and document all meetings. Failure to support a PIP adequately undermines any subsequent dismissal.',
       '<strong>Pay and grading:</strong> Ensure pay bands are transparent and applied consistently. Equal pay obligations under the Equality Act mean men and women doing equal work must receive equal pay. Unexplained gender pay gaps in grades create legal exposure.',
-      '<strong>Succession planning:</strong> Identify high-potential employees across all demographics — not just those most visible to senior leaders. Sponsorship and mentoring programmes support equitable progression.',
+      '<strong>Succession planning:</strong> Identify high-potential employees across all demographics - not just those most visible to senior leaders. Sponsorship and mentoring programmes support equitable progression.',
       '<strong>Records:</strong> Keep all performance review documentation and promotion decision records. These are your primary defence in any tribunal claim involving unfair dismissal or discrimination in promotion.',
     ]
   },
@@ -8770,11 +8769,11 @@ const TRACKER_GUIDANCE_FALLBACK = {
     source: 'UK Home Office guidance & Immigration Act 2014',
     acasUrl: 'https://www.gov.uk/check-an-employees-right-to-work-documents',
     points: [
-      '<strong>Right to work check — legal duty:</strong> Employers must check every employee\'s right to work before they start. Failure to do so, or knowingly employing someone without the right to work, can result in a civil penalty of up to £60,000 per worker (from Jan 2024).',
+      '<strong>Right to work check - legal duty:</strong> Employers must check every employee\'s right to work before they start. Failure to do so, or knowingly employing someone without the right to work, can result in a civil penalty of up to £60,000 per worker (from Jan 2024).',
       '<strong>Document checks:</strong> Check original documents (or use the online Home Office checking service for time-limited rights). Copy and retain securely for the duration of employment plus 2 years after leaving.',
       '<strong>Repeat checks:</strong> For employees on time-limited visas (List B), set a calendar reminder to repeat the check before their current permission expires. A missed repeat check removes the statutory excuse.',
       '<strong>Skilled Worker sponsorship:</strong> As a licensed sponsor, you must report changes in employment (role change, salary reduction, absence, termination) to UKVI via the Sponsor Management System (SMS) within 10 working days.',
-      '<strong>ILR — settlement:</strong> Most migrants become eligible for Indefinite Leave to Remain (ILR) after 5 years continuous residence. Absences over 180 days in any 12-month period can break continuity — flag this risk proactively.',
+      '<strong>ILR - settlement:</strong> Most migrants become eligible for Indefinite Leave to Remain (ILR) after 5 years continuous residence. Absences over 180 days in any 12-month period can break continuity - flag this risk proactively.',
       '<strong>Passport expiry:</strong> An expired passport does not automatically invalidate existing leave to remain. However, expired travel documents should be noted and employees encouraged to renew promptly.',
     ]
   }
@@ -8804,14 +8803,14 @@ async function loadTrackerGuidance(topic, containerId) {
   }
 
   if (!matchedPolicy) {
-    // No policy — use hardcoded ACAS guidance
+    // No policy - use hardcoded ACAS guidance
     const fallback = TRACKER_GUIDANCE_FALLBACK[topic];
     _guidanceCache[topic] = { ...fallback, fromPolicy: false };
     renderGuidancePanel(container, _guidanceCache[topic]);
     return;
   }
 
-  // Policy found — ask Claude to extract the 5 most actionable points for this tracker
+  // Policy found - ask Claude to extract the 5 most actionable points for this tracker
   const topicLabel = { leave:'maternity, paternity and shared parental leave tracking', recruitment:'recruitment management and candidate tracking', careers:'performance reviews, promotions and career progression', immigration:'right to work, visa and immigration compliance' }[topic];
   try {
     const token = await getAuthToken();
@@ -8843,8 +8842,8 @@ function renderGuidancePanel(container, g) {
       <div style="display:flex;align-items:center;gap:10px;padding:11px 16px;cursor:pointer;user-select:none;" onclick="this.closest('[data-guidance]').dataset.open=this.closest('[data-guidance]').dataset.open==='false'?'true':'false';this.querySelector('svg').style.transform=this.closest('[data-guidance]').dataset.open==='false'?'rotate(0deg)':'rotate(90deg)';this.nextElementSibling.style.display=this.closest('[data-guidance]').dataset.open==='false'?'none':'block';">
         <span style="font-size:14px;">${g.fromPolicy?'📋':'ℹ️'}</span>
         <div style="flex:1;">
-          <div style="font-size:12px;font-weight:700;color:var(--ink);">Guidance — ${g.title}</div>
-          <div style="font-size:10px;color:${g.fromPolicy?'var(--green)':'var(--ink3)'};margin-top:1px;">${g.fromPolicy?'✓ Based on your uploaded policy':'ACAS statutory guidance — <a href="'+g.acasUrl+'" target="_blank" style="color:var(--accent);">view on ACAS.org.uk ↗</a>'}</div>
+          <div style="font-size:12px;font-weight:700;color:var(--ink);">Guidance - ${g.title}</div>
+          <div style="font-size:10px;color:${g.fromPolicy?'var(--green)':'var(--ink3)'};margin-top:1px;">${g.fromPolicy?'✓ Based on your uploaded policy':'ACAS statutory guidance - <a href="'+g.acasUrl+'" target="_blank" style="color:var(--accent);">view on ACAS.org.uk ↗</a>'}</div>
         </div>
         ${!g.fromPolicy?`<a onclick="event.stopPropagation();showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="font-size:10px;color:var(--accent);cursor:pointer;white-space:nowrap;border:1px solid var(--accent-mid);background:var(--accent-bg);padding:3px 8px;border-radius:20px;">Upload policy ↗</a>`:''}
         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.2s;transform:rotate(${isOpen?'90':'0'}deg);color:var(--ink3);flex-shrink:0;"><polyline points="9 18 15 12 9 6"/></svg>
@@ -8899,7 +8898,7 @@ function renderLeaveTracker(body) {
       <div class="trk-flag" style="${f.type==='info'?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}">
         <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
         <div>${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#1e40af':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
-      </div>`).join('')}</div>` : `<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions — all records are up to date.</div>`}
+      </div>`).join('')}</div>` : `<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions - all records are up to date.</div>`}
 
     <!-- Table -->
     <div class="trk-card">
@@ -9247,7 +9246,7 @@ function renderRecruitmentTracker(body) {
 
     <!-- Hired recently -->
     <div class="trk-card" style="padding:16px 18px;">
-      <div class="trk-section-head">Recently Hired — Records Carry-Over</div>
+      <div class="trk-section-head">Recently Hired - Records Carry-Over</div>
       <table class="trk-table">
         <thead><tr><th>Name</th><th>Role</th><th>Hired date</th><th>Source</th><th>CV</th><th>Interview notes</th><th>Employee record</th></tr></thead>
         <tbody>
@@ -9307,7 +9306,7 @@ function renderCareersTracker(body) {
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${DEMO_CAREERS.filter(c=>c.stage==='Succession candidate').length}</div><div class="trk-kpi-label">Succession candidates</div></div>
     </div>
     ${DEMO_CAREERS.filter(c=>c.stage.includes('Eligible')||!c.cvLinked).map(c=>
-      `<div class="trk-flag" style="${!c.stage.includes('Eligible')?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}"><span class="trk-flag-icon">${c.stage.includes('Eligible')?'⚠️':'ℹ️'}</span><div><strong>${c.name}</strong> — ${c.stage.includes('Eligible')?'eligible for promotion but no action taken.':'original CV from recruitment not attached to employee record.'}</div></div>`
+      `<div class="trk-flag" style="${!c.stage.includes('Eligible')?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}"><span class="trk-flag-icon">${c.stage.includes('Eligible')?'⚠️':'ℹ️'}</span><div><strong>${c.name}</strong> - ${c.stage.includes('Eligible')?'eligible for promotion but no action taken.':'original CV from recruitment not attached to employee record.'}</div></div>`
     ).join('')}
     <div class="trk-card">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
@@ -9459,6 +9458,8 @@ const OC_W = 180, OC_H = 76, OC_HG = 26, OC_VG = 70;
 const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899','#14B8A6','#6366F1'];
 
 function initOrgChart() {
+  // Always reset so HRIS session cache never bleeds in
+  _ocEmps=null; _ocRelations={}; _ocOffsets={}; _ocTree=null;
   const root = document.getElementById('orgChartRoot'); if (!root) return;
   root.innerHTML = `
     <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
@@ -9492,7 +9493,7 @@ function initOrgChart() {
 }
 
 async function ocLoadData() {
-  // Load demo data immediately — no HRIS dependency
+  // Load demo data immediately - no HRIS dependency
   _ocEmps = ocGetDemoData();
   ocBuild();
 }
@@ -9718,14 +9719,14 @@ function ocPanUp(e) {
   if(_ocDragNode) {
     const d=document.querySelector(`[data-oc="${CSS.escape(_ocDragNode.id)}"]`);
     if(!_ocDragNode.moved) {
-      // Click — show edit menu
+      // Click - show edit menu
       if(d) d.classList.remove('dragging');
       const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
       const node=all.find(n=>n.id===_ocDragNode.id);
       _ocDragNode=null;
       if(node) ocShowNodeMenu(node);
     } else {
-      // Drag ended — snap to grid
+      // Drag ended - snap to grid
       const off=_ocOffsets[_ocDragNode.id];
       if(off){off.dx=Math.round(off.dx/OC_SNAP)*OC_SNAP;off.dy=Math.round(off.dy/OC_SNAP)*OC_SNAP;}
       if(d){d.classList.remove('dragging');const all2=[];const col2=n=>{all2.push(n);(n.children||[]).forEach(col2);};if(_ocTree)col2(_ocTree);const node2=all2.find(n=>n.id===_ocDragNode.id);if(node2){const p=ocPos(node2);d.style.left=p.x+'px';d.style.top=p.y+'px';}}
@@ -9858,7 +9859,7 @@ function ocFit() {
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   all.forEach(n=>{const p=ocPos(n);minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x+OC_W);maxY=Math.max(maxY,p.y+OC_H);});
   const pad=48,pw=maxX-minX+pad*2,ph=maxY-minY+pad*2;
-  // Never shrink below 0.28 — nodes stay legible; prefer fitting height over width for tall trees
+  // Never shrink below 0.28 - nodes stay legible; prefer fitting height over width for tall trees
   const k=Math.max(0.28, Math.min(0.95, Math.min(r.width/pw, r.height/ph)));
   _ocT.k=k;
   // Centre horizontally; anchor top of tree 60px below toolbar
@@ -10031,7 +10032,7 @@ function ocExportPpt() {
 
 // ── WORKFLOWS / NEXT STEPS ──
 const WF_SCENARIOS = [
-  { id:'pregnancy-announced', cat:'Family Leave', icon:'🤰', label:'Employee announces pregnancy',
+  { id:'maternity-leave', cat:'Family Leave', icon:'🤱', label:'Maternity leave',
     steps:[
       {id:1,title:'Acknowledge and congratulate privately',desc:'Respond positively. The initial conversation must be private and confidential.',timeframe:'Same day',tag:'recommended'},
       {id:2,title:'Carry out a DSE / New & Expectant Mothers risk assessment',desc:'Legally required under Regulation 16 of the Management of Health & Safety at Work Regulations 1999. Review workstation, environment, manual handling and any role-specific risks. Record the assessment and control measures.',timeframe:'Within 5 working days',tag:'legal',policyTag:'health-safety'},
@@ -10045,7 +10046,7 @@ const WF_SCENARIOS = [
       {id:10,title:'Set keeping-in-touch schedule and log in tracker',desc:'Agree frequency and method of contact during leave. Log all contacts. Over-contacting can constitute detriment.',timeframe:'Before leave starts',tag:'recommended',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
     ]
   },
-  { id:'paternity-announced', cat:'Family Leave', icon:'👶', label:'Employee announces paternity / SPL intention',
+  { id:'paternity-leave', cat:'Family Leave', icon:'👶', label:'Paternity / Shared Parental Leave',
     steps:[
       {id:1,title:'Acknowledge and confirm entitlement',desc:'Statutory Paternity Leave = up to 2 weeks within 56 days of birth. SPL allows up to 50 weeks between parents.',timeframe:'Same day',tag:'recommended'},
       {id:2,title:'Request SC3 form or SPL notice',desc:'For SPP, SC3 form required at least 15 weeks before EWC. For SPL, curtailment notice and SPL notice needed at least 8 weeks before SPL starts.',timeframe:'At least 15 weeks before EWC',tag:'legal'},
@@ -10054,7 +10055,7 @@ const WF_SCENARIOS = [
       {id:5,title:'Confirm leave dates in writing',desc:'Issue written confirmation of start/end dates, SPP calculation and any enhanced pay.',timeframe:'Once dates confirmed',tag:'legal',action:{label:'Draft paternity letter',type:'doc',docId:'t14'}},
     ]
   },
-  { id:'employee-sick-day1', cat:'Absence', icon:'🏥', label:'Employee calls in sick (day 1)',
+  { id:'short-term-absence', cat:'Absence', icon:'🏥', label:'Short-term sickness absence',
     steps:[
       {id:1,title:'Log the absence immediately',desc:'Record: date, time, who reported it, reason given, expected return. Note if pregnancy-related - these must be recorded separately and excluded from trigger-point calculations.',timeframe:'Same day',tag:'recommended'},
       {id:2,title:'Arrange cover',desc:'Ensure operational cover. Do not pressure the employee to come in or work from home while unwell.',timeframe:'Same day',tag:'recommended'},
@@ -10063,7 +10064,7 @@ const WF_SCENARIOS = [
       {id:5,title:'Return to work interview',desc:'ACAS recommends for all absences. Discuss reason, fitness to return, any adjustments needed and whether further absence is expected.',timeframe:'First day back',tag:'recommended',policyTag:'absence'},
     ]
   },
-  { id:'long-term-absence', cat:'Absence', icon:'📋', label:'Absence reaches 4 weeks',
+  { id:'long-term-absence', cat:'Absence', icon:'📋', label:'Long-term absence (4+ weeks)',
     steps:[
       {id:1,title:'Review Equality Act disability definition',desc:'Disability = impairment with substantial, long-term (12+ months) adverse effect on day-to-day activities. If likely to apply, the duty to make reasonable adjustments is triggered.',timeframe:'Week 4',tag:'legal'},
       {id:2,title:'Refer to Occupational Health',desc:'OH report should cover fitness for work, likely return timescales, possible adjustments. OH advice is not binding but provides strong evidence of a fair process.',timeframe:'Week 4-5',tag:'recommended',policyTag:'absence'},
@@ -10073,7 +10074,7 @@ const WF_SCENARIOS = [
       {id:6,title:'Document reasonable adjustments considered',desc:'Before any capability process, list every adjustment considered and why each was or was not reasonable. This is the most common tribunal failure point in long-term absence cases.',timeframe:'Before formal process',tag:'legal'},
     ]
   },
-  { id:'employee-resigns', cat:'Leavers', icon:'🚪', label:'Employee submits resignation',
+  { id:'resignation', cat:'Leavers', icon:'🚪', label:'Employee resignation',
     steps:[
       {id:1,title:'Acknowledge resignation in writing',desc:'Confirm receipt, the notice period, and the last day of employment.',timeframe:'Same day',tag:'legal',action:{label:'Draft resignation acceptance',type:'doc',docId:'t16'}},
       {id:2,title:'Calculate final pay and accrued holiday',desc:'Any outstanding holiday entitlement must be paid in lieu if it cannot be taken during notice. Check for any PILON clause in the contract.',timeframe:'Within 48 hours',tag:'legal'},
@@ -10094,7 +10095,7 @@ const WF_SCENARIOS = [
       {id:6,title:'PIP outcome meeting',desc:'Confirm outcome: improved (close), extension, or no improvement (next step may be dismissal with notice). Inform of right to appeal.',timeframe:'At PIP end date',tag:'legal'},
     ]
   },
-  { id:'disciplinary-allegation', cat:'Conduct', icon:'⚖️', label:'Disciplinary allegation raised',
+  { id:'disciplinary', cat:'Conduct', icon:'⚖️', label:'Disciplinary process',
     steps:[
       {id:1,title:'Investigate before any action',desc:'Inadequate investigation is the most common reason tribunals find dismissals unfair. Appoint a neutral investigating manager separate from the hearing manager.',timeframe:'Immediately',tag:'legal',policyTag:'disciplinary'},
       {id:2,title:'Consider suspension only if truly necessary',desc:'Suspension is not a default. Appropriate only if: allegation is serious, employee presence could prejudice the investigation, or there is risk to others. Suspension must be on full pay and reviewed regularly.',timeframe:'Day 1 only if needed',tag:'legal'},
@@ -10105,7 +10106,7 @@ const WF_SCENARIOS = [
       {id:7,title:'Offer right of appeal',desc:'Employee must be told of right to appeal, deadline (usually 5 working days) and appeal manager (should be more senior).',timeframe:'Within outcome letter',tag:'legal'},
     ]
   },
-  { id:'grievance-received', cat:'Conduct', icon:'📣', label:'Formal grievance received',
+  { id:'grievance', cat:'Conduct', icon:'📣', label:'Formal grievance',
     steps:[
       {id:1,title:'Acknowledge in writing within 5 working days',desc:'Confirm receipt, the process, who will investigate, and an approximate timeline.',timeframe:'Within 5 working days',tag:'legal',action:{label:'Draft grievance acknowledgement',type:'doc',docId:'t8'}},
       {id:2,title:'Appoint a neutral investigating manager',desc:'No prior involvement. Senior enough to make credible decisions. Different from the grievance hearing manager.',timeframe:'Day 1-2',tag:'recommended',policyTag:'grievance'},
@@ -10227,7 +10228,7 @@ async function renderWorkflowsTab(body) {
   + '<div style="height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);padding:40px;text-align:center;">'
   + '<div style="font-size:40px;">✦</div>'
   + '<div style="font-size:15px;font-weight:600;color:var(--ink);">' + (activeCases.length ? 'Select a case' : 'Start your first case') + '</div>'
-  + '<div style="font-size:13px;max-width:340px;line-height:1.7;">' + (activeCases.length ? 'Click a case on the left to see its checklist.' : 'Click <strong>+ New case</strong> or a scenario below to create a per-employee checklist — each employee gets their own progress.') + '</div>'
+  + '<div style="font-size:13px;max-width:340px;line-height:1.7;">' + (activeCases.length ? 'Click a case on the left to see its checklist.' : 'Click <strong>+ New case</strong> or a scenario below to create a per-employee checklist - each employee gets their own progress.') + '</div>'
   + (activeCases.length ? '' : '<button onclick="wfNewCase()" class="btn btn-primary" style="margin-top:8px;">+ New case</button>')
   + '</div></div>'
   + '</div>';
@@ -10267,9 +10268,26 @@ async function wfCreateCase(btn) {
   const scenarioId = document.getElementById('wf-new-scenario')?.value;
   if (!name) { document.getElementById('wf-new-name').style.borderColor='var(--red)'; return; }
   btn.textContent = 'Creating...'; btn.disabled = true;
-  const newCase = { id:'wfc_'+Date.now(), employeeName:name, scenarioId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active' };
+  const newCase = { id:'wfc_'+Date.now(), employeeName:name, scenarioId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[] };
   if (!wfCases) wfCases = [];
   wfCases.push(newCase);
+  // Auto-add to mat/pat tracker for family leave scenarios
+  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave') {
+    if (mpRecords === null) await loadMatPatRecords();
+    const exists = (mpRecords||[]).find(r => r.employeeName.toLowerCase().trim() === name.toLowerCase().trim());
+    const type = scenarioId === 'maternity-leave' ? 'Maternity' : 'Paternity';
+    if (!exists) {
+      const newRec = { id:'mp_'+Date.now(), employeeName:name, jobTitle:'', type, dueDate:'', leaveStart:'', expectedReturn:'', actualReturn:'', kitDaysUsed:0, kitDaysMax:10, dependantAdded:false, contactLog:[], notes:'Added via Next Steps workflow.', createdAt:new Date().toISOString(), wfCaseId: newCase.id };
+      if (!mpRecords) mpRecords = [];
+      mpRecords.push(newRec);
+      newCase.mpRecordId = newRec.id;
+      await saveMatPatRecords();
+    } else {
+      exists.wfCaseId = newCase.id;
+      newCase.mpRecordId = exists.id;
+      await saveMatPatRecords();
+    }
+  }
   await saveWfCases();
   btn.closest('div[style*=fixed]').remove();
   wfActiveCase = newCase;
@@ -10338,12 +10356,12 @@ function wfRenderCase(c) {
       <div style="margin-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
           <span style="font-size:11px;font-weight:600;color:var(--ink);">Progress</span>
-          <span id="wf-progress-pct" style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${done} / ${total} complete${pct===100?' — all steps done ✓':''}</span>
+          <span id="wf-progress-pct" style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${done} / ${total} complete${pct===100?' - all steps done ✓':''}</span>
         </div>
         <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
       </div>
-      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:7px 12px;font-size:11px;color:var(--amber);">No policies uploaded — using ACAS guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;">Upload policies</a></div>`
-      :`<div style="margin-top:10px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} company policies loaded — steps marked 📋 reference your policies.</div>`}
+      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:7px 12px;font-size:11px;color:var(--amber);">No policies uploaded - using ACAS guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;">Upload policies</a></div>`
+      :`<div style="margin-top:10px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} company policies loaded - steps marked 📋 reference your policies.</div>`}
     </div>
     <div style="display:flex;flex-direction:column;gap:8px;">${stepsHtml}</div>
   </div>`;
@@ -10365,7 +10383,7 @@ async function wfToggleStep(caseId, stepId) {
   if (sc) {
     const pct=Math.round((c.checkedSteps.length/sc.steps.length)*100);
     const bar=document.getElementById('wf-progress-fill'); if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
-    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=c.checkedSteps.length+' / '+sc.steps.length+' complete'+(pct===100?' — all steps done ✓':'');
+    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=c.checkedSteps.length+' / '+sc.steps.length+' complete'+(pct===100?' - all steps done ✓':'');
   }
   // Update sidebar progress bar
   wfUpdateSidebarCase(c);
@@ -10422,7 +10440,7 @@ async function openTrackerGuidance(topic) {
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:85vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
     <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
       <div style="flex:1;">
-        <div style="font-size:15px;font-weight:700;color:white;">Guidance — ${fallback?.title||topic}</div>
+        <div style="font-size:15px;font-weight:700;color:white;">Guidance - ${fallback?.title||topic}</div>
         <div style="font-size:11px;color:${isFromPolicy?'#6EE7B7':'rgba(255,255,255,0.45)'};margin-top:3px;">${isFromPolicy?'📋 '+source:'ℹ '+source}</div>
       </div>
       <button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
