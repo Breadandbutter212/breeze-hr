@@ -231,6 +231,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
    MANAGE VIEWS
 ══════════════════════ */
 .manage-view { flex-direction: column; background: var(--bg); }
+/* All manage-views use absolute positioning so they don't depend on the flex height chain */
+.main { position: relative; }
+.view.active.manage-view { position: absolute; inset: 52px 0 0 0; display: flex; flex-direction: column; overflow: hidden; }
 /* ── COMPARE ── */
 .compare-view { flex-direction: column; }
 .compare-upload-row { display: flex; gap: 16px; padding: 20px; }
@@ -4925,13 +4928,8 @@ function downloadProcessMap(name, e) {
 
 // ── SETTINGS ──
 function renderSettings() {
-  const body=document.getElementById('settingsBody');
-  if(!body){ console.error('settingsBody not found'); return; }
-  // Show a placeholder immediately so we know the function ran
-  body.innerHTML='<div style="padding:16px;font-size:12px;color:var(--ink3);">Loading settings...</div>';
-  const email=currentUser?currentUser.email:'[no user]';
-  const name=currentProfile?currentProfile.full_name:'[no profile]';
-  const coName=currentProfile?.company_name||'[no company]';
+  const body=document.getElementById('settingsBody');if(!body)return;
+  const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';const coName=currentProfile?.company_name||'';
   const inputStyle='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);';
   const inputFocus="this.style.background='white';this.style.borderColor='var(--accent)'";
   const inputBlur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'";
@@ -5251,21 +5249,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='settings') {
-    // Diagnose the entire height chain
-    const _shell = document.getElementById('appShell');
-    const _main = document.querySelector('.main');
-    const _sv = document.getElementById('view-settings');
-    const _sb = document.getElementById('settingsBody');
-    console.log('[Settings] shell h:', _shell?.offsetHeight, 'main h:', _main?.offsetHeight, 'view h:', _sv?.offsetHeight, 'shell display:', _shell?.style.display);
-    // Force dimensions on the view directly as a workaround
-    if (_sv) _sv.style.cssText = 'display:flex;flex-direction:column;position:absolute;inset:52px 0 0 0;';
-    if (_sb) _sb.style.cssText = 'flex:1;overflow-y:auto;padding:20px;background:var(--bg);min-height:0;';
-    try { renderSettings(); } catch(e) {
-      console.error('[Settings] error:', e);
-      if (_sb) _sb.innerHTML = '<div style="padding:20px;color:red;">' + String(e) + '</div>';
-    }
-  }
+  if(v==='settings') renderSettings();
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
