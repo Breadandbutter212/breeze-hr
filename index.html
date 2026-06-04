@@ -620,6 +620,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
       Analytics
     </div>
+    <div class="ni" onclick="showView('trackers',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+      Trackers
+    </div>
     <div class="ni" onclick="showView('compare',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 3H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3"/><path d="M16 3h3a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-3"/><line x1="12" y1="3" x2="12" y2="21"/></svg>
       Compare
@@ -7555,7 +7559,7 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
   return matches;
 }
 
-function compareMatchedRow(rowA, rowB) {
+function compareMatchedRow(rowA, rowB, extraSkip) {
   const GROUPS = {
     // pay\b matches "pay","basic pay","annual pay" — NOT "payment","relocation_payment"
     salary:     /salary|pay\b|wage|remuneration|compensation|ctc/i,
@@ -7570,15 +7574,23 @@ function compareMatchedRow(rowA, rowB) {
     notice:     /notice/i,
     location:   /location|office|site|place/i,
   };
-  const SKIP = new Set(['employee_name','name','full_name','employee_id','emp_id','id','employee_no','emp_no','staff_id','staff_no']);
+  // Skip any column that was used to match employees — those aren't data fields to compare
+  // extraSkip contains the actual column names detected as name/ID by detectEmployeeColumns
+  const SKIP_KEYS = new Set([
+    'employee_name','name','full_name','employee_id','emp_id','id',
+    'employee_no','emp_no','emp_name','staff_id','staff_no','person_name',
+    ...(extraSkip || []).map(normalizeCompareKey)
+  ]);
   const groupKey = col => {
     const cn = normalizeCompareKey(col);
-    if (SKIP.has(cn)) return null;
+    if (SKIP_KEYS.has(cn)) return null;
+    // Also skip anything that looks like a name/id column by pattern
+    if (/^(?:emp|employee|staff|worker|person)?_?name$|^(?:emp|employee|staff|payroll)?_?id$|^(?:emp|staff)_?no$/.test(cn)) return null;
     for (const [g, rx] of Object.entries(GROUPS)) if (rx.test(cn)) return g;
     return cn;
   };
   const gA = {}, gB = {};
-  // First-wins: specific extractors (salary, bonus, title) run before generic KV, so they land first and win
+  // First-wins: specific extractors (salary, bonus, title) run before generic KV
   Object.entries(rowA || {}).forEach(([k,v]) => { const g = groupKey(k); if (g && !gA[g]) gA[g] = { key: k, val: v }; });
   Object.entries(rowB || {}).forEach(([k,v]) => { const g = groupKey(k); if (g && !gB[g]) gB[g] = { key: k, val: v }; });
   const allGroups = new Set([...Object.keys(gA), ...Object.keys(gB)]);
@@ -7595,6 +7607,7 @@ function compareMatchedRow(rowA, rowB) {
     } else {
       match = String(valA).toLowerCase().trim().replace(/\s+/g,' ') === String(valB).toLowerCase().trim().replace(/\s+/g,' ');
     }
+    // Field title = the spreadsheet column header (entA key), or letter key if only in letter
     const displayName = (entA?.key || entB?.key || g).replace(/_/g,' ');
     results.push({ group: g, displayName, valA: String(valA), valB: String(valB), match, isSalary, onlyInA: !entB, onlyInB: !entA });
   }
@@ -7643,7 +7656,6 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
           <span style="font-size:13px;">❓</span>
           <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
           <span style="font-size:11px;color:var(--ink3);margin-left:8px;">${side}</span>
-          ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
         </div>
       </div>`;
     }
@@ -7662,7 +7674,6 @@ function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
           <span style="font-size:13px;">✅</span>
           <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
           <span style="font-size:11px;color:var(--green);margin-left:8px;">All fields match</span>
-          ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
         </div>
       </div>`;
     }
@@ -7788,7 +7799,9 @@ async function compareEmployeeMatch(isCompMode) {
     const rawMatches = matchEmployeeRows(rowsA, rowsB, colsA, colsB);
     const matches = rawMatches.map(m => {
       if (!m.matched) return m;
-      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB) };
+      // Pass name + ID column names so they are excluded from the field comparison
+      const skipCols = [colsA.nameCol, colsA.idCol, colsB.nameCol, colsB.idCol].filter(Boolean);
+      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB, skipCols) };
     });
     renderEmployeeMatchResults(matches, a.name, bLabel, isCompMode);
   } catch(e) {
