@@ -8019,13 +8019,25 @@ function renderPPTimeline() {
 
   body.innerHTML = `
     <div class="pp-timeline">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${ppPlan.year} People Plan${currentProfile?.company_name?' - '+currentProfile.company_name:''}</div>
-        <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
+        <div style="display:flex;align-items:center;gap:8px;">
+          <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
+            <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Calendar</button>
+            <button onclick="ppSwitchView('details')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Details</button>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
+        </div>
       </div>
       <div class="pp-grid" style="grid-template-columns:160px repeat(12,1fr);">${gridHtml}</div>
     </div>
     <div class="pp-legend">${legendHtml}</div>`;
+}
+
+let ppView = 'timeline'; // 'timeline' | 'details'
+
+function ppModalInputStyle() {
+  return 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
 }
 
 function ppAddEvent(defaultCat) {
@@ -8033,16 +8045,29 @@ function ppAddEvent(defaultCat) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const catOptions = PP_CATS.map(c => `<option value="${c.id}"${c.id===defaultCat?' selected':''}>${c.label}</option>`).join('');
   const monthOptions = PP_MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
-  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:20px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add event</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Add a new activity to your people plan</div></div>
-    <div style="padding:22px 24px;display:flex;flex-direction:column;gap:14px;">
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEvtTitle" placeholder="e.g. Annual performance review" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEvtCat" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${catOptions}</select></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start month</div><select id="ppEvtStart" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOptions}</select></div>
-        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End month</div><select id="ppEvtEnd" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOptions}</select></div>
+  const inp = ppModalInputStyle();
+  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add event</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Specific dates only appear in the Details view</div></div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:13px;max-height:70vh;overflow-y:auto;">
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEvtTitle" placeholder="e.g. Annual performance review" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEvtCat" style="${inp}">${catOptions}</select></div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Owner <span style="color:var(--ink3);font-weight:400;">(optional)</span></div><input id="ppEvtOwner" placeholder="e.g. HR Business Partner" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div style="border-top:1px solid var(--border);padding-top:13px;">
+        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:10px;">Timeline (shown on calendar)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start month</div><select id="ppEvtStart" style="${inp}">${monthOptions}</select></div>
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End month</div><select id="ppEvtEnd" style="${inp}">${monthOptions}</select></div>
+        </div>
       </div>
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Notes (optional)</div><input id="ppEvtNotes" placeholder="Any details..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div style="border-top:1px solid var(--border);padding-top:13px;">
+        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px;">Specific dates <span style="background:var(--accent-bg);color:var(--accent);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;">Details view only</span></div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">These won't show on the visual calendar</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start date</div><input type="date" id="ppEvtStartDate" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End / deadline</div><input type="date" id="ppEvtEndDate" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        </div>
+      </div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Notes <span style="color:var(--ink3);font-weight:400;">(optional)</span></div><input id="ppEvtNotes" placeholder="Any details..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
     </div>
     <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
       <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
@@ -8061,11 +8086,14 @@ function ppSaveNewEvent(btn) {
   const start = parseInt(document.getElementById('ppEvtStart')?.value);
   const end = parseInt(document.getElementById('ppEvtEnd')?.value);
   const notes = document.getElementById('ppEvtNotes')?.value?.trim();
+  const owner = document.getElementById('ppEvtOwner')?.value?.trim();
+  const startDate = document.getElementById('ppEvtStartDate')?.value || '';
+  const endDate = document.getElementById('ppEvtEndDate')?.value || '';
   const maxId = ppPlan.events.reduce((m,e)=>Math.max(m,e.id),0);
-  ppPlan.events.push({ id: maxId+1, catId, title, startMonth: Math.min(start,end), endMonth: Math.max(start,end), notes });
+  ppPlan.events.push({ id: maxId+1, catId, title, startMonth: Math.min(start,end), endMonth: Math.max(start,end), notes, owner, startDate, endDate });
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
-  renderPPTimeline();
+  ppView === 'details' ? renderPPDetails() : renderPPTimeline();
 }
 
 function ppEditEvent(id) {
@@ -8075,16 +8103,29 @@ function ppEditEvent(id) {
   const monthOpts = (sel) => PP_MONTHS.map((m,i)=>`<option value="${i+1}"${i+1===sel?' selected':''}>${m}</option>`).join('');
   const overlay = document.createElement('div');
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
-  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:${cat?.color||'#1B2D50'};padding:20px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Edit event</div></div>
-    <div style="padding:22px 24px;display:flex;flex-direction:column;gap:14px;">
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEditTitle" value="${escapeHtml(ev.title)}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEditCat" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${catOptions}</select></div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start month</div><select id="ppEditStart" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOpts(ev.startMonth)}</select></div>
-        <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End month</div><select id="ppEditEnd" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;">${monthOpts(ev.endMonth)}</select></div>
+  const inp = ppModalInputStyle();
+  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:${cat?.color||'#1B2D50'};padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Edit event</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Specific dates only appear in the Details view</div></div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:13px;max-height:70vh;overflow-y:auto;">
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEditTitle" value="${escapeHtml(ev.title)}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEditCat" style="${inp}">${catOptions}</select></div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Owner <span style="color:var(--ink3);font-weight:400;">(optional)</span></div><input id="ppEditOwner" value="${escapeHtml(ev.owner||'')}" placeholder="e.g. HR Business Partner" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div style="border-top:1px solid var(--border);padding-top:13px;">
+        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:10px;">Timeline (shown on calendar)</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start month</div><select id="ppEditStart" style="${inp}">${monthOpts(ev.startMonth)}</select></div>
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End month</div><select id="ppEditEnd" style="${inp}">${monthOpts(ev.endMonth)}</select></div>
+        </div>
       </div>
-      <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Notes (optional)</div><input id="ppEditNotes" value="${escapeHtml(ev.notes||'')}" placeholder="Any details..." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div style="border-top:1px solid var(--border);padding-top:13px;">
+        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px;">Specific dates <span style="background:var(--accent-bg);color:var(--accent);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;">Details view only</span></div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">These won't show on the visual calendar</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start date</div><input type="date" id="ppEditStartDate" value="${ev.startDate||''}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+          <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End / deadline</div><input type="date" id="ppEditEndDate" value="${ev.endDate||''}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+        </div>
+      </div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Notes <span style="color:var(--ink3);font-weight:400;">(optional)</span></div><input id="ppEditNotes" value="${escapeHtml(ev.notes||'')}" placeholder="Any details..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
     </div>
     <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
       <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="ppDeleteEvent(${id},this)">Delete</button>
@@ -8105,16 +8146,96 @@ function ppSaveEditEvent(id, btn) {
   const e2 = parseInt(document.getElementById('ppEditEnd')?.value);
   ev.startMonth = Math.min(s,e2); ev.endMonth = Math.max(s,e2);
   ev.notes = document.getElementById('ppEditNotes')?.value?.trim() || '';
+  ev.owner = document.getElementById('ppEditOwner')?.value?.trim() || '';
+  ev.startDate = document.getElementById('ppEditStartDate')?.value || '';
+  ev.endDate = document.getElementById('ppEditEndDate')?.value || '';
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
-  renderPPTimeline();
+  ppView === 'details' ? renderPPDetails() : renderPPTimeline();
 }
 
 function ppDeleteEvent(id, btn) {
   ppPlan.events = ppPlan.events.filter(e => e.id !== id);
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
-  renderPPTimeline();
+  ppView === 'details' ? renderPPDetails() : renderPPTimeline();
+}
+
+function ppFmtDate(d) {
+  if (!d) return '';
+  try { return new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); } catch(e) { return d; }
+}
+
+function renderPPDetails() {
+  const body = document.getElementById('peoplePlanBody');
+  if (!body || !ppPlan) return;
+  const { events } = ppPlan;
+  // Sort by startMonth then startDate
+  const sorted = [...events].sort((a,b) => {
+    if (a.startMonth !== b.startMonth) return a.startMonth - b.startMonth;
+    if (a.startDate && b.startDate) return a.startDate.localeCompare(b.startDate);
+    return 0;
+  });
+  const rows = sorted.map(ev => {
+    const cat = PP_CATS.find(c => c.id === ev.catId) || PP_CATS[PP_CATS.length-1];
+    const monthStr = ev.startMonth === ev.endMonth ? PP_MONTHS[ev.startMonth-1] : `${PP_MONTHS[ev.startMonth-1]} - ${PP_MONTHS[ev.endMonth-1]}`;
+    const startFmt = ppFmtDate(ev.startDate);
+    const endFmt = ppFmtDate(ev.endDate);
+    const hasDate = startFmt || endFmt;
+    return `<tr style="border-bottom:1px solid var(--border);transition:background 0.1s;" onmouseover="this.style.background='#F8FAFC'" onmouseout="this.style.background='white'">
+      <td style="padding:11px 14px;white-space:nowrap;">
+        <div style="display:flex;align-items:center;gap:7px;">
+          <div style="width:9px;height:9px;border-radius:50%;background:${cat.color};flex-shrink:0;"></div>
+          <span style="font-size:11px;font-weight:600;color:${cat.color};">${cat.label}</span>
+        </div>
+      </td>
+      <td style="padding:11px 14px;font-size:13px;font-weight:500;color:var(--ink);">${escapeHtml(ev.title)}</td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--ink2);white-space:nowrap;">${monthStr}</td>
+      <td style="padding:11px 14px;font-size:12px;color:${startFmt?'var(--ink)':'var(--ink3)'};white-space:nowrap;">${startFmt || '<span style="color:var(--ink3);">—</span>'}</td>
+      <td style="padding:11px 14px;font-size:12px;color:${endFmt?'var(--ink)':'var(--ink3)'};white-space:nowrap;">${endFmt || '<span style="color:var(--ink3);">—</span>'}</td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--ink2);">${escapeHtml(ev.owner||'')}</td>
+      <td style="padding:11px 14px;font-size:12px;color:var(--ink3);max-width:240px;">${escapeHtml(ev.notes||'')}</td>
+      <td style="padding:11px 10px;text-align:right;white-space:nowrap;">
+        <button onclick="ppEditEvent(${ev.id})" style="font-size:11px;color:var(--accent);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;cursor:pointer;font-family:inherit;">Edit</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  const withDates = events.filter(e => e.startDate || e.endDate).length;
+  const without = events.length - withDates;
+
+  body.innerHTML = `
+    <div style="padding:18px 20px 12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
+      <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
+        <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Calendar</button>
+        <button onclick="ppSwitchView('details')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Details</button>
+      </div>
+      <div style="font-size:12px;color:var(--ink3);margin-left:4px;">${events.length} events · ${withDates} with specific dates${without?' · <span style="color:var(--amber);">${without} without dates</span>':''}</div>
+      <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="ppAddEvent()">+ Add event</button>
+    </div>
+    <div style="flex:1;overflow:auto;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <thead>
+          <tr style="background:#1B2D50;position:sticky;top:0;z-index:2;">
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">CATEGORY</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;">EVENT</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">MONTH</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">START DATE</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">END / DEADLINE</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;">OWNER</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;">NOTES</th>
+            <th style="padding:10px 14px;"></th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>`;
+}
+
+function ppSwitchView(v) {
+  ppView = v;
+  if (v === 'details') renderPPDetails();
+  else renderPPTimeline();
 }
 
 function downloadPeoplePlanPPT() {
