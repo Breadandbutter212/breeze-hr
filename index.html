@@ -11430,6 +11430,15 @@ function showBreezeToast(msg) {
   setTimeout(()=>t.classList.remove('visible'), 2500);
 }
 
+// ── ORG CHART STATE ──
+let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
+let _ocRelations = {};
+let _ocT = { x: 0, y: 0, k: 0.85 };
+let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
+const OC_SNAP = 10;
+const OC_W = 180, OC_H = 76, OC_HG = 26, OC_VG = 70;
+const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899','#14B8A6','#6366F1'];
+
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
   _ocEmps=null; _ocRelations={}; _ocOffsets={}; _ocTree=null;
