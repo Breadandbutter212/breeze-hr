@@ -1230,6 +1230,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <button onclick="showTrackerTab('recruitment')" id="tt-recruitment" class="tracker-tab-btn">Recruitment</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions & Careers</button>
       <button onclick="showTrackerTab('immigration')" id="tt-immigration" class="tracker-tab-btn">Immigration</button>
+      <button onclick="showTrackerTab('workflows')" id="tt-workflows" class="tracker-tab-btn">✦ Next Steps</button>
     </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
@@ -7688,7 +7689,30 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
   return matches;
 }
 
-function compareMatchedRow(rowA, rowB, extraSkip) {
+function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
+  // exactMatch: only compare columns sharing the same name — for spreadsheet vs spreadsheet
+  if (exactMatch) {
+    const SKIP_NORM = new Set([
+      'employee_name','name','full_name','employee_id','emp_id','id','emp_name','staff_id','staff_no',
+      ...(extraSkip||[]).map(normalizeCompareKey)
+    ]);
+    const normA = new Map(Object.keys(rowA||{}).filter(k=>!k.startsWith('_')).map(k=>[normalizeCompareKey(k),k]));
+    const normB = new Map(Object.keys(rowB||{}).filter(k=>!k.startsWith('_')).map(k=>[normalizeCompareKey(k),k]));
+    const results = [];
+    for (const [norm, keyA] of normA) {
+      if (SKIP_NORM.has(norm) || !normB.has(norm)) continue;
+      const valA = String(rowA[keyA]??'').trim();
+      const valB = String(rowB[normB.get(norm)]??'').trim();
+      if (!valA && !valB) continue;
+      const nA = normalizeSalaryValue(valA), nB = normalizeSalaryValue(valB);
+      const isDate = /\d{4}-\d{2}-\d{2}/.test(valA)||/\d{4}-\d{2}-\d{2}/.test(valB);
+      const hasLetters = v => /[a-zA-Z]/.test(v.replace(/[£$€]/g,''));
+      const useNum = !isDate && nA!==null && nB!==null && nA>=1 && nB>=1 && !hasLetters(valA) && !hasLetters(valB);
+      const match = useNum ? Math.abs(nA-nB)<1 : valA.toLowerCase()===valB.toLowerCase();
+      results.push({ group:norm, displayName:keyA, valA, valB, match, isSalary:isSalaryKey(norm), onlyInA:false, onlyInB:false });
+    }
+    return results;
+  }
   const GROUPS = {
     // pay\b matches "pay","basic pay","annual pay" — NOT "payment","relocation_payment"
     salary:     /salary|pay\b|wage|remuneration|compensation|ctc/i,
@@ -7946,7 +7970,8 @@ async function compareEmployeeMatch(isCompMode) {
       if (!m.matched) return m;
       // Pass name + ID column names so they are excluded from the field comparison
       const skipCols = [colsA.nameCol, colsA.idCol, colsB.nameCol, colsB.idCol].filter(Boolean);
-      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB, skipCols) };
+      // exactMatch=true for spreadsheet mode: only compare columns with the same name in both files
+      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB, skipCols, !isCompMode) };
     });
     renderEmployeeMatchResults(matches, a.name, bLabel, isCompMode);
   } catch(e) {
@@ -8653,6 +8678,7 @@ function renderTrackersBody() {
   if (trackerTab === 'leave') renderLeaveTracker(body);
   else if (trackerTab === 'careers') renderCareersTracker(body);
   else if (trackerTab === 'immigration') renderImmigrationTracker(body);
+  else if (trackerTab === 'workflows') renderWorkflowsTab(body);
   else renderRecruitmentTracker(body);
 }
 
@@ -9441,24 +9467,51 @@ async function ocLoadData() {
     </div>`;
 }
 
+function ocExtractDept(emp) {
+  // Merge returns department as string, object {id,name}, or via groups array
+  const empl = emp.employments?.[0];
+  let dept = '';
+  if (empl?.department) {
+    dept = typeof empl.department === 'object' ? (empl.department?.name || '') : String(empl.department);
+  }
+  if (!dept && emp.department) {
+    dept = typeof emp.department === 'object' ? (emp.department?.name || '') : String(emp.department);
+  }
+  if (!dept && Array.isArray(emp.groups)) {
+    const dg = emp.groups.find(g => /dept|team|division/i.test(g.type||g.group_type||''));
+    if (dg) dept = dg.name || dg.group_name || '';
+    if (!dept) dept = emp.groups[0]?.name || emp.groups[0]?.group_name || '';
+  }
+  return dept.trim() || null;
+}
+
+function ocExtractMgrId(emp) {
+  const rawMgr = emp.manager;
+  if (!rawMgr) return null;
+  if (typeof rawMgr === 'object') return String(rawMgr.id || rawMgr.employee_id || '');
+  return String(rawMgr);
+}
+
 function ocBuild() {
   const emps = _ocEmps; if (!emps?.length) return;
   _ocDeptColors = {}; let dci = 0;
   const nodeMap = {};
   emps.forEach(emp => {
     const id = String(emp.id || emp.display_full_name || Math.random());
-    const dept = (emp.employments?.[0]?.department || emp.department || 'General').trim();
+    const empl = emp.employments?.[0];
+    const dept = ocExtractDept(emp) || 'General';
+    const managerId = ocExtractMgrId(emp);
     if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
-    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: emp.employments?.[0]?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: emp.manager || null, children: [] };
+    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId, children: [] };
   });
   const roots = [];
   Object.values(nodeMap).forEach(n => {
-    const mgr = n.managerId ? String(n.managerId) : null;
-    if (mgr && nodeMap[mgr]) nodeMap[mgr].children.push(n); else roots.push(n);
+    const mgrNode = n.managerId ? nodeMap[n.managerId] : null;
+    if (mgrNode) mgrNode.children.push(n); else roots.push(n);
   });
-  const hasReal = Object.values(nodeMap).some(n => n.managerId && nodeMap[String(n.managerId)]);
+  const hasReal = Object.values(nodeMap).some(n => n.managerId && nodeMap[n.managerId]);
   let root;
-  if (hasReal && roots.length <= 4) {
+  if (hasReal && roots.length <= 5) {
     root = roots.length === 1 ? roots[0] : { id:'__org__', name: currentProfile?.company_name || 'Organisation', title:'', dept:'', color:'#1D1D1F', children: roots };
   } else {
     root = ocBuildDeptTree(Object.values(nodeMap));
@@ -9466,12 +9519,12 @@ function ocBuild() {
   _ocTree = root; _ocOffsets = {};
   ocLayout(root, 0, 0);
   ocRender(root);
-  setTimeout(() => ocFit(), 60);
+  setTimeout(() => ocFit(), 80);
 }
 
 function ocBuildDeptTree(nodes) {
   const depts = {};
-  nodes.forEach(n => { if (!depts[n.dept]) depts[n.dept]=[]; depts[n.dept].push({...n, children:[]}); });
+  nodes.forEach(n => { if (!depts[n.dept]) depts[n.dept]=[]; depts[n.dept].push(n); });
   const coName = currentProfile?.company_name || 'Organisation';
   const entries = Object.entries(depts).sort((a,b) => b[1].length - a[1].length);
   if (entries.length === 1) return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:entries[0][1] };
@@ -9482,15 +9535,40 @@ function ocBuildDeptTree(nodes) {
   return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:deptNodes };
 }
 
+const OC_GRID_COLS = 8; // max children per row before wrapping to grid
+
 function ocSubW(n) {
   if (!n.children?.length) return OC_W + OC_HG;
+  if (n.children.length > OC_GRID_COLS) return OC_GRID_COLS * (OC_W + OC_HG);
   return n.children.reduce((s,c) => s + ocSubW(c), 0);
 }
 
 function ocLayout(n, depth, sx) {
-  const sw = ocSubW(n);
-  n._x = sx + sw/2 - OC_W/2; n._y = depth * (OC_H + OC_VG);
-  let cx = sx; (n.children||[]).forEach(c => { ocLayout(c, depth+1, cx); cx += ocSubW(c); });
+  n._y = depth * (OC_H + OC_VG);
+  const children = n.children || [];
+  if (!children.length) { n._x = sx; return; }
+
+  if (children.length > OC_GRID_COLS) {
+    // Grid layout: wrap into rows of OC_GRID_COLS
+    children.forEach((c, i) => {
+      const col = i % OC_GRID_COLS, row = Math.floor(i / OC_GRID_COLS);
+      c._x = sx + col * (OC_W + OC_HG);
+      c._y = (depth + 1) * (OC_H + OC_VG) + row * (OC_H + 44);
+      // Lay out any children of children normally below their row
+      if (c.children?.length) {
+        const gcDepth = c._y / (OC_H + OC_VG) + 1;
+        ocLayout(c, gcDepth, c._x);
+        c._x = sx + col * (OC_W + OC_HG); // restore x after recursive call
+        c._y = (depth + 1) * (OC_H + OC_VG) + row * (OC_H + 44); // restore y
+      }
+    });
+    const totalW = Math.min(children.length, OC_GRID_COLS) * (OC_W + OC_HG);
+    n._x = sx + totalW / 2 - OC_W / 2;
+  } else {
+    const sw = ocSubW(n);
+    n._x = sx + sw / 2 - OC_W / 2;
+    let cx = sx; children.forEach(c => { ocLayout(c, depth + 1, cx); cx += ocSubW(c); });
+  }
 }
 
 function ocPos(n) {
