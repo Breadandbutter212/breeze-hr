@@ -11430,6 +11430,42 @@ function showBreezeToast(msg) {
   setTimeout(()=>t.classList.remove('visible'), 2500);
 }
 
+function initOrgChart() {
+  // Always reset so HRIS session cache never bleeds in
+  _ocEmps=null; _ocRelations={}; _ocOffsets={}; _ocTree=null;
+  const root = document.getElementById('orgChartRoot'); if (!root) return;
+  root.innerHTML = `
+    <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
+      <input id="ocSearch" placeholder="Search name, title or department..."
+        style="border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);width:230px;"
+        onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"
+        oninput="ocHighlight(this.value)">
+      <span id="ocCnt" style="font-size:11px;color:var(--ink3);white-space:nowrap;"></span>
+      <div style="flex:1;"></div>
+      <button onclick="ocZoom(0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+</button>
+      <button onclick="ocZoom(-0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">-</button>
+      <button onclick="ocFit()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Fit</button>
+      <button onclick="ocReset()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Reset layout</button>
+      <button onclick="ocAddPerson()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+ Add person</button>
+      <button onclick="ocExportPpt()" style="font-size:11px;background:var(--accent);color:white;border:none;border-radius:var(--r-sm);padding:0 12px;height:28px;cursor:pointer;font-family:inherit;">&#8659; PPT</button>
+    </div>
+    <div id="ocLegend" style="padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:34px;flex-shrink:0;"></div>
+    <div id="ocVP" style="flex:1;min-height:0;overflow:hidden;position:relative;background:linear-gradient(135deg,#F8FAFC 0%,#EFF6FF 100%);cursor:grab;user-select:none;"
+      onmousedown="ocPanDown(event)" onmousemove="ocPanMove(event)" onmouseup="ocPanUp(event)" onmouseleave="ocPanUp(event)"
+      onwheel="ocWheel(event)">
+      <div id="ocWorld" style="position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;">
+        <svg id="ocSVG" style="position:absolute;top:0;left:0;overflow:visible;pointer-events:none;"></svg>
+        <div id="ocNodes" style="position:absolute;top:0;left:0;"></div>
+      </div>
+      <div id="ocSpinner" style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;color:var(--ink3);">
+        <div style="animation:spin 1s linear infinite;font-size:24px;opacity:0.4;">&#10227;</div>
+        <div style="font-size:13px;">Loading org chart...</div>
+      </div>
+    </div>`;
+  ocLoadData();
+}
+
+
 // ── INIT ──
 renderTmpls();
 
