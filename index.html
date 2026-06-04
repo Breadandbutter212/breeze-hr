@@ -443,6 +443,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .emp-badge-diff { background:#F59E0B;color:white; }
 .emp-badge-match { background:var(--green);color:white; }
 .emp-badge-missing { background:var(--surface3);color:var(--ink3); }
+.emp-flat-row { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:8px;overflow:hidden; }
+.emp-flat-row.emp-flat-issue { border-left:3px solid #F59E0B; }
+.emp-flat-row.emp-flat-issue[data-type="salary"] { border-left-color:#EF4444; }
+.emp-flat-row.emp-flat-ok { border-left:3px solid var(--green);opacity:0.75; }
+.emp-flat-head { display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap; }
+.emp-flat-name { font-size:13px;font-weight:600;color:var(--ink); }
 
 /* ── PEOPLE PLAN ── */
 .pp-timeline { flex:1;overflow:auto;padding:20px; }
@@ -7392,55 +7398,79 @@ function parseWordAsEmployeeData(text, filename) {
 
 function extractEmployeeFromDocxText(text) {
   const obj = {};
-  // Name
-  const namePats = [
-    /\bDear\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/,
-    /\bTo:\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/,
-    /(?:employee|name|for)\s*[:\-]\s*([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)/i,
-    /^([A-Z][a-z]+(?:\s+[A-Z][a-z]+){1,2})\s*$/m,
-  ];
-  for (const p of namePats) { const m = text.match(p); if (m) { obj.employee_name = m[1].trim(); break; } }
-  // Employee ID
+
+  // Split at "Dear" so we only look for names in the address block (before Dear)
+  // This prevents table headers like "Compensation Component" being picked up as names
+  const dearIdx = text.search(/\bDear\b/i);
+  const headerText = dearIdx > 0 ? text.substring(0, dearIdx) : '';
+  const bodyText   = dearIdx > 0 ? text.substring(dearIdx)    : text;
+
+  // ── NAME EXTRACTION ──
+  // Priority 1: full name after "Dear" (e.g. "Dear James Okonkwo,")
+  const dearFull = text.match(/\bDear\s+([A-Z][a-z]+(?:\s+[A-Z]\.?\s+)?[A-Z][a-z]+)/);
+  if (dearFull) obj.employee_name = dearFull[1].trim();
+
+  // Priority 2: address block (before Dear), name on its own line with optional middle initial
+  // Excludes lines with numbers, company suffixes, city/street names
+  if (!obj.employee_name && headerText) {
+    const NON_NAME = /\b(Ltd|Limited|LLP|Inc|Corp|Street|Road|Lane|Avenue|Drive|Close|Way|Place|House|Floor|Suite|Building|London|Manchester|Bristol|Birmingham|Edinburgh|Cardiff|Glasgow|UK|England|United|Kingdom|Company|Group|Services|Solutions|Technology|Systems|Analytics|Consulting|Partners|Associates)\b/i;
+    for (const line of headerText.split(/[\n\r]/).map(l => l.trim()).filter(l => l)) {
+      const m = line.match(/^([A-Z][a-z]+(?:\s+[A-Z]\.?\s+)?[A-Z][a-z]+)$/);
+      if (m && !NON_NAME.test(line) && !/\d/.test(line)) { obj.employee_name = m[1]; break; }
+    }
+  }
+
+  // Priority 3: labeled pattern
+  if (!obj.employee_name) {
+    const lbl = text.match(/(?:employee|name|for|to)\s*[:\-]\s*([A-Z][a-z]+(?:\s+[A-Z]\.?\s+)?[A-Z][a-z]+)/i);
+    if (lbl) obj.employee_name = lbl[1].trim();
+  }
+
+  // ── EMPLOYEE ID ──
   const idPats = [
     /(?:employee\s*(?:id|no|number|ref)|emp\s*(?:id|no|ref)|staff\s*(?:id|no)|payroll\s*(?:id|no|ref))\s*[:\-#]?\s*(\w[\w-]*)/i,
     /\b(?:EMP|STAFF|HR|P)[:\s-]?(\d{3,8})\b/i,
   ];
   for (const p of idPats) { const m = text.match(p); if (m) { obj.employee_id = m[1].trim(); break; } }
-  // Salary - labeled first, then context
-  const salaryLabeled = text.match(/(?:annual\s+salary|base\s+salary|basic\s+(?:salary|pay)|gross\s+(?:salary|pay)|salary|total\s+(?:remuneration|pay|compensation))\s*[:\-]?\s*([£$€][\d,]+(?:\.\d{2})?|\d[\d,]{4,}(?:\.\d{2})?)/i);
-  if (salaryLabeled) {
-    const v = salaryLabeled[1];
-    obj.salary = v.startsWith('£') || v.startsWith('$') || v.startsWith('€') ? v : '£' + v;
+
+  // ── SALARY ── (search full text, not just body, to catch labeled tables)
+  const salM = text.match(/(?:annual\s+(?:gross\s+|base\s+)?salary|base\s+salary|basic\s+(?:salary|pay)|gross\s+(?:salary|pay)|salary)\s*[:\-]?\s*([£$€][\d,]+(?:\.\d{2})?|\d[\d,]{4,}(?:\.\d{2})?)/i);
+  if (salM) {
+    const v = salM[1];
+    obj.salary = /^[£$€]/.test(v) ? v : '£' + v;
   } else {
-    const amounts = [...text.matchAll(/[£$€]([\d,]+(?:\.\d{2})?)/g)].filter(m => {
-      const n = parseFloat(m[1].replace(/,/g,''));
-      return n >= 10000 && n <= 1000000;
-    });
-    if (amounts.length === 1) obj.salary = '£' + amounts[0][1];
-    else if (amounts.length > 1) {
-      const sorted = [...amounts].sort((a,b) => parseFloat(b[1].replace(/,/g,'')) - parseFloat(a[1].replace(/,/g,'')));
-      obj.salary = '£' + sorted[0][1];
-    }
+    // Context fallback: "salary will be £X" / "salary of £X"
+    const ctx = text.match(/salary\s+(?:will\s+be|is|of)\s+([£$€][\d,]+)/i);
+    if (ctx) obj.salary = ctx[1];
   }
-  // Bonus
-  const bonusM = text.match(/(?:bonus|incentive|variable\s+pay)\s*[:\-]?\s*([£$€][\d,]+(?:\.\d{2})?|\d+%)/i);
-  if (bonusM) obj.bonus = bonusM[1];
-  // Job title
-  const titleM = text.match(/(?:job\s+title|position|role|designation)\s*[:\-]\s*([^\n,]{3,60})/i);
-  if (titleM) obj.job_title = titleM[1].trim();
-  // Department
-  const deptM = text.match(/(?:department|dept|team|division)\s*[:\-]\s*([^\n,]{3,50})/i);
-  if (deptM) obj.department = deptM[1].trim();
-  // Start date
-  const dateM = text.match(/(?:start\s+date|commencement|effective\s+date|joining\s+date)\s*[:\-]\s*([^\n,]{3,30})/i);
+
+  // ── BONUS ── (target/performance/annual bonus)
+  const bonM = text.match(/(?:(?:target\s+)?(?:annual\s+)?(?:performance\s+)?bonus|incentive)\s*[:\-\(]?\s*(?:target\s+)?([£$€][\d,]+(?:\.\d{2})?|\d+%)/i);
+  if (bonM) obj.bonus = bonM[1];
+
+  // ── RELOCATION ── (relocation allowance/payment/support)
+  const relocM = text.match(/relocation\s+(?:allowance|payment|support|assistance|expenses?)\s*[:\-]?\s*(?:of\s+)?([£$€][\d,]+(?:\.\d{2})?)/i);
+  if (relocM) obj.relocation = relocM[1];
+
+  // ── SIGNING / WELCOME BONUS ──
+  const signM = text.match(/(?:sign.?on\s+bonus|signing\s+bonus|welcome\s+bonus|joining\s+(?:fee|bonus))\s*[:\-]?\s*(?:of\s+)?([£$€][\d,]+(?:\.\d{2})?)/i);
+  if (signM) obj.signing_bonus = signM[1];
+
+  // ── START DATE ──
+  const dateM = text.match(/(?:start\s+date|anticipated\s+start|commencement|joining\s+date)\s*[:\-]?\s*([0-9]{1,2}[\s/\-][A-Za-z]+[\s/\-][0-9]{4}|[0-9]{1,2}[\s/\-][0-9]{1,2}[\s/\-][0-9]{4})/i);
   if (dateM) obj.start_date = dateM[1].trim();
-  // Generic key:value pairs for anything else
+
+  // ── JOB TITLE ──
+  const titleM = text.match(/position\s+of\s+([A-Z][A-Za-z\s]{2,50})(?:\sat\b|,|\.|$)/);
+  if (titleM) obj.job_title = titleM[1].trim();
+
+  // ── GENERIC KEY:VALUE from body only (avoids table header false positives) ──
   const kvRx = /^([A-Za-z][A-Za-z\s\/()]{2,35}?)\s*:\s*(.{2,80})$/gm;
   let m;
-  while ((m = kvRx.exec(text)) !== null) {
+  while ((m = kvRx.exec(bodyText)) !== null) {
     const k = normalizeCompareKey(m[1].trim());
     const v = m[2].trim();
-    if (k && v && !obj[k] && k.length > 2 && !/^(the|and|or|this|that|your|our)$/.test(k)) obj[k] = v;
+    if (k && v && !obj[k] && k.length > 2 && !/^(the|and|or|this|that|your|our|in|we|you)$/.test(k)) obj[k] = v;
   }
   return obj;
 }
@@ -7450,7 +7480,9 @@ function normalizeCompareKey(str) {
 }
 
 function normalizeName(str) {
-  return (str || '').toLowerCase().trim().replace(/\s+/g,' ').replace(/[^a-z\s]/g,'');
+  return (str || '').toLowerCase().trim()
+    .replace(/\b[a-z]\.\s*/g, '')   // strip middle initials: "A. " → ""
+    .replace(/\s+/g,' ').replace(/[^a-z\s]/g,'').trim();
 }
 
 function normalizeSalaryValue(str) {
@@ -7529,7 +7561,9 @@ function compareMatchedRow(rowA, rowB) {
   const GROUPS = {
     // pay\b matches "pay","basic pay","annual pay" — NOT "payment","relocation_payment"
     salary:     /salary|pay\b|wage|remuneration|compensation|ctc/i,
-    bonus:      /bonus|incentive|variable/i,
+    bonus:      /^bonus$|performance.*bonus|target.*bonus|annual.*bonus|incentive/i,
+    relocation: /reloc|removal.*allowance/i,
+    signing:    /sign.?on|signing.*bonus|welcome.*bonus|joining.*(?:fee|bonus)/i,
     department: /dept|department|team|division|group|function/i,
     title:      /title|role|position|designation/i,
     start_date: /start.*date|commencement|hire.*date|join.*date/i,
@@ -7571,102 +7605,127 @@ function compareMatchedRow(rowA, rowB) {
 
 function renderEmployeeMatchResults(matches, nameA, nameB, isCompMode) {
   const results = document.getElementById('compareResults');
-  const matched     = matches.filter(m => m.matched);
-  const unmatchedA  = matches.filter(m => !m.matched && m.unmatchedSide === 'A');
-  const unmatchedB  = matches.filter(m => !m.matched && m.unmatchedSide === 'B');
-  let totalDiffs = 0, salaryDiffs = 0;
+  const matched    = matches.filter(m => m.matched);
+  const unmatchedA = matches.filter(m => !m.matched && m.unmatchedSide === 'A');
+  const unmatchedB = matches.filter(m => !m.matched && m.unmatchedSide === 'B');
+  let diffEmployees = 0, salaryDiffs = 0, allDiffCount = 0;
   matched.forEach(m => {
-    const fields = m.fieldComparisons || [];
-    totalDiffs  += fields.filter(f => !f.match).length;
-    salaryDiffs += fields.filter(f => !f.match && f.isSalary).length;
+    const diffs = (m.fieldComparisons||[]).filter(f => !f.match);
+    if (diffs.length) { diffEmployees++; allDiffCount += diffs.length; }
+    if (diffs.some(f => f.isSalary)) salaryDiffs++;
   });
+  const allClear = diffEmployees === 0 && unmatchedA.length === 0 && unmatchedB.length === 0;
 
+  // ── SUMMARY BAR ──
   const summaryHtml = `
-    <div style="display:flex;gap:10px;margin-bottom:16px;flex-wrap:wrap;align-items:center;">
-      <div style="font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);padding:5px 13px;border-radius:20px;">${matched.length} matched</div>
-      ${totalDiffs  ? `<div style="font-size:12px;font-weight:600;color:#92400E;background:#FEF3C7;padding:5px 13px;border-radius:20px;">⚠ ${totalDiffs} field difference${totalDiffs!==1?'s':''}</div>` : ''}
-      ${salaryDiffs ? `<div style="font-size:12px;font-weight:700;color:white;background:#EF4444;padding:5px 13px;border-radius:20px;">🔴 ${salaryDiffs} salary mismatch${salaryDiffs!==1?'es':''}</div>` : ''}
-      ${unmatchedA.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedA.length} only in A</div>` : ''}
-      ${unmatchedB.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedB.length} only in B</div>` : ''}
+    <div style="display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+      <div style="font-size:12px;font-weight:600;color:var(--green);background:var(--green-bg);padding:5px 13px;border-radius:20px;">✓ ${matched.length} matched</div>
+      ${diffEmployees ? `<div style="font-size:12px;font-weight:600;color:#92400E;background:#FEF3C7;padding:5px 13px;border-radius:20px;">⚠ ${diffEmployees} with differences</div>` : ''}
+      ${salaryDiffs   ? `<div style="font-size:12px;font-weight:700;color:white;background:#EF4444;padding:5px 13px;border-radius:20px;">🔴 ${salaryDiffs} salary mismatch${salaryDiffs!==1?'es':''}</div>` : ''}
+      ${unmatchedA.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedA.length} not found in letters</div>` : ''}
+      ${unmatchedB.length ? `<div style="font-size:12px;font-weight:600;color:#991B1B;background:#FEE2E2;padding:5px 13px;border-radius:20px;">${unmatchedB.length} not found in spreadsheet</div>` : ''}
       <div style="margin-left:auto;display:flex;gap:6px;flex-shrink:0;">
-        <button class="btn btn-secondary btn-sm" id="filterAllBtn"    onclick="filterEmpCompare('all')"    style="background:var(--accent);color:white;border-color:var(--accent);">All</button>
-        ${totalDiffs  ? `<button class="btn btn-secondary btn-sm" id="filterDiffBtn"   onclick="filterEmpCompare('diff')">Differences only</button>` : ''}
-        ${salaryDiffs ? `<button class="btn btn-secondary btn-sm" id="filterSalaryBtn" onclick="filterEmpCompare('salary')">Salary issues</button>` : ''}
+        <button class="btn btn-secondary btn-sm" id="filterIssuesBtn" onclick="filterEmpCompare('diff')" style="${diffEmployees||unmatchedA.length||unmatchedB.length?'background:var(--accent);color:white;border-color:var(--accent);':''}">Issues only</button>
+        <button class="btn btn-secondary btn-sm" id="filterAllBtn"    onclick="filterEmpCompare('all')">Show all</button>
       </div>
-    </div>
-    <div style="font-size:11px;color:var(--ink3);margin-bottom:14px;">Matched ${nameA} vs ${nameB} by employee name/ID. Click any row to expand.</div>`;
+    </div>`;
 
+  if (allClear) {
+    results.innerHTML = summaryHtml + `<div style="text-align:center;padding:32px;color:var(--green);font-size:14px;font-weight:600;">✅ All ${matched.length} employees match — no discrepancies found.</div>`;
+    return;
+  }
+
+  // ── PER-EMPLOYEE ROWS ──
   const rowsHtml = matches.map((m, idx) => {
+    // Unmatched employees
     if (!m.matched) {
-      const side = m.unmatchedSide === 'A' ? nameA : nameB;
-      return `<div class="emp-compare-row has-diff" data-type="unmatched">
-        <div class="emp-compare-head" style="cursor:default;">
-          <span style="font-size:14px;">❓</span>
-          <span style="font-size:13px;font-weight:600;color:var(--ink);flex:1;">${escapeHtml(m.displayName || '(unknown)')}</span>
-          <span style="font-size:11px;color:var(--ink3);">Only in ${escapeHtml(side)}</span>
-          <span class="emp-badge emp-badge-missing">No match</span>
+      const side = m.unmatchedSide === 'A' ? `not found in letters` : `not found in spreadsheet`;
+      return `<div class="emp-flat-row emp-flat-issue" data-type="unmatched">
+        <div class="emp-flat-head">
+          <span style="font-size:13px;">❓</span>
+          <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
+          <span style="font-size:11px;color:var(--ink3);margin-left:8px;">${side}</span>
+          ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
         </div>
       </div>`;
     }
+
     const fields     = m.fieldComparisons || [];
     const diffFields = fields.filter(f => !f.match);
-    const hasSalDiff = diffFields.some(f => f.isSalary);
     const hasDiff    = diffFields.length > 0;
-    const cls        = hasSalDiff ? 'salary-diff' : hasDiff ? 'has-diff' : 'row-match';
-    const icon       = hasSalDiff ? '🔴' : hasDiff ? '⚠️' : '✅';
+    const hasSalDiff = diffFields.some(f => f.isSalary);
     const dtype      = hasSalDiff ? 'salary' : hasDiff ? 'diff' : 'match';
-    const diffLabel  = hasDiff
-      ? `<span style="font-size:11px;color:${hasSalDiff?'#EF4444':'#92400E'};font-weight:600;">${diffFields.length} diff${diffFields.length!==1?'s':''}</span>`
-      : `<span style="font-size:11px;color:var(--green);">All match</span>`;
-    const fieldsHtml = fields.length ? `
-      <div class="emp-compare-body" id="emp-body-${idx}">
-        <table class="emp-field-table">
-          <thead><tr>
-            <td class="field-name" style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">Field</td>
-            <td style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">${escapeHtml(nameA)}</td>
-            <td style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">${escapeHtml(nameB)}</td>
-            <td style="font-size:10px;letter-spacing:0.05em;text-transform:uppercase;">Status</td>
-          </tr></thead>
-          <tbody>
-            ${fields.map(f => {
-              const rc = f.isSalary && !f.match ? 'field-salary-diff' : !f.match ? 'field-diff' : '';
-              const badge = f.match
-                ? '<span class="emp-badge emp-badge-match">Match</span>'
-                : f.isSalary
-                  ? '<span class="emp-badge emp-badge-salary">SALARY</span>'
-                  : '<span class="emp-badge emp-badge-diff">Diff</span>';
-              return `<tr class="${rc}">
-                <td class="field-name">${escapeHtml(f.displayName)}</td>
-                <td class="field-val">${f.onlyInB ? '<span style="color:var(--ink3);">-</span>' : `<span style="${!f.match&&!f.onlyInA?'font-weight:600;':''}">${escapeHtml(f.valA)}</span>`}</td>
-                <td class="field-val">${f.onlyInA ? '<span style="color:var(--ink3);">-</span>' : `<span style="${!f.match&&!f.onlyInB?'font-weight:600;':''}">${escapeHtml(f.valB)}</span>`}</td>
-                <td>${badge}</td>
-              </tr>`;
-            }).join('')}
-          </tbody>
-        </table>
-      </div>` : '';
-    return `<div class="emp-compare-row ${cls}" data-type="${dtype}">
-      <div class="emp-compare-head" onclick="toggleEmpCompareRow(${idx})">
-        <span style="font-size:14px;">${icon}</span>
-        <span style="font-size:13px;font-weight:600;color:var(--ink);flex:1;">${escapeHtml(m.displayName || '(unknown)')}</span>
-        ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-right:4px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
-        ${diffLabel}
-        ${fields.length ? `<svg id="emp-arrow-${idx}" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;flex-shrink:0;color:var(--ink3);margin-left:6px;"><polyline points="6 9 12 15 18 9"/></svg>` : ''}
+    const icon       = hasSalDiff ? '🔴' : hasDiff ? '⚠️' : '✅';
+
+    // All-match: just a single compact green line
+    if (!hasDiff) {
+      return `<div class="emp-flat-row emp-flat-ok" data-type="match">
+        <div class="emp-flat-head">
+          <span style="font-size:13px;">✅</span>
+          <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
+          <span style="font-size:11px;color:var(--green);margin-left:8px;">All fields match</span>
+          ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
+        </div>
+      </div>`;
+    }
+
+    // Has differences: show flat table of ONLY the differing fields
+    const diffRows = diffFields.map(f => {
+      const isSal = f.isSalary;
+      const valA = f.onlyInB ? '<span style="color:var(--ink3);font-style:italic;">not in spreadsheet</span>' : `<strong>${escapeHtml(f.valA)}</strong>`;
+      const valB = f.onlyInA ? '<span style="color:var(--ink3);font-style:italic;">not in letter</span>'      : `<strong style="color:${isSal?'#EF4444':'#D97706'};">${escapeHtml(f.valB)}</strong>`;
+      return `<tr>
+        <td style="padding:7px 14px;font-size:12px;font-weight:500;color:var(--ink2);width:26%;border-bottom:1px solid var(--border);text-transform:capitalize;">${escapeHtml(f.displayName)}</td>
+        <td style="padding:7px 14px;font-size:12px;color:var(--ink);border-bottom:1px solid var(--border);">${valA}</td>
+        <td style="padding:7px 14px;font-size:12px;border-bottom:1px solid var(--border);">${valB}</td>
+        <td style="padding:7px 14px;font-size:11px;border-bottom:1px solid var(--border);white-space:nowrap;">
+          ${isSal ? '<span class="emp-badge emp-badge-salary">SALARY</span>' : f.onlyInA ? '<span class="emp-badge emp-badge-missing">Only in letter</span>' : f.onlyInB ? '<span class="emp-badge emp-badge-missing">Only in sheet</span>' : '<span class="emp-badge emp-badge-diff">Diff</span>'}
+        </td>
+      </tr>`;
+    }).join('');
+
+    // "Show all fields" toggle
+    const matchRows = fields.filter(f => f.match).map(f =>
+      `<tr data-match="1" style="display:none;">
+        <td style="padding:5px 14px;font-size:11px;color:var(--ink3);border-bottom:1px solid var(--border);text-transform:capitalize;">${escapeHtml(f.displayName)}</td>
+        <td style="padding:5px 14px;font-size:11px;color:var(--ink2);border-bottom:1px solid var(--border);">${escapeHtml(f.valA)}</td>
+        <td style="padding:5px 14px;font-size:11px;color:var(--ink2);border-bottom:1px solid var(--border);">${escapeHtml(f.valB)}</td>
+        <td style="padding:5px 14px;font-size:11px;border-bottom:1px solid var(--border);"><span class="emp-badge emp-badge-match">✓</span></td>
+      </tr>`
+    ).join('');
+
+    return `<div class="emp-flat-row emp-flat-issue" data-type="${dtype}">
+      <div class="emp-flat-head">
+        <span style="font-size:13px;">${icon}</span>
+        <span class="emp-flat-name">${escapeHtml(m.displayName||'(unknown)')}</span>
+        <span style="font-size:11px;color:${hasSalDiff?'#EF4444':'#D97706'};font-weight:600;margin-left:8px;">${diffFields.length} difference${diffFields.length!==1?'s':''}</span>
+        ${m.rowB?._sourceFile ? `<span style="font-size:10px;color:var(--ink3);margin-left:6px;">${escapeHtml(m.rowB._sourceFile)}</span>` : ''}
+        ${matchRows ? `<button onclick="toggleMatchRows(this)" style="margin-left:auto;font-size:10px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:2px 8px;cursor:pointer;font-family:inherit;white-space:nowrap;">+ Show matching fields</button>` : ''}
       </div>
-      ${fieldsHtml}
+      <table style="width:100%;border-collapse:collapse;background:var(--surface);">
+        <thead><tr style="background:var(--surface2);">
+          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);width:26%;">Field</td>
+          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Spreadsheet</td>
+          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Letter</td>
+          <td style="padding:6px 14px;font-size:10px;font-weight:700;letter-spacing:0.06em;text-transform:uppercase;color:var(--ink3);">Status</td>
+        </tr></thead>
+        <tbody>${diffRows}${matchRows}</tbody>
+      </table>
     </div>`;
   }).join('');
 
-  results.innerHTML = summaryHtml + '<div id="empCompareList">' + rowsHtml + '</div>';
-  // Auto-expand rows that have discrepancies
-  matches.forEach((m, idx) => {
-    if (m.matched && m.fieldComparisons?.some(f => !f.match)) {
-      const body = document.getElementById(`emp-body-${idx}`);
-      const arrow = document.getElementById(`emp-arrow-${idx}`);
-      if (body) body.style.display = 'block';
-      if (arrow) arrow.style.transform = 'rotate(180deg)';
-    }
-  });
+  results.innerHTML = summaryHtml + `<div id="empCompareList">${rowsHtml}</div>`;
+
+  // Default: hide all-match rows
+  filterEmpCompare(diffEmployees || unmatchedA.length || unmatchedB.length ? 'diff' : 'all');
+}
+
+function toggleMatchRows(btn) {
+  const table = btn.closest('.emp-flat-row').querySelector('tbody');
+  const hidden = table.querySelectorAll('tr[data-match="1"]');
+  const showing = hidden[0]?.style.display !== 'none';
+  hidden.forEach(r => r.style.display = showing ? 'none' : '');
+  btn.textContent = showing ? '+ Show matching fields' : '- Hide matching fields';
 }
 
 function toggleEmpCompareRow(idx) {
@@ -7679,19 +7738,14 @@ function toggleEmpCompareRow(idx) {
 }
 
 function filterEmpCompare(type) {
-  ['All','Diff','Salary'].forEach(t => {
-    const btn = document.getElementById(`filter${t}Btn`);
-    if (!btn) return;
-    const active = type === t.toLowerCase();
-    btn.style.background = active ? 'var(--accent)' : '';
-    btn.style.color = active ? 'white' : '';
-    btn.style.borderColor = active ? 'var(--accent)' : '';
-  });
-  document.querySelectorAll('#empCompareList .emp-compare-row').forEach(row => {
+  const issBtn = document.getElementById('filterIssuesBtn');
+  const allBtn = document.getElementById('filterAllBtn');
+  if (issBtn) { const a = type==='diff'; issBtn.style.background=a?'var(--accent)':''; issBtn.style.color=a?'white':''; issBtn.style.borderColor=a?'var(--accent)':''; }
+  if (allBtn) { const a = type==='all';  allBtn.style.background=a?'var(--accent)':''; allBtn.style.color=a?'white':''; allBtn.style.borderColor=a?'var(--accent)':''; }
+  document.querySelectorAll('#empCompareList .emp-flat-row, #empCompareList .emp-compare-row').forEach(row => {
     const dt = row.dataset.type;
-    if (type === 'all') row.style.display = '';
-    else if (type === 'diff')   row.style.display = (dt === 'diff' || dt === 'salary' || dt === 'unmatched') ? '' : 'none';
-    else if (type === 'salary') row.style.display = dt === 'salary' ? '' : 'none';
+    if (type === 'all')  row.style.display = '';
+    else row.style.display = (dt === 'diff' || dt === 'salary' || dt === 'unmatched') ? '' : 'none';
   });
 }
 
@@ -8000,6 +8054,19 @@ async function loadPeoplePlan() {
   if (data?.content) { try { ppPlan = JSON.parse(data.content); } catch(e) {} }
 }
 
+function ppAssignLanes(catEvents) {
+  const sorted = [...catEvents].sort((a,b) => a.startMonth - b.startMonth || a.id - b.id);
+  const laneEnd = [];
+  const laneMap = {};
+  sorted.forEach(ev => {
+    let lane = laneEnd.findIndex(end => end < ev.startMonth);
+    if (lane === -1) { lane = laneEnd.length; laneEnd.push(ev.endMonth); }
+    else { laneEnd[lane] = ev.endMonth; }
+    laneMap[ev.id] = lane;
+  });
+  return { laneMap, numLanes: Math.max(1, laneEnd.length) };
+}
+
 function renderPPTimeline() {
   const body = document.getElementById('peoplePlanBody');
   if (!body || !ppPlan) return;
@@ -8007,24 +8074,36 @@ function renderPPTimeline() {
   const cats = PP_CATS.filter(c => events.some(e => e.catId === c.id));
   if (!cats.length) { body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No events yet. <a onclick="ppAddEvent()" style="color:var(--accent);cursor:pointer;">Add an event</a></div>'; return; }
 
+  const LANE_H = 26;
+  const PAD = 5;
+
   let gridHtml = `<div style="background:#1B2D50;padding:9px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.04em;display:flex;align-items:center;">CATEGORY</div>`;
   PP_MONTHS.forEach(m => gridHtml += `<div class="pp-month-header">${m}</div>`);
 
   cats.forEach(cat => {
-    gridHtml += `<div class="pp-cat-label" onclick="ppAddEvent('${cat.id}')"><div class="pp-cat-dot" style="background:${cat.color};"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
     const catEvents = events.filter(e => e.catId === cat.id);
+    const { laneMap, numLanes } = ppAssignLanes(catEvents);
+    const rowH = numLanes * LANE_H + PAD * 2;
+
+    gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD+4}px;" onclick="ppAddEvent('${cat.id}')"><div class="pp-cat-dot" style="background:${cat.color};margin-top:2px;flex-shrink:0;"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
+
     for (let m = 1; m <= 12; m++) {
-      const cellEvts = catEvents.filter(e => e.startMonth === e.endMonth && e.startMonth === m);
-      const spanStartEvts = catEvents.filter(e => e.startMonth !== e.endMonth && e.startMonth === m);
-      let inner = cellEvts.map(ev =>
-        `<div class="pp-event" style="background:${cat.color};" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${escapeHtml(ev.title)}</div>`
-      ).join('');
-      // For span events, use absolute positioning via a wrapper
-      spanStartEvts.forEach(ev => {
-        const span = ev.endMonth - ev.startMonth + 1;
-        inner += `<div class="pp-event-span" style="background:${cat.color};width:calc(${span*100}% + ${(span-1)*1}px - 6px);" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}">${escapeHtml(ev.title)}</div>`;
+      const activeEvts = catEvents.filter(e => e.startMonth <= m && e.endMonth >= m);
+      let inner = '';
+      activeEvts.forEach(ev => {
+        const lane = laneMap[ev.id];
+        const top = PAD + lane * LANE_H;
+        const isStart = ev.startMonth === m;
+        const isEnd = ev.endMonth === m;
+        const isSingle = ev.startMonth === ev.endMonth;
+        const rL = (isStart || isSingle) ? '5px' : '0';
+        const rR = (isEnd   || isSingle) ? '5px' : '0';
+        const left  = (isStart || isSingle) ? '3px' : '0';
+        const right = (isEnd   || isSingle) ? '3px' : '-1px';
+        const label = isStart ? `<span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(ev.title)}</span>` : '';
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-4}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:10px;font-weight:600;color:white;display:flex;align-items:center;padding:0 6px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
       });
-      gridHtml += `<div class="pp-cell" style="position:relative;">${inner}</div>`;
+      gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
   });
 
