@@ -9062,7 +9062,6 @@ function renderLeaveTracker(body) {
 
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:18px;">
-    <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('leave')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;display:flex;align-items:center;gap:5px;"><svg width=\"11\" height=\"11\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"><circle cx=\"12\" cy=\"12\" r=\"10\"/><line x1=\"12\" y1=\"8\" x2=\"12\" y2=\"12\"/><line x1=\"12\" y1=\"16\" x2=\"12.01\" y2=\"16\"/></svg>Family leave guidance</button></div>
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity').length} upcoming</div></div>
@@ -9093,7 +9092,10 @@ function renderLeaveTracker(body) {
     <div class="trk-card">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div class="trk-section-head" style="margin:0;">Maternity, Paternity &amp; Shared Parental Leave</div>
-        <button class="btn btn-primary btn-sm" onclick="openAddMatPatModal()">+ Add record</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="openTrackerGuidance('leave')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
+          <button class="btn btn-primary btn-sm" onclick="openAddMatPatModal()">+ Add record</button>
+        </div>
       </div>
       ${recs.length === 0 ? `<div style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No records yet. Click <strong>+ Add record</strong> to get started.</div>` : `
       <div style="overflow-x:auto;">
@@ -9662,7 +9664,6 @@ function renderCareersTracker(body) {
   const scoreColor = s => s==='Exceeds'?'trk-badge-green':s==='Meets'?'trk-badge-blue':'trk-badge-amber';
   body.innerHTML = `
   <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
-    <div style="display:flex;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('careers')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Careers guidance</button></div>
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
@@ -9676,7 +9677,10 @@ function renderCareersTracker(body) {
     <div class="trk-card">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
         <div class="trk-section-head" style="margin:0;">Promotions &amp; Career Progression</div>
-        <button class="btn btn-primary btn-sm">+ Add employee</button>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <button onclick="openTrackerGuidance('careers')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
+          <button class="btn btn-primary btn-sm">+ Add employee</button>
+        </div>
       </div>
       <div style="overflow-x:auto;"><table class="trk-table">
         <thead><tr><th>Employee</th><th>Role</th><th>Band</th><th>Last review</th><th>Score</th><th>Next eligible</th><th>Career steps</th><th>CV</th><th>HRIS</th><th>Stage</th><th></th></tr></thead>
