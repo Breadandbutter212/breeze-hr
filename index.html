@@ -1237,12 +1237,13 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="manage-topbar">
     <div><div class="manage-title">Trackers</div><div class="manage-sub">Live HR tracking across leave, absence and recruitment.</div></div>
     <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;" id="trackerTabBtns">
-      <button onclick="showTrackerTab('workflows')" id="tt-workflows" class="tracker-tab-btn active-tt">✦ Next Steps</button>
-      <button onclick="showTrackerTab('leave')" id="tt-leave" class="tracker-tab-btn">Leave &amp; Absence</button>
-      <button onclick="showTrackerTab('recruitment')" id="tt-recruitment" class="tracker-tab-btn">Recruitment</button>
+      <button onclick="showTrackerTab('family-leave')" id="tt-family-leave" class="tracker-tab-btn active-tt">Family Leave</button>
+      <button onclick="showTrackerTab('absence')" id="tt-absence" class="tracker-tab-btn">Absence</button>
+      <button onclick="showTrackerTab('leavers')" id="tt-leavers" class="tracker-tab-btn">Leavers</button>
+      <button onclick="showTrackerTab('performance')" id="tt-performance" class="tracker-tab-btn">Performance</button>
+      <button onclick="showTrackerTab('conduct')" id="tt-conduct" class="tracker-tab-btn">Conduct</button>
+      <button onclick="showTrackerTab('immigration-wf')" id="tt-immigration-wf" class="tracker-tab-btn">Immigration</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
-      <button onclick="showTrackerTab('immigration')" id="tt-immigration" class="tracker-tab-btn">Immigration</button>
-    </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
 </div>
@@ -8027,7 +8028,7 @@ async function compareEmployeeMatch(isCompMode) {
 }
 
 // ── PEOPLE PLAN ──
-const PP_CATS = [
+const PP_CATS_DEFAULT = [
   { id:'performance',  label:'Performance',     color:'#3B82F6', bg:'#EFF6FF' },
   { id:'salary',       label:'Salary & Comp',   color:'#10B981', bg:'#ECFDF5' },
   { id:'benefits',     label:'Benefits',        color:'#8B5CF6', bg:'#F5F3FF' },
@@ -8037,6 +8038,15 @@ const PP_CATS = [
   { id:'compliance',   label:'Compliance',      color:'#EF4444', bg:'#FEF2F2' },
   { id:'other',        label:'Other',           color:'#6B7280', bg:'#F9FAFB' },
 ];
+// Returns built-in + any custom cats stored in ppPlan
+function PP_CATS_ALL() {
+  const custom = ppPlan?.customCats || [];
+  return [...PP_CATS_DEFAULT, ...custom];
+}
+// Keep PP_CATS as a proxy so existing code still works
+const PP_CATS = new Proxy([], {
+  get(_, prop) { const a = PP_CATS_ALL(); return typeof prop === 'string' && !isNaN(prop) ? a[prop] : prop === 'length' ? a.length : typeof a[prop] === 'function' ? a[prop].bind(a) : a[prop]; },
+});
 const PP_MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 let ppPlan = null; // { year, events: [{id,catId,title,startMonth,endMonth,notes}] }
@@ -8057,12 +8067,64 @@ function renderPeoplePlan() {
         ${[ppPlan.year-1,ppPlan.year,ppPlan.year+1].map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
       </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
+      <button class="btn btn-secondary btn-sm" onclick="ppAddCategory()">+ Category</button>
       <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
     renderPPTimeline();
   }
 }
 
 function ppChangeYear(y) { ppPlan.year = parseInt(y); renderPeoplePlanSave(); renderPPTimeline(); }
+
+const PP_CAT_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#F97316','#06B6D4','#84CC16','#A855F7','#0EA5E9'];
+
+function ppAddCategory() {
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const usedColors = PP_CATS_ALL().map(c=>c.color);
+  const defaultColor = PP_CAT_COLORS.find(c=>!usedColors.includes(c)) || PP_CAT_COLORS[0];
+  overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:400px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add category</div></div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category name</div>
+        <input id="ppCatName" placeholder="e.g. Wellbeing, DEI, Reward..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:8px;">Colour</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;" id="ppCatColorPicker">
+          ${PP_CAT_COLORS.map(c=>`<div onclick="ppSelectCatColor('${c}')" id="pcc-${c.replace('#','')}" style="width:28px;height:28px;border-radius:50%;background:${c};cursor:pointer;border:3px solid ${c===defaultColor?'var(--ink)':'transparent'};transition:border 0.12s;" title="${c}"></div>`).join('')}
+        </div>
+        <input type="hidden" id="ppCatColor" value="${defaultColor}">
+      </div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="ppSaveCat(this)">Add category</button>
+    </div>
+  </div>`;
+  document.body.appendChild(overlay);
+  overlay.onclick = e => { if (e.target === overlay) overlay.remove(); };
+  setTimeout(() => document.getElementById('ppCatName')?.focus(), 60);
+}
+
+function ppSelectCatColor(color) {
+  document.getElementById('ppCatColor').value = color;
+  document.querySelectorAll('#ppCatColorPicker > div').forEach(el => {
+    const elColor = el.style.background;
+    el.style.border = elColor === color ? '3px solid var(--ink)' : '3px solid transparent';
+  });
+}
+
+function ppSaveCat(btn) {
+  const label = document.getElementById('ppCatName')?.value?.trim();
+  if (!label) { document.getElementById('ppCatName').style.borderColor='var(--red)'; return; }
+  const color = document.getElementById('ppCatColor')?.value || '#6B7280';
+  const id = 'custom_' + Date.now();
+  if (!ppPlan.customCats) ppPlan.customCats = [];
+  ppPlan.customCats.push({ id, label, color, bg: color + '22', custom: true });
+  renderPeoplePlanSave();
+  btn.closest('div[style*=fixed]').remove();
+  ppView === 'details' ? renderPPDetails() : renderPPTimeline();
+}
 
 function ppReset() {
   if (!confirm('Reset the people plan and start over?')) return;
@@ -8533,7 +8595,7 @@ function renderPPDetails() {
         <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Calendar</button>
         <button onclick="ppSwitchView('details')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Details</button>
       </div>
-      <div style="font-size:12px;color:var(--ink3);margin-left:4px;">${events.length} events · ${withDates} with specific dates${without?' · <span style="color:var(--amber);">${without} without dates</span>':''}</div>
+      <div style="font-size:12px;color:var(--ink3);margin-left:4px;">${events.length} events · ${withDates} with specific dates${without ? ' · ' + without + ' without dates' : ''}</div>
       <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="ppAddEvent()">+ Add event</button>
     </div>
     <div style="flex:1;overflow:auto;">
@@ -8638,7 +8700,7 @@ function downloadPeoplePlanPPT() {
 // ── TRACKERS ──
 // ── MAT/PAT DATA LAYER ──
 let mpRecords = null; // null = not loaded yet
-let trackerTab = 'workflows';
+let trackerTab = 'family-leave';
 
 async function loadMatPatRecords() {
   if (mpRecords !== null) return;
@@ -8716,11 +8778,14 @@ async function renderTrackers() {
 function renderTrackersBody() {
   const body = document.getElementById('trackersBody');
   if (!body) return;
-  if (trackerTab === 'leave') renderLeaveTracker(body);
+  if (trackerTab === 'family-leave') renderWfCategoryTab(body, ['maternity-leave','paternity-leave'], {showMatPat:true});
+  else if (trackerTab === 'absence') renderWfCategoryTab(body, ['short-term-absence','long-term-absence']);
+  else if (trackerTab === 'leavers') renderWfCategoryTab(body, ['resignation']);
+  else if (trackerTab === 'performance') renderWfCategoryTab(body, ['performance-concern']);
+  else if (trackerTab === 'conduct') renderWfCategoryTab(body, ['disciplinary','grievance']);
+  else if (trackerTab === 'immigration-wf') renderWfCategoryTab(body, ['immigration-check'], {showImmigration:true});
   else if (trackerTab === 'careers') renderCareersTracker(body);
-  else if (trackerTab === 'immigration') renderImmigrationTracker(body);
-  else if (trackerTab === 'workflows') renderWorkflowsTab(body);
-  else renderRecruitmentTracker(body);
+  else renderWfCategoryTab(body, []);
 }
 
 // ── TRACKER GUIDANCE ENGINE ──
@@ -10163,28 +10228,16 @@ const WF_SCENARIOS = [
       {id:6,title:'Implement any agreed actions',desc:'Carry out actions promptly. Monitor the situation. Consider whether any parallel disciplinary process is needed.',timeframe:'After decision',tag:'recommended'},
     ]
   },
-  { id:'redundancy', cat:'Redundancy', icon:'📋', label:'Redundancy situation identified',
+  { id:'immigration-check', cat:'Immigration', icon:'🛂', label:'Right to work & immigration compliance',
     steps:[
-      {id:1,title:'Establish and document the genuine business reason',desc:'Redundancy requires a genuine reduction in need for work of a particular kind. Document the business case clearly before any announcement.',timeframe:'Before announcement',tag:'legal',policyTag:'redundancy'},
-      {id:2,title:'Check collective consultation obligations',desc:'20+ redundancies at one establishment within 90 days = mandatory collective consultation and BEIS notification (HR1 form) at least 45 days before first dismissal. 100+ = 45 days.',timeframe:'Before announcement',tag:'legal'},
-      {id:3,title:'Define the selection pool fairly',desc:'Too narrow a pool (e.g. only part-time staff) can constitute indirect discrimination. Document how the pool was determined.',timeframe:'Before individual consultation',tag:'legal'},
-      {id:4,title:'Apply objective selection criteria',desc:'Criteria must be measurable, documented and applied consistently. Adjust attendance figures to remove pregnancy-related and disability-related absence.',timeframe:'Before at-risk letters',tag:'legal'},
-      {id:5,title:'Issue at-risk letters and begin consultation',desc:'All employees in the pool must receive an at-risk notification and have genuine opportunity to comment.',timeframe:'Start of consultation',tag:'legal',action:{label:'Draft at-risk letter',type:'doc',docId:'t9'}},
-      {id:6,title:'Genuinely explore alternatives',desc:'Consider redeployment, voluntary redundancy, reduced hours, unpaid leave. Document each option and why it was or was not viable.',timeframe:'During consultation',tag:'legal'},
-      {id:7,title:'Confirm redundancy and calculate statutory pay',desc:'Statutory pay = 0.5 week per year under 22 / 1 week 22-40 / 1.5 weeks 41+, capped at the statutory weekly amount and 20 years.',timeframe:'End of consultation',tag:'legal',action:{label:'Draft redundancy confirmation',type:'doc',docId:'t10'}},
-      {id:8,title:'Offer right of appeal',desc:'Must be offered in the redundancy confirmation letter. Appeal heard by a more senior manager not involved in the original decision.',timeframe:'In confirmation letter',tag:'legal'},
-    ]
-  },
-  { id:'new-starter', cat:'Onboarding', icon:'👋', label:'New starter joining',
-    steps:[
-      {id:1,title:'Right to work check - before Day 1',desc:'Legally required before employment commences. Check original documents or use the Home Office online service. Copy and retain.',timeframe:'Before first day',tag:'legal'},
-      {id:2,title:'Issue contract and written statement of particulars',desc:'Written statement must be provided on or before Day 1 (Employment Rights Act 1996, as amended April 2020). Ensure signed and returned.',timeframe:'Day 1 or before',tag:'legal',action:{label:'Generate employment contract',type:'doc',docId:'t27'}},
-      {id:3,title:'Set up payroll, pension and benefits',desc:'Employee must be on payroll for their first pay date. Auto-enrolment applies from day 1 if eligible. Share benefits access.',timeframe:'Before first payroll',tag:'legal'},
-      {id:4,title:'Health & Safety induction',desc:'Legally required: fire evacuation, first aid contacts, accident reporting, DSE assessment for screen workers, any role-specific briefing.',timeframe:'Day 1',tag:'legal'},
-      {id:5,title:'IT setup and system access',desc:'Email, systems, equipment, data protection briefing. Provide IT acceptable use policy.',timeframe:'Day 1',tag:'recommended'},
-      {id:6,title:'Introduce to team and assign buddy',desc:'A structured welcome including a named person to ask for help significantly reduces early attrition.',timeframe:'Day 1',tag:'recommended'},
-      {id:7,title:'Schedule probation review meetings',desc:'Book 1-month, 3-month and end-of-probation reviews now. Give the employee clarity on what success looks like.',timeframe:'Week 1',tag:'recommended',policyTag:'probation'},
-      {id:8,title:'Confirm successful probation in writing',desc:'Issue a probation passed letter once successfully completed.',timeframe:'End of probation',tag:'recommended',action:{label:'Draft probation passed letter',type:'doc',docId:'t4'}},
+      {id:1,title:'Check right to work documents before Day 1',desc:'Legally required before employment commences. Check original documents (passport, BRP, share code) or use the Home Office online checking service. No check = no statutory excuse against civil penalty (up to £60,000 per illegal worker from Jan 2024).',timeframe:'Before first day',tag:'legal',policyTag:'health-safety'},
+      {id:2,title:'Make and retain certified copies',desc:'Copy all right-to-work documents. Date the copy and note you have seen the original. Retain for the duration of employment plus 2 years after leaving.',timeframe:'Day 1',tag:'legal'},
+      {id:3,title:'Record visa type and expiry date',desc:'For List B documents (time-limited right to work), record the visa type, issue date and expiry date. Add to the immigration tracker.',timeframe:'Day 1',tag:'legal',action:{label:'Open immigration tracker',type:'tab',tab:'immigration-wf'}},
+      {id:4,title:'Set a repeat check reminder',desc:'For time-limited visas, schedule a repeat check to be carried out before the visa expires. A missed repeat check removes the statutory excuse even if the original check was valid.',timeframe:'As soon as expiry date known',tag:'legal'},
+      {id:5,title:'Brief employee on sponsorship obligations (if Skilled Worker)',desc:'As a licensed sponsor, you must report changes via the Sponsor Management System (SMS) within 10 working days: role changes, significant salary reductions, unauthorised absence of more than 10 working days, termination.',timeframe:'Before employment starts',tag:'legal'},
+      {id:6,title:'Monitor ILR eligibility date',desc:'Most sponsored workers become eligible for Indefinite Leave to Remain after 5 years continuous residence. Flag the eligibility date and proactively advise the employee. Absences over 180 days in any 12-month period can break continuity.',timeframe:'Ongoing — review annually',tag:'recommended'},
+      {id:7,title:'Action visa renewal when notified',desc:'When an employee notifies you of visa renewal, update the right-to-work records immediately. Re-check the new document and update the expiry date in the tracker.',timeframe:'On notification',tag:'legal',action:{label:'Open immigration tracker',type:'tab',tab:'immigration-wf'}},
+      {id:8,title:'On departure — confirm right-to-work end',desc:'When a sponsored employee leaves, notify UKVI via the SMS within 10 working days. Retain all right-to-work documents for 2 years after leaving.',timeframe:'On last day',tag:'legal'},
     ]
   },
 ];
