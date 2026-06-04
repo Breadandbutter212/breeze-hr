@@ -10906,7 +10906,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 </td>
                 <td><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● Active</span></td>
                 <td style="white-space:nowrap;">
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">Checklist ${pct}% →</button>
+                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:118px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist ${pct}% →</button>
                   <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
                 </td>
@@ -10922,7 +10922,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td><span style="font-size:12px;font-weight:600;color:var(--green);">${pct}%</span></td>
                 <td><span class="trk-badge trk-badge-grey">✓ Closed</span></td>
                 <td style="white-space:nowrap;">
-                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">Checklist ${pct}% →</button>
+                  <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;min-width:118px;text-align:center;">Checklist ${pct}% →</button>
                   <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:10px;color:var(--red);margin-left:4px;">Delete</button>
                 </td>
@@ -11028,7 +11028,7 @@ function wfInjectChecklistButtons(container, activeCases) {
         const mpRecId = row.querySelector('button[onclick*="openMatPatRecord"]')?.getAttribute('onclick')?.match(/openMatPatRecord\('([^']+)'\)/)?.[1] || linked.mpRecordId || '';
         lastTd.style.cssText = 'white-space:nowrap;';
         lastTd.innerHTML = `<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;">
-          <button onclick="event.stopPropagation();openWfCasePanel('${linked.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">Checklist ${pct}% →</button>
+          <button onclick="event.stopPropagation();openWfCasePanel('${linked.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:118px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist ${pct}% →</button>
           ${mpRecId?`<button onclick="event.stopPropagation();openMatPatRecord('${mpRecId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>`:''}
           <button onclick="event.stopPropagation();deleteMatPatAndCase('${mpRecId}','${linked.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>
         </div>`;
