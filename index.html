@@ -8072,10 +8072,10 @@ function renderPPTimeline() {
   const cats = PP_CATS.filter(c => events.some(e => e.catId === c.id));
   if (!cats.length) { body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No events yet. <a onclick="ppAddEvent()" style="color:var(--accent);cursor:pointer;">Add an event</a></div>'; return; }
 
-  const LANE_H = 26;
-  const PAD = 5;
+  const LANE_H = 28;
+  const PAD = 6;
 
-  let gridHtml = `<div style="background:#1B2D50;padding:9px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.04em;display:flex;align-items:center;">CATEGORY</div>`;
+  let gridHtml = `<div style="background:#1B2D50;padding:9px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.04em;display:flex;align-items:center;white-space:nowrap;">CATEGORY</div>`;
   PP_MONTHS.forEach(m => gridHtml += `<div class="pp-month-header">${m}</div>`);
 
   cats.forEach(cat => {
@@ -8094,12 +8094,13 @@ function renderPPTimeline() {
         const isStart = ev.startMonth === m;
         const isEnd = ev.endMonth === m;
         const isSingle = ev.startMonth === ev.endMonth;
-        const rL = (isStart || isSingle) ? '5px' : '0';
-        const rR = (isEnd   || isSingle) ? '5px' : '0';
+        const rL = (isStart || isSingle) ? '6px' : '0';
+        const rR = (isEnd   || isSingle) ? '6px' : '0';
         const left  = (isStart || isSingle) ? '3px' : '0';
         const right = (isEnd   || isSingle) ? '3px' : '-1px';
-        const label = isStart ? `<span style="overflow:hidden;white-space:nowrap;text-overflow:ellipsis;">${escapeHtml(ev.title)}</span>` : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-4}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:10px;font-weight:600;color:white;display:flex;align-items:center;padding:0 6px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
+        // Label: show full text with no clipping — column is wide enough now
+        const label = isStart ? `<span style="white-space:nowrap;">${escapeHtml(ev.title)}</span>` : '';
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-5}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:11px;font-weight:600;color:white;display:flex;align-items:center;padding:0 8px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
@@ -8121,7 +8122,9 @@ function renderPPTimeline() {
           <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
         </div>
       </div>
-      <div class="pp-grid" style="grid-template-columns:160px repeat(12,1fr);">${gridHtml}</div>
+      <div style="overflow-x:auto;">
+        <div class="pp-grid" style="grid-template-columns:150px repeat(12,minmax(100px,1fr));min-width:1360px;">${gridHtml}</div>
+      </div>
     </div>
     <div class="pp-legend">${legendHtml}</div>`;
 }
