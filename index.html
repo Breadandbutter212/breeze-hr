@@ -374,6 +374,18 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .thinking-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; width: 240px; }
 .thinking-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; animation: thinkingFill 1.8s ease-in-out infinite; }
 @keyframes thinkingFill { 0%{width:0%;opacity:1} 70%{width:85%;opacity:1} 90%{width:92%;opacity:0.7} 100%{width:92%;opacity:0.7} }
+@keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
+
+/* ── ORG CHART ── */
+.org-node { position:absolute; width:180px; background:white; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; padding:10px 12px; gap:10px; cursor:grab; user-select:none; transition:box-shadow 0.15s,transform 0.12s; border:1.5px solid #E5E7EB; }
+.org-node:hover { box-shadow:0 4px 16px rgba(0,0,0,0.14); transform:translateY(-2px); }
+.org-node.dragging { box-shadow:0 8px 24px rgba(0,0,0,0.18); transform:scale(1.02); z-index:100; cursor:grabbing; }
+.org-node.dimmed { opacity:0.2; }
+.org-node.highlighted { opacity:1; box-shadow:0 0 0 2px var(--accent); }
+.org-avatar { width:34px; height:34px; border-radius:8px; color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.org-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.org-title { font-size:10px; color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+.org-dept-badge { font-size:9px; border-radius:20px; padding:1px 6px; display:inline-block; margin-top:2px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
 .chat-welcome { display: flex; flex-direction: column; align-items: center; justify-content: center; flex: 1; text-align: center; padding: 60px 24px; gap: 10px; }
 .chat-welcome-icon { width: 52px; height: 52px; border-radius: 12px; background: var(--accent-bg); border: 1px solid var(--accent-mid); display: flex; align-items: center; justify-content: center; font-size: 22px; margin-bottom: 4px; }
 .chat-welcome-title { font-size: 17px; font-weight: 600; color: var(--ink); letter-spacing: -0.02em; }
@@ -647,6 +659,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="ni" onclick="showView('peopleplan',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/><rect x="7" y="14" width="3" height="3" rx="0.5"/><rect x="14" y="14" width="3" height="3" rx="0.5"/></svg>
       People Plan
+    </div>
+    <div class="ni" id="nav-orgchart" onclick="showView('orgchart',this)">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="1" width="6" height="4" rx="1"/><line x1="12" y1="5" x2="12" y2="9"/><line x1="5" y1="9" x2="19" y2="9"/><line x1="5" y1="9" x2="5" y2="13"/><line x1="19" y1="9" x2="19" y2="13"/><line x1="12" y1="9" x2="12" y2="13"/><rect x="2" y="13" width="6" height="4" rx="1"/><rect x="9" y="13" width="6" height="4" rx="1"/><rect x="16" y="13" width="6" height="4" rx="1"/></svg>
+      Org Structure
     </div>
     <div class="ni" onclick="showView('manage',this)">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
@@ -1161,8 +1177,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div style="display:flex;gap:8px;align-items:center;">
       <select id="compareMode" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);cursor:pointer;" onchange="onCompareModeChange()">
         <option value="general">General comparison</option>
-        <option value="employee">Employee match (name / ID)</option>
-        <option value="comp">Compensation check</option>
+        <option value="comp">Compensation statement</option>
+        <option value="employee">Spreadsheet vs spreadsheet</option>
       </select>
       <button class="btn btn-secondary btn-sm" onclick="resetCompare()">↺ Reset</button>
       <button class="btn btn-primary btn-sm" id="compareBtn" onclick="runCompare()" style="display:none;">Compare</button>
@@ -1194,6 +1210,15 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div style="display:flex;gap:8px;align-items:center;" id="ppTopbarBtns"></div>
   </div>
   <div class="manage-body" id="peoplePlanBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
+</div>
+
+<!-- ORG STRUCTURE -->
+<div class="view manage-view" id="view-orgchart">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Dynamic org chart - auto-populated from your HRIS. Drag nodes to rearrange.</div></div>
+    <div style="display:flex;gap:6px;align-items:center;" id="orgTopBtns"></div>
+  </div>
+  <div style="flex:1;overflow:hidden;display:flex;flex-direction:column;" id="orgChartRoot"></div>
 </div>
 
 <!-- TRACKERS -->
@@ -5204,6 +5229,7 @@ function showView(v,el) {
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
+  if(v==='orgchart')initOrgChart();
   if(v==='trackers'){mpRecords=null;renderTrackers();}
 }
 
@@ -9041,6 +9067,168 @@ function renderRecruitmentTracker(body) {
     </div>
 
   </div>`;
+}
+
+
+// ── CAREERS TRACKER ──
+function renderCareersTracker(body) {
+  const DEMO_CAREERS = [
+    { name:'Grace Nwosu', title:'Senior Software Engineer', dept:'Engineering', band:'L5', hireDate:'2021-03-14', lastReview:'2025-11-01', reviewScore:'Exceeds', nextPromoEligible:'2026-03-14', stage:'Promotion approved', cvLinked:true, hrisLinked:true, careerMap:[{date:'2021-03-14',role:'Software Engineer L3',note:'Joined from recruitment'},{date:'2022-09-01',role:'Software Engineer L4',note:'Promoted - exceeded targets 2 cycles'},{date:'2024-06-01',role:'Senior Software Engineer L5',note:'Performance review led promotion'}] },
+    { name:'Tom Briggs', title:'DevOps Engineer', dept:'Engineering', band:'L4', hireDate:'2022-11-07', lastReview:'2025-11-20', reviewScore:'Exceeds', nextPromoEligible:'2025-11-07', stage:'Eligible - no action', cvLinked:true, hrisLinked:false, careerMap:[{date:'2022-11-07',role:'Junior DevOps L3',note:'Joined from recruitment'},{date:'2024-05-01',role:'DevOps Engineer L4',note:'Rapid progression - cloud migration lead'}] },
+    { name:'Remi Adeyemi', title:'Finance Manager', dept:'Finance', band:'M2', hireDate:'2019-07-22', lastReview:'2025-10-15', reviewScore:'Meets', nextPromoEligible:'2026-07-22', stage:'In review cycle', cvLinked:true, hrisLinked:true, careerMap:[{date:'2019-07-22',role:'Finance Analyst',note:'Joined via direct application'},{date:'2021-04-01',role:'Senior Finance Analyst',note:'Promoted after strong FY20 close'},{date:'2023-01-01',role:'Finance Manager',note:'Promotion - led restructure project'}] },
+    { name:'Lucia Ferrara', title:'HR Business Partner', dept:'People', band:'M1', hireDate:'2020-02-03', lastReview:'2026-01-10', reviewScore:'Exceeds', nextPromoEligible:'2026-02-03', stage:'PIP complete - back on track', cvLinked:false, hrisLinked:true, careerMap:[{date:'2020-02-03',role:'HR Coordinator',note:'Joined via agency'},{date:'2021-10-01',role:'HR Advisor',note:'Promotion after CIPD Level 5'},{date:'2023-07-01',role:'HR Business Partner',note:'Promoted to cover maternity'}] },
+    { name:'Dan Kowalski', title:'Senior Account Manager', dept:'Sales', band:'S3', hireDate:'2018-05-14', lastReview:'2025-09-01', reviewScore:'Meets', nextPromoEligible:'2026-05-14', stage:'Succession candidate', cvLinked:true, hrisLinked:true, careerMap:[{date:'2018-05-14',role:'Account Manager',note:'Joined from referral'},{date:'2020-03-01',role:'Senior Account Manager',note:'Hit 140% target two years running'}] },
+  ];
+  window._demoCareers = DEMO_CAREERS;
+  const stageColor = s => s.includes('approved')?'trk-badge-green':s.includes('Eligible')?'trk-badge-amber':s.includes('review')?'trk-badge-blue':s.includes('PIP')?'trk-badge-red':'trk-badge-grey';
+  const scoreColor = s => s==='Exceeds'?'trk-badge-green':s==='Meets'?'trk-badge-blue':'trk-badge-amber';
+  body.innerHTML = `
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${DEMO_CAREERS.filter(c=>c.hrisLinked).length}</div><div class="trk-kpi-label">HRIS linked</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">${DEMO_CAREERS.filter(c=>!c.cvLinked).length}</div><div class="trk-kpi-label">CVs missing</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${DEMO_CAREERS.filter(c=>c.stage==='Succession candidate').length}</div><div class="trk-kpi-label">Succession candidates</div></div>
+    </div>
+    ${DEMO_CAREERS.filter(c=>c.stage.includes('Eligible')||!c.cvLinked).map(c=>
+      `<div class="trk-flag" style="${!c.stage.includes('Eligible')?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}"><span class="trk-flag-icon">${c.stage.includes('Eligible')?'⚠️':'ℹ️'}</span><div><strong>${c.name}</strong> — ${c.stage.includes('Eligible')?'eligible for promotion but no action taken.':'original CV from recruitment not attached to employee record.'}</div></div>`
+    ).join('')}
+    <div class="trk-card">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div class="trk-section-head" style="margin:0;">Promotions &amp; Career Progression</div>
+        <button class="btn btn-primary btn-sm">+ Add employee</button>
+      </div>
+      <div style="overflow-x:auto;"><table class="trk-table">
+        <thead><tr><th>Employee</th><th>Role</th><th>Band</th><th>Last review</th><th>Score</th><th>Next eligible</th><th>Career steps</th><th>CV</th><th>HRIS</th><th>Stage</th><th></th></tr></thead>
+        <tbody>${DEMO_CAREERS.map((c,i)=>`<tr>
+          <td><div style="font-weight:600;">${c.name}</div><div style="font-size:10px;color:var(--ink3);">${c.dept}</div></td>
+          <td style="font-size:12px;">${c.title}</td>
+          <td><span class="trk-badge trk-badge-grey">${c.band}</span></td>
+          <td style="font-size:11px;white-space:nowrap;">${new Date(c.lastReview).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
+          <td><span class="trk-badge ${scoreColor(c.reviewScore)}">${c.reviewScore}</span></td>
+          <td style="font-size:11px;white-space:nowrap;">${new Date(c.nextPromoEligible).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
+          <td><span class="trk-badge trk-badge-grey">${c.careerMap.length} steps</span></td>
+          <td>${c.cvLinked?`<span class="trk-badge trk-badge-green">&#10003;</span>`:`<span class="trk-badge trk-badge-red">Missing</span>`}</td>
+          <td>${c.hrisLinked?`<span class="trk-badge trk-badge-green">&#10003;</span>`:`<span class="trk-badge trk-badge-amber">Unlinked</span>`}</td>
+          <td><span class="trk-badge ${stageColor(c.stage)}">${c.stage}</span></td>
+          <td><button class="btn btn-secondary btn-sm" style="font-size:10px;" onclick="openCareerMap(${i})">View</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+
+function openCareerMap(idx) {
+  const c = (window._demoCareers||[])[idx]; if (!c) return;
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const tl = c.careerMap.map((s,i)=>`<div style="display:flex;gap:12px;align-items:flex-start;">
+    <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
+      <div style="width:12px;height:12px;border-radius:50%;background:${i===c.careerMap.length-1?'var(--accent)':'#CBD5E1'};"></div>
+      ${i<c.careerMap.length-1?`<div style="width:2px;flex:1;min-height:24px;background:#E5E7EB;margin:4px 0;"></div>`:''}
+    </div>
+    <div style="padding-bottom:14px;flex:1;">
+      <div style="font-size:12px;font-weight:700;color:var(--ink);">${s.role}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${new Date(s.date).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div>
+      <div style="font-size:11px;color:var(--ink2);margin-top:3px;">${s.note}</div>
+    </div>
+  </div>`).join('');
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:85vh;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;"><div style="font-size:15px;font-weight:700;color:white;">${c.name}</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">${c.title} - ${c.dept}</div></div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">x</button>
+    </div>
+    <div style="padding:20px 24px;overflow-y:auto;flex:1;">
+      <div style="font-size:12px;font-weight:700;margin-bottom:14px;">Career progression</div>
+      ${tl}
+      <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:16px;flex-wrap:wrap;">
+        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Last review</div><div style="font-size:12px;font-weight:600;margin-top:2px;">${new Date(c.lastReview).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} - ${c.reviewScore}</div></div>
+        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Next eligible</div><div style="font-size:12px;font-weight:600;margin-top:2px;">${new Date(c.nextPromoEligible).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
+        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">CV attached</div><div style="font-size:12px;font-weight:600;margin-top:2px;color:${c.cvLinked?'var(--green)':'var(--red)'};">${c.cvLinked?'Yes':'Missing'}</div></div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target===ov) ov.remove(); };
+}
+
+// ── IMMIGRATION TRACKER ──
+function renderImmigrationTracker(body) {
+  const today = new Date();
+  const daysUntil = d => Math.floor((new Date(d) - today) / 86400000);
+  const urgencyBadge = d => { const n=daysUntil(d); if(n<0) return '<span class="trk-badge trk-badge-red">Expired</span>'; if(n<=30) return `<span class="trk-badge trk-badge-red">${n}d left</span>`; if(n<=90) return `<span class="trk-badge trk-badge-amber">${n}d left</span>`; return '<span class="trk-badge trk-badge-green">Valid</span>'; };
+  const DEMO_IMMI = [
+    { name:'Yuki Tanaka', title:'InfoSec Analyst', nationality:'Japanese', visaType:'Skilled Worker', visaExpiry:'2026-07-14', rightToWork:'2026-07-14', ilrEligible:'2027-03-22', ilrStatus:'Not yet eligible', passportExpiry:'2028-06-01', notes:'Sponsor licence check due Q3', history:[{date:'2022-03-22',event:'Skilled Worker visa granted'},{date:'2024-11-01',event:'Visa extended - further leave to remain'}] },
+    { name:'Priya Sharma', title:'Finance Analyst', nationality:'Indian', visaType:'Skilled Worker', visaExpiry:'2025-12-31', rightToWork:'2025-12-31', ilrEligible:'2026-11-15', ilrStatus:'Application in progress', passportExpiry:'2027-04-20', notes:'ILR application submitted Oct 2025', history:[{date:'2020-11-15',event:'Tier 2 visa - initial entry'},{date:'2023-01-01',event:'Visa extended to Dec 2025'},{date:'2025-10-01',event:'ILR application submitted'}] },
+    { name:'Marcus Webb', title:'Brand Manager', nationality:'Australian', visaType:'Youth Mobility', visaExpiry:'2026-03-08', rightToWork:'2026-03-08', ilrEligible:null, ilrStatus:'Not applicable (YMS)', passportExpiry:'2029-11-15', notes:'YMS - not eligible for ILR. Needs new route before March 2026.', history:[{date:'2024-03-08',event:'Youth Mobility Scheme visa - 2 years'}] },
+    { name:'Fatima Al-Rashid', title:'HR Business Partner', nationality:'Moroccan', visaType:'Skilled Worker', visaExpiry:'2028-05-20', rightToWork:'2028-05-20', ilrEligible:'2028-02-14', ilrStatus:'5yr milestone approaching', passportExpiry:'2030-01-09', notes:'Continuous residence check - no gaps over 180 days', history:[{date:'2023-02-14',event:'Skilled Worker visa granted'},{date:'2023-09-01',event:'Right to work check completed'}] },
+    { name:'Imani Foster', title:'Supply Chain Coordinator', nationality:'Nigerian', visaType:'Graduate Route', visaExpiry:'2026-01-15', rightToWork:'2026-01-15', ilrEligible:null, ilrStatus:'Needs employer sponsorship', passportExpiry:'2026-10-30', notes:'Graduate Route expires Jan 2026. Needs Skilled Worker sponsorship if staying.', history:[{date:'2024-01-15',event:'Graduate Route visa - 2 years post-study'}] },
+  ];
+  window._demoImmi = DEMO_IMMI;
+  const urgent = DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)<90||daysUntil(p.rightToWork)<90);
+  body.innerHTML = `
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_IMMI.length}</div><div class="trk-kpi-label">Visa holders tracked</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--red);">${DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)<0).length}</div><div class="trk-kpi-label">Expired</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--red);">${DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)>=0&&daysUntil(p.visaExpiry)<=30).length}</div><div class="trk-kpi-label">Expiring in 30 days</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--amber);">${DEMO_IMMI.filter(p=>daysUntil(p.visaExpiry)>30&&daysUntil(p.visaExpiry)<=90).length}</div><div class="trk-kpi-label">Expiring in 90 days</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_IMMI.filter(p=>p.ilrStatus&&p.ilrStatus.includes('progress')).length}</div><div class="trk-kpi-label">ILR applications live</div></div>
+    </div>
+    ${urgent.length?`<div style="display:flex;flex-direction:column;gap:8px;">${urgent.map(p=>{const d=daysUntil(p.visaExpiry);return `<div class="trk-flag" style="${d<0?'':'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;'}"><span class="trk-flag-icon">${d<0?'⚠️':'🕐'}</span><div><strong>${p.name}</strong> - ${p.visaType} ${d<0?`expired ${Math.abs(d)} days ago`:`expires in ${d} days`} (${new Date(p.visaExpiry).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}). ${p.notes}</div></div>`;}).join('')}</div>`:`<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;"><span>&#10003;</span> No urgent visa actions.</div>`}
+    <div class="trk-card">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div class="trk-section-head" style="margin:0;">Immigration &amp; Right to Work</div>
+        <button class="btn btn-primary btn-sm">+ Add record</button>
+      </div>
+      <div style="overflow-x:auto;"><table class="trk-table">
+        <thead><tr><th>Employee</th><th>Nationality</th><th>Visa type</th><th>Visa expiry</th><th>Right to work</th><th>ILR eligible</th><th>ILR status</th><th>Passport</th><th></th></tr></thead>
+        <tbody>${DEMO_IMMI.map((p,i)=>`<tr>
+          <td><div style="font-weight:600;">${p.name}</div><div style="font-size:10px;color:var(--ink3);">${p.title}</div></td>
+          <td style="font-size:12px;">${p.nationality}</td>
+          <td><span class="trk-badge trk-badge-blue">${p.visaType}</span></td>
+          <td style="white-space:nowrap;">${new Date(p.visaExpiry).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} ${urgencyBadge(p.visaExpiry)}</td>
+          <td style="white-space:nowrap;">${new Date(p.rightToWork).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} ${urgencyBadge(p.rightToWork)}</td>
+          <td style="font-size:12px;white-space:nowrap;">${p.ilrEligible?new Date(p.ilrEligible).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):'N/A'}</td>
+          <td style="font-size:11px;color:var(--ink2);max-width:160px;">${p.ilrStatus}</td>
+          <td style="white-space:nowrap;">${new Date(p.passportExpiry).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} ${urgencyBadge(p.passportExpiry)}</td>
+          <td><button class="btn btn-secondary btn-sm" style="font-size:10px;" onclick="openImmigrationRecord(${i})">View</button></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>
+  </div>`;
+}
+
+function openImmigrationRecord(idx) {
+  const p = (window._demoImmi||[])[idx]; if (!p) return;
+  const today = new Date();
+  const daysUntil = d => Math.floor((new Date(d) - today) / 86400000);
+  const milestones = [...(p.history||[]).map(h=>({date:h.date,label:h.event,type:'history'})),{date:p.visaExpiry,label:'Visa expiry',type:'deadline'},...(p.ilrEligible?[{date:p.ilrEligible,label:'ILR eligibility date',type:'milestone'}]:[]),{date:p.passportExpiry,label:'Passport expiry',type:'deadline'}].sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const colMap={history:'#3B82F6',deadline:'#EF4444',milestone:'#8B5CF6'};
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:500px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:88vh;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;"><div style="font-size:15px;font-weight:700;color:white;">${p.name}</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">${p.title} - ${p.nationality}</div></div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">x</button>
+    </div>
+    <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Visa type</div><div style="font-size:13px;font-weight:600;">${p.visaType}</div></div>
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">Visa expiry</div><div style="font-size:13px;font-weight:600;color:${daysUntil(p.visaExpiry)<90?'var(--red)':'var(--ink)'};">${new Date(p.visaExpiry).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})} (${daysUntil(p.visaExpiry)>0?daysUntil(p.visaExpiry)+'d':'EXPIRED'})</div></div>
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">ILR status</div><div style="font-size:12px;font-weight:500;">${p.ilrStatus}</div></div>
+        <div style="background:var(--surface2);border-radius:var(--r-sm);padding:10px 12px;"><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;">ILR eligible from</div><div style="font-size:12px;font-weight:500;">${p.ilrEligible?new Date(p.ilrEligible).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'}):'Not applicable'}</div></div>
+      </div>
+      ${p.notes?`<div style="background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:#78350F;">${p.notes}</div>`:''}
+      <div>
+        <div style="font-size:12px;font-weight:700;margin-bottom:12px;">Timeline and milestones</div>
+        ${milestones.map((m,i)=>`<div style="display:flex;gap:10px;align-items:flex-start;"><div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;"><div style="width:10px;height:10px;border-radius:50%;background:${colMap[m.type]};margin-top:2px;"></div>${i<milestones.length-1?`<div style="width:2px;flex:1;min-height:18px;background:#E5E7EB;margin:3px 0;"></div>`:''}</div><div style="padding-bottom:10px;flex:1;"><div style="display:flex;align-items:baseline;gap:8px;"><div style="font-size:12px;font-weight:600;">${m.label}</div>${new Date(m.date)>today?`<span style="font-size:10px;color:${daysUntil(m.date)<90?'var(--amber)':'var(--ink3)'};">${daysUntil(m.date)}d from today</span>`:''}</div><div style="font-size:11px;color:var(--ink3);margin-top:1px;">${new Date(m.date).toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})}</div></div></div>`).join('')}
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if (e.target===ov) ov.remove(); };
 }
 
 // ── INIT ──
