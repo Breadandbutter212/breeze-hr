@@ -1406,6 +1406,8 @@ async function onSignedIn(user) {
     const hour = new Date().getHours();
     const greetEl = document.getElementById('appGreeting');
     if (greetEl) greetEl.textContent = '';
+    const sidebarCo = document.getElementById('sidebarCompanyName');
+    if (sidebarCo && profile.company_name) sidebarCo.textContent = profile.company_name;
   }
   chatSystemPrompt = null;
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
@@ -5098,7 +5100,7 @@ async function saveAccountSettings() {
   ]);
   if(profileRes.error){if(msg){msg.style.color='var(--red)';msg.textContent='Failed: '+profileRes.error.message;}return;}
   currentProfile.full_name=name;
-  if(coName){ currentProfile.company_name=coName; if(genVals) genVals['company_name']=coName; updatePreview(); }
+  if(coName){ currentProfile.company_name=coName; if(genVals) genVals['company_name']=coName; updatePreview(); const sco=document.getElementById('sidebarCompanyName');if(sco)sco.textContent=coName; }
   if(msg){msg.style.color='var(--green)';msg.textContent='✓ Saved';}
   const nameEl=document.getElementById('userDisplayName');
   if(nameEl)nameEl.textContent=name;
