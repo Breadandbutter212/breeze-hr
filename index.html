@@ -10764,6 +10764,55 @@ function wfTagBadge(tag) {
 
 let _wfCurrentTabScenarios = [];
 
+function buildTabKpisHtml(activeCases, closedCases, scenarioIds) {
+  const noContact = activeCases.filter(c => !(c.contactLog||[]).length);
+  const thisYear = new Date().getFullYear();
+  const closedThisYear = closedCases.filter(c => new Date(c.startedAt||0).getFullYear() === thisYear);
+  let kpis = [];
+
+  if (scenarioIds.some(id => id.includes('absence'))) {
+    kpis = [
+      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' resolved this year', col:'#3B82F6'},
+      {val:activeCases.filter(c=>c.scenarioId==='short-term-absence').length, label:'Short-term sickness', sub:'Active', col:'#F59E0B'},
+      {val:activeCases.filter(c=>c.scenarioId==='long-term-absence').length, label:'Long-term absence', sub:'4+ weeks', col:'#EF4444'},
+      {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
+      {val:closedThisYear.length, label:'Resolved this year', sub:'', col:'var(--ink2)'},
+    ];
+  } else if (scenarioIds.some(id => id.includes('disciplinary') || id.includes('grievance'))) {
+    kpis = [
+      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' closed this year', col:'#3B82F6'},
+      {val:activeCases.filter(c=>c.scenarioId==='disciplinary').length, label:'Disciplinary', sub:'Open', col:'#EF4444'},
+      {val:activeCases.filter(c=>c.scenarioId==='grievance').length, label:'Grievances', sub:'Open', col:'#F59E0B'},
+      {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
+      {val:closedThisYear.length, label:'Closed this year', sub:'', col:'var(--ink2)'},
+    ];
+  } else if (scenarioIds.some(id => id.includes('immigration') || id.includes('rtw') || id.includes('visa') || id.includes('ilr'))) {
+    kpis = [
+      {val:activeCases.length, label:'Active checklists', sub: closedThisYear.length+' closed this year', col:'#3B82F6'},
+      {val:activeCases.filter(c=>c.scenarioId==='rtw-new-starter').length, label:'RTW checks', sub:'New starters', col:'#10B981'},
+      {val:activeCases.filter(c=>c.scenarioId==='visa-renewal').length, label:'Visa renewals', sub:'In progress', col:'#F59E0B'},
+      {val:activeCases.filter(c=>c.scenarioId==='ilr-application').length, label:'ILR applications', sub:'In progress', col:'#8B5CF6'},
+      {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
+    ];
+  } else {
+    // Leavers, performance, careers
+    const complete = activeCases.filter(c => {
+      const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
+      return sc.steps.length && c.checkedSteps.length >= sc.steps.length;
+    });
+    kpis = [
+      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' closed this year', col:'#3B82F6'},
+      {val:complete.length, label:'Checklist complete', sub:'Ready to close', col:'#10B981'},
+      {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
+      {val:closedThisYear.length, label:'Closed this year', sub:'', col:'var(--ink2)'},
+    ];
+  }
+
+  return `<div style="display:grid;grid-template-columns:repeat(${kpis.length},1fr);gap:12px;margin-bottom:16px;">
+    ${kpis.map(k=>`<div class="trk-kpi"><div class="trk-kpi-val" style="color:${k.col};">${k.val}</div><div class="trk-kpi-label">${k.label}</div><div class="trk-kpi-sub">${k.sub}</div></div>`).join('')}
+  </div>`;
+}
+
 async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
   try {
     body.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--ink3);">Loading...</div>';
@@ -10851,6 +10900,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
       </div>`;
 
   body.innerHTML = `<div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);">
+    ${buildTabKpisHtml(activeCases, closedCases, scenarioIds)}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--ink);">${catName.replace(' leave','').replace(' /','/')} cases <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${activeCases.length} active${closedCases.length?' · '+closedCases.length+' closed':''})</span></div>
       <div style="display:flex;gap:8px;align-items:center;">
