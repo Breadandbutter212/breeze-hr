@@ -8787,8 +8787,14 @@ function showTrackerTab(tab) {
 }
 
 async function renderTrackers() {
-  await loadMatPatRecords();
-  renderTrackersBody();
+  try {
+    await loadMatPatRecords();
+    renderTrackersBody();
+  } catch(e) {
+    console.error('[Trackers]', e);
+    const b = document.getElementById('trackersBody');
+    if (b) b.innerHTML = '<div style="padding:20px;color:red;">Trackers error: ' + String(e) + '</div>';
+  }
 }
 
 function renderTrackersBody() {
@@ -10337,7 +10343,14 @@ function wfTagBadge(tag) {
 let _wfCurrentTabScenarios = [];
 
 async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
-  await Promise.all([loadWfPolicies(), loadWfCases()]);
+  try {
+    body.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--ink3);">Loading...</div>';
+    await Promise.all([loadWfPolicies(), loadWfCases()]);
+  } catch(e) {
+    console.error('[wfCategoryTab load]', e);
+    wfCases = wfCases || [];
+    wfPolicies = wfPolicies || [];
+  }
   _wfCurrentTabScenarios = scenarioIds;
   const tabScenarios = WF_SCENARIOS.filter(s => scenarioIds.includes(s.id));
   const activeCases = (wfCases||[]).filter(c => scenarioIds.includes(c.scenarioId) && c.status !== 'closed');
@@ -10396,6 +10409,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     + scenarioBtns
     + '</div></div></div></div>'
     + '<div id="wf-detail" style="position:absolute;top:0;left:258px;right:0;bottom:0;overflow-y:auto;background:var(--bg);">' + defaultRight + '</div>';
+
+  console.log('[Tracker] body.innerHTML set, trackersBody offsetHeight:', body.offsetHeight, 'width:', body.offsetWidth);
 
   const currentCase = wfActiveCase && activeCases.find(c=>c.id===wfActiveCase.id);
   if (currentCase) wfRenderCase(currentCase);
