@@ -4925,8 +4925,13 @@ function downloadProcessMap(name, e) {
 
 // ── SETTINGS ──
 function renderSettings() {
-  const body=document.getElementById('settingsBody');if(!body)return;
-  const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';const coName=currentProfile?.company_name||'';
+  const body=document.getElementById('settingsBody');
+  if(!body){ console.error('settingsBody not found'); return; }
+  // Show a placeholder immediately so we know the function ran
+  body.innerHTML='<div style="padding:16px;font-size:12px;color:var(--ink3);">Loading settings...</div>';
+  const email=currentUser?currentUser.email:'[no user]';
+  const name=currentProfile?currentProfile.full_name:'[no profile]';
+  const coName=currentProfile?.company_name||'[no company]';
   const inputStyle='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);';
   const inputFocus="this.style.background='white';this.style.borderColor='var(--accent)'";
   const inputBlur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'";
@@ -5246,7 +5251,14 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='settings')renderSettings();
+  if(v==='settings') {
+    try {
+      renderSettings();
+    } catch(e) {
+      const sb = document.getElementById('settingsBody');
+      if (sb) sb.innerHTML = '<div style="padding:24px;background:#FEF2F2;border:1px solid #F0C5C5;border-radius:8px;margin:20px;color:#DC2626;font-size:13px;"><strong>Settings error:</strong> ' + escapeHtml(String(e)) + '<br><br><pre style="font-size:11px;overflow:auto;">' + escapeHtml(e.stack||'') + '</pre></div>';
+    }
+  }
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
