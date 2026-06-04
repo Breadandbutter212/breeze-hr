@@ -565,8 +565,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 <!-- SIDEBAR -->
 <div class="sidebar">
-  <div class="sidebar-logo">
-    <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-0.03em;">Breeze</div>
+  <div class="sidebar-logo" style="padding:16px 14px 14px;">
+    <div style="width:32px;height:32px;background:#2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <span style="font-size:10px;font-weight:700;color:#3B82F6;letter-spacing:0.5px;">HR</span>
+    </div>
+    <div>
+      <div style="font-size:16px;font-weight:700;color:white;letter-spacing:-0.03em;line-height:1.1;">Breeze</div>
+      <div id="sidebarCompanyName" style="font-size:9px;color:rgba(255,255,255,0.38);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:140px;"></div>
+    </div>
   </div>
   <div class="nav">
     <div class="nav-label">Workspace</div>
