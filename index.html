@@ -450,6 +450,54 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .emp-flat-head { display:flex;align-items:center;gap:8px;padding:10px 14px;flex-wrap:wrap; }
 .emp-flat-name { font-size:13px;font-weight:600;color:var(--ink); }
 
+/* ── TRACKERS ── */
+.tracker-tab-btn { font-size:11px;padding:5px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:var(--ink2);font-weight:500;transition:all 0.12s; }
+.tracker-tab-btn.active-tt { background:var(--accent);color:white;font-weight:600; }
+.tracker-tab-btn:not(.active-tt):hover { background:var(--surface3); }
+.trk-kpi { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;display:flex;flex-direction:column;gap:4px; }
+.trk-kpi-val { font-size:28px;font-weight:700;letter-spacing:-0.04em;line-height:1; }
+.trk-kpi-label { font-size:11px;color:var(--ink2);font-weight:500; }
+.trk-kpi-sub { font-size:10px;color:var(--ink3); }
+.trk-table { width:100%;border-collapse:collapse;font-size:12px; }
+.trk-table th { background:#1B2D50;color:rgba(255,255,255,0.75);font-size:10px;font-weight:600;letter-spacing:0.06em;padding:9px 14px;text-align:left;white-space:nowrap; }
+.trk-table td { padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle; }
+.trk-table tr:last-child td { border-bottom:none; }
+.trk-table tr:hover td { background:#F8FAFC; }
+.trk-badge { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap; }
+.trk-badge-green { background:var(--green-bg);color:var(--green); }
+.trk-badge-blue { background:var(--accent-bg);color:var(--accent); }
+.trk-badge-amber { background:var(--amber-bg);color:var(--amber); }
+.trk-badge-red { background:var(--red-bg);color:var(--red); }
+.trk-badge-purple { background:#F3EEFF;color:#4B0082; }
+.trk-badge-grey { background:var(--surface2);color:var(--ink2); }
+.trk-flag { display:flex;align-items:flex-start;gap:10px;background:#FFF8E7;border:1px solid #FDE68A;border-radius:var(--r);padding:11px 14px;font-size:12px;color:#78350F;line-height:1.5; }
+.trk-flag-icon { font-size:16px;flex-shrink:0;margin-top:-1px; }
+.trk-section-head { font-size:13px;font-weight:700;color:var(--ink);letter-spacing:-0.01em;margin-bottom:12px; }
+.trk-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm); }
+.trk-pill-row { display:flex;gap:6px;flex-wrap:wrap; }
+.trk-pill { font-size:10px;padding:3px 9px;border-radius:20px;border:1px solid var(--border);background:var(--surface2);color:var(--ink2);font-weight:500; }
+.kanban-col { min-width:180px;flex:1;background:var(--surface2);border-radius:var(--r-lg);padding:12px;display:flex;flex-direction:column;gap:8px; }
+.kanban-col-head { font-size:11px;font-weight:700;color:var(--ink);margin-bottom:4px;display:flex;align-items:center;justify-content:space-between; }
+.kanban-col-count { background:white;border:1px solid var(--border);color:var(--ink2);font-size:10px;font-weight:600;padding:1px 7px;border-radius:20px; }
+.kanban-card { background:white;border:1px solid var(--border);border-radius:var(--r);padding:10px 12px;cursor:pointer;transition:all 0.12s;box-shadow:var(--shadow-sm); }
+.kanban-card:hover { border-color:var(--accent-mid);box-shadow:var(--shadow); }
+.kanban-card-name { font-size:12px;font-weight:600;color:var(--ink);margin-bottom:3px; }
+.kanban-card-role { font-size:11px;color:var(--ink3); }
+.kanban-card-meta { display:flex;align-items:center;justify-content:space-between;margin-top:7px; }
+.src-chip { font-size:9px;font-weight:600;padding:2px 6px;border-radius:4px; }
+.src-linkedin { background:#E8F0FE;color:#1D4ED8; }
+.src-indeed { background:#FFF3CD;color:#92400E; }
+.src-referral { background:#D1FAE5;color:#065F46; }
+.src-direct { background:#F3EEFF;color:#4B0082; }
+.src-agency { background:#FEE2E2;color:#991B1B; }
+.open-role-card { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;display:flex;align-items:center;gap:14px; }
+.open-role-dept { width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0; }
+.log-entry { display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);align-items:flex-start; }
+.log-entry:last-child { border-bottom:none; }
+.log-dot { width:8px;height:8px;border-radius:50%;flex-shrink:0;margin-top:4px; }
+.log-time { font-size:10px;color:var(--ink3);white-space:nowrap;min-width:80px; }
+.log-text { font-size:11px;color:var(--ink2);line-height:1.5; }
+
 /* ── PEOPLE PLAN ── */
 .pp-timeline { flex:1;overflow:auto;padding:20px; }
 .pp-grid { display:grid; grid-template-columns: 160px repeat(12, 1fr); gap:0; border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; background:white; box-shadow:var(--shadow); }
@@ -1146,6 +1194,18 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div style="display:flex;gap:8px;align-items:center;" id="ppTopbarBtns"></div>
   </div>
   <div class="manage-body" id="peoplePlanBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
+</div>
+
+<!-- TRACKERS -->
+<div class="view manage-view" id="view-trackers">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Trackers</div><div class="manage-sub">Live HR tracking across leave, absence and recruitment.</div></div>
+    <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;" id="trackerTabBtns">
+      <button onclick="showTrackerTab('leave')" id="tt-leave" class="tracker-tab-btn active-tt">Leave & Absence</button>
+      <button onclick="showTrackerTab('recruitment')" id="tt-recruitment" class="tracker-tab-btn">Recruitment</button>
+    </div>
+  </div>
+  <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -5142,6 +5202,7 @@ function showView(v,el) {
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
+  if(v==='trackers'){renderTrackers();}
 }
 
 // ── BULK MAIL MERGE ──
@@ -8422,6 +8483,372 @@ function downloadPeoplePlanPPT() {
 
   pptx.writeFile({ fileName: `People Plan ${ppPlan.year}.pptx` });
   if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(()=>btn.textContent='⬇ PPT',2500); }
+}
+
+// ── TRACKERS ──
+let trackerTab = 'leave';
+
+function showTrackerTab(tab) {
+  trackerTab = tab;
+  document.querySelectorAll('.tracker-tab-btn').forEach(b => b.classList.remove('active-tt'));
+  const btn = document.getElementById('tt-'+tab);
+  if (btn) btn.classList.add('active-tt');
+  renderTrackersBody();
+}
+
+function renderTrackers() {
+  renderTrackersBody();
+}
+
+function renderTrackersBody() {
+  const body = document.getElementById('trackersBody');
+  if (!body) return;
+  if (trackerTab === 'leave') renderLeaveTracker(body);
+  else renderRecruitmentTracker(body);
+}
+
+function renderLeaveTracker(body) {
+  body.innerHTML = `
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+    <!-- KPI row -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">3</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">2 returning in 2026</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">1</div><div class="trk-kpi-label">On paternity leave</div><div class="trk-kpi-sub">Returns 14 Jun</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">7</div><div class="trk-kpi-label">Current absences</div><div class="trk-kpi-sub">3 with sick notes</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EF4444;">2</div><div class="trk-kpi-label">Long-term absences</div><div class="trk-kpi-sub">4+ weeks</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">4</div><div class="trk-kpi-label">Insurance cases open</div><div class="trk-kpi-sub">1 awaiting response</div></div>
+    </div>
+
+    <!-- Auto-flags -->
+    <div style="display:flex;flex-direction:column;gap:8px;">
+      <div class="trk-flag"><span class="trk-flag-icon">⚠️</span><div><strong>Action needed:</strong> Sarah Mitchell is on maternity leave — dependant has not been added to company benefits. <a style="color:#92400E;font-weight:600;cursor:pointer;text-decoration:underline;">Add now →</a></div></div>
+      <div class="trk-flag" style="background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;"><span class="trk-flag-icon" style="font-size:16px;">ℹ️</span><div><strong>KIT day available:</strong> Emma Clarke (mat leave) has 8 KIT days remaining — last contact 6 weeks ago. Consider reaching out. <a style="color:#1e40af;font-weight:600;cursor:pointer;text-decoration:underline;">Log contact →</a></div></div>
+    </div>
+
+    <!-- Maternity / Paternity tracker -->
+    <div class="trk-card">
+      <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div class="trk-section-head" style="margin:0;">Maternity & Paternity Leave</div>
+        <button class="btn btn-primary btn-sm">+ Add record</button>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="trk-table">
+          <thead><tr>
+            <th>Employee</th><th>Type</th><th>Due / Birth date</th><th>Leave start</th><th>Expected return</th><th>KIT days used</th><th>Dependant added</th><th>Status</th><th>Contact log</th><th></th>
+          </tr></thead>
+          <tbody>
+            <tr>
+              <td><div style="font-weight:600;color:var(--ink);">Sarah Mitchell</div><div style="font-size:10px;color:var(--ink3);">Marketing Manager</div></td>
+              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
+              <td>12 Feb 2026</td>
+              <td>19 Jan 2026</td>
+              <td>19 Jan 2027</td>
+              <td><span style="font-weight:600;color:var(--ink);">0</span> / 10</td>
+              <td><span class="trk-badge trk-badge-red">⚠ Not added</span></td>
+              <td><span class="trk-badge trk-badge-green">● Active</span></td>
+              <td><span style="font-size:11px;color:var(--ink3);">2 weeks ago</span></td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:600;color:var(--ink);">Emma Clarke</div><div style="font-size:10px;color:var(--ink3);">Senior Developer</div></td>
+              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
+              <td>5 Oct 2025</td>
+              <td>22 Sep 2025</td>
+              <td>22 Sep 2026</td>
+              <td><span style="font-weight:600;color:var(--ink);">2</span> / 10</td>
+              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
+              <td><span class="trk-badge trk-badge-green">● Active</span></td>
+              <td><span style="font-size:11px;color:var(--amber);">6 weeks ago</span></td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:600;color:var(--ink);">Priya Sharma</div><div style="font-size:10px;color:var(--ink3);">Finance Analyst</div></td>
+              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
+              <td>30 Apr 2026</td>
+              <td>7 Apr 2026</td>
+              <td>7 Apr 2027</td>
+              <td><span style="font-weight:600;color:var(--ink);">0</span> / 10</td>
+              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
+              <td><span class="trk-badge trk-badge-blue">● Upcoming</span></td>
+              <td><span style="font-size:11px;color:var(--ink3);">1 week ago</span></td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
+            </tr>
+            <tr>
+              <td><div style="font-weight:600;color:var(--ink);">James O'Brien</div><div style="font-size:10px;color:var(--ink3);">Operations Lead</div></td>
+              <td><span class="trk-badge trk-badge-blue">Paternity</span></td>
+              <td>1 Jun 2026</td>
+              <td>2 Jun 2026</td>
+              <td>14 Jun 2026</td>
+              <td><span style="font-weight:600;color:var(--ink);">—</span></td>
+              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
+              <td><span class="trk-badge trk-badge-green">● Active</span></td>
+              <td><span style="font-size:11px;color:var(--ink3);">3 days ago</span></td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
+            </tr>
+            <tr style="opacity:0.6;">
+              <td><div style="font-weight:600;color:var(--ink);">Amara Diallo</div><div style="font-size:10px;color:var(--ink3);">People Partner</div></td>
+              <td><span class="trk-badge trk-badge-purple">Maternity</span></td>
+              <td>14 Jun 2025</td>
+              <td>19 May 2025</td>
+              <td>3 Apr 2026</td>
+              <td><span style="font-weight:600;color:var(--ink);">5</span> / 10</td>
+              <td><span class="trk-badge trk-badge-green">✓ Added</span></td>
+              <td><span class="trk-badge trk-badge-grey">Returned</span></td>
+              <td><span style="font-size:11px;color:var(--ink3);">Closed</span></td>
+              <td><button class="btn btn-secondary btn-sm" style="font-size:10px;">View</button></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Sick absence log -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+      <div class="trk-card">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div class="trk-section-head" style="margin:0;">Current Absences</div>
+          <button class="btn btn-primary btn-sm">+ Log absence</button>
+        </div>
+        <div style="overflow-x:auto;">
+          <table class="trk-table">
+            <thead><tr><th>Employee</th><th>Since</th><th>Days</th><th>Sick note</th><th>Trigger</th></tr></thead>
+            <tbody>
+              <tr>
+                <td><div style="font-weight:600;">Tom Hargreaves</div><div style="font-size:10px;color:var(--ink3);">Sales Exec</div></td>
+                <td style="white-space:nowrap;">28 May</td>
+                <td><span style="font-weight:700;color:var(--red);">6</span></td>
+                <td><span class="trk-badge trk-badge-green">✓ Received</span></td>
+                <td><span class="trk-badge trk-badge-amber">Bradford 8</span></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600;">Nadia Osei</div><div style="font-size:10px;color:var(--ink3);">HR Coordinator</div></td>
+                <td style="white-space:nowrap;">2 Jun</td>
+                <td><span style="font-weight:700;color:var(--amber);">2</span></td>
+                <td><span class="trk-badge trk-badge-grey">Self-cert</span></td>
+                <td>—</td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600;">Leon Forde</div><div style="font-size:10px;color:var(--ink3);">Warehouse</div></td>
+                <td style="white-space:nowrap;">15 Apr</td>
+                <td><span style="font-weight:700;color:var(--red);">50</span></td>
+                <td><span class="trk-badge trk-badge-green">✓ Received</span></td>
+                <td><span class="trk-badge trk-badge-red">Long-term</span></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600;">Chloe Watts</div><div style="font-size:10px;color:var(--ink3);">Accounts</div></td>
+                <td style="white-space:nowrap;">20 Mar</td>
+                <td><span style="font-weight:700;color:var(--red);">76</span></td>
+                <td><span class="trk-badge trk-badge-green">✓ Received</span></td>
+                <td><span class="trk-badge trk-badge-red">Long-term</span></td>
+              </tr>
+              <tr>
+                <td><div style="font-weight:600;">Ryan Booth</div><div style="font-size:10px;color:var(--ink3);">IT Support</div></td>
+                <td style="white-space:nowrap;">3 Jun</td>
+                <td><span style="font-weight:700;color:var(--ink3);">1</span></td>
+                <td><span class="trk-badge trk-badge-grey">Pending</span></td>
+                <td>—</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Insurance outreach -->
+      <div class="trk-card">
+        <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+          <div class="trk-section-head" style="margin:0;">Insurance Company Outreach</div>
+          <button class="btn btn-secondary btn-sm">+ Log contact</button>
+        </div>
+        <div style="padding:14px 18px;display:flex;flex-direction:column;gap:0;">
+
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:600;color:var(--ink);">Leon Forde — Zurich</div>
+              <span class="trk-badge trk-badge-amber">Awaiting response</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div class="log-entry" style="padding:4px 0;">
+                <div class="log-dot" style="background:#3B82F6;"></div>
+                <div class="log-time">4 Jun, 09:14</div>
+                <div class="log-text">Chased claim update by email — ref #ZUR-20482</div>
+              </div>
+              <div class="log-entry" style="padding:4px 0;">
+                <div class="log-dot" style="background:#10B981;"></div>
+                <div class="log-time">28 May, 14:30</div>
+                <div class="log-text">Initial claim submitted. Medical evidence sent.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:12px 0;border-bottom:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:600;color:var(--ink);">Chloe Watts — Aviva</div>
+              <span class="trk-badge trk-badge-blue">In assessment</span>
+            </div>
+            <div style="display:flex;flex-direction:column;gap:4px;">
+              <div class="log-entry" style="padding:4px 0;">
+                <div class="log-dot" style="background:#8B5CF6;"></div>
+                <div class="log-time">2 Jun, 11:00</div>
+                <div class="log-text">IP assessment booked for 18 Jun with case manager</div>
+              </div>
+              <div class="log-entry" style="padding:4px 0;">
+                <div class="log-dot" style="background:#10B981;"></div>
+                <div class="log-time">10 Apr, 16:45</div>
+                <div class="log-text">Claim approved in principle. Waiting on OH report.</div>
+              </div>
+            </div>
+          </div>
+
+          <div style="padding:12px 0;">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+              <div style="font-size:12px;font-weight:600;color:var(--ink);">Tom Hargreaves — Vitality</div>
+              <span class="trk-badge trk-badge-grey">Monitoring</span>
+            </div>
+            <div class="log-entry" style="padding:4px 0;">
+              <div class="log-dot" style="background:#F59E0B;"></div>
+              <div class="log-time">1 Jun, 10:00</div>
+              <div class="log-text">Day 6 — monitoring. Not yet eligible for claim. Review if reaches day 28.</div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>`;
+}
+
+function renderRecruitmentTracker(body) {
+  body.innerHTML = `
+  <div style="flex:1;overflow-y:auto;padding:20px;display:flex;flex-direction:column;gap:20px;">
+
+    <!-- KPIs -->
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">8</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">3 urgent</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">34</div><div class="trk-kpi-label">Active candidates</div><div class="trk-kpi-sub">Across all roles</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">6</div><div class="trk-kpi-label">Interviews this week</div><div class="trk-kpi-sub">2 final stage</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">2</div><div class="trk-kpi-label">Offers outstanding</div><div class="trk-kpi-sub">Avg 3.2 days to decide</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EF4444;">28d</div><div class="trk-kpi-label">Avg time to hire</div><div class="trk-kpi-sub">↓ 4 days vs last Q</div></div>
+    </div>
+
+    <!-- Open roles -->
+    <div>
+      <div class="trk-section-head">Open Positions</div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:10px;">
+        ${[
+          {emoji:'💻',role:'Senior Frontend Engineer',dept:'Engineering',src:'LinkedIn',apps:12,stage:'Interviewing',urgent:true},
+          {emoji:'📊',role:'Finance Business Partner',dept:'Finance',src:'Direct',apps:8,stage:'Screening',urgent:true},
+          {emoji:'👥',role:'HR Business Partner',dept:'People',src:'Agency',apps:5,stage:'Offer',urgent:false},
+          {emoji:'📣',role:'Brand & Content Manager',dept:'Marketing',src:'Indeed',apps:18,stage:'Applied',urgent:false},
+          {emoji:'⚙️',role:'DevOps Engineer',dept:'Engineering',src:'Referral',apps:3,stage:'Interviewing',urgent:true},
+          {emoji:'🔒',role:'Information Security Analyst',dept:'IT',src:'LinkedIn',apps:7,stage:'Screening',urgent:false},
+          {emoji:'📦',role:'Supply Chain Coordinator',dept:'Operations',src:'Indeed',apps:14,stage:'Applied',urgent:false},
+          {emoji:'🤝',role:'Account Manager (Enterprise)',dept:'Sales',src:'Direct',apps:9,stage:'Interviewing',urgent:false},
+        ].map(r => `<div class="open-role-card">
+          <div class="open-role-dept" style="background:var(--accent-bg);">${r.emoji}</div>
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:12px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.role}${r.urgent?'<span class="trk-badge trk-badge-red" style="margin-left:6px;">Urgent</span>':''}</div>
+            <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${r.dept} · ${r.apps} applicants</div>
+            <div style="display:flex;align-items:center;gap:6px;margin-top:5px;">
+              <span class="trk-badge ${r.stage==='Offer'?'trk-badge-green':r.stage==='Interviewing'?'trk-badge-blue':r.stage==='Screening'?'trk-badge-amber':'trk-badge-grey'}">${r.stage}</span>
+              <span class="src-chip src-${r.src.toLowerCase()}">${r.src}</span>
+            </div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>
+
+    <!-- Pipeline kanban -->
+    <div>
+      <div class="trk-section-head">Candidate Pipeline</div>
+      <div style="display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;">
+
+        ${[
+          { stage:'Applied', color:'#6B7280', candidates:[
+            {name:'Alex Turner',role:'Frontend Engineer',src:'linkedin',days:2,notes:false},
+            {name:'Sophie Reid',role:'Finance BP',src:'direct',days:1,notes:false},
+            {name:'Marcus Webb',role:'Content Manager',src:'indeed',days:3,notes:false},
+            {name:'Imani Foster',role:'Supply Chain',src:'indeed',days:5,notes:false},
+          ]},
+          { stage:'Screening', color:'#F59E0B', candidates:[
+            {name:'Dan Kowalski',role:'Frontend Engineer',src:'linkedin',days:7,notes:true},
+            {name:'Yuki Tanaka',role:'InfoSec Analyst',src:'linkedin',days:5,notes:false},
+            {name:'Remi Adeyemi',role:'Finance BP',src:'direct',days:9,notes:true},
+          ]},
+          { stage:'Interview', color:'#3B82F6', candidates:[
+            {name:'Grace Nwosu',role:'Frontend Engineer',src:'referral',days:14,notes:true},
+            {name:'Tom Briggs',role:'DevOps Engineer',src:'referral',days:11,notes:true},
+            {name:'Lucia Ferrara',role:'HR BP',src:'agency',days:18,notes:true},
+            {name:'Kai Patel',role:'Account Manager',src:'direct',days:12,notes:false},
+          ]},
+          { stage:'Final stage', color:'#8B5CF6', candidates:[
+            {name:'Charlotte Fox',role:'Frontend Engineer',src:'linkedin',days:22,notes:true},
+            {name:'Ben Okafor',role:'DevOps Engineer',src:'linkedin',days:19,notes:true},
+          ]},
+          { stage:'Offer', color:'#10B981', candidates:[
+            {name:'Fatima Al-Rashid',role:'HR BP',src:'agency',days:26,notes:true},
+            {name:'Oliver Drake',role:'Account Manager',src:'direct',days:24,notes:true},
+          ]},
+        ].map(col => `
+          <div class="kanban-col">
+            <div class="kanban-col-head">
+              <span style="display:flex;align-items:center;gap:5px;"><span style="width:8px;height:8px;border-radius:50%;background:${col.color};flex-shrink:0;"></span>${col.stage}</span>
+              <span class="kanban-col-count">${col.candidates.length}</span>
+            </div>
+            ${col.candidates.map(c => `
+              <div class="kanban-card">
+                <div class="kanban-card-name">${c.name}</div>
+                <div class="kanban-card-role">${c.role}</div>
+                <div class="kanban-card-meta">
+                  <span class="src-chip src-${c.src}">${c.src.charAt(0).toUpperCase()+c.src.slice(1)}</span>
+                  <div style="display:flex;align-items:center;gap:5px;">
+                    ${c.notes?`<span title="Has notes" style="font-size:10px;color:var(--ink3);">📝</span>`:''}
+                    <span style="font-size:10px;color:var(--ink3);">${c.days}d</span>
+                  </div>
+                </div>
+              </div>`).join('')}
+          </div>`).join('')}
+
+      </div>
+    </div>
+
+    <!-- Hired recently -->
+    <div class="trk-card" style="padding:16px 18px;">
+      <div class="trk-section-head">Recently Hired — Records Carry-Over</div>
+      <table class="trk-table">
+        <thead><tr><th>Name</th><th>Role</th><th>Hired date</th><th>Source</th><th>CV</th><th>Interview notes</th><th>Employee record</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div style="font-weight:600;">Ava Brennan</div></td>
+            <td>Product Designer</td><td>21 May 2026</td>
+            <td><span class="src-chip src-linkedin">LinkedIn</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ Attached</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ 3 notes</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ Created</span></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:600;">Sam Nduka</div></td>
+            <td>Data Analyst</td><td>5 May 2026</td>
+            <td><span class="src-chip src-referral">Referral</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ Attached</span></td>
+            <td><span class="trk-badge trk-badge-amber">1 note</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ Created</span></td>
+          </tr>
+          <tr>
+            <td><div style="font-weight:600;">Hana Johansson</div></td>
+            <td>Customer Success Lead</td><td>28 Apr 2026</td>
+            <td><span class="src-chip src-indeed">Indeed</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ Attached</span></td>
+            <td><span class="trk-badge trk-badge-green">✓ 5 notes</span></td>
+            <td><span class="trk-badge trk-badge-blue">In progress</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </div>`;
 }
 
 // ── INIT ──
