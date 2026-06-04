@@ -1245,7 +1245,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <button onclick="showTrackerTab('immigration-wf')" id="tt-immigration-wf" class="tracker-tab-btn">Immigration</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
   </div>
-  <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
+  <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;flex:1;display:flex;flex-direction:column;min-height:0;"></div>
 </div>
 
 <!-- SETTINGS -->
@@ -9664,7 +9664,7 @@ function ocBuild() {
   _ocTree = root; _ocOffsets = {};
   ocLayout(root, 0, 0);
   ocRender(root);
-  setTimeout(() => ocFit(), 80);
+  setTimeout(() => ocInitialView(), 80);
 }
 
 function ocBuildDeptTree(nodes) {
@@ -9721,6 +9721,32 @@ function ocPos(n) {
   return { x: n._x + o.dx, y: n._y + o.dy };
 }
 
+// Safe element ID for a node — avoids CSS.escape issues
+const ocNid = id => 'ocn_' + String(id).replace(/[^a-zA-Z0-9]/g,'_');
+
+// Right-angle "bus" connectors — traditional org chart style
+function ocDrawEdges(node, lines) {
+  const ch = node.children||[]; if(!ch.length) return;
+  const pp=ocPos(node), px=pp.x+OC_W/2, py=pp.y+OC_H;
+  const ey=py+Math.round(OC_VG*0.42); // elbow Y
+  const S='stroke="#CBD5E1" stroke-width="1.5"';
+  // Stem down from parent to elbow
+  lines.push(`<line x1="${px}" y1="${py}" x2="${px}" y2="${ey}" ${S}/>`);
+  if(ch.length===1){
+    const cp=ocPos(ch[0]), cx=cp.x+OC_W/2;
+    if(Math.abs(px-cx)>1) lines.push(`<line x1="${px}" y1="${ey}" x2="${cx}" y2="${ey}" ${S}/>`);
+    lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);
+  } else {
+    const cxs=ch.map(c=>ocPos(c).x+OC_W/2);
+    const minX=Math.min(...cxs), maxX=Math.max(...cxs);
+    // Horizontal bus
+    lines.push(`<line x1="${minX}" y1="${ey}" x2="${maxX}" y2="${ey}" ${S}/>`);
+    // Drop to each child
+    ch.forEach(c=>{const cp=ocPos(c),cx=cp.x+OC_W/2;lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);});
+  }
+  ch.forEach(c=>ocDrawEdges(c,lines));
+}
+
 function ocRender(root) {
   const spinner = document.getElementById('ocSpinner');
   const svg = document.getElementById('ocSVG'), nd = document.getElementById('ocNodes');
@@ -9731,17 +9757,8 @@ function ocRender(root) {
   const all = []; const collect = n => { all.push(n); (n.children||[]).forEach(collect); }; collect(root);
   if (cnt) cnt.textContent = all.filter(n=>!n.id.startsWith('__')).length + ' people';
 
-  // Edges
-  const lines = [];
-  const drawE = n => {
-    const pp = ocPos(n);
-    (n.children||[]).forEach(c => {
-      const cp=ocPos(c), x1=pp.x+OC_W/2, y1=pp.y+OC_H, x2=cp.x+OC_W/2, y2=cp.y, my=(y1+y2)/2;
-      lines.push(`<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>`);
-      drawE(c);
-    });
-  };
-  drawE(root); svg.innerHTML = lines.join('');
+  // Edges — bus connectors
+  const lines=[]; ocDrawEdges(root,lines); svg.innerHTML=lines.join('');
 
   // Nodes
   all.forEach(node => {
@@ -9750,6 +9767,7 @@ function ocRender(root) {
     const isVirtual = node.id === '__org__', isDept = !!node.isDept;
     const div = document.createElement('div');
     div.className = 'org-node';
+    div.id = ocNid(node.id);
     div.setAttribute('data-oc', node.id);
     div.style.left=pos.x+'px'; div.style.top=pos.y+'px';
     div.style.height=OC_H+'px'; div.style.width=OC_W+'px';
@@ -9788,14 +9806,7 @@ function ocRender(root) {
 
 function ocRedrawEdges() {
   const svg=document.getElementById('ocSVG'); if(!svg||!_ocTree) return;
-  const lines=[]; const drawE=n=>{
-    const pp=ocPos(n);
-    (n.children||[]).forEach(c=>{
-      const cp=ocPos(c),x1=pp.x+OC_W/2,y1=pp.y+OC_H,x2=cp.x+OC_W/2,y2=cp.y,my=(y1+y2)/2;
-      lines.push(`<path d="M${x1},${y1} C${x1},${my} ${x2},${my} ${x2},${y2}" stroke="#CBD5E1" stroke-width="1.5" fill="none"/>`);
-      drawE(c);
-    });
-  }; drawE(_ocTree); svg.innerHTML=lines.join('');
+  const lines=[]; ocDrawEdges(_ocTree,lines); svg.innerHTML=lines.join('');
 }
 
 function ocApplyT() {
@@ -9816,9 +9827,13 @@ function ocPanMove(e) {
     if(!_ocDragNode.moved) return;
     const dx=mdx/_ocT.k, dy=mdy/_ocT.k;
     _ocOffsets[_ocDragNode.id]={dx:_ocDragNode.odx+dx,dy:_ocDragNode.ody+dy};
-    const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
-    const node=all.find(n=>n.id===_ocDragNode.id);
-    if(node){const p=ocPos(node);const d=document.querySelector(`[data-oc="${CSS.escape(node.id)}"]`);if(d){d.style.left=p.x+'px';d.style.top=p.y+'px';}}
+    // Update node position via safe ID
+    const d=document.getElementById(ocNid(_ocDragNode.id));
+    if(d){
+      const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
+      const node=all.find(n=>n.id===_ocDragNode.id);
+      if(node){const p=ocPos(node);d.style.left=p.x+'px';d.style.top=p.y+'px';}
+    }
     ocRedrawEdges(); return;
   }
   if(!_ocPanning||!_ocPanOrig) return;
@@ -9829,19 +9844,22 @@ function ocPanMove(e) {
 
 function ocPanUp(e) {
   if(_ocDragNode) {
-    const d=document.querySelector(`[data-oc="${CSS.escape(_ocDragNode.id)}"]`);
+    const nid=_ocDragNode.id; const d=document.getElementById(ocNid(nid));
     if(!_ocDragNode.moved) {
-      // Click - show edit menu
       if(d) d.classList.remove('dragging');
       const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
-      const node=all.find(n=>n.id===_ocDragNode.id);
+      const node=all.find(n=>n.id===nid);
       _ocDragNode=null;
       if(node) ocShowNodeMenu(node);
     } else {
-      // Drag ended - snap to grid
-      const off=_ocOffsets[_ocDragNode.id];
+      const off=_ocOffsets[nid];
       if(off){off.dx=Math.round(off.dx/OC_SNAP)*OC_SNAP;off.dy=Math.round(off.dy/OC_SNAP)*OC_SNAP;}
-      if(d){d.classList.remove('dragging');const all2=[];const col2=n=>{all2.push(n);(n.children||[]).forEach(col2);};if(_ocTree)col2(_ocTree);const node2=all2.find(n=>n.id===_ocDragNode.id);if(node2){const p=ocPos(node2);d.style.left=p.x+'px';d.style.top=p.y+'px';}}
+      if(d){
+        d.classList.remove('dragging');
+        const all2=[]; const col2=n=>{all2.push(n);(n.children||[]).forEach(col2);}; if(_ocTree) col2(_ocTree);
+        const node2=all2.find(n=>n.id===nid);
+        if(node2){const p=ocPos(node2);d.style.left=p.x+'px';d.style.top=p.y+'px';}
+      }
       ocRedrawEdges();
       _ocDragNode=null;
     }
@@ -9977,6 +9995,20 @@ function ocFit() {
   // Centre horizontally; anchor top of tree 60px below toolbar
   _ocT.x=(r.width-pw*k)/2-minX*k+pad*k;
   _ocT.y=60-minY*k;
+  ocApplyT();
+}
+
+// Initial view: fixed 0.65 zoom centred on root so nodes are readable on load
+// User can click Fit to see the whole tree
+function ocInitialView() {
+  if(!_ocTree) return;
+  const vp=document.getElementById('ocVP'); if(!vp) return;
+  const r=vp.getBoundingClientRect();
+  const rp=ocPos(_ocTree);
+  _ocT.k=0.65;
+  // Centre the root node horizontally, 50px from top
+  _ocT.x=r.width/2-(rp.x+OC_W/2)*_ocT.k;
+  _ocT.y=50-rp.y*_ocT.k;
   ocApplyT();
 }
 
@@ -10334,7 +10366,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     + (!activeCases.length?'<button onclick="wfNewCaseForTab()" class="btn btn-primary" style="margin-top:4px;">+ New case</button>':'')
     + '</div>';
 
-  body.innerHTML = '<div style="flex:1;display:flex;overflow:hidden;min-height:0;">'
+  body.innerHTML = '<div style="display:flex;flex:1;overflow:hidden;min-height:0;">'
     + '<div style="width:258px;flex-shrink:0;border-right:1px solid var(--border);background:var(--surface);display:flex;flex-direction:column;overflow:hidden;">'
     + '<div style="padding:11px 14px;border-bottom:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:space-between;">'
     + '<div style="font-size:12px;font-weight:600;color:var(--ink);">Cases <span style="font-size:11px;font-weight:400;color:var(--ink3);">(' + activeCases.length + ')</span></div>'
