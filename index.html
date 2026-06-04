@@ -9092,6 +9092,53 @@ function openMatPatRecord(id) {
           <div id="mp-log-list-${rec.id}" style="display:flex;flex-direction:column;">${logHtml}</div>
         </div>
 
+        <!-- Linked workflow checklist -->
+        ${(()=>{
+          const linked = (wfCases||[]).find(c=>c.id===rec.wfCaseId || c.mpRecordId===rec.id);
+          if (!linked) {
+            const sc = WF_SCENARIOS.find(s=>s.id==='maternity-leave'||s.id==='paternity-leave');
+            return `<div style="padding:16px 22px;border-top:1px solid var(--border);">
+              <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;">Next Steps checklist</div>
+              <div style="background:var(--surface2);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--ink3);display:flex;align-items:center;justify-content:space-between;gap:10px;">
+                <span>No checklist linked to this record yet.</span>
+                <button onclick="document.getElementById('mpRecordPanel').remove();showTrackerTab('workflows');setTimeout(()=>wfNewCaseForScenario('${rec.type==='Maternity'?'maternity-leave':'paternity-leave'}'),200)" class="btn btn-primary btn-sm" style="font-size:10px;white-space:nowrap;">Start checklist →</button>
+              </div>
+            </div>`;
+          }
+          const sc = WF_SCENARIOS.find(s=>s.id===linked.scenarioId)||{steps:[]};
+          const pct = sc.steps.length?Math.round((linked.checkedSteps.length/sc.steps.length)*100):0;
+          const stepsPreview = sc.steps.slice(0,5).map(step=>{
+            const done = linked.checkedSteps.includes(step.id);
+            return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;">${done?'✅':'⬜'}</span><span style="font-size:11px;color:var(--ink);${done?'text-decoration:line-through;color:var(--ink3);':''}">${step.title}</span></div>`;
+          }).join('');
+          return `<div style="padding:16px 22px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-size:12px;font-weight:700;color:var(--ink);">Next Steps checklist</div>
+              <button onclick="document.getElementById('mpRecordPanel').remove();showTrackerTab('workflows');setTimeout(()=>wfOpenCase('${linked.id}'),300)" class="btn btn-secondary btn-sm" style="font-size:10px;">View full checklist →</button>
+            </div>
+            <div style="margin-bottom:8px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><span style="font-size:11px;color:var(--ink2);">Progress</span><span style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${linked.checkedSteps.length} / ${sc.steps.length}</span></div>
+              <div style="height:5px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div>
+            </div>
+            ${stepsPreview}
+            ${sc.steps.length>5?`<div style="font-size:11px;color:var(--ink3);margin-top:6px;">+ ${sc.steps.length-5} more steps</div>`:''}
+          </div>`;
+        })()}
+
+        <!-- Documents -->
+        ${(()=>{
+          const linked = (wfCases||[]).find(c=>c.id===rec.wfCaseId || c.mpRecordId===rec.id);
+          const docs = linked?.docs || [];
+          return `<div style="padding:16px 22px;border-top:1px solid var(--border);">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+              <div style="font-size:12px;font-weight:700;color:var(--ink);">Documents (${docs.length})</div>
+              ${linked?`<label class="btn btn-primary btn-sm" style="cursor:pointer;font-size:10px;">+ Upload<input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfUploadDoc('${linked.id}',this)"></label>`:''}
+            </div>
+            ${docs.length ? docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);"><span>${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.(docx?)/)?'📝':'📎'}</span><div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.filename)}</div><div style="font-size:10px;color:var(--ink3);">${d.type}</div></div><button onclick="wfDownloadDoc('${linked.id}','${d.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇</button></div>`).join('')
+            : `<div style="font-size:11px;color:var(--ink3);">${linked?'No documents yet — use Upload to add sick notes, MATB1, letters etc.':'Start a checklist to enable document upload.'}</div>`}
+          </div>`;
+        })()}
+
         <!-- Danger zone -->
         <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
           <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteMatPatRecord('${rec.id}')">Delete record</button>
@@ -10341,12 +10388,14 @@ function wfRenderCase(c) {
   const startedDate = new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
 
   detail.innerHTML = `<div style="padding:22px;max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:16px;">
+    <!-- Case header -->
     <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;">
       <div style="display:flex;align-items:flex-start;gap:12px;">
         <span style="font-size:26px;flex-shrink:0;">${scenario.icon}</span>
         <div style="flex:1;">
           <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${c.employeeName}</div>
           <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${scenario.label} · Started ${startedDate}</div>
+          ${c.mpRecordId ? `<button onclick="showTrackerTab('leave');setTimeout(()=>openMatPatRecord('${c.mpRecordId}'),200)" style="margin-top:6px;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:4px;">📋 View mat/pat tracker record →</button>` : ''}
         </div>
         <div style="display:flex;gap:6px;">
           ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);">✓ Close case</button>`:''}
@@ -10356,14 +10405,38 @@ function wfRenderCase(c) {
       <div style="margin-top:12px;">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;">
           <span style="font-size:11px;font-weight:600;color:var(--ink);">Progress</span>
-          <span id="wf-progress-pct" style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${done} / ${total} complete${pct===100?' - all steps done ✓':''}</span>
+          <span id="wf-progress-pct" style="font-size:11px;color:${pct===100?'var(--green)':'var(--ink3)'};">${done} / ${total} complete${pct===100?' — all steps done ✓':''}</span>
         </div>
         <div style="height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
       </div>
-      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:7px 12px;font-size:11px;color:var(--amber);">No policies uploaded - using ACAS guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;">Upload policies</a></div>`
-      :`<div style="margin-top:10px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} company policies loaded - steps marked 📋 reference your policies.</div>`}
+      ${!wfPolicies?.length?`<div style="margin-top:10px;background:var(--amber-bg);border:1px solid #FDE68A;border-radius:var(--r-sm);padding:7px 12px;font-size:11px;color:var(--amber);">No policies uploaded — using ACAS guidance. <a onclick="showView('manage',document.querySelector('.ni[onclick*=manage]'))" style="color:var(--amber);font-weight:700;cursor:pointer;text-decoration:underline;">Upload policies</a></div>`
+      :`<div style="margin-top:10px;font-size:11px;color:var(--green);">✓ ${wfPolicies.length} company policies loaded — steps marked 📋 reference your policies.</div>`}
     </div>
+
+    <!-- Checklist steps -->
     <div style="display:flex;flex-direction:column;gap:8px;">${stepsHtml}</div>
+
+    <!-- Documents -->
+    <div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
+      <div style="padding:13px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+        <div style="font-size:13px;font-weight:700;color:var(--ink);">Documents <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${(c.docs||[]).length} file${(c.docs||[]).length!==1?'s':''})</span></div>
+        <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload file<input type="file" accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg" style="display:none" onchange="wfUploadDoc('${c.id}',this)"></label>
+      </div>
+      <div style="padding:12px 16px;display:flex;flex-direction:column;gap:0;" id="wf-docs-${c.id}">
+        ${(c.docs||[]).length ? (c.docs||[]).map(d=>`
+          <div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);">
+            <span style="font-size:16px;">${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.(docx?|doc)$/)?'📝':d.filename.match(/\.(png|jpe?g)$/)?'🖼️':'📎'}</span>
+            <div style="flex:1;min-width:0;">
+              <div style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.filename)}</div>
+              <div style="font-size:10px;color:var(--ink3);">${escapeHtml(d.type)} · ${new Date(d.uploadedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div>
+            </div>
+            <button onclick="wfDownloadDoc('${c.id}','${d.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇ Download</button>
+            <button onclick="wfDeleteDoc('${c.id}','${d.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">✕</button>
+          </div>`).join('')
+        : '<div style="padding:16px 0;text-align:center;color:var(--ink3);font-size:12px;">No documents uploaded yet — upload sick notes, MATB1 forms, letters or any relevant files.</div>'}
+      </div>
+    </div>
+
   </div>`;
 }
 
@@ -10483,6 +10556,61 @@ async function openTrackerGuidance(topic) {
 function wfOpenDoc(docId) {
   const tmpl = tmpls.find(t=>t.id===docId);
   if (tmpl) { showView('docs',document.querySelector('.ni[onclick*=docs]')); setTimeout(()=>openTmpl(tmpl),100); }
+}
+
+// ── WORKFLOW DOCUMENT UPLOAD ──
+async function wfUploadDoc(caseId, input) {
+  const file = input.files[0]; if (!file) return;
+  const MAX = 1.5 * 1024 * 1024; // 1.5MB
+  if (file.size > MAX) { alert('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; }
+  const b64 = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  if (!c.docs) c.docs = [];
+  // Prompt for doc type
+  const types = ['Sick note','MATB1 form','Fit note','Letter','SC3 form','Medical report','Company document','Other'];
+  const type = prompt('Document type:\n'+types.map((t,i)=>`${i+1}. ${t}`).join('\n')+'\n\nEnter a number or type a label:', '1');
+  const typeLabel = (parseInt(type)>=1 && parseInt(type)<=types.length) ? types[parseInt(type)-1] : (type||'Document');
+  const doc = { id:'doc_'+Date.now(), filename:file.name, type:typeLabel, base64:b64, mimeType:file.type, uploadedAt:new Date().toISOString() };
+  c.docs.push(doc);
+  await saveWfCases();
+  input.value = '';
+  // Refresh doc list without full re-render
+  const listEl = document.getElementById('wf-docs-'+caseId);
+  if (listEl) {
+    const newRow = document.createElement('div');
+    newRow.style.cssText = 'display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);';
+    const icon = file.name.endsWith('.pdf')?'📄':file.name.match(/\.(docx?|doc)$/)?'📝':file.name.match(/\.(png|jpe?g)$/)?'🖼️':'📎';
+    newRow.innerHTML = `<span style="font-size:16px;">${icon}</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(file.name)}</div><div style="font-size:10px;color:var(--ink3);">${typeLabel} · just now</div></div><button onclick="wfDownloadDoc('${caseId}','${doc.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇ Download</button><button onclick="wfDeleteDoc('${caseId}','${doc.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">✕</button>`;
+    // Remove empty state if present
+    const empty = listEl.querySelector('div[style*="No documents"]');
+    if (empty) empty.remove();
+    listEl.appendChild(newRow);
+  }
+  showBreezeToast('Document uploaded');
+}
+
+function wfDownloadDoc(caseId, docId) {
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  const doc = (c.docs||[]).find(d=>d.id===docId); if (!doc) return;
+  const bytes = Uint8Array.from(atob(doc.base64), c=>c.charCodeAt(0));
+  const blob = new Blob([bytes], { type: doc.mimeType||'application/octet-stream' });
+  const a = document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=doc.filename; a.click(); URL.revokeObjectURL(a.href);
+}
+
+async function wfDeleteDoc(caseId, docId) {
+  if (!confirm('Remove this document?')) return;
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  c.docs = (c.docs||[]).filter(d=>d.id!==docId);
+  await saveWfCases();
+  wfRenderCase(c);
+}
+
+function showBreezeToast(msg) {
+  const t = document.getElementById('breezeToast');
+  if (!t) return;
+  t.textContent = msg;
+  t.classList.add('visible');
+  setTimeout(()=>t.classList.remove('visible'), 2500);
 }
 
 // ── INIT ──
