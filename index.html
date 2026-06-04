@@ -10373,7 +10373,7 @@ function ocShowNodeMenu(node) {
   const safeId=node.id.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
   const menu=document.createElement('div');
   menu.id='ocNodeMenu';
-  menu.style.cssText=`position:absolute;left:${menuLeft}px;top:${menuTop}px;width:244px;background:white;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:500;overflow:hidden;font-family:inherit;`;
+  menu.style.cssText=`position:absolute;left:${menuLeft}px;top:${menuTop}px;width:244px;background:white;border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-lg);z-index:500;overflow:visible;font-family:inherit;`;
   menu.onclick=e=>e.stopPropagation();
   menu.innerHTML=`
     <div style="padding:12px 14px 10px;border-bottom:1px solid var(--border);display:flex;align-items:flex-start;gap:8px;">
@@ -10413,7 +10413,7 @@ function ocShowNodeMenu(node) {
             onfocus="this.style.borderColor='var(--accent)';ocTeamSearch(this.value,'${safeId}')"
             onblur="setTimeout(()=>{const d=document.getElementById('ocTeamDrop');if(d)d.style.display='none'},200)"
             onkeydown="if(event.key==='Enter'&&this.value.trim()){ocSetTeam('${safeId}',this.value.trim())}">
-          <div id="ocTeamDrop" style="display:none;position:absolute;top:100%;left:0;right:0;background:white;border:1px solid var(--border2);border-top:none;border-radius:0 0 var(--r-sm) var(--r-sm);max-height:140px;overflow-y:auto;z-index:600;box-shadow:var(--shadow);"></div>
+          <div id="ocTeamDrop" style="display:none;position:absolute;bottom:100%;left:0;right:0;background:white;border:1px solid var(--border2);border-bottom:none;border-radius:var(--r-sm) var(--r-sm) 0 0;max-height:140px;overflow-y:auto;z-index:600;box-shadow:var(--shadow);"></div>
         </div>
       </div>
     </div>`;
