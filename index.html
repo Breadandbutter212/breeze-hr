@@ -1237,11 +1237,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="manage-topbar">
     <div><div class="manage-title">Trackers</div><div class="manage-sub">Live HR tracking across leave, absence and recruitment.</div></div>
     <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;" id="trackerTabBtns">
-      <button onclick="showTrackerTab('leave')" id="tt-leave" class="tracker-tab-btn active-tt">Leave & Absence</button>
+      <button onclick="showTrackerTab('workflows')" id="tt-workflows" class="tracker-tab-btn active-tt">✦ Next Steps</button>
+      <button onclick="showTrackerTab('leave')" id="tt-leave" class="tracker-tab-btn">Leave &amp; Absence</button>
       <button onclick="showTrackerTab('recruitment')" id="tt-recruitment" class="tracker-tab-btn">Recruitment</button>
-      <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions & Careers</button>
+      <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
       <button onclick="showTrackerTab('immigration')" id="tt-immigration" class="tracker-tab-btn">Immigration</button>
-      <button onclick="showTrackerTab('workflows')" id="tt-workflows" class="tracker-tab-btn">✦ Next Steps</button>
     </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;display:flex;flex-direction:column;"></div>
@@ -8562,85 +8562,84 @@ function ppSwitchView(v) {
   else renderPPTimeline();
 }
 
-function downloadPeoplePlanXLSX() {
+function downloadPeoplePlanPPT() {
   if (!ppPlan) return;
   const btn = document.querySelector('#ppTopbarBtns .btn-primary');
   if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
 
-  const wb = XLSX.utils.book_new();
-  const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  const pptx = new PptxGenJS();
+  pptx.layout = 'LAYOUT_WIDE';
 
-  const sorted = [...ppPlan.events].sort((a,b) => {
-    const ca = PP_CATS.findIndex(c=>c.id===a.catId);
-    const cb = PP_CATS.findIndex(c=>c.id===b.catId);
-    if (ca !== cb) return ca - cb;
-    return a.startMonth - b.startMonth;
+  // Cover slide
+  const slide1 = pptx.addSlide();
+  slide1.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'1B2D50'} });
+  slide1.addShape(pptx.ShapeType.rect, { x:0.5, y:3.1, w:1.2, h:0.08, fill:{color:'3B82F6'} });
+  slide1.addText(`${ppPlan.year} People Plan`, { x:0.5, y:1.6, w:12, h:1.2, fontSize:48, bold:true, color:'FFFFFF', fontFace:'Calibri', charSpacing:-1 });
+  slide1.addText(currentProfile?.company_name || '', { x:0.5, y:3.3, w:12, h:0.7, fontSize:18, color:'BFDBFE', fontFace:'Calibri' });
+  slide1.addText(`HR Calendar - ${ppPlan.year}`, { x:0.5, y:6.8, w:12, h:0.4, fontSize:10, color:'475569', fontFace:'Calibri' });
+
+  // Gantt slide — rowH increased to 0.62 so text can wrap to 2 lines without clipping
+  const slide2 = pptx.addSlide();
+  slide2.background = { color:'FFFFFF' };
+  slide2.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.0, fill:{color:'1B2D50'} });
+  slide2.addText('Annual HR Calendar', { x:0.4, y:0.15, w:12, h:0.7, fontSize:22, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+
+  const colW = 12.3/12, startX = 0.5, rowH = 0.62, headerY = 1.1, dataY = 1.52;
+  PP_MONTHS.forEach((m,i) => {
+    slide2.addShape(pptx.ShapeType.rect, { x:startX+i*colW, y:headerY, w:colW-0.02, h:0.32, fill:{color:'EFF6FF'}, line:{color:'DBEAFE',width:1} });
+    slide2.addText(m, { x:startX+i*colW, y:headerY, w:colW-0.02, h:0.32, align:'center', fontSize:9, bold:true, color:'1D4ED8', fontFace:'Calibri' });
   });
 
-  // ── Sheet 1: Calendar (Gantt-style) ──
-  const coName = currentProfile?.company_name ? ` - ${currentProfile.company_name}` : '';
-  const calRows = [
-    [`${ppPlan.year} People Plan${coName}`],
-    ['', '', ...months, 'Owner', 'Notes']
-  ];
-
-  let lastCat = null;
-  sorted.forEach(ev => {
-    const cat = PP_CATS.find(c=>c.id===ev.catId);
-    const catLabel = cat?.label || ev.catId;
-    if (catLabel !== lastCat) {
-      if (lastCat !== null) calRows.push(Array(16).fill(''));
-      calRows.push([catLabel]);
-      lastCat = catLabel;
+  const cats = PP_CATS.filter(c => ppPlan.events.some(e => e.catId === c.id));
+  cats.forEach((cat, rowIdx) => {
+    const y = dataY + rowIdx * rowH;
+    slide2.addText(cat.label, { x:0, y:y+0.05, w:startX-0.05, h:rowH-0.1, fontSize:8, bold:true, color:'374151', fontFace:'Calibri', align:'right' });
+    for (let m=1;m<=12;m++) {
+      slide2.addShape(pptx.ShapeType.rect, { x:startX+(m-1)*colW, y, w:colW-0.02, h:rowH-0.06, fill:{color:rowIdx%2===0?'FAFAFA':'FFFFFF'}, line:{color:'E5E7EB',width:0.5} });
     }
-    const monthCells = months.map((_,i) => {
-      const m = i+1;
-      return (m >= ev.startMonth && m <= ev.endMonth) ? '■' : '';
+    ppPlan.events.filter(e=>e.catId===cat.id).forEach(ev => {
+      const evX = startX+(ev.startMonth-1)*colW;
+      const evW = (ev.endMonth-ev.startMonth+1)*colW - 0.06;
+      const barH = rowH - 0.14;
+      slide2.addShape(pptx.ShapeType.roundRect, { x:evX+0.02, y:y+0.07, w:evW, h:barH, fill:{color:cat.color.replace('#','')}, rectRadius:0.05 });
+      slide2.addText(ev.title, { x:evX+0.05, y:y+0.07, w:evW-0.06, h:barH, fontSize:7.5, bold:true, color:'FFFFFF', fontFace:'Calibri', valign:'middle', wrap:true });
     });
-    calRows.push(['', ev.title, ...monthCells, ev.owner||'', ev.notes||'']);
   });
 
-  const ws1 = XLSX.utils.aoa_to_sheet(calRows);
-  ws1['!cols'] = [
-    {wch:22}, {wch:32},
-    ...Array(12).fill({wch:5}),
-    {wch:20}, {wch:40}
-  ];
-  XLSX.utils.book_append_sheet(wb, ws1, 'Calendar');
-
-  // ── Sheet 2: Details ──
-  const detailRows = [
-    ['Category', 'Event', 'Start Month', 'End Month', 'Start Date', 'End Date', 'Owner', 'Notes']
-  ];
-  sorted.forEach(ev => {
-    const cat = PP_CATS.find(c=>c.id===ev.catId);
-    const startFmt = ev.startDate ? new Date(ev.startDate+'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
-    const endFmt   = ev.endDate   ? new Date(ev.endDate  +'T00:00:00').toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
-    const startM = months[ev.startMonth-1];
-    const endM   = ev.startMonth === ev.endMonth ? startM : months[ev.endMonth-1];
-    detailRows.push([
-      cat?.label || ev.catId,
-      ev.title,
-      startM, endM,
-      startFmt, endFmt,
-      ev.owner||'', ev.notes||''
-    ]);
+  // Per-category slides
+  PP_CATS.forEach(cat => {
+    const catEvts = ppPlan.events.filter(e => e.catId === cat.id);
+    if (!catEvts.length) return;
+    const slide = pptx.addSlide();
+    slide.background = { color:'FFFFFF' };
+    slide.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:1.1, fill:{color:cat.color.replace('#','')} });
+    slide.addText(cat.label, { x:0.4, y:0.15, w:12, h:0.8, fontSize:26, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+    catEvts.forEach((ev, i) => {
+      const col = i % 3, row = Math.floor(i / 3);
+      const x = 0.4 + col * 4.35, y = 1.4 + row * 1.6;
+      slide.addShape(pptx.ShapeType.roundRect, { x, y, w:4.0, h:1.4, fill:{color:'F8FAFC'}, line:{color:cat.color.replace('#',''),width:2}, rectRadius:0.1 });
+      slide.addShape(pptx.ShapeType.rect, { x, y, w:0.12, h:1.4, fill:{color:cat.color.replace('#','')}, rectRadius:0 });
+      slide.addText(ev.title, { x:x+0.2, y:y+0.15, w:3.6, h:0.45, fontSize:13, bold:true, color:'1D1D1F', fontFace:'Calibri', wrap:true });
+      const monthStr = ev.startMonth === ev.endMonth ? PP_MONTHS[ev.startMonth-1] : PP_MONTHS[ev.startMonth-1]+' - '+PP_MONTHS[ev.endMonth-1];
+      slide.addText(monthStr, { x:x+0.2, y:y+0.6, w:3.6, h:0.3, fontSize:11, color:cat.color.replace('#',''), fontFace:'Calibri', bold:true });
+      if (ev.notes) slide.addText(ev.notes, { x:x+0.2, y:y+0.92, w:3.6, h:0.35, fontSize:10, color:'6B7280', fontFace:'Calibri', wrap:true });
+    });
   });
-  const ws2 = XLSX.utils.aoa_to_sheet(detailRows);
-  ws2['!cols'] = [
-    {wch:22},{wch:32},{wch:12},{wch:12},
-    {wch:14},{wch:14},{wch:20},{wch:40}
-  ];
-  XLSX.utils.book_append_sheet(wb, ws2, 'Details');
 
-  XLSX.writeFile(wb, `People Plan ${ppPlan.year}.xlsx`);
-  if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(()=>btn.textContent='⬇ Excel',2500); }
+  // Closing slide
+  const slideEnd = pptx.addSlide();
+  slideEnd.addShape(pptx.ShapeType.rect, { x:0, y:0, w:'100%', h:'100%', fill:{color:'1B2D50'} });
+  slideEnd.addText('Questions?', { x:0.5, y:2.5, w:12, h:1.0, fontSize:40, bold:true, color:'FFFFFF', fontFace:'Calibri' });
+  slideEnd.addText('Generated by Breeze HR', { x:0.5, y:7.0, w:12, h:0.3, fontSize:9, color:'475569', fontFace:'Calibri' });
+
+  pptx.writeFile({ fileName: `People Plan ${ppPlan.year}.pptx` });
+  if (btn) { btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(()=>btn.textContent='⬇ PPT',2500); }
 }
 
 // ── TRACKERS ──
 // ── MAT/PAT DATA LAYER ──
 let mpRecords = null; // null = not loaded yet
-let trackerTab = 'leave';
+let trackerTab = 'workflows';
 
 async function loadMatPatRecords() {
   if (mpRecords !== null) return;
@@ -9858,9 +9857,14 @@ function ocFit() {
   const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; col(_ocTree);
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   all.forEach(n=>{const p=ocPos(n);minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x+OC_W);maxY=Math.max(maxY,p.y+OC_H);});
-  const pad=40,pw=maxX-minX+pad*2,ph=maxY-minY+pad*2;
-  const k=Math.min(0.95,Math.min(r.width/pw,r.height/ph));
-  _ocT.k=k;_ocT.x=(r.width-pw*k)/2-minX*k+pad*k;_ocT.y=(r.height-ph*k)/2-minY*k+pad*k;ocApplyT();
+  const pad=48,pw=maxX-minX+pad*2,ph=maxY-minY+pad*2;
+  // Never shrink below 0.28 — nodes stay legible; prefer fitting height over width for tall trees
+  const k=Math.max(0.28, Math.min(0.95, Math.min(r.width/pw, r.height/ph)));
+  _ocT.k=k;
+  // Centre horizontally; anchor top of tree 60px below toolbar
+  _ocT.x=(r.width-pw*k)/2-minX*k+pad*k;
+  _ocT.y=60-minY*k;
+  ocApplyT();
 }
 
 function ocReset() {
