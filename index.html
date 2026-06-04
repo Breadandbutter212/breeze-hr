@@ -7378,13 +7378,13 @@ function onCompareModeChange() {
   const subTitle = document.getElementById('compareSubTitle');
   const fB = document.getElementById('fileB');
   if (isEmployee) {
-    if (labelA) labelA.textContent = mode === 'comp' ? 'File A — payroll / HR system export' : 'File A — primary source (payroll, HR export)';
-    if (labelB) labelB.textContent = mode === 'comp' ? 'File B — comp letters (select multiple .docx)' : 'File B — letters or second spreadsheet (select multiple)';
+    if (labelA) labelA.textContent = mode === 'comp' ? 'File A — payroll / HR spreadsheet' : 'File A — spreadsheet A';
+    if (labelB) labelB.textContent = mode === 'comp' ? 'File B — compensation statements (select multiple .docx)' : 'File B — spreadsheet B';
     if (subA) subA.textContent = '.xlsx, .xls, .csv';
-    if (subB) subB.textContent = '.docx, .xlsx, .csv — select multiple files at once';
+    if (subB) subB.textContent = mode === 'comp' ? '.docx — select multiple files at once' : '.xlsx, .xls, .csv';
     if (subTitle) subTitle.textContent = mode === 'comp'
-      ? 'Upload one spreadsheet + as many comp letters as you like. Matches each letter to the employee row and flags salary discrepancies.'
-      : 'Upload one spreadsheet + multiple files. Matches each to the employee row and compares all fields.';
+      ? 'Upload your payroll spreadsheet + as many compensation statements as you like. AI reads each letter regardless of format and flags any differences.'
+      : 'Upload two spreadsheets. Matches rows by employee name or ID and compares every field, even if column names differ.';
     if (fB) fB.setAttribute('multiple', '');
   } else {
     if (labelA) labelA.textContent = 'Original file';
