@@ -8107,7 +8107,7 @@ function renderPeoplePlan() {
   } else {
     if (btns) btns.innerHTML = `
       <select id="ppYearSel" onchange="ppChangeYear(this.value)" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);">
-        ${[ppPlan.year-1,ppPlan.year,ppPlan.year+1].map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
+        ${[-3,-2,-1,0,1,2,3].map(d=>ppPlan.year+d).map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
       </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
       <button class="btn btn-secondary btn-sm" onclick="ppAddCategory()">+ Category</button>
@@ -8116,7 +8116,14 @@ function renderPeoplePlan() {
   }
 }
 
-function ppChangeYear(y) { ppPlan.year = parseInt(y); renderPeoplePlanSave(); renderPPTimeline(); }
+async function ppChangeYear(y) {
+  const newYear = parseInt(y);
+  if (newYear === ppPlan?.year) return;
+  await renderPeoplePlanSave(); // save current year first
+  const loaded = await ppLoadYear(newYear);
+  ppPlan = loaded || { year: newYear, events: [], customCats: ppPlan?.customCats || [] };
+  renderPeoplePlan();
+}
 
 const PP_CAT_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#F97316','#06B6D4','#84CC16','#A855F7','#0EA5E9'];
 
@@ -8375,15 +8382,28 @@ function buildPlanFromWizard() {
 async function renderPeoplePlanSave() {
   if (!currentProfile || !ppPlan) return;
   const json = JSON.stringify(ppPlan);
-  const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:PeoplePlan').maybeSingle();
+  const key = `SETTING:PeoplePlan:${ppPlan.year}`;
+  const { data: existing } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name', key).maybeSingle();
   if (existing) { await sb.from('policies').update({ content: json }).eq('id', existing.id); }
-  else { await sb.from('policies').insert({ company_id: currentProfile.company_id, name: 'SETTING:PeoplePlan', content: json }); }
+  else { await sb.from('policies').insert({ company_id: currentProfile.company_id, name: key, content: json }); }
 }
 
 async function loadPeoplePlan() {
   if (!currentProfile || ppPlan) return;
-  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','SETTING:PeoplePlan').maybeSingle();
-  if (data?.content) { try { ppPlan = JSON.parse(data.content); } catch(e) {} }
+  const thisYear = new Date().getFullYear();
+  // Try current year's key first
+  const { data: yr } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name', `SETTING:PeoplePlan:${thisYear}`).maybeSingle();
+  if (yr?.content) { try { ppPlan = JSON.parse(yr.content); return; } catch(e) {} }
+  // Fall back to legacy single-key (migrate on next save)
+  const { data: leg } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','SETTING:PeoplePlan').maybeSingle();
+  if (leg?.content) { try { ppPlan = JSON.parse(leg.content); } catch(e) {} }
+}
+
+async function ppLoadYear(year) {
+  if (!currentProfile) return null;
+  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name', `SETTING:PeoplePlan:${year}`).maybeSingle();
+  if (data?.content) { try { return JSON.parse(data.content); } catch(e) {} }
+  return null;
 }
 
 function ppAssignLanes(catEvents) {
