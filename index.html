@@ -1248,6 +1248,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <button onclick="showTrackerTab('conduct')" id="tt-conduct" class="tracker-tab-btn">Conduct</button>
       <button onclick="showTrackerTab('immigration-wf')" id="tt-immigration-wf" class="tracker-tab-btn">Immigration</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
+      <div id="trackerCustomTabs" style="display:contents;"></div>
+      <button onclick="openCreateTrackerModal()" class="tracker-tab-btn" style="color:var(--accent);font-weight:600;" title="Create AI-powered custom tracker">+ Custom</button>
     </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;flex:1;min-height:0;position:relative;"></div>
@@ -5286,7 +5288,7 @@ function showView(v,navEl) {
   if(v==='presentations')initPresentations();
   if(v==='peopleplan'){loadPeoplePlan().then(()=>renderPeoplePlan());}
   if(v==='orgchart')initOrgChart();
-  if(v==='trackers'){mpRecords=null;_guidanceCache={};wfPolicies=null;wfCases=null;wfActiveCase=null;immigrationRecords=null;trackerTab='family-leave';document.querySelectorAll('.tracker-tab-btn').forEach(b=>b.classList.remove('active-tt'));const ftb=document.getElementById('tt-family-leave');if(ftb)ftb.classList.add('active-tt');renderTrackers();}
+  if(v==='trackers'){mpRecords=null;_guidanceCache={};wfPolicies=null;wfCases=null;wfActiveCase=null;immigrationRecords=null;customTrackers=null;trackerTab='family-leave';document.querySelectorAll('.tracker-tab-btn').forEach(b=>b.classList.remove('active-tt'));const ftb=document.getElementById('tt-family-leave');if(ftb)ftb.classList.add('active-tt');renderTrackers();}
 }
 
 // ── BULK MAIL MERGE ──
@@ -8855,6 +8857,136 @@ function downloadPeoplePlanPPT() {
 // ── MAT/PAT DATA LAYER ──
 let mpRecords = null; // null = not loaded yet
 let trackerTab = 'family-leave';
+let customTrackers = null;
+let _pendingCustomTracker = null;
+
+async function loadCustomTrackers() {
+  if (customTrackers !== null) return;
+  if (!currentProfile) { customTrackers = []; return; }
+  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','SETTING:CustomTrackers').maybeSingle();
+  try { customTrackers = data?.content ? JSON.parse(data.content) : []; } catch(e) { customTrackers = []; }
+  // Register custom scenarios in WF_SCENARIOS so wfRenderCase can find them
+  customTrackers.forEach(ct => { if (!WF_SCENARIOS.find(s=>s.id===ct.id)) WF_SCENARIOS.push({id:ct.id,cat:'Custom',icon:ct.icon||'📋',label:ct.label,steps:ct.steps||[]}); });
+}
+async function saveCustomTrackers() {
+  if (!currentProfile) return;
+  const json = JSON.stringify(customTrackers);
+  const { data: ex } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:CustomTrackers').maybeSingle();
+  if (ex) await sb.from('policies').update({content:json}).eq('id', ex.id);
+  else await sb.from('policies').insert({company_id:currentProfile.company_id, name:'SETTING:CustomTrackers', content:json});
+}
+function renderTrackerCustomTabs() {
+  const wrap = document.getElementById('trackerCustomTabs'); if (!wrap) return;
+  wrap.innerHTML = '';
+  (customTrackers||[]).forEach(ct => {
+    const btn = document.createElement('button');
+    btn.id = `tt-custom-${ct.id}`;
+    btn.className = 'tracker-tab-btn';
+    btn.textContent = (ct.icon||'📋') + ' ' + ct.label;
+    btn.onclick = () => showTrackerTab('custom:'+ct.id);
+    if (trackerTab === 'custom:'+ct.id) btn.classList.add('active-tt');
+    wrap.appendChild(btn);
+  });
+}
+function openCreateTrackerModal() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
+      <div style="font-size:15px;font-weight:700;color:white;">Create custom tracker</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">AI generates a tailored checklist based on your description</div>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Tracker name</label>
+        <input id="ct-name" placeholder="e.g. Recruitment, TUPE transfer, Onboarding..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">What should this tracker cover? <span style="font-weight:400;color:var(--ink3);">(optional — helps AI generate better steps)</span></label>
+        <textarea id="ct-desc" rows="3" placeholder="e.g. Track candidates from application through to offer and onboarding, including right to work checks..." style="${inp}resize:vertical;min-height:70px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <div id="ct-error" style="display:none;color:var(--red);font-size:12px;"></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="ct-submit" onclick="submitCreateTracker(this)">✨ Generate with AI</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
+}
+async function submitCreateTracker(btn) {
+  const name = document.getElementById('ct-name')?.value?.trim();
+  const errEl = document.getElementById('ct-error');
+  if (!name) { document.getElementById('ct-name').style.borderColor='var(--red)'; return; }
+  const desc = document.getElementById('ct-desc')?.value?.trim() || '';
+  btn.textContent = '⏳ Generating...'; btn.disabled = true;
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const token = await getAuthToken();
+    const prompt = `You are an expert UK HR professional. Generate a practical HR process checklist for tracking: "${name}".${desc?' Context: '+desc:''}
+
+Return ONLY a valid JSON object — no markdown, no explanation — exactly this shape:
+{"icon":"<one emoji>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance for this step.","timeframe":"When to do it","tag":"legal"},…]}
+
+Generate 7-10 steps. Tag must be one of: legal, recommended, best-practice. Make steps specific and actionable.`;
+    const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({message:prompt,history:[],systemOverride:'Return only valid JSON. No markdown fences, no explanation.'})});
+    const d = await res.json();
+    const raw = d.reply || d.content || '';
+    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
+    const parsed = JSON.parse(jsonStr);
+    const tracker = {id:'ct_'+Date.now(), label:name, icon:parsed.icon||'📋', cat:'Custom', steps:(parsed.steps||[]).map((s,i)=>({...s,id:i+1})), createdAt:new Date().toISOString()};
+    _pendingCustomTracker = tracker;
+    btn.closest('div[style*=fixed]').remove();
+    showTrackerPreviewModal(tracker);
+  } catch(e) {
+    btn.textContent = '✨ Generate with AI'; btn.disabled = false;
+    if (errEl) { errEl.textContent = 'Generation failed — please try again.'; errEl.style.display = 'block'; }
+  }
+}
+function showTrackerPreviewModal(tracker) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const stepsHtml = (tracker.steps||[]).map((s,i)=>`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div><div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${escapeHtml(s.title)}</div><div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(s.desc)}</div></div></div>`).join('');
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:86vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="font-size:28px;">${tracker.icon}</div>
+      <div><div style="font-size:15px;font-weight:700;color:white;">${escapeHtml(tracker.label)}</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tracker.steps.length} AI-generated steps — review before saving</div></div>
+    </div>
+    <div style="overflow-y:auto;padding:0 24px;flex:1;">${stepsHtml}</div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-shrink:0;">
+      <button class="btn btn-ghost btn-sm" onclick="this.closest('div[style*=fixed]').remove();openCreateTrackerModal()">← Regenerate</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmSaveCustomTracker(this)">Save tracker</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+}
+async function confirmSaveCustomTracker(btn) {
+  const tracker = _pendingCustomTracker; if (!tracker) return;
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  if (!customTrackers) await loadCustomTrackers();
+  customTrackers.push(tracker);
+  WF_SCENARIOS.push({id:tracker.id,cat:'Custom',icon:tracker.icon,label:tracker.label,steps:tracker.steps});
+  await saveCustomTrackers();
+  _pendingCustomTracker = null;
+  btn.closest('div[style*=fixed]').remove();
+  renderTrackerCustomTabs();
+  showTrackerTab('custom:'+tracker.id);
+}
+async function deleteCustomTracker(id) {
+  if (!confirm('Delete this custom tracker? The cases logged against it will remain but the tracker tab will be removed.')) return;
+  customTrackers = (customTrackers||[]).filter(c=>c.id!==id);
+  await saveCustomTrackers();
+  // Remove from WF_SCENARIOS
+  const idx = WF_SCENARIOS.findIndex(s=>s.id===id);
+  if (idx>-1) WF_SCENARIOS.splice(idx,1);
+  renderTrackerCustomTabs();
+  showTrackerTab('family-leave');
+}
 
 async function loadMatPatRecords() {
   if (mpRecords !== null) return;
@@ -8926,7 +9058,8 @@ function showTrackerTab(tab) {
 
 async function renderTrackers() {
   try {
-    await loadMatPatRecords();
+    await Promise.all([loadMatPatRecords(), loadCustomTrackers()]);
+    renderTrackerCustomTabs();
     renderTrackersBody();
   } catch(e) {
     console.error('[Trackers]', e);
@@ -8945,6 +9078,12 @@ function renderTrackersBody() {
   else if (trackerTab === 'conduct') renderWfCategoryTab(body, ['disciplinary','grievance']);
   else if (trackerTab === 'immigration-wf') renderWfCategoryTab(body, ['immigration-check','rtw-new-starter','visa-renewal','ilr-application']);
   else if (trackerTab === 'careers') renderCareersCategoryTab(body);
+  else if (trackerTab.startsWith('custom:')) {
+    const ctId = trackerTab.slice(7);
+    const ct = (customTrackers||[]).find(c=>c.id===ctId);
+    if (ct) renderWfCategoryTab(body, [ct.id], {noGuidance:true, customTrackerId:ct.id});
+    else body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">Tracker not found.</div>';
+  }
   else renderWfCategoryTab(body, []);
 }
 
@@ -11107,7 +11246,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
       <div style="font-size:15px;font-weight:700;color:var(--ink);">${catName.replace(' leave','').replace(' /','/')} cases <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${activeCases.length} active${closedCases.length?' · '+closedCases.length+' closed':''})</span></div>
       <div style="display:flex;gap:8px;align-items:center;">
         <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
-        <button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
+        ${!opts.noGuidance?`<button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>`:''}
+        ${opts.customTrackerId?`<button onclick="deleteCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">🗑 Delete tracker</button>`:''}
         <button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm">+ New case</button>
       </div>
     </div>
