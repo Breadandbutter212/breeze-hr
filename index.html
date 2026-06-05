@@ -9167,7 +9167,7 @@ function mpFlags(records) {
   records.forEach(r => {
     const status = mpStatus(r);
     if (status === 'returned') return;
-    if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity')) {
+    if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity') && status === 'active') {
       flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave - dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
     }
     const days = mpDaysSinceContact(r);
