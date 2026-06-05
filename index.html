@@ -5127,23 +5127,59 @@ async function loadSettingsDocs() {
   const el = document.getElementById('settingsDocsList'); if(!el||!currentProfile) return;
   const {data} = await sb.from('policies').select('id,name,created_at').eq('company_id',currentProfile.company_id).not('name','like','CHAT:%').order('created_at',{ascending:false});
   if (!data||!data.length) { el.innerHTML='<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>'; return; }
-  const policies = data.filter(d=>!d.name.startsWith('TEMPLATE:'));
+  const isSystem = r => r.name.startsWith('TEMPLATE:') || r.name.startsWith('STYLE:') || r.name.startsWith('SETTING:') || r.name.startsWith('MEETING:');
+  const policyRows = data.filter(d=>!isSystem(d));
   const templates = data.filter(d=>d.name.startsWith('TEMPLATE:'));
-  let html = '';
-  if (policies.length) {
-    html += `<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:6px;">Policies (${policies.length})</div>`;
-    html += policies.map(p=>`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
-      <div style="display:flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:12px;">${p.name}</span></div>
-      <button onclick="deletePolicy('${p.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;">Delete</button>
-    </div>`).join('');
+
+  // Group policy records by name (newest first within each group)
+  const grouped = {};
+  for (const p of policyRows) {
+    if (!grouped[p.name]) grouped[p.name] = [];
+    grouped[p.name].push(p);
   }
+  const groupNames = Object.keys(grouped).sort((a,b)=>a.localeCompare(b));
+  const fmtDate = d => new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const fileIcon = color => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="${color}" stroke-width="2" style="flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`;
+
+  let html = '';
+  if (groupNames.length) {
+    html += `<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin-bottom:8px;">Policies (${groupNames.length})</div>`;
+    html += groupNames.map(name => {
+      const versions = grouped[name]; // newest first
+      const current = versions[0];
+      const older = versions.slice(1);
+      const uid = 'ph_' + current.id;
+      let card = `<div style="border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;overflow:hidden;">`;
+      card += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);">
+        <div style="display:flex;align-items:center;gap:7px;">${fileIcon('var(--green)')}<span style="font-size:12px;font-weight:500;color:var(--ink);">${escapeHtml(name)}</span>${older.length ? `<span style="font-size:10px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1px 7px;">${versions.length} versions</span>` : ''}</div>
+        <button onclick="deletePolicy('${current.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;">Delete</button>
+      </div>`;
+      card += `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-top:1px solid var(--border);">
+        <span style="font-size:11px;color:var(--ink3);">Current &nbsp;·&nbsp; uploaded ${fmtDate(current.created_at)}</span>
+        ${older.length ? `<button onclick="var h=document.getElementById('${uid}');h.style.display=h.style.display==='none'?'block':'none';this.textContent=h.style.display==='none'?'Show history':'Hide history'" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;">Show history</button>` : ''}
+      </div>`;
+      if (older.length) {
+        card += `<div id="${uid}" style="display:none;border-top:1px solid var(--border);">`;
+        older.forEach((v, i) => {
+          card += `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--surface);${i < older.length-1 ? 'border-bottom:1px solid var(--border);' : ''}">
+            <span style="font-size:11px;color:var(--ink3);">v${older.length - i} &nbsp;·&nbsp; ${fmtDate(v.created_at)}</span>
+            <button onclick="deletePolicy('${v.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;">Delete</button>
+          </div>`;
+        });
+        card += `</div>`;
+      }
+      card += `</div>`;
+      return card;
+    }).join('');
+  }
+
   if (templates.length) {
     html += `<div style="font-size:10px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);margin:12px 0 6px;">Templates (${templates.length})</div>`;
     html += templates.map(t=>{
       const displayName = t.name.replace('TEMPLATE: ','').replace('TEMPLATE:','').trim();
       const tmplId = 't_db_'+t.id;
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;gap:7px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span style="font-size:12px;">📄 ${displayName}</span></div>
+        <div style="display:flex;align-items:center;gap:7px;">${fileIcon('var(--accent)')}<span style="font-size:12px;">📄 ${escapeHtml(displayName)}</span></div>
         <div style="display:flex;gap:8px;">
           <button onclick="renameTmpl('${tmplId}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;">Rename</button>
           <button onclick="deleteTemplate('${tmplId}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;">Delete</button>
@@ -8133,6 +8169,7 @@ function renderPeoplePlan() {
       </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
       <button class="btn btn-secondary btn-sm" onclick="ppAddCategory()">+ Category</button>
+      <button onclick="ppExportCalendar()" style="font-size:11px;color:#1D4ED8;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">📅 Calendar</button>
       <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
     renderPPTimeline();
   }
@@ -8196,6 +8233,25 @@ function ppSaveCat(btn) {
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
+}
+
+function ppExportCalendar() {
+  if (!ppPlan?.events?.length) { showBreezeToast('No events to export'); return; }
+  const yr = ppPlan.year;
+  const pad = n => String(n).padStart(2,'0');
+  const icsEvents = ppPlan.events.map(ev => {
+    const start = ev.startDate ? new Date(ev.startDate) : new Date(yr, ev.startMonth-1, 1);
+    const end   = ev.endDate   ? new Date(ev.endDate)   : new Date(yr, ev.endMonth, 0);
+    return {
+      title: ev.title,
+      start, end,
+      allDay: true,
+      description: ev.notes||'',
+      icon: '📋',
+      dateLabel: start.toLocaleDateString('en-GB',{month:'short',year:'numeric'})+(ev.startMonth!==ev.endMonth?' – '+end.toLocaleDateString('en-GB',{month:'short',year:'numeric'}):''),
+    };
+  });
+  showCalendarModal(icsEvents, `${yr} People Plan — ${icsEvents.length} events`, `People Plan ${yr}`);
 }
 
 function ppReset() {
@@ -9639,56 +9695,21 @@ function openMatPatRecord(id) {
 function sendMpCalendarInvites(id) {
   const rec = mpRecords.find(r => r.id === id);
   if (!rec) return;
-
   const fmt = d => d ? new Date(d).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : null;
-  const events = [];
-  if (rec.leaveStart)    events.push({ icon:'🟢', label:'Leave starts', date: fmt(rec.leaveStart) });
-  if (rec.dueDate)       events.push({ icon:'👶', label:`${rec.type==='Paternity'?'Partner\'s due date':'Due date'}`, date: fmt(rec.dueDate) });
-  if (rec.expectedReturn) events.push({ icon:'🔁', label:'Expected return', date: fmt(rec.expectedReturn) });
-  // Add monthly check-in placeholders
+  const icsEvents = [];
+  if (rec.leaveStart) icsEvents.push({title:`${rec.employeeName} — leave starts`,start:rec.leaveStart,allDay:true,icon:'🟢',dateLabel:fmt(rec.leaveStart),description:`${rec.type} leave starts for ${rec.employeeName}.`});
+  if (rec.dueDate) icsEvents.push({title:`${rec.employeeName} — ${rec.type==='Paternity'?'partner\'s due date':'due date'}`,start:rec.dueDate,allDay:true,icon:'👶',dateLabel:fmt(rec.dueDate)});
+  if (rec.expectedReturn) icsEvents.push({title:`${rec.employeeName} — expected return`,start:rec.expectedReturn,allDay:true,icon:'🔁',dateLabel:fmt(rec.expectedReturn),description:`${rec.employeeName} expected to return from ${rec.type} leave.`});
   if (rec.leaveStart && rec.expectedReturn) {
     const start = new Date(rec.leaveStart), end = new Date(rec.expectedReturn);
-    const months = Math.min(Math.round((end-start)/(1000*60*60*24*30)), 12);
-    if (months >= 2) events.push({ icon:'📋', label:`Monthly check-in reminders (${months} months)`, date: 'recurring' });
+    const months = Math.min(Math.round((end-start)/(1000*60*60*24*30)),12);
+    for (let m=1;m<months;m++) {
+      const d = new Date(start); d.setMonth(d.getMonth()+m); d.setHours(10,0,0,0);
+      icsEvents.push({title:`${rec.employeeName} — monthly check-in`,start:d,end:new Date(d.getTime()+1800000),icon:'📋',dateLabel:d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),description:`Monthly keeping-in-touch check-in with ${rec.employeeName} during ${rec.type} leave.`});
+    }
   }
-
-  if (!events.length) {
-    showBreezeToast('Add dates first to generate calendar invites');
-    return;
-  }
-
-  // Show a confirmation modal
-  let modal = document.getElementById('calInviteModal');
-  if (modal) modal.remove();
-  modal = document.createElement('div');
-  modal.id = 'calInviteModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
-  modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
-    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);">
-      <div style="font-size:14px;font-weight:700;color:var(--ink);">📅 Send calendar invites</div>
-      <div style="font-size:12px;color:var(--ink3);margin-top:3px;">${escapeHtml(rec.employeeName)} · ${rec.type}</div>
-    </div>
-    <div style="padding:16px 20px;">
-      <div style="font-size:12px;color:var(--ink2);margin-bottom:12px;">The following events will be added to your calendar and sent to relevant attendees:</div>
-      <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">
-        ${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);">
-          <span style="font-size:16px;">${e.icon}</span>
-          <div style="flex:1;">
-            <div style="font-size:12px;font-weight:500;color:var(--ink);">${e.label}</div>
-            <div style="font-size:11px;color:var(--ink3);">${e.date}</div>
-          </div>
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>
-        </div>`).join('')}
-      </div>
-      <div style="font-size:11px;color:var(--ink3);margin-bottom:16px;">Invites will be sent to the employee, their line manager and HR.</div>
-      <div style="display:flex;gap:8px;justify-content:flex-end;">
-        <button onclick="document.getElementById('calInviteModal').remove()" class="btn btn-secondary btn-sm">Cancel</button>
-        <button onclick="document.getElementById('calInviteModal').remove();showBreezeToast('📅 ${events.length} calendar invite${events.length>1?'s':''} sent')" class="btn btn-primary btn-sm">Send ${events.length} invite${events.length>1?'s':''}</button>
-      </div>
-    </div>
-  </div>`;
-  modal.onclick = e => { if (e.target===modal) modal.remove(); };
-  document.body.appendChild(modal);
+  if (!icsEvents.length) { showBreezeToast('Add dates first to generate calendar invites'); return; }
+  showCalendarModal(icsEvents, `${rec.employeeName} · ${rec.type}`, `${rec.employeeName} ${rec.type} leave`);
 }
 
 async function mpUpdateField(id, field, value) {
@@ -11200,6 +11221,66 @@ function wfTagBadge(tag) {
 
 let _wfCurrentTabScenarios = [];
 
+// ── CALENDAR / .ICS ──
+let _pendingCalEvents = null;
+function generateAndDownloadICS(events, filename) {
+  const pad = n => String(n).padStart(2,'0');
+  const fmtDT = d => { const dt=new Date(d); return dt.getFullYear()+pad(dt.getMonth()+1)+pad(dt.getDate())+'T'+pad(dt.getHours())+pad(dt.getMinutes())+'00'; };
+  const fmtDate = d => { const dt=new Date(d); return dt.getFullYear()+pad(dt.getMonth()+1)+pad(dt.getDate()); };
+  const esc = s => (s||'').replace(/\\/g,'\\\\').replace(/;/g,'\\;').replace(/,/g,'\\,').replace(/\n/g,'\\n');
+  let uid = 0;
+  const vevents = events.map(ev => {
+    const id = 'breeze-'+(++uid)+'-'+Date.now()+'@breeze-hr.app';
+    const lines = ['BEGIN:VEVENT',`UID:${id}`,`SUMMARY:${esc(ev.title)}`];
+    if (ev.allDay) {
+      const nextDay = new Date(new Date(ev.start).getTime()+86400000);
+      lines.push(`DTSTART;VALUE=DATE:${fmtDate(ev.start)}`);
+      lines.push(`DTEND;VALUE=DATE:${fmtDate(ev.end||nextDay)}`);
+    } else {
+      const end = ev.end||new Date(new Date(ev.start).getTime()+3600000);
+      lines.push(`DTSTART:${fmtDT(ev.start)}`); lines.push(`DTEND:${fmtDT(end)}`);
+    }
+    if (ev.description) lines.push(`DESCRIPTION:${esc(ev.description)}`);
+    lines.push('END:VEVENT');
+    return lines.join('\r\n');
+  }).join('\r\n');
+  const ics = ['BEGIN:VCALENDAR','VERSION:2.0','PRODID:-//Breeze HR//EN','CALSCALE:GREGORIAN','METHOD:PUBLISH',vevents,'END:VCALENDAR'].join('\r\n');
+  const blob = new Blob([ics],{type:'text/calendar;charset=utf-8;'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a'); a.href=url; a.download=(filename||'events')+'.ics'; a.click();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+function showCalendarModal(events, subtitle, filename) {
+  _pendingCalEvents = {events, filename};
+  document.getElementById('calInviteModal')?.remove();
+  const modal = document.createElement('div');
+  modal.id = 'calInviteModal';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);"><div style="font-size:14px;font-weight:700;color:var(--ink);">📅 Add to calendar</div><div style="font-size:12px;color:var(--ink3);margin-top:3px;">${escapeHtml(subtitle||'')}</div></div>
+    <div style="padding:16px 20px;">
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:12px;">Download as a <strong>.ics</strong> file — open it to import into Google Calendar, Outlook or Apple Calendar in one click.</div>
+      <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:220px;overflow-y:auto;">
+        ${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);"><span style="font-size:15px;">${e.icon||'📅'}</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.title)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(e.dateLabel||'')}</div></div></div>`).join('')}
+      </div>
+      <div style="display:flex;gap:8px;justify-content:flex-end;">
+        <button onclick="document.getElementById('calInviteModal').remove()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button onclick="confirmCalendarDownload()" class="btn btn-primary btn-sm">⬇ Download .ics</button>
+      </div>
+    </div>
+  </div>`;
+  modal.onclick = e => { if(e.target===modal) modal.remove(); };
+  document.body.appendChild(modal);
+}
+function confirmCalendarDownload() {
+  if (!_pendingCalEvents) return;
+  generateAndDownloadICS(_pendingCalEvents.events, _pendingCalEvents.filename);
+  _pendingCalEvents = null;
+  document.getElementById('calInviteModal')?.remove();
+  showBreezeToast('📅 Calendar file downloaded — open it to import');
+}
+function calTomorrow(hour=10) { const d=new Date(); d.setDate(d.getDate()+1); d.setHours(hour,0,0,0); return d; }
+
 function downloadCSV(rows, filename) {
   const csv = rows.map(r => r.map(c => {
     const s = String(c ?? '');
@@ -11567,6 +11648,8 @@ function wfRenderCase(c) {
       if (step.action.type==='doc') actionBtn=`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
       // tab-type actions removed — user is already in the tracker
     }
+    const isMeetingStep = /meeting|interview|hearing|panel|review|discussion|welfare|invite|induction|accompan/i.test(step.title+' '+step.desc);
+    const calBtn = isMeetingStep ? `<button onclick="event.stopPropagation();wfStepCalendarInvite('${c.id}',${step.id})" title="Add to calendar" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:2px 7px;font-size:11px;cursor:pointer;color:#1D4ED8;">📅</button>` : '';
     return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${c.id}',${step.id})">
       <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation();wfToggleStep('${c.id}',${step.id})" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
       <div style="flex:1;min-width:0;">
@@ -11574,10 +11657,10 @@ function wfRenderCase(c) {
           <div class="wf-step-title" style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;${isDone?'text-decoration:line-through;':''}">${step.title}</div>
           ${wfTagBadge(step.tag)} ${policyBadge}
         </div>
-        <div style="font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:${actionBtn?'10px':'0'};">${step.desc}</div>
+        <div style="font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:${(actionBtn||calBtn)?'10px':'0'};">${step.desc}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
           <span style="font-size:10px;font-weight:600;color:var(--ink3);background:var(--surface2);padding:2px 8px;border-radius:20px;">⏱ ${step.timeframe}</span>
-          ${actionBtn}
+          <div style="display:flex;gap:6px;">${calBtn}${actionBtn}</div>
         </div>
       </div>
     </div>`;
@@ -11796,6 +11879,19 @@ async function wfAddContactLog(caseId) {
   }
 }
 
+function wfStepCalendarInvite(caseId, stepId) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
+  const step=sc.steps.find(s=>s.id===stepId); if(!step) return;
+  const start=calTomorrow(10);
+  showCalendarModal([{
+    title:`${step.title} — ${c.employeeName}`,
+    start, end:new Date(start.getTime()+3600000),
+    icon:'📅',
+    dateLabel:'Suggested: tomorrow 10–11am (edit after import)',
+    description:`${step.desc}\n\nTimeframe: ${step.timeframe}`,
+  }], `${c.employeeName} · ${sc.label}`, `${step.title} ${c.employeeName}`);
+}
 async function wfToggleStep(caseId, stepId) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
   const idx = c.checkedSteps.indexOf(stepId);
@@ -12397,6 +12493,7 @@ function openRolePanel(id) {
       <div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.06em;margin-bottom:4px;">${escapeHtml(st)} (${list.length})</div>
       ${list.map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 10px;background:var(--surface2);border-radius:var(--r-sm);margin-bottom:4px;">
         <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(c.name)}</div>${c.source?`<div style="font-size:10px;color:var(--ink3);">via ${escapeHtml(c.source)}</div>`:''}</div>
+        ${!HC_CAND_FINAL.includes(c.stage)?`<button onclick="hcScheduleInterview('${id}','${c.id}')" title="Schedule interview" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:2px 7px;font-size:11px;cursor:pointer;color:#1D4ED8;flex-shrink:0;">📅</button>`:''}
         <select onchange="hcMoveCand('${id}','${c.id}',this.value)" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 6px;font-size:10px;font-family:inherit;outline:none;background:white;cursor:pointer;">
           ${allStages.map(s=>`<option value="${s}"${c.stage===s?' selected':''}>${escapeHtml(s)}</option>`).join('')}
         </select>
@@ -12452,7 +12549,10 @@ function openRolePanel(id) {
       <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
           <div style="font-size:12px;font-weight:700;color:var(--ink);">Candidates <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${cands.length} total · ${activeCandCount} active${hiredCount?' · '+hiredCount+' hired':''}${rejectedCount?' · '+rejectedCount+' rejected/withdrawn':''})</span></div>
-          <button onclick="hcAddCandidateModal('${id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Add candidate</button>
+          <div style="display:flex;gap:6px;">
+            ${activeCandCount>0?`<button onclick="hcScheduleAllInterviews('${id}')" style="font-size:11px;color:#1D4ED8;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;">📅 Schedule all</button>`:''}
+            <button onclick="hcAddCandidateModal('${id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Add candidate</button>
+          </div>
         </div>
         ${activeCandCount>0?`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r);"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pipeline</div>${pipelineHtml}</div>`:''}
         ${cands.length?candsByStage:`<div style="padding:20px 0;text-align:center;color:var(--ink3);font-size:12px;">No candidates yet — click <strong>+ Add candidate</strong> to start tracking.</div>`}
@@ -12521,6 +12621,37 @@ async function hcSubmitCandidate(btn,roleId) {
   btn.closest('div[style*=fixed]').remove();
   document.getElementById('hcRolePanel')?.remove();
   openRolePanel(roleId);renderHeadcount();
+}
+function hcScheduleInterview(roleId, candId) {
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  const cand=(r.candidates||[]).find(x=>x.id===candId);
+  const name = cand ? cand.name : r.title;
+  const stage = cand ? cand.stage : 'Interview';
+  const start = calTomorrow(10);
+  const end = new Date(start.getTime()+3600000);
+  const events = [{
+    title: `${name} — ${stage}: ${r.title}`,
+    start, end,
+    icon: '👥',
+    dateLabel: 'Suggested: tomorrow 10–11am (edit after import)',
+    description: `Interview for ${r.title}${r.dept?' in '+r.dept:''}.${r.interviewProcess?'\n\nProcess: '+r.interviewProcess:''}${cand?.notes?'\n\nCandidate notes: '+cand.notes:''}`,
+  }];
+  showCalendarModal(events, `${name} · ${r.title}`, `Interview ${name} ${r.title}`);
+}
+function hcScheduleAllInterviews(roleId) {
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  const active=(r.candidates||[]).filter(c=>!HC_CAND_FINAL.includes(c.stage));
+  if (!active.length) { showBreezeToast('No active candidates to schedule'); return; }
+  const start = calTomorrow(10);
+  const events = active.map((c,i)=>({
+    title:`${c.name} — ${c.stage}: ${r.title}`,
+    start: new Date(start.getTime()+i*86400000),
+    end:   new Date(start.getTime()+i*86400000+3600000),
+    icon:'👥',
+    dateLabel:`Suggested day ${i+1}, 10–11am`,
+    description:`Interview for ${r.title}${r.dept?' in '+r.dept:''}.`,
+  }));
+  showCalendarModal(events, `${r.title} — ${active.length} active candidate${active.length>1?'s':''}`, `Interviews ${r.title}`);
 }
 async function hcMoveCand(roleId,candId,newStage) {
   const r=(hcRoles||[]).find(x=>x.id===roleId);if(!r)return;
