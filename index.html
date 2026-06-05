@@ -5127,7 +5127,7 @@ async function loadSettingsDocs() {
   const el = document.getElementById('settingsDocsList'); if(!el||!currentProfile) return;
   const {data} = await sb.from('policies').select('id,name,created_at').eq('company_id',currentProfile.company_id).not('name','like','CHAT:%').order('created_at',{ascending:false});
   if (!data||!data.length) { el.innerHTML='<div style="font-size:12px;color:var(--ink3);">No documents uploaded yet.</div>'; return; }
-  const isSystem = r => r.name.startsWith('TEMPLATE:') || r.name.startsWith('STYLE:') || r.name.startsWith('SETTING:') || r.name.startsWith('MEETING:');
+  const isSystem = r => r.name.startsWith('TEMPLATE:') || r.name.startsWith('STYLE:') || r.name.startsWith('SETTING:') || r.name.startsWith('MEETING:') || r.name.startsWith('TRACKER:');
   const policyRows = data.filter(d=>!isSystem(d));
   const templates = data.filter(d=>d.name.startsWith('TEMPLATE:'));
 
@@ -11731,6 +11731,7 @@ function wfRenderCase(c) {
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
         ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);font-size:11px;">✓ Close</button>`:''}
+        <button onclick="wfCaseCalendar('${c.id}')" style="font-size:11px;color:#1D4ED8;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">📅 Schedule</button>
         <button onclick="document.getElementById('wfCaseSlidePanel')?.remove()" class="btn btn-secondary btn-sm" style="font-size:11px;">✕ Close</button>
         <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">Delete</button>
       </div>
@@ -11898,6 +11899,17 @@ async function wfAddContactLog(caseId) {
   }
 }
 
+function wfCaseCalendar(caseId) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[],label:'Checklist'};
+  const meetingSteps=sc.steps.filter(s=>/meeting|interview|hearing|panel|review|discussion|welfare|invite|induction/i.test(s.title+' '+s.desc));
+  if (!meetingSteps.length) { showBreezeToast('No schedulable steps found in this checklist'); return; }
+  const events = meetingSteps.map((step,i)=>{
+    const start=calTomorrow(10+i);
+    return {title:`${step.title} — ${c.employeeName}`,start,end:new Date(start.getTime()+3600000),icon:'📅',dateLabel:'Suggested: '+(i===0?'tomorrow':'day '+(i+1))+', '+(10+i)+':00',description:step.desc};
+  });
+  showCalendarModal(events, `${c.employeeName} · ${sc.label}`, `${sc.label} ${c.employeeName}`);
+}
 function wfStepCalendarInvite(caseId, stepId) {
   const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
   const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
