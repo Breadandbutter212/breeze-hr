@@ -10196,6 +10196,7 @@ function openImmigrationRecord(id) {
   panel.innerHTML = `<div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
     <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
       <div style="flex:1;"><div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(r.employeeName)}</div><div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(r.nationality||'')} · <span class="trk-badge trk-badge-blue" style="font-size:10px;">${escapeHtml(r.visaType||'')}</span></div></div>
+      <button onclick="immExpiryCalendar('${r.id}')" style="font-size:10px;color:#1D4ED8;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;">📅 Reminders</button>
       <button onclick="openAddImmigrationModal(${JSON.stringify(r).replace(/"/g,'&quot;')})" class="btn btn-secondary btn-sm" style="font-size:10px;flex-shrink:0;">Edit</button>
       <button onclick="document.getElementById('immRecordPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
     </div>
@@ -10302,6 +10303,24 @@ function immDownloadLogDoc(id, dateStr) {
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=entry.docFilename;a.click();URL.revokeObjectURL(a.href);
 }
 
+function immExpiryCalendar(id) {
+  const r=(immigrationRecords||[]).find(x=>x.id===id); if(!r) return;
+  const events=[];
+  const addReminders=(date,label)=>{
+    if (!date) return;
+    const expiry=new Date(date);
+    const d90=new Date(expiry); d90.setDate(d90.getDate()-90);
+    const d30=new Date(expiry); d30.setDate(d30.getDate()-30);
+    if (d90>new Date()) events.push({title:`${r.employeeName} — ${label} in 90 days`,start:d90,allDay:true,icon:'⚠️',dateLabel:d90.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),description:`${r.employeeName}'s ${label} expires in 90 days. Begin renewal process.`});
+    if (d30>new Date()) events.push({title:`${r.employeeName} — ${label} in 30 days`,start:d30,allDay:true,icon:'🚨',dateLabel:d30.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),description:`${r.employeeName}'s ${label} expires in 30 days. Urgent action required.`});
+    events.push({title:`${r.employeeName} — ${label} expires`,start:expiry,allDay:true,icon:'🛂',dateLabel:expiry.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}),description:`${r.employeeName}'s ${label} expires today. Ensure renewal is complete.`});
+  };
+  addReminders(r.visaExpiry,'visa');
+  addReminders(r.rtw,'right to work');
+  addReminders(r.passportExpiry,'passport');
+  if (!events.length) { showBreezeToast('No expiry dates set — add dates first'); return; }
+  showCalendarModal(events, `${r.employeeName} · expiry reminders`, `Immigration reminders ${r.employeeName}`);
+}
 async function deleteImmigrationRecord(id) {
   if(!confirm('Delete this immigration record? This cannot be undone.'))return;
   immigrationRecords=(immigrationRecords||[]).filter(r=>r.id!==id);
@@ -12414,11 +12433,12 @@ async function submitAddRole(btn, existingId) {
   const existing = existingId ? (hcRoles||[]).find(r=>r.id===existingId) : null;
   const stagesRaw = document.getElementById('hc-istages')?.value||'';
   const interviewStages = stagesRaw.split(',').map(s=>s.trim()).filter(Boolean);
+  const newStage = document.getElementById('hc-stage')?.value||'briefing';
   const rec = {
     id: existingId||'hc_'+Date.now(),
     title, dept:document.getElementById('hc-dept')?.value?.trim()||'',
     hiringManager:document.getElementById('hc-mgr')?.value?.trim()||'',
-    stage:document.getElementById('hc-stage')?.value||'briefing',
+    stage:newStage,
     priority:document.getElementById('hc-priority')?.value||'normal',
     country:document.getElementById('hc-country')?.value?.trim()||'',
     source:document.getElementById('hc-source')?.value||'',
@@ -12434,7 +12454,7 @@ async function submitAddRole(btn, existingId) {
     notes:document.getElementById('hc-notes')?.value?.trim()||'',
     candidates:existing?.candidates||[],
     contactLog:existing?.contactLog||[],
-    stageHistory:existing?.stageHistory||[{stage:rec.stage,startedAt:now}],
+    stageHistory:existing?.stageHistory||[{stage:newStage,startedAt:now}],
     createdAt:existing?.createdAt||now,
     updatedAt:now,
   };
