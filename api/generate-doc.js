@@ -49,13 +49,11 @@ function textToDocxBuffer(text, title) {
       // Mixed inline bold (e.g. **Date:** 19 May 2026)
       paras += `<w:p><w:pPr><w:spacing w:before="0" w:after="100"/></w:pPr>${runsToXml(runs)}</w:p>`;
     } else {
-      // Plain text - detect numbered sections or ALL-CAPS headings
+      // Plain text — only bold numbered top-level sections (1. HEADING)
       const isSection = /^\d+\.\s/.test(trimmed) && !/^\d+\.\d+/.test(trimmed);
-      const isAllCaps = trimmed.length < 70 && trimmed === trimmed.toUpperCase() && /[A-Z]{3}/.test(trimmed);
-      const bold = isSection || isAllCaps;
-      const spaceBefore = bold ? '200' : '0';
-      const spaceAfter  = bold ? '80'  : '100';
-      const rPr = bold ? '<w:rPr><w:b/></w:rPr>' : '';
+      const spaceBefore = isSection ? '200' : '0';
+      const spaceAfter  = isSection ? '80'  : '100';
+      const rPr = isSection ? '<w:rPr><w:b/></w:rPr>' : '';
       paras += `<w:p><w:pPr><w:spacing w:before="${spaceBefore}" w:after="${spaceAfter}"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${enc(trimmed)}</w:t></w:r></w:p>`;
     }
   }

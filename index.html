@@ -4491,6 +4491,25 @@ function buildDocFileName() {
   return `${docType} - ${date}`;
 }
 
+function htmlToMarkdownText(html) {
+  if (!html) return '';
+  let t = html;
+  t = t.replace(/<br\s*\/?>/gi, '\n');
+  t = t.replace(/<\/p>/gi, '\n');
+  t = t.replace(/<p(?:\s[^>]*)?>/gi, '');
+  // Convert <strong>/<b> to **bold** markers
+  t = t.replace(/<(strong|b)(?:\s[^>]*)?>(.+?)<\/\1>/gis, (_, _tag, inner) => {
+    const stripped = inner.replace(/<[^>]+>/g, '').replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&#39;/g,"'");
+    return stripped ? `**${stripped}**` : '';
+  });
+  t = t.replace(/<li(?:\s[^>]*)?>/gi, '• ');
+  t = t.replace(/<\/li>/gi, '\n');
+  t = t.replace(/<[^>]+>/g, '');
+  t = t.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&nbsp;/g,' ').replace(/&#39;/g,"'").replace(/&quot;/g,'"');
+  t = t.replace(/\n{3,}/g, '\n\n');
+  return t.trim();
+}
+
 async function downloadAsDocx() {
   const btn=document.getElementById('dlBtn');
   if(btn){btn.textContent='Generating...';btn.disabled=true;}
@@ -4498,7 +4517,7 @@ async function downloadAsDocx() {
     const body=document.getElementById('dpBody');
     // Exclude the preview notice div from download content
     const docPage = body ? body.querySelector('.doc-page, .mammoth-doc') : null;
-    const text = docPage ? docPage.innerText : (body ? body.innerText : '');
+    const text = htmlToMarkdownText(docPage ? docPage.innerHTML : (body ? body.innerHTML : ''));
     const res=await fetch('/api/generate-doc',{
       method:'POST',
       headers:{'Content-Type':'application/json'},
@@ -4538,7 +4557,7 @@ async function downloadDocx() {
     } else {
       // PDF/txt-sourced template - generate a Word doc from the preview text
       const dpBody=document.getElementById('dpBody');
-      payload={plainText:dpBody?dpBody.innerText:'',templateName:selTmpl.name};
+      payload={plainText:dpBody?htmlToMarkdownText(dpBody.innerHTML):'',templateName:selTmpl.name};
     }
     const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
     if(!res.ok){const err=await res.json();alert('Error: '+err.error);btn.textContent='⬇ Download .docx';btn.disabled=false;return;}
