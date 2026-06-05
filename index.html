@@ -8291,26 +8291,25 @@ function ppExportCalendar() {
   showCalendarModal(icsEvents, `${yr} People Plan — ${icsEvents.length} events`, `People Plan ${yr}`);
 }
 
-function ppDownloadPDF() {
+async function ppDownloadPDF() {
   const grid = document.querySelector('.pp-grid');
-  const legend = document.querySelector('.pp-legend');
   if (!grid) return;
+  showBreezeToast('Generating PDF…');
+  const loadScript = src => new Promise((res,rej)=>{ const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s); });
+  if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+  if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+  const canvas = await html2canvas(grid, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+  const { jsPDF } = window.jspdf;
+  const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+  const margin = 14;
+  const maxW = pdf.internal.pageSize.getWidth() - margin * 2;
+  const maxH = pdf.internal.pageSize.getHeight() - margin * 2 - 10; // 10mm reserved for title
+  const ratio = Math.min(maxW / canvas.width, maxH / canvas.height);
   const title = (ppPlan?.year||'') + ' People Plan' + (currentProfile?.company_name ? ' — ' + currentProfile.company_name : '');
-  const css = `
-    @page { size: A4 landscape; margin: 12mm; }
-    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; box-sizing: border-box; }
-    body { font-family: Inter, -apple-system, sans-serif; margin: 0; padding: 0; font-size: 12px; }
-    h1 { font-size: 13px; font-weight: 700; color: #0A1628; margin: 0 0 10px; letter-spacing: -0.02em; }
-    .pp-grid { display: grid; grid-template-columns: 120px repeat(12, 1fr); border: 1px solid #E2E8F0; border-radius: 8px; overflow: hidden; background: white; width: 100%; }
-    .pp-month-header { background: #F8FAFC; padding: 6px 4px; font-size: 9px; font-weight: 600; color: #64748B; text-align: center; border-left: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0; letter-spacing: 0.05em; text-transform: uppercase; }
-    .pp-cat-label { background: #F8FAFC; padding: 6px 8px; font-size: 10px; font-weight: 600; color: #1E293B; border-bottom: 1px solid #E2E8F0; display: flex; align-items: flex-start; gap: 6px; overflow: hidden; }
-    .pp-cell { border-left: 1px solid #E2E8F0; border-bottom: 1px solid #E2E8F0; position: relative; overflow: visible; }
-    .pp-legend { display: flex; flex-wrap: wrap; gap: 6px 14px; padding: 10px 0 0; }
-    .pp-legend-item { display: flex; align-items: center; gap: 5px; font-size: 10px; color: #475569; }
-  `;
-  const win = window.open('', '_blank', 'width=1000,height=700');
-  win.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title><link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"><style>${css}</style></head><body><h1>${escapeHtml(title)}</h1>${grid.outerHTML}${legend?legend.outerHTML:''}<script>window.onload=function(){window.print();};<\/script></body></html>`);
-  win.document.close();
+  pdf.setFont('helvetica','bold'); pdf.setFontSize(11); pdf.setTextColor(10,22,40);
+  pdf.text(title, margin, margin + 4);
+  pdf.addImage(canvas.toDataURL('image/png'), 'PNG', margin, margin + 10, canvas.width * ratio, canvas.height * ratio);
+  pdf.save(`People Plan ${ppPlan?.year||''}.pdf`);
 }
 
 function ppReset() {
