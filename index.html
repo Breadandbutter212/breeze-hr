@@ -11652,13 +11652,101 @@ function wfOpenCase(id) {
   wfRenderCase(c);
 }
 
+function wfGetSteps(c) {
+  if (c.stepsOverride) return c.stepsOverride;
+  const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
+  return sc.steps;
+}
+function wfInitStepsOverride(c) {
+  if (!c.stepsOverride) {
+    const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
+    c.stepsOverride = sc.steps.map(s=>({...s}));
+  }
+}
+function wfEditStep(caseId, stepId) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=wfGetSteps(c).find(s=>s.id===stepId); if(!step) return;
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:white;">Edit checklist step</div></div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Step title</label><input id="wf-edit-title" value="${escapeHtml(step.title)}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Guidance</label><textarea id="wf-edit-desc" rows="3" style="${inp}resize:vertical;min-height:70px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(step.desc||'')}</textarea></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Timeframe</label><input id="wf-edit-timeframe" value="${escapeHtml(step.timeframe||'')}" placeholder="e.g. Day 1" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="wfSaveStepEdit('${caseId}',${stepId},this)">Save</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  setTimeout(()=>document.getElementById('wf-edit-title')?.focus(),60);
+}
+async function wfSaveStepEdit(caseId, stepId, btn) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  btn.textContent='Saving...'; btn.disabled=true;
+  wfInitStepsOverride(c);
+  const step=c.stepsOverride.find(s=>s.id===stepId); if(!step) return;
+  step.title=document.getElementById('wf-edit-title')?.value?.trim()||step.title;
+  step.desc=document.getElementById('wf-edit-desc')?.value?.trim()||'';
+  step.timeframe=document.getElementById('wf-edit-timeframe')?.value?.trim()||step.timeframe;
+  await saveWfCases();
+  btn.closest('div[style*=fixed]').remove();
+  wfRenderCase(c);
+}
+async function wfDeleteStep(caseId, stepId) {
+  if(!confirm('Remove this step from the checklist? This only affects this case.')) return;
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  wfInitStepsOverride(c);
+  c.stepsOverride=c.stepsOverride.filter(s=>s.id!==stepId);
+  c.checkedSteps=c.checkedSteps.filter(id=>id!==stepId);
+  await saveWfCases();
+  wfRenderCase(c);
+}
+function wfAddStep(caseId) {
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const ov=document.createElement('div');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:#1B2D50;padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:white;">Add checklist step</div></div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Step title *</label><input id="wf-add-title" placeholder="e.g. Confirm return date in writing" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Guidance <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><textarea id="wf-add-desc" rows="3" placeholder="Practical guidance for this step..." style="${inp}resize:vertical;min-height:70px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Timeframe <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><input id="wf-add-timeframe" placeholder="e.g. Day 1, Before start" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="wfSubmitAddStep('${caseId}',this)">Add step</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{if(e.target===ov)ov.remove();};
+  setTimeout(()=>document.getElementById('wf-add-title')?.focus(),60);
+}
+async function wfSubmitAddStep(caseId, btn) {
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const title=document.getElementById('wf-add-title')?.value?.trim();
+  if(!title){document.getElementById('wf-add-title').style.borderColor='var(--red)';return;}
+  btn.textContent='Adding...'; btn.disabled=true;
+  wfInitStepsOverride(c);
+  const maxId=Math.max(...c.stepsOverride.map(s=>typeof s.id==='number'?s.id:0),0);
+  c.stepsOverride.push({id:maxId+1,title,desc:document.getElementById('wf-add-desc')?.value?.trim()||'',timeframe:document.getElementById('wf-add-timeframe')?.value?.trim()||'',tag:'recommended',custom:true});
+  await saveWfCases();
+  btn.closest('div[style*=fixed]').remove();
+  wfRenderCase(c);
+}
+
 function wfRenderCase(c) {
   const detail = document.getElementById('wf-detail'); if (!detail) return;
   const scenario = WF_SCENARIOS.find(s=>s.id===c.scenarioId); if (!scenario) return;
   const checkedSet = new Set(c.checkedSteps);
-  const total = scenario.steps.length, done = checkedSet.size, pct = Math.round((done/total)*100);
+  const steps = wfGetSteps(c);
+  const total = steps.length, done = checkedSet.size, pct = Math.round((done/total)*100);
 
-  const stepsHtml = scenario.steps.map(step=>{
+  const stepsHtml = steps.map(step=>{
     const isDone = checkedSet.has(step.id);
     const policy = step.policyTag ? wfFindPolicy(step.policyTag) : null;
     const policyBadge = policy?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);white-space:nowrap;">📋 ${policy.name}</span>`:'';
@@ -11674,13 +11762,17 @@ function wfRenderCase(c) {
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
           <div class="wf-step-title" style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;${isDone?'text-decoration:line-through;':''}">${step.title}</div>
-          ${wfTagBadge(step.tag)} ${policyBadge}
+          ${wfTagBadge(step.tag)} ${policyBadge}${step.custom?'<span style="font-size:9px;background:var(--accent-bg);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:600;">custom</span>':''}
         </div>
         <div style="font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:${(actionBtn||calBtn)?'10px':'0'};">${step.desc}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
-          <span style="font-size:10px;font-weight:600;color:var(--ink3);background:var(--surface2);padding:2px 8px;border-radius:20px;">⏱ ${step.timeframe}</span>
+          <span style="font-size:10px;font-weight:600;color:var(--ink3);background:var(--surface2);padding:2px 8px;border-radius:20px;">⏱ ${step.timeframe||'—'}</span>
           <div style="display:flex;gap:6px;">${calBtn}${actionBtn}</div>
         </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:4px;">
+        <button onclick="event.stopPropagation();wfEditStep('${c.id}',${step.id})" title="Edit step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--ink3);" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✏</button>
+        <button onclick="event.stopPropagation();wfDeleteStep('${c.id}',${step.id})" title="Delete step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--red);" onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">✕</button>
       </div>
     </div>`;
   }).join('');
@@ -11739,7 +11831,10 @@ function wfRenderCase(c) {
 
     <!-- Checklist steps -->
     <div>
-      <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;text-transform:uppercase;letter-spacing:0.05em;">Checklist steps</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:12px;font-weight:700;color:var(--ink);text-transform:uppercase;letter-spacing:0.05em;">Checklist steps</div>
+        <button onclick="wfAddStep('${c.id}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;">+ Add step</button>
+      </div>
       <div style="display:flex;flex-direction:column;gap:6px;">${stepsHtml}</div>
     </div>
 
@@ -11935,19 +12030,19 @@ async function wfToggleStep(caseId, stepId) {
     const cb=row.querySelector('input[type=checkbox]'); if(cb) cb.checked=isDone;
     const t=row.querySelector('.wf-step-title'); if(t) t.style.textDecoration=isDone?'line-through':'';
   }
-  const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId);
-  if (sc) {
-    const pct=Math.round((c.checkedSteps.length/sc.steps.length)*100);
+  const steps=wfGetSteps(c);
+  if (steps.length) {
+    const pct=Math.round((c.checkedSteps.length/steps.length)*100);
     const bar=document.getElementById('wf-progress-fill'); if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
-    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=c.checkedSteps.length+' / '+sc.steps.length+' complete'+(pct===100?' - all steps done ✓':'');
+    const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=c.checkedSteps.length+' / '+steps.length+' complete'+(pct===100?' - all steps done ✓':'');
   }
   // Update sidebar progress bar
   wfUpdateSidebarCase(c);
 }
 
 function wfUpdateSidebarCase(c) {
-  const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
-  const pct = sc.steps.length?Math.round((c.checkedSteps.length/sc.steps.length)*100):0;
+  const steps = wfGetSteps(c);
+  const pct = steps.length?Math.round((c.checkedSteps.length/steps.length)*100):0;
   // Update table row button
   const btn = document.querySelector(`[data-wf-btn="${c.id}"]`);
   if (btn) { btn.style.background=pct===100?'var(--green)':''; btn.style.borderColor=pct===100?'var(--green)':''; }
