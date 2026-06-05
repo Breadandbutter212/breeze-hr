@@ -4482,13 +4482,28 @@ function updatePreview() {
 
 <p>${ph('recipient_name')}<br>${ph('recipient_firm')}</p><br>
 
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:6px;padding:12px 14px;margin-bottom:18px;display:flex;flex-direction:column;gap:4px;">
-  <p style="margin:0;font-size:12px;"><strong>Firm providing reference:</strong> ${co()}</p>
-  <p style="margin:0;font-size:12px;"><strong>Individual's name:</strong> ${ph('employee_name')}</p>
-  <p style="margin:0;font-size:12px;"><strong>Requesting firm:</strong> ${ph('recipient_firm')}</p>
-  <p style="margin:0;font-size:12px;"><strong>Date of reference request:</strong> ${ph('date_of_request')}</p>
-  <p style="margin:0;font-size:12px;"><strong>Date of this reference:</strong> ${today}</p>
-</div>
+<table style="border-collapse:collapse;width:100%;margin-bottom:18px;font-size:12px;">
+  <tr>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;width:42%;">Firm providing reference</td>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${co()}</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Individual's name</td>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${ph('employee_name')}</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Requesting firm</td>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${ph('recipient_firm')}</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Date of reference request</td>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${ph('date_of_request')}</td>
+  </tr>
+  <tr>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Date of this reference</td>
+    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${today}</td>
+  </tr>
+</table>
 
 <p style="font-size:11px;color:var(--red);font-weight:600;background:var(--red-bg);border:1px solid #F0C5C5;border-radius:4px;padding:7px 10px;"><strong>STRICTLY CONFIDENTIAL</strong> — Regulatory Reference. This document must only be used for fit and proper assessment purposes (SYSC 22 / SS28/15).</p>
 
@@ -4496,26 +4511,19 @@ function updatePreview() {
 
 <p>I am writing to provide a regulatory reference for ${ph('employee_name')} pursuant to your request dated ${ph('date_of_request')}. The answers to Questions A to G cover the period beginning six years before the date of your request and ending on the date of this reference.</p>
 
-<p><strong>Question A</strong><br>Has the individual:<br>&#x2022; Performed a certification function for our firm, or<br>&#x2022; Been an approved person for our firm?</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_a')}</div>
+<p><strong>Question A</strong><br>Has the individual:<br>&#x2022; Performed a certification function for our firm, or<br>&#x2022; Been an approved person for our firm?<br><br><strong>Answer:</strong> ${ph('question_a')}</p>
 
-<p><strong>Question B</strong><br>Has the individual performed one or more of the following roles:<br>&#x2022; Notified non-executive director<br>&#x2022; Credit union non-executive director<br>&#x2022; Key function holder (other than a controlled function), or<br>&#x2022; Board director?</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_b')}</div>
+<p><strong>Question B</strong><br>Has the individual performed one or more of the following roles:<br>&#x2022; Notified non-executive director<br>&#x2022; Credit union non-executive director<br>&#x2022; Key function holder (other than a controlled function), or<br>&#x2022; Board director?<br><br><strong>Answer:</strong> ${ph('question_b')}</p>
 
-<p><strong>Question C</strong><br>If Yes to A or B: details of each position held — role, dates, and whether approval was subject to any condition, suspension, limitation, restriction or time limit.</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_c')}</div>
+<p><strong>Question C</strong><br>If Yes to A or B: details of each position held — role, dates, and whether approval was subject to any condition, suspension, limitation, restriction or time limit.<br><br><strong>Answer:</strong> ${ph('question_c')}</p>
 
-<p><strong>Question D</strong><br>Did the individual perform any other role for our firm not covered in A or B above? If yes, provide job title, department and business unit.</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_d')}</div>
+<p><strong>Question D</strong><br>Did the individual perform any other role for our firm not covered in A or B? If yes, provide job title, department and business unit.<br><br><strong>Answer:</strong> ${ph('question_d')}</p>
 
-<p><strong>Question E</strong><br>Did we conclude that the individual was not fit and proper to perform a function? If yes and no disciplinary action was taken, set out the facts which led to our conclusion.</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_e')}</div>
+<p><strong>Question E</strong><br>Did we conclude that the individual was not fit and proper to perform a function? If yes and no disciplinary action was taken, set out the facts which led to our conclusion.<br><br><strong>Answer:</strong> ${ph('question_e')}</p>
 
-<p><strong>Question F</strong><br>Did we take disciplinary action against the individual relating to a breach of any individual conduct requirement, or to the individual not being fit and proper? If yes, provide details of the breaches (including dates) and the outcome.</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_f')}</div>
+<p><strong>Question F</strong><br>Did we take disciplinary action against the individual relating to a breach of any individual conduct requirement, or to the individual not being fit and proper? If yes, describe the breaches (including dates) and the outcome.<br><br><strong>Answer:</strong> ${ph('question_f')}</p>
 
-<p><strong>Question G</strong><br>Are we aware of any other information reasonably relevant to whether the individual is fit and proper? (Matters in the six years before the request, between request and reference date, or constituting serious misconduct.)</p>
-<div style="background:#F8FAFC;border:1px solid #CBD5E1;border-radius:4px;padding:10px 14px;margin-top:4px;margin-bottom:14px;min-height:40px;"><strong>Answer:</strong> ${ph('question_g')}</div>
+<p><strong>Question G</strong><br>Are we aware of any other information reasonably relevant to whether the individual is fit and proper? (Matters in the six years before the request, between request and reference date, or constituting serious misconduct.)<br><br><strong>Answer:</strong> ${ph('question_g')}</p>
 
 <p style="margin-top:16px;">The information provided in this reference is accurate and complete to the best of our knowledge and belief. This reference has been reviewed and approved by a senior manager of ${co()} authorised to issue regulatory references.</p>
 
@@ -4562,6 +4570,28 @@ function buildDocFileName() {
 function htmlToMarkdownText(html) {
   if (!html) return '';
   let t = html;
+
+  // ── Tables → [TABLE]...[/TABLE] marker format for Word XML generation ──
+  t = t.replace(/<table[\s\S]*?<\/table>/gi, tableHtml => {
+    const rows = [];
+    const trRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/gi;
+    let trMatch;
+    while ((trMatch = trRegex.exec(tableHtml)) !== null) {
+      const cells = [];
+      const tdRegex = /<t[dh][^>]*>([\s\S]*?)<\/t[dh]>/gi;
+      let tdMatch;
+      while ((tdMatch = tdRegex.exec(trMatch[1])) !== null) {
+        const cell = tdMatch[1]
+          .replace(/<(strong|b)(?:\s[^>]*)?>(.+?)<\/\1>/gis, '**$2**')
+          .replace(/<[^>]+>/g, '')
+          .replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/&#39;/g,"'").trim();
+        cells.push(cell);
+      }
+      if (cells.length) rows.push(cells.join('§CELL§'));
+    }
+    return rows.length ? '\n[TABLE]\n' + rows.join('\n') + '\n[/TABLE]\n' : '';
+  });
+
   // Block-level elements → newlines
   t = t.replace(/<br\s*\/?>/gi, '\n');
   t = t.replace(/<\/p>/gi, '\n');       t = t.replace(/<p(?:\s[^>]*)?>/gi, '');
