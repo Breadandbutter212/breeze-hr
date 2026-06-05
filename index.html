@@ -8515,7 +8515,7 @@ function renderPPTimeline() {
     const { laneMap, numLanes } = ppAssignLanes(catEvents);
     const rowH = numLanes * LANE_H + PAD * 2;
 
-    gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD+4}px;" onclick="ppAddEvent('${cat.id}')"><div class="pp-cat-dot" style="background:${cat.color};margin-top:2px;flex-shrink:0;"></div><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
+    gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD+4}px;" onclick="ppAddEvent('${cat.id}')"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
 
     for (let m = 1; m <= 12; m++) {
       const activeEvts = catEvents.filter(e => e.startMonth <= m && e.endMonth >= m);
