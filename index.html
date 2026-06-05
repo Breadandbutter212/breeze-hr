@@ -12513,6 +12513,7 @@ function openAddRoleModal(existing) {
   const r = existing || {};
   const isEdit = !!existing;
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const sel = inp + 'height:37px;cursor:pointer;';
   const lbl = 'font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
   const stageOpts = HC_STAGES.map(s=>`<option value="${s.id}"${(r.stage||'briefing')===s.id?' selected':''}>${s.label}</option>`).join('');
   const priorOpts = HC_PRIORITIES.map(p=>`<option value="${p.id}"${(r.priority||'normal')===p.id?' selected':''}>${p.label}</option>`).join('');
@@ -12527,14 +12528,14 @@ function openAddRoleModal(existing) {
         <div style="grid-column:1/-1;"><label style="${lbl}">Job title *</label><input id="hc-title" value="${escapeHtml(r.title||'')}" placeholder="e.g. HR Director" style="${inp}" autocomplete="off" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Department</label><input id="hc-dept" value="${escapeHtml(r.dept||'')}" placeholder="e.g. People" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Hiring manager</label><input id="hc-mgr" value="${escapeHtml(r.hiringManager||'')}" placeholder="Name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('hc-mgr').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
-        <div><label style="${lbl}">Stage</label><select id="hc-stage" style="${inp}">${stageOpts}</select></div>
-        <div><label style="${lbl}">Priority</label><select id="hc-priority" style="${inp}">${priorOpts}</select></div>
+        <div><label style="${lbl}">Stage</label><select id="hc-stage" style="${sel}">${stageOpts}</select></div>
+        <div><label style="${lbl}">Priority</label><select id="hc-priority" style="${sel}">${priorOpts}</select></div>
         <div><label style="${lbl}">Country</label><input id="hc-country" value="${escapeHtml(r.country||'')}" placeholder="e.g. UK, USA, Germany..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Comp min (£)</label><input id="hc-cmin" type="number" value="${r.compMin||''}" placeholder="e.g. 80000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Comp max (£)</label><input id="hc-cmax" type="number" value="${r.compMax||''}" placeholder="e.g. 100000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Target start date</label><input id="hc-start" type="date" value="${r.targetStart||''}" style="${inp}"></div>
         <div><label style="${lbl}">No. of positions</label><input id="hc-hc" type="number" min="1" value="${r.headcount||1}" style="${inp}"></div>
-        <div><label style="${lbl}">Source / channel</label><select id="hc-source" style="${inp}">${srcOpts}</select></div>
+        <div><label style="${lbl}">Source / channel</label><select id="hc-source" style="${sel}">${srcOpts}</select></div>
         <div><label style="${lbl}">Agency name</label><input id="hc-agency" value="${escapeHtml(r.agencyName||'')}" placeholder="e.g. Hays, Michael Page..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Agency fee %</label><input id="hc-fee" type="number" min="0" max="30" value="${r.agencyFee||''}" placeholder="e.g. 20" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Budget (£)</label><input id="hc-budget" type="number" value="${r.budget||''}" placeholder="e.g. 25000" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
