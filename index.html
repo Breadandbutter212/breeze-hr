@@ -10291,8 +10291,18 @@ async function deleteImmigrationRecord(id) {
 }
 
 async function ocLoadData() {
-  // Load demo data immediately - no HRIS dependency
   _ocEmps = ocGetDemoData();
+  // Inject headcount planning open roles as nodes
+  if (hcRoles === null) await loadHCRoles();
+  const hcInactive = new Set(['hired','withdrawn']);
+  (hcRoles||[]).filter(r => !hcInactive.has(r.stage)).forEach(r => {
+    const count = Math.max(1, r.headcount||1);
+    const mgrName = (r.hiringManager||'').toLowerCase().trim();
+    const mgrEmp = mgrName ? _ocEmps.find(e => (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
+    for (let i=0; i<count; i++) {
+      _ocEmps.push({ id:`hc_open_${r.id}_${i}`, display_full_name:r.title+(count>1?` (${i+1}/${count})`:''), employments:[{job_title:r.title,department:r.dept||'General'}], manager:mgrEmp?String(mgrEmp.id):null, isOpen:true, hcRoleId:r.id, hcStage:r.stage });
+    }
+  });
   ocBuild();
 }
 
@@ -10334,7 +10344,7 @@ function ocBuild() {
     if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
     // _ocRelations overrides HRIS manager data
     const effectiveMgrId = _ocRelations.hasOwnProperty(id) ? _ocRelations[id] : managerId;
-    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: effectiveMgrId, children: [], isOpen: !!emp.isOpen };
+    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: effectiveMgrId, children: [], isOpen: !!emp.isOpen, hcRoleId: emp.hcRoleId||null, hcStage: emp.hcStage||null };
   });
   const roots = [];
   Object.values(nodeMap).forEach(n => {
@@ -10468,10 +10478,12 @@ function ocRender(root) {
     } else if (node.isOpen) {
       div.style.border=`1.5px dashed ${node.color}99`;
       div.style.background=node.color+'0d';
+      const _hcs = node.hcStage ? HC_STAGES.find(s=>s.id===node.hcStage) : null;
+      const _badge = _hcs ? `<span style="font-size:9px;font-weight:700;color:${_hcs.color};background:${_hcs.bg};border-radius:20px;padding:1px 6px;display:inline-block;margin-top:3px;letter-spacing:0.03em;">${_hcs.label.replace(' ✓','')}</span>` : `<span style="font-size:9px;font-weight:700;color:#059669;background:#D1FAE5;border-radius:20px;padding:1px 6px;display:inline-block;margin-top:3px;letter-spacing:0.03em;">HIRING</span>`;
       div.innerHTML=`<div class="org-avatar" style="background:transparent;border:2px dashed ${node.color};color:${node.color};font-size:15px;">+</div>
         <div style="flex:1;min-width:0;">
           <div class="org-name" style="color:var(--ink2);">${escapeHtml(node.name)}</div>
-          <div style="font-size:9px;font-weight:700;color:#059669;background:#D1FAE5;border-radius:20px;padding:1px 6px;display:inline-block;margin-top:3px;letter-spacing:0.03em;">HIRING</div>
+          ${_badge}
         </div>`;
     } else {
       div.style.borderColor=node.color+'44';
@@ -10616,6 +10628,10 @@ function ocShowNodeMenu(node) {
         onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background='var(--surface2)'">
         &#x2B06; Make top-level (no manager)
       </button>
+      ${node.hcRoleId?`<button onclick="document.getElementById('ocNodeMenu').remove();showView('headcount');setTimeout(()=>openRolePanel('${node.hcRoleId}'),300)"
+        style="width:100%;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;font-family:inherit;text-align:left;margin-bottom:4px;"
+        onmouseover="this.style.background='#DBEAFE'" onmouseout="this.style.background='var(--accent-bg)'">
+        &#x2192; View in Headcount Planning</button>`:''}
       ${isManual?`<button onclick="ocRemovePerson('${safeId}')"
         style="width:100%;font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:5px 8px;cursor:pointer;font-family:inherit;text-align:left;"
         onmouseover="this.style.background='#fee2e2'" onmouseout="this.style.background='var(--red-bg)'">
@@ -12331,6 +12347,20 @@ async function submitAddRole(btn, existingId) {
   await saveHCRoles();
   btn.closest('div[style*=fixed]').remove();
   renderHeadcount();
+  // Sync to org chart if it's already loaded in memory
+  if (_ocEmps) {
+    _ocEmps = _ocEmps.filter(e => !String(e.id||'').startsWith(`hc_open_${rec.id}_`));
+    const hcInactive = new Set(['hired','withdrawn']);
+    if (!hcInactive.has(rec.stage)) {
+      const count = Math.max(1, rec.headcount||1);
+      const mgrName = (rec.hiringManager||'').toLowerCase().trim();
+      const mgrEmp = mgrName ? _ocEmps.find(e => (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
+      for (let i=0; i<count; i++) {
+        _ocEmps.push({ id:`hc_open_${rec.id}_${i}`, display_full_name:rec.title+(count>1?` (${i+1}/${count})`:''), employments:[{job_title:rec.title,department:rec.dept||'General'}], manager:mgrEmp?String(mgrEmp.id):null, isOpen:true, hcRoleId:rec.id, hcStage:rec.stage });
+      }
+    }
+    if (_ocTree) ocBuild();
+  }
 }
 function openRolePanel(id) {
   const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
