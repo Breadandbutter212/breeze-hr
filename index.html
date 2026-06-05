@@ -12618,7 +12618,8 @@ function openRolePanel(id) {
   panel.id='hcRolePanel';
   panel.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const lbl='font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;display:block;';
-  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
+  const inp='width:100%;height:37px;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
+  const sel=inp+'cursor:pointer;';
   const stageOpts=HC_STAGES.map(s=>`<option value="${s.id}"${r.stage===s.id?' selected':''}>${s.label}</option>`).join('');
   const priorOpts=HC_PRIORITIES.map(p=>`<option value="${p.id}"${(r.priority||'normal')===p.id?' selected':''}>${p.label}</option>`).join('');
   const stages = r.interviewStages||HC_DEFAULT_INTERVIEW_STAGES;
@@ -12678,13 +12679,13 @@ function openRolePanel(id) {
 
       <!-- Quick details row -->
       <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
-        <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${inp}">${stageOpts}</select></div>
-        <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${inp}">${priorOpts}</select></div>
+        <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${sel}">${stageOpts}</select></div>
+        <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${sel}">${priorOpts}</select></div>
         <div><label style="${lbl}">Country</label><input value="${escapeHtml(r.country||'')}" onchange="hcUpdateField('${id}','country',this.value)" style="${inp}" placeholder="e.g. UK, USA, Germany..."></div>
         <div><label style="${lbl}">Comp min (£)</label><input type="number" value="${r.compMin||''}" onchange="hcUpdateField('${id}','compMin',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 80000"></div>
         <div><label style="${lbl}">Comp max (£)</label><input type="number" value="${r.compMax||''}" onchange="hcUpdateField('${id}','compMax',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 100000"></div>
         <div><label style="${lbl}">Target start</label><input type="date" value="${r.targetStart||''}" onchange="hcUpdateField('${id}','targetStart',this.value)" style="${inp}"></div>
-        <div><label style="${lbl}">Source</label><select onchange="hcUpdateField('${id}','source',this.value)" style="${inp}">${HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('')}</select></div>
+        <div><label style="${lbl}">Source</label><select onchange="hcUpdateField('${id}','source',this.value)" style="${sel}">${HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('')}</select></div>
         <div><label style="${lbl}">Agency name</label><input value="${escapeHtml(r.agencyName||'')}" onchange="hcUpdateField('${id}','agencyName',this.value)" style="${inp}" placeholder="e.g. Hays, Michael Page..."></div>
         <div><label style="${lbl}">Budget (£)</label><input type="number" value="${r.budget||''}" onchange="hcUpdateField('${id}','budget',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 25000"></div>
         <div><label style="${lbl}">Agency fee %</label><input type="number" min="0" max="30" value="${r.agencyFee||''}" onchange="hcUpdateField('${id}','agencyFee',parseFloat(this.value)||0)" style="${inp}" placeholder="e.g. 20"></div>
