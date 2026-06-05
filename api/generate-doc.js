@@ -10,35 +10,73 @@ function parseInlineRuns(line) {
 
 function runsToXml(runs) {
   return runs.map(r => {
-    const rPr = r.bold ? '<w:rPr><w:b/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>' : '<w:rPr><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr>';
+    const rPr = r.bold ? '<w:rPr><w:b/></w:rPr>' : '';
     return `<w:r>${rPr}<w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`;
   }).join('');
 }
 
-// Generate Word XML for a table from marker format
-// rowsData: array of arrays of cell strings (already has **bold** markers)
-function tableToXml(rowsData) {
-  const border = (side) => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="CBD5E1"/>`;
-  const tblBorders = `<w:tblBorders>${['top','left','bottom','right','insideH'].map(border).join('')}<w:insideV w:val="none"/></w:tblBorders>`;
+// Generate Word XML paragraphs for a table cell (handles multiline / bullets)
+function cellParasXml(cellText) {
+  if (!cellText.trim()) return `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/></w:pPr></w:p>`;
+  const lines = cellText.split('\n');
+  return lines.map(line => {
+    const t = line.trim();
+    if (!t) return `<w:p><w:pPr><w:spacing w:before="20" w:after="20"/></w:pPr></w:p>`;
+    const isBullet = t.startsWith('•') || t.startsWith('-');
+    const indent = isBullet ? '<w:ind w:left="240"/>' : '';
+    const runs = parseInlineRuns(t);
+    return `<w:p><w:pPr><w:spacing w:before="40" w:after="40"/>${indent}</w:pPr>${runsToXml(runs)}</w:p>`;
+  }).join('');
+}
 
-  const rowXml = rowsData.map(cells => {
-    const colW = Math.floor(9360 / cells.length); // fit in ~6.5 inch body
-    const tcXml = cells.map((cell, i) => {
-      const isLabel = cells.length === 2 && i === 0;
-      const fill = isLabel ? 'F1F5F9' : 'FFFFFF';
-      const runs = parseInlineRuns(cell);
-      const cellBorders = `<w:tcBorders>${['top','left','bottom','right'].map(border).join('')}</w:tcBorders>`;
-      return `<w:tc><w:tcPr><w:tcW w:w="${colW}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>${cellBorders}</w:tcPr><w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr>${runsToXml(runs)}</w:p></w:tc>`;
+// Generate Word XML for a table from marker format
+// rowsData: array of arrays of cell strings (already has **bold** markers, \n for line breaks)
+function tableToXml(rowsData) {
+  if (!rowsData.length) return '';
+  const bdr = (side) => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="9CA3AF"/>`;
+  const tblBorders = `<w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(bdr).join('')}</w:tblBorders>`;
+
+  // Check if first row looks like a header (all-caps or bold markers)
+  const firstRow = rowsData[0];
+  const isHeader = (cell) => cell === cell.toUpperCase() && cell.length > 2;
+  const hasHeaderRow = firstRow && firstRow.every(c => isHeader(c) || c.startsWith('**'));
+
+  const rowXml = rowsData.map((cells, rowIdx) => {
+    const isHdrRow = hasHeaderRow && rowIdx === 0;
+    // colspan row: only one cell but it spans all columns
+    const isWide = cells.length === 1 && rowsData.some(r => r.length > 1);
+    const colCount = Math.max(...rowsData.map(r => r.length));
+    const colW = isWide ? 9360 : Math.floor(9360 / (cells.length || 1));
+
+    const tcXml = cells.map((cell, ci) => {
+      const fill = isHdrRow ? '1B2D50' : (ci === 0 && cells.length > 1 ? 'F8FAFC' : 'FFFFFF');
+      const textColor = isHdrRow ? '<w:color w:val="FFFFFF"/>' : '';
+      const bdrXml = `<w:tcBorders>${['top','left','bottom','right'].map(bdr).join('')}</w:tcBorders>`;
+      const spanAttr = isWide ? `<w:gridSpan w:val="${colCount}"/>` : '';
+      const tcW = isWide ? 9360 : colW;
+      const cellPr = `<w:tcPr><w:tcW w:w="${tcW}" w:type="dxa"/>${spanAttr}<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>${bdrXml}</w:tcPr>`;
+
+      let parasXml;
+      if (isHdrRow) {
+        // Bold white text in header
+        const runs = parseInlineRuns(cell);
+        parasXml = `<w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr>${runs.map(r=>`<w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`).join('')}</w:p>`;
+      } else {
+        parasXml = cellParasXml(cell);
+      }
+      return `<w:tc>${cellPr}${parasXml}</w:tc>`;
     }).join('');
     return `<w:tr>${tcXml}</w:tr>`;
   }).join('');
 
-  return `<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/>${tblBorders}<w:tblLook w:val="0000"/></w:tblPr>${rowXml}</w:tbl><w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>`;
+  const colCount = Math.max(...rowsData.map(r => r.length));
+  const colW = Math.floor(9360 / colCount);
+  const gridCols = Array(colCount).fill(`<w:gridCol w:w="${colW}"/>`).join('');
+  return `<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/>${tblBorders}<w:tblLook w:val="0000"/></w:tblPr><w:tblGrid>${gridCols}</w:tblGrid>${rowXml}</w:tbl><w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>`;
 }
 
 function textToDocxBuffer(text) {
-  // Pre-process: extract [TABLE]...[/TABLE] blocks so we can interleave
-  // Segment the text into {type:'text'|'table', content} chunks
+  // Segment into text and [TABLE] blocks
   const segments = [];
   let remaining = text || '';
   const tableRe = /\[TABLE\]([\s\S]*?)\[\/TABLE\]/g;
@@ -54,15 +92,13 @@ function textToDocxBuffer(text) {
 
   for (const seg of segments) {
     if (seg.type === 'table') {
-      // Parse rows: each non-empty line is §CELL§-joined cells
       const rowsData = seg.content.split('\n')
         .map(l => l.trim()).filter(Boolean)
-        .map(l => l.split('§CELL§').map(c => c.trim()));
+        .map(l => l.split('§CELL§').map(c => c));
       if (rowsData.length) paras += tableToXml(rowsData);
       continue;
     }
 
-    // Normal text processing
     const lines = seg.content.split('\n');
     for (const rawLine of lines) {
       const line = rawLine.trimEnd();
@@ -71,19 +107,15 @@ function textToDocxBuffer(text) {
         continue;
       }
       const trimmed = line.trim();
-
-      // Bullet
       const bulletMatch = trimmed.match(/^[•\-]\s+([\s\S]*)/);
       if (bulletMatch) {
         const runs = parseInlineRuns(bulletMatch[1]);
         paras += `<w:p><w:pPr><w:ind w:left="360"/><w:spacing w:before="0" w:after="80"/></w:pPr><w:r><w:t xml:space="preserve">• </w:t></w:r>${runsToXml(runs)}</w:p>`;
         continue;
       }
-
       const runs = parseInlineRuns(trimmed);
       const hasBold = runs.some(r => r.bold);
       const allBold = hasBold && runs.every(r => r.bold || !r.text.trim());
-
       if (allBold) {
         paras += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr>${runsToXml(runs)}</w:p>`;
       } else if (hasBold) {
@@ -124,7 +156,7 @@ export default async function handler(req, res) {
     const { templateBase64, fields, plainText, templateName } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';
     if (!templateBase64 && plainText) {
-      const buf = textToDocxBuffer(plainText, safeName);
+      const buf = textToDocxBuffer(plainText);
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
       return res.status(200).send(buf);

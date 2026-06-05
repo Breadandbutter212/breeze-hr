@@ -4480,54 +4480,77 @@ function updatePreview() {
 
   else if(t.id==='t26') content=`${header(false)}<div class="doc-body-text">
 
-<p>${ph('recipient_name')}<br>${ph('recipient_firm')}</p><br>
+<p>${ph('recipient_name')}<br>${ph('recipient_firm')}</p>
 
-<table style="border-collapse:collapse;width:100%;margin-bottom:18px;font-size:12px;">
-  <tr>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;width:42%;">Firm providing reference</td>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${co()}</td>
-  </tr>
-  <tr>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Individual's name</td>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${ph('employee_name')}</td>
-  </tr>
-  <tr>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Requesting firm</td>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${ph('recipient_firm')}</td>
-  </tr>
-  <tr>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Date of reference request</td>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${ph('date_of_request')}</td>
-  </tr>
-  <tr>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;font-weight:600;background:#F1F5F9;">Date of this reference</td>
-    <td style="border:1px solid #CBD5E1;padding:8px 10px;">${today}</td>
-  </tr>
+<p style="font-size:11px;font-weight:700;color:var(--red);background:var(--red-bg);border:1px solid #F0C5C5;border-radius:4px;padding:7px 10px;margin:12px 0;">STRICTLY CONFIDENTIAL — Regulatory Reference. This document must only be used for fit and proper assessment purposes (SYSC 22 / SS28/15).</p>
+
+<br><p>Dear ${ph('recipient_name')},</p>
+
+<p>I am writing to provide a regulatory reference for ${ph('employee_name')} pursuant to your request dated ${ph('date_of_request')}.</p>
+
+<table style="border-collapse:collapse;width:100%;margin-top:16px;font-size:12px;">
+  <thead>
+    <tr>
+      <th style="border:1px solid #1B2D50;padding:8px 10px;background:#1B2D50;color:white;font-weight:600;font-size:12px;">Information Request</th>
+      <th style="border:1px solid #1B2D50;padding:8px 10px;background:#1B2D50;color:white;font-weight:600;font-size:12px;">Response</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;">Name, contact details and firm reference number of the firm providing the reference</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;">${co()}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;">Individual's name (i.e. the subject of the reference)</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;">${ph('employee_name')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;">Name, contact details and firm reference number of firm requesting the reference</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;">${ph('recipient_firm')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;">Date of request for reference</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;">${ph('date_of_request')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;">Date of this reference</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;">${today}</td>
+    </tr>
+    <tr>
+      <td colspan="2" style="border:1px solid #CBD5E1;padding:8px 10px;font-size:11px;color:#555;background:#FFFBEB;">The answers to Questions A to G cover the period beginning six years before the date of your request for a reference and ending on the date of this reference.</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question A</strong><br>Has the individual:<br>• Performed a certification function for our firm, or<br>• Been an approved person for our firm?</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_a')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question B</strong><br>Has the individual performed one or more of the following roles:<br>• Notified non-executive director<br>• Credit union non-executive director<br>• Key function holder (other than a controlled function), or<br>• Board director?</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_b')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question C</strong><br>If Yes to A or B: provide details of each position held, including the controlled function / SMF / certification or key function holder role, whether approval was subject to any condition, suspension, limitation, restriction or time limit, and the dates held.</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_c')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question D</strong><br>Has the individual performed any other role for our firm not referred to in Questions A and B above?<br>If Yes, provide job title, department and business unit.</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_d')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question E</strong><br>Have we concluded that the individual was not fit and proper to perform a function?<br>If Yes and no associated disciplinary action was taken, set out below the facts which led to our conclusion.</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_e')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question F</strong><br>Have we taken disciplinary action against the individual that:<br>• Relates to a breach of any individual conduct requirement, or<br>• Relates to the individual not being fit and proper to perform a function?<br>If Yes, provide details of the breaches (including dates) and the outcome of the disciplinary action.</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_f')}</td>
+    </tr>
+    <tr>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;background:#F8FAFC;vertical-align:top;width:50%;"><strong>Question G</strong><br>Are we aware of any other information reasonably relevant to the assessment of whether the individual is fit and proper?<br>(Matters occurring in the six years before the request, between request and reference date, or constituting serious misconduct.)</td>
+      <td style="border:1px solid #CBD5E1;padding:8px 10px;font-size:12px;vertical-align:top;width:50%;"><strong>Answer:</strong><br>${ph('question_g')}</td>
+    </tr>
+  </tbody>
 </table>
 
-<p style="font-size:11px;color:var(--red);font-weight:600;background:var(--red-bg);border:1px solid #F0C5C5;border-radius:4px;padding:7px 10px;"><strong>STRICTLY CONFIDENTIAL</strong> — Regulatory Reference. This document must only be used for fit and proper assessment purposes (SYSC 22 / SS28/15).</p>
-
-<p style="margin-top:14px;"><strong>Re: Regulatory Reference — ${ph('employee_name')}</strong><br>Provided in accordance with FCA/PRA regulatory reference requirements (SYSC 22 / SS28/15)</p>
-
-<p>I am writing to provide a regulatory reference for ${ph('employee_name')} pursuant to your request dated ${ph('date_of_request')}. The answers to Questions A to G cover the period beginning six years before the date of your request and ending on the date of this reference.</p>
-
-<p><strong>Question A</strong><br>Has the individual:<br>&#x2022; Performed a certification function for our firm, or<br>&#x2022; Been an approved person for our firm?<br><br><strong>Answer:</strong> ${ph('question_a')}</p>
-
-<p><strong>Question B</strong><br>Has the individual performed one or more of the following roles:<br>&#x2022; Notified non-executive director<br>&#x2022; Credit union non-executive director<br>&#x2022; Key function holder (other than a controlled function), or<br>&#x2022; Board director?<br><br><strong>Answer:</strong> ${ph('question_b')}</p>
-
-<p><strong>Question C</strong><br>If Yes to A or B: details of each position held — role, dates, and whether approval was subject to any condition, suspension, limitation, restriction or time limit.<br><br><strong>Answer:</strong> ${ph('question_c')}</p>
-
-<p><strong>Question D</strong><br>Did the individual perform any other role for our firm not covered in A or B? If yes, provide job title, department and business unit.<br><br><strong>Answer:</strong> ${ph('question_d')}</p>
-
-<p><strong>Question E</strong><br>Did we conclude that the individual was not fit and proper to perform a function? If yes and no disciplinary action was taken, set out the facts which led to our conclusion.<br><br><strong>Answer:</strong> ${ph('question_e')}</p>
-
-<p><strong>Question F</strong><br>Did we take disciplinary action against the individual relating to a breach of any individual conduct requirement, or to the individual not being fit and proper? If yes, describe the breaches (including dates) and the outcome.<br><br><strong>Answer:</strong> ${ph('question_f')}</p>
-
-<p><strong>Question G</strong><br>Are we aware of any other information reasonably relevant to whether the individual is fit and proper? (Matters in the six years before the request, between request and reference date, or constituting serious misconduct.)<br><br><strong>Answer:</strong> ${ph('question_g')}</p>
-
-<p style="margin-top:16px;">The information provided in this reference is accurate and complete to the best of our knowledge and belief. This reference has been reviewed and approved by a senior manager of ${co()} authorised to issue regulatory references.</p>
-
-<p>Please do not hesitate to contact us if you require any further information.</p>
+<p style="margin-top:16px;">The information in this reference is accurate and complete to the best of our knowledge and belief. This reference has been approved by a senior manager of ${co()} with authority to issue regulatory references.</p>
 
 <p>Yours sincerely,</p></div>${sign('manager_name')}`;
 
@@ -4582,6 +4605,7 @@ function htmlToMarkdownText(html) {
       let tdMatch;
       while ((tdMatch = tdRegex.exec(trMatch[1])) !== null) {
         const cell = tdMatch[1]
+          .replace(/<br\s*\/?>/gi, '\n')
           .replace(/<(strong|b)(?:\s[^>]*)?>(.+?)<\/\1>/gis, '**$2**')
           .replace(/<[^>]+>/g, '')
           .replace(/&amp;/g,'&').replace(/&nbsp;/g,' ').replace(/&#39;/g,"'").trim();
