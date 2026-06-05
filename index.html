@@ -4319,6 +4319,7 @@ const TMPL_NEW_SALARY = ['t1','t2','t3'];
 
 async function openTmpl(t) {
   selTmpl=t;genStep=0;
+  const lib=document.querySelector('.tmpl-lib');lib.classList.add('lib-collapsed');const tb=document.getElementById('tmplLibToggle');if(tb)tb.textContent='›';
   // Pre-fill date and reset - always auto-fill letter date, never ask
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   genVals = { date: today, letter_date: today, today: today, current_date: today, todays_date: today, document_date: today, DATE: today };
