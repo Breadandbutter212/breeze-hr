@@ -127,8 +127,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .docs-title { font-size: 15px; font-weight: 600; letter-spacing: -0.02em; }
 .docs-sub { font-size: 11px; color: var(--ink3); margin-top: 2px; }
 .docs-body { flex: 1; overflow: hidden; display: flex; }
-.tmpl-lib { width: 260px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; }
-.lib-search { padding: 10px; border-bottom: 1px solid var(--border); }
+.tmpl-lib { width: 260px; flex-shrink: 0; border-right: 1px solid var(--border); background: var(--surface); display: flex; flex-direction: column; transition: width 0.18s; overflow: hidden; min-width: 0; }
+.tmpl-lib.lib-collapsed { width: 32px; }
+.tmpl-lib.lib-collapsed .lib-search-input, .tmpl-lib.lib-collapsed .lib-scroll, .tmpl-lib.lib-collapsed .upload-zone { display: none; }
+.tmpl-lib.lib-collapsed .lib-search { justify-content: center; }
+.lib-search { padding: 10px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 6px; }
+.lib-search-input { flex: 1; min-width: 0; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface2); outline: none; }
 .lib-search input { width: 100%; border: 1px solid var(--border); border-radius: var(--r-sm); padding: 7px 10px; font-size: 12px; font-family: inherit; color: var(--ink); background: var(--surface2); outline: none; }
 .lib-search input:focus { border-color: var(--accent); background: var(--surface); }
 .lib-scroll { flex: 1; overflow-y: auto; }
@@ -835,7 +839,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   </div>
   <div class="docs-body">
     <div class="tmpl-lib">
-      <div class="lib-search"><input placeholder="Search templates..." oninput="filterTmpls(this.value)" id="tmplSearch"></div>
+      <div class="lib-search"><input class="lib-search-input" placeholder="Search templates..." oninput="filterTmpls(this.value)" id="tmplSearch"><button onclick="toggleTmplLib()" id="tmplLibToggle" title="Toggle sidebar" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:15px;line-height:1;padding:0 2px;flex-shrink:0;">‹</button></div>
       <div class="lib-scroll" id="tmplList"></div>
       <label class="upload-zone" style="cursor:pointer;">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:block;margin:0 auto 4px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
@@ -4301,6 +4305,13 @@ async function deleteTemplate(tmplId) {
 
 function filterTmpls(v){renderTmpls(v);}
 
+function toggleTmplLib() {
+  const lib = document.querySelector('.tmpl-lib');
+  const btn = document.getElementById('tmplLibToggle');
+  const collapsed = lib.classList.toggle('lib-collapsed');
+  btn.textContent = collapsed ? '›' : '‹';
+}
+
 // Templates where job_title = NEW role (don't pre-fill from HRIS)
 const TMPL_NEW_ROLE = ['t1','t3'];
 // Templates where salary = NEW salary (don't pre-fill from HRIS)
@@ -4316,7 +4327,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;"><div><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
