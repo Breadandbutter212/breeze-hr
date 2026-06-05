@@ -9957,15 +9957,16 @@ function renderCareersCategoryTab(body) {
 
 function renderCareersTracker(body) {
   const DEMO_CAREERS = [
-    { name:'Grace Nwosu', title:'Senior Software Engineer', dept:'Engineering', band:'L5', hireDate:'2021-03-14', lastReview:'2025-11-01', reviewScore:'Exceeds', nextPromoEligible:'2026-03-14', stage:'Promotion approved', cvLinked:true, hrisLinked:true, careerMap:[{date:'2021-03-14',role:'Software Engineer L3',note:'Joined from recruitment'},{date:'2022-09-01',role:'Software Engineer L4',note:'Promoted - exceeded targets 2 cycles'},{date:'2024-06-01',role:'Senior Software Engineer L5',note:'Performance review led promotion'}] },
-    { name:'Tom Briggs', title:'DevOps Engineer', dept:'Engineering', band:'L4', hireDate:'2022-11-07', lastReview:'2025-11-20', reviewScore:'Exceeds', nextPromoEligible:'2025-11-07', stage:'Eligible - no action', cvLinked:true, hrisLinked:false, careerMap:[{date:'2022-11-07',role:'Junior DevOps L3',note:'Joined from recruitment'},{date:'2024-05-01',role:'DevOps Engineer L4',note:'Rapid progression - cloud migration lead'}] },
-    { name:'Remi Adeyemi', title:'Finance Manager', dept:'Finance', band:'M2', hireDate:'2019-07-22', lastReview:'2025-10-15', reviewScore:'Meets', nextPromoEligible:'2026-07-22', stage:'In review cycle', cvLinked:true, hrisLinked:true, careerMap:[{date:'2019-07-22',role:'Finance Analyst',note:'Joined via direct application'},{date:'2021-04-01',role:'Senior Finance Analyst',note:'Promoted after strong FY20 close'},{date:'2023-01-01',role:'Finance Manager',note:'Promotion - led restructure project'}] },
-    { name:'Lucia Ferrara', title:'HR Business Partner', dept:'People', band:'M1', hireDate:'2020-02-03', lastReview:'2026-01-10', reviewScore:'Exceeds', nextPromoEligible:'2026-02-03', stage:'PIP complete - back on track', cvLinked:false, hrisLinked:true, careerMap:[{date:'2020-02-03',role:'HR Coordinator',note:'Joined via agency'},{date:'2021-10-01',role:'HR Advisor',note:'Promotion after CIPD Level 5'},{date:'2023-07-01',role:'HR Business Partner',note:'Promoted to cover maternity'}] },
-    { name:'Dan Kowalski', title:'Senior Account Manager', dept:'Sales', band:'S3', hireDate:'2018-05-14', lastReview:'2025-09-01', reviewScore:'Meets', nextPromoEligible:'2026-05-14', stage:'Succession candidate', cvLinked:true, hrisLinked:true, careerMap:[{date:'2018-05-14',role:'Account Manager',note:'Joined from referral'},{date:'2020-03-01',role:'Senior Account Manager',note:'Hit 140% target two years running'}] },
+    { name:'Grace Nwosu', title:'Senior Software Engineer', dept:'Engineering', band:'L5', hireDate:'2021-03-14', reviewScore:'5 – Exceeded Standards', stage:'Promotion approved', cvLinked:true, hrisLinked:true, careerMap:[{date:'2021-03-14',role:'Software Engineer L3',note:'Joined from recruitment'},{date:'2022-09-01',role:'Software Engineer L4',note:'Promoted - exceeded targets 2 cycles'},{date:'2024-06-01',role:'Senior Software Engineer L5',note:'Performance review led promotion'}] },
+    { name:'Tom Briggs', title:'DevOps Engineer', dept:'Engineering', band:'L4', hireDate:'2022-11-07', reviewScore:'5 – Exceeded Standards', stage:'Eligible - no action', cvLinked:true, hrisLinked:false, careerMap:[{date:'2022-11-07',role:'Junior DevOps L3',note:'Joined from recruitment'},{date:'2024-05-01',role:'DevOps Engineer L4',note:'Rapid progression - cloud migration lead'}] },
+    { name:'Remi Adeyemi', title:'Finance Manager', dept:'Finance', band:'M2', hireDate:'2019-07-22', reviewScore:'3 – Met Standards', stage:'In review cycle', cvLinked:true, hrisLinked:true, careerMap:[{date:'2019-07-22',role:'Finance Analyst',note:'Joined via direct application'},{date:'2021-04-01',role:'Senior Finance Analyst',note:'Promoted after strong FY20 close'},{date:'2023-01-01',role:'Finance Manager',note:'Promotion - led restructure project'}] },
+    { name:'Lucia Ferrara', title:'HR Business Partner', dept:'People', band:'M1', hireDate:'2020-02-03', reviewScore:'4 – Above Expected', stage:'PIP complete - back on track', cvLinked:false, hrisLinked:true, careerMap:[{date:'2020-02-03',role:'HR Coordinator',note:'Joined via agency'},{date:'2021-10-01',role:'HR Advisor',note:'Promotion after CIPD Level 5'},{date:'2023-07-01',role:'HR Business Partner',note:'Promoted to cover maternity'}] },
+    { name:'Dan Kowalski', title:'Senior Account Manager', dept:'Sales', band:'S3', hireDate:'2018-05-14', reviewScore:'3 – Met Standards', stage:'Succession candidate', cvLinked:true, hrisLinked:true, careerMap:[{date:'2018-05-14',role:'Account Manager',note:'Joined from referral'},{date:'2020-03-01',role:'Senior Account Manager',note:'Hit 140% target two years running'}] },
   ];
   window._demoCareers = DEMO_CAREERS;
   const stageColor = s => s.includes('approved')?'trk-badge-green':s.includes('Eligible')?'trk-badge-amber':s.includes('review')?'trk-badge-blue':s.includes('PIP')?'trk-badge-red':'trk-badge-grey';
-  const scoreColor = s => s==='Exceeds'?'trk-badge-green':s==='Meets'?'trk-badge-blue':'trk-badge-amber';
+  const scoreColor = s => s.startsWith('5')?'trk-badge-green':s.startsWith('4')?'trk-badge-blue':s.startsWith('3')?'trk-badge-blue':s.startsWith('2')?'trk-badge-amber':'trk-badge-red';
+  const timeInRole = c => { if(!c.careerMap||!c.careerMap.length) return '—'; const start=new Date(c.careerMap[c.careerMap.length-1].date); const now=new Date(); const mo=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()); if(mo<1) return '<1m'; if(mo<12) return mo+'m'; const y=Math.floor(mo/12),m=mo%12; return m?`${y}y ${m}m`:`${y}y`; };
   body.innerHTML = `
   <div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column;gap:20px;">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
@@ -9988,14 +9989,13 @@ function renderCareersTracker(body) {
         </div>
       </div>
       <div style="overflow-x:auto;"><table class="trk-table">
-        <thead><tr><th>Employee</th><th>Role</th><th>Band</th><th>Last review</th><th>Score</th><th>Next eligible</th><th>Career steps</th><th>CV</th><th>HRIS</th><th>Stage</th><th></th></tr></thead>
+        <thead><tr><th>Employee</th><th>Role</th><th>Band</th><th>Performance review</th><th>Time in role</th><th>Career steps</th><th>CV</th><th>HRIS</th><th>Stage</th><th></th></tr></thead>
         <tbody>${DEMO_CAREERS.map((c,i)=>`<tr>
           <td><div style="font-weight:600;">${c.name}</div><div style="font-size:10px;color:var(--ink3);">${c.dept}</div></td>
           <td style="font-size:12px;">${c.title}</td>
           <td><span class="trk-badge trk-badge-grey">${c.band}</span></td>
-          <td style="font-size:11px;white-space:nowrap;">${new Date(c.lastReview).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
-          <td><span class="trk-badge ${scoreColor(c.reviewScore)}">${c.reviewScore}</span></td>
-          <td style="font-size:11px;white-space:nowrap;">${new Date(c.nextPromoEligible).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
+          <td><span class="trk-badge ${scoreColor(c.reviewScore)}">${c.reviewScore.split('–')[0].trim()}</span><div style="font-size:10px;color:var(--ink3);margin-top:2px;">${(c.reviewScore.split('–')[1]||'').trim()}</div></td>
+          <td style="font-size:12px;white-space:nowrap;">${timeInRole(c)}</td>
           <td><span class="trk-badge trk-badge-grey">${c.careerMap.length} steps</span></td>
           <td>${c.cvLinked?`<span class="trk-badge trk-badge-green">&#10003;</span>`:`<span class="trk-badge trk-badge-red">Missing</span>`}</td>
           <td>${c.hrisLinked?`<span class="trk-badge trk-badge-green">&#10003;</span>`:`<span class="trk-badge trk-badge-amber">Unlinked</span>`}</td>
@@ -10032,8 +10032,8 @@ function openCareerMap(idx) {
       <div style="font-size:12px;font-weight:700;margin-bottom:14px;">Career progression</div>
       ${tl}
       <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;gap:16px;flex-wrap:wrap;">
-        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Last review</div><div style="font-size:12px;font-weight:600;margin-top:2px;">${new Date(c.lastReview).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})} - ${c.reviewScore}</div></div>
-        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Next eligible</div><div style="font-size:12px;font-weight:600;margin-top:2px;">${new Date(c.nextPromoEligible).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
+        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Performance review</div><div style="font-size:12px;font-weight:600;margin-top:2px;">${c.reviewScore}</div></div>
+        <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Time in role</div><div style="font-size:12px;font-weight:600;margin-top:2px;">${(()=>{if(!c.careerMap||!c.careerMap.length)return'—';const start=new Date(c.careerMap[c.careerMap.length-1].date);const now=new Date();const mo=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth());if(mo<1)return'<1m';if(mo<12)return mo+'m';const y=Math.floor(mo/12),m=mo%12;return m?y+'y '+m+'m':y+'y';})()}</div></div>
         <div><div style="font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">CV attached</div><div style="font-size:12px;font-weight:600;margin-top:2px;color:${c.cvLinked?'var(--green)':'var(--red)'};">${c.cvLinked?'Yes':'Missing'}</div></div>
       </div>
     </div>
@@ -11345,8 +11345,9 @@ function downloadMatPatCSV() {
   downloadCSV(rows, 'Family leave tracker ' + new Date().toLocaleDateString('en-GB'));
 }
 function downloadCareersCSV() {
-  const rows = [['Employee','Title','Dept','Band','Last Review','Score','Next Eligible','Career Steps','CV','HRIS','Stage']];
-  (window._demoCareers||[]).forEach(c => rows.push([c.name, c.title, c.dept, c.band, c.lastReview, c.reviewScore, c.nextPromoEligible, c.careerMap.length, c.cvLinked?'Yes':'No', c.hrisLinked?'Yes':'No', c.stage]));
+  const timeInRole = c => { if(!c.careerMap||!c.careerMap.length) return ''; const start=new Date(c.careerMap[c.careerMap.length-1].date); const now=new Date(); const mo=(now.getFullYear()-start.getFullYear())*12+(now.getMonth()-start.getMonth()); if(mo<1) return '<1m'; if(mo<12) return mo+'m'; const y=Math.floor(mo/12),m=mo%12; return m?`${y}y ${m}m`:`${y}y`; };
+  const rows = [['Employee','Title','Dept','Band','Performance Review','Time in Role','Career Steps','CV','HRIS','Stage']];
+  (window._demoCareers||[]).forEach(c => rows.push([c.name, c.title, c.dept, c.band, c.reviewScore, timeInRole(c), c.careerMap.length, c.cvLinked?'Yes':'No', c.hrisLinked?'Yes':'No', c.stage]));
   downloadCSV(rows, 'Careers tracker ' + new Date().toLocaleDateString('en-GB'));
 }
 
