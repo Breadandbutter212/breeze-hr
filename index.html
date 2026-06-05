@@ -4397,7 +4397,7 @@ function updatePreview() {
     return;
   }
 
-  const header=(conf=true)=>`<div class="doc-co">${co()}</div><div class="doc-rule"></div><div class="doc-date">${today}</div>${conf?`<div style="margin-bottom:6px;font-size:11px;color:var(--ink3);"><strong>PRIVATE AND CONFIDENTIAL</strong></div>`:''}`;
+  const header=(conf=true)=>`<div class="doc-co">${co()}</div><div class="doc-rule"></div><div class="doc-date">${today}</div>${conf?`<div style="margin-bottom:6px;font-size:11px;color:var(--ink3);font-weight:500;">PRIVATE AND CONFIDENTIAL</div>`:''}`;
   const salutation=(name='employee_name')=>`<div style="margin-bottom:16px;font-size:13px;">Dear ${ph(name)},</div>`;
   const sign=(mgr='manager_name')=>`<div class="doc-sig"><div style="margin-top:32px;font-size:12px;color:var(--ink3);">Signed:</div><div class="doc-sig-name">${ph(mgr)}</div><div style="font-size:12px;color:var(--ink3);margin-top:4px;">On behalf of ${co()}</div><div style="margin-top:28px;border-top:1px solid var(--border);padding-top:8px;font-size:11px;color:var(--ink3);">I acknowledge receipt of this letter:<br><br>Signature: _______________________&nbsp;&nbsp;&nbsp; Date: _______________</div></div>`;
 
