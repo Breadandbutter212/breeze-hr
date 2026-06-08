@@ -10815,7 +10815,7 @@ function ocRender(root) {
   if (!svg || !nd) return;
   if (spinner) spinner.style.display = 'none';
   svg.innerHTML = ''; nd.innerHTML = '';
-  const all = []; const collect = n => { all.push(n); (n.children||[]).forEach(collect); }; collect(root);
+  const all = []; const collect = n => { all.push(n); if(!_ocCollapsed.has(n.id)) (n.children||[]).forEach(collect); }; collect(root);
   if (cnt) cnt.textContent = all.filter(n=>!n.id.startsWith('__')).length + ' people';
 
   // Edges — bus connectors
@@ -10857,6 +10857,15 @@ function ocRender(root) {
           <div class="org-title">${escapeHtml(node.title||node.dept||'')}</div>
           ${node.dept&&node.title?`<div class="org-dept-badge" style="background:${node.color}22;color:${node.color};">${escapeHtml(node.dept)}</div>`:''}
         </div>`;
+    }
+    if ((node.children||[]).length > 0) {
+      const collapsed = _ocCollapsed.has(node.id);
+      const btn = document.createElement('button');
+      btn.className = 'oc-toggle' + (collapsed ? ' collapsed' : '');
+      btn.title = collapsed ? 'Expand' : 'Collapse';
+      btn.innerHTML = (collapsed ? '&#9658;' : '&#9660;') + ' ' + node.children.length;
+      btn.onclick = e => { e.stopPropagation(); ocToggleCollapse(node.id); };
+      div.appendChild(btn);
     }
     div.onmousedown = e => {
       if (e.button!==0) return; e.stopPropagation();
@@ -11151,6 +11160,22 @@ function ocReset() {
   _ocCollapsed=new Set();
   _ocEmps=ocGetDemoData();
   ocBuild();
+}
+
+function ocToggleCollapse(nodeId) {
+  if (_ocCollapsed.has(nodeId)) _ocCollapsed.delete(nodeId);
+  else _ocCollapsed.add(nodeId);
+  document.getElementById('ocNodeMenu')?.remove();
+  if (_ocEmps) ocBuild();
+}
+
+function ocCollapseAll() {
+  const allHaveChildren = new Set();
+  const walk = n => { if((n.children||[]).length){allHaveChildren.add(n.id);} (n.children||[]).forEach(walk); };
+  if(_ocTree) walk(_ocTree);
+  const allCollapsed = [...allHaveChildren].every(id => _ocCollapsed.has(id));
+  if (allCollapsed) { _ocCollapsed = new Set(); } else { _ocCollapsed = allHaveChildren; }
+  if (_ocEmps) ocBuild();
 }
 
 function ocHighlight(q) {
@@ -13188,6 +13213,7 @@ function initOrgChart() {
       <button onclick="ocZoom(0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+</button>
       <button onclick="ocZoom(-0.15)" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);width:28px;height:28px;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">-</button>
       <button onclick="ocFit()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Fit</button>
+      <button onclick="ocCollapseAll()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Collapse all</button>
       <button onclick="ocReset()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">Reset layout</button>
       <button onclick="ocAddPerson()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+ Add person</button>
       <button onclick="ocAddOpenRole()" style="font-size:11px;background:#F0FDF4;color:#059669;border:1.5px dashed #6EE7B7;border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#D1FAE5'" onmouseout="this.style.background='#F0FDF4'">+ Open role</button>
