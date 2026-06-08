@@ -1263,6 +1263,23 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   <div class="compare-results" id="compareResults"></div>
 </div>
 
+<!-- COLUMN PICKER MODAL -->
+<div id="colPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;">
+  <div style="background:var(--bg);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.18);width:360px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);">
+      <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px;">Choose columns to compare</div>
+      <div style="font-size:12px;color:var(--ink3);">Select which spreadsheet columns to check against the letters</div>
+    </div>
+    <div id="colPickerList" style="padding:12px 20px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:6px;"></div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
+      <button onclick="colPickerToggleAll(true)" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">Select all</button>
+      <button onclick="colPickerToggleAll(false)" style="font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;padding:0;font-family:inherit;">Clear</button>
+      <button onclick="document.getElementById('colPickerOverlay').style.display='none'" style="font-size:12px;color:var(--ink2);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 12px;cursor:pointer;font-family:inherit;margin-left:auto;">Cancel</button>
+      <button onclick="colPickerRun()" class="btn btn-primary btn-sm">Run comparison</button>
+    </div>
+  </div>
+</div>
+
 <!-- PEOPLE PLAN -->
 <div class="view manage-view" id="view-peopleplan">
   <div class="manage-topbar">
@@ -7488,8 +7505,12 @@ function resetCompare() {
 
 async function runCompare() {
   const mode = document.getElementById('compareMode')?.value || 'general';
-  if (mode === 'employee' || mode === 'comp') {
-    await compareEmployeeMatch(mode === 'comp');
+  if (mode === 'comp') {
+    await showCompColumnPicker();
+    return;
+  }
+  if (mode === 'employee') {
+    await compareEmployeeMatch(false);
     return;
   }
   const a = _compareFiles.A, b = _compareFiles.B;
@@ -8139,7 +8160,7 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
   return matches;
 }
 
-function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
+function compareMatchedRow(rowA, rowB, extraSkip, exactMatch, selectedColumns) {
   // exactMatch: only compare columns sharing the same name - for spreadsheet vs spreadsheet
   if (exactMatch) {
     const SKIP_NORM = new Set([
@@ -8201,7 +8222,8 @@ function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
   Object.entries(rowB || {}).forEach(([k,v]) => { if (k.startsWith('_')) return; const g = groupKey(k); if (g && !gB[g]) gB[g] = { key: k, val: v }; });
   // Comp mode: only iterate spreadsheet (A) groups - fields only in letter are noise, fields in
   // spreadsheet but not in letter are silently skipped (dept, location etc. won't appear in a comp letter)
-  const allGroups = Object.keys(gA);
+  // If selectedColumns is provided, further restrict to only those column names
+  const allGroups = Object.keys(gA).filter(g => !selectedColumns || selectedColumns.has(gA[g]?.key));
   const results = [];
   for (const g of allGroups) {
     const entA = gA[g], entB = gB[g];
@@ -8382,7 +8404,73 @@ function filterEmpCompare(type) {
   });
 }
 
-async function compareEmployeeMatch(isCompMode) {
+async function getSpreadsheetColumns(file) {
+  return new Promise((resolve, reject) => {
+    const ext = file.name.split('.').pop().toLowerCase();
+    if (ext === 'csv') {
+      const reader = new FileReader();
+      reader.onload = e => {
+        const line = e.target.result.split('\n')[0] || '';
+        resolve(line.split(',').map(c => c.trim().replace(/^"|"$/g,'')).filter(Boolean));
+      };
+      reader.onerror = reject;
+      reader.readAsText(file);
+    } else {
+      const reader = new FileReader();
+      reader.onload = e => {
+        try {
+          const wb = XLSX.read(e.target.result, { type: 'array', sheetRows: 2 });
+          const ws = wb.Sheets[wb.SheetNames[0]];
+          const rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          resolve((rows[0] || []).map(String).filter(Boolean));
+        } catch(err) { reject(err); }
+      };
+      reader.onerror = reject;
+      reader.readAsArrayBuffer(file);
+    }
+  });
+}
+
+async function showCompColumnPicker() {
+  const a = _compareFiles.A;
+  if (!a || !_compareFiles.B) return;
+  let cols;
+  try { cols = await getSpreadsheetColumns(a); } catch(e) { cols = []; }
+  if (!cols.length) { await compareEmployeeMatch(true, null); return; }
+
+  const norm = s => s.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
+  const nameIdRx = /^(?:emp|employee|staff|worker|person)?_?(?:name|full_name)$|^(?:emp|employee|staff|payroll)?_?id$|^(?:emp|staff)_?no$/;
+  const nameIdHits = new Set(['employee_name','full_name','name','employee','staff_name','employee_id','emp_id','employee_no','emp_no','staff_id','id','reference','payroll_id']);
+  const compRx = /salary|pay\b|wage|bonus|compensation|allowance|reloc|sign.?on|signing|total.*comp|total.*cash|incentive|ctc/i;
+
+  const pickable = cols.filter(c => {
+    const n = norm(c);
+    return !nameIdHits.has(n) && !nameIdRx.test(n);
+  });
+  if (!pickable.length) { await compareEmployeeMatch(true, null); return; }
+
+  const list = document.getElementById('colPickerList');
+  list.innerHTML = pickable.map(c => `
+    <label style="display:flex;align-items:center;gap:9px;cursor:pointer;padding:5px 0;">
+      <input type="checkbox" value="${escapeHtml(c)}" ${compRx.test(c) ? 'checked' : ''} style="width:14px;height:14px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">
+      <span style="font-size:13px;color:var(--ink);">${escapeHtml(c)}</span>
+    </label>`).join('');
+
+  const overlay = document.getElementById('colPickerOverlay');
+  overlay.style.display = 'flex';
+}
+
+function colPickerToggleAll(checked) {
+  document.querySelectorAll('#colPickerList input[type="checkbox"]').forEach(cb => cb.checked = checked);
+}
+
+async function colPickerRun() {
+  document.getElementById('colPickerOverlay').style.display = 'none';
+  const checked = [...document.querySelectorAll('#colPickerList input[type="checkbox"]:checked')].map(cb => cb.value);
+  await compareEmployeeMatch(true, checked.length ? checked : null);
+}
+
+async function compareEmployeeMatch(isCompMode, selectedColumns) {
   const a = _compareFiles.A, b = _compareFiles.B;
   if (!a || !b) return;
   const results = document.getElementById('compareResults');
@@ -8422,12 +8510,13 @@ async function compareEmployeeMatch(isCompMode) {
     const colsA = detectEmployeeColumns(rowsA);
     const colsB = detectEmployeeColumns(rowsB);
     const rawMatches = matchEmployeeRows(rowsA, rowsB, colsA, colsB);
+    const selectedSet = selectedColumns ? new Set(selectedColumns) : null;
     const matches = rawMatches.map(m => {
       if (!m.matched) return m;
       // Pass name + ID column names so they are excluded from the field comparison
       const skipCols = [colsA.nameCol, colsA.idCol, colsB.nameCol, colsB.idCol].filter(Boolean);
       // exactMatch=true for spreadsheet mode: only compare columns with the same name in both files
-      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB, skipCols, !isCompMode) };
+      return { ...m, fieldComparisons: compareMatchedRow(m.rowA, m.rowB, skipCols, !isCompMode, selectedSet) };
     });
     renderEmployeeMatchResults(matches, a.name, bLabel, isCompMode);
   } catch(e) {
