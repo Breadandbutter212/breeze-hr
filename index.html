@@ -4795,13 +4795,17 @@ async function renderManage() {
 
 async function uploadHandbook(event, existingId) {
   const file = event.target.files[0]; if (!file || !currentProfile) return;
-  const isPdf = file.name.toLowerCase().endsWith('.pdf');
+  const isPdf  = file.name.toLowerCase().endsWith('.pdf');
+  const isDocx = file.name.toLowerCase().endsWith('.docx');
+  const readBase64 = f => new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(f); });
   let storageContent;
   if (isPdf) {
-    const readBase64 = f => new Promise(r => { const fr = new FileReader(); fr.onload = e => r(e.target.result.split(',')[1]); fr.readAsDataURL(f); });
     const withTimeout = (p,ms) => Promise.race([p, new Promise(r => setTimeout(()=>r(''), ms))]);
     const [b64, txt] = await Promise.all([readBase64(file), withTimeout(readFileAsText(file), 5000)]);
     storageContent = `PDF_BASE64:${b64}|||TEXT:${txt.substring(0, 50000)}`;
+  } else if (isDocx) {
+    const [b64, txt] = await Promise.all([readBase64(file), readFileAsText(file)]);
+    storageContent = `DOCX_BASE64:${b64}|||TEXT:${txt.substring(0, 50000)}`;
   } else {
     storageContent = await readFileAsText(file);
     if (!storageContent) { alert('Could not read file'); return; }
