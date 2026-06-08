@@ -48,20 +48,16 @@ export default async function handler(req, res) {
     }
   }
 
-  const toolSlug = provider === 'outlook' ? 'MICROSOFT_OUTLOOK_GET_EMAILS' : 'GMAIL_FETCH_EMAILS';
+  const toolSlug = provider === 'outlook' ? 'OUTLOOK_LIST_MESSAGES' : 'GMAIL_FETCH_EMAILS';
+  const toolArgs = provider === 'outlook'
+    ? { folder_id: 'inbox', top: 20, ...(req.body.pageToken ? { skip: req.body.pageToken } : {}) }
+    : { query: 'is:inbox', max_results: 20, ...(req.body.pageToken ? { page_token: req.body.pageToken } : {}) };
 
   try {
     const r = await fetch(`${BASE}/tools/execute/${toolSlug}`, {
       method: 'POST',
       headers: { 'x-api-key': apiKey, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        user_id,
-        arguments: {
-          query: 'is:inbox',
-          max_results: 20,
-          ...(req.body.pageToken ? { page_token: req.body.pageToken } : {})
-        }
-      })
+      body: JSON.stringify({ user_id, arguments: toolArgs })
     });
     const raw = await r.text();
     let data;
