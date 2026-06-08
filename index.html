@@ -10814,9 +10814,19 @@ function ocBuild() {
     root = ocBuildDeptTree(Object.values(nodeMap));
   }
   _ocTree = root; _ocOffsets = {};
+  if (!_ocDefaultApplied) { _ocDefaultApplied = true; ocSetDefaultCollapsed(root, 0); }
   ocLayout(root, 0, 0);
   ocRender(root);
   setTimeout(() => ocInitialView(), 80);
+}
+
+function ocSetDefaultCollapsed(node, depth) {
+  if (depth >= 1 && (node.children||[]).length > 0) {
+    _ocCollapsed.add(node.id);
+    // No need to recurse — subtree is hidden
+  } else {
+    (node.children||[]).forEach(c => ocSetDefaultCollapsed(c, depth + 1));
+  }
 }
 
 function ocBuildDeptTree(nodes) {
@@ -11249,6 +11259,7 @@ function ocReset() {
   _ocRelations={};
   _ocDeptOverrides={};
   _ocCollapsed=new Set();
+  _ocDefaultApplied=false;
   _ocEmps=ocGetDemoData();
   ocBuild();
 }
@@ -13283,6 +13294,7 @@ function downloadHCCSV() {
 let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
 let _ocRelations = {}, _ocDeptOverrides = {};
 let _ocCollapsed = new Set();
+let _ocDefaultApplied = false;
 let _ocT = { x: 0, y: 0, k: 0.85 };
 let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
 const OC_SNAP = 10;
@@ -13291,7 +13303,7 @@ const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','
 
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
-  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set();
+  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set(); _ocDefaultApplied=false;
   const root = document.getElementById('orgChartRoot'); if (!root) return;
   root.innerHTML = `
     <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
