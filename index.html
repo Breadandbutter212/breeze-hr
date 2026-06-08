@@ -13393,6 +13393,147 @@ function initOrgChart() {
 // ── INIT ──
 renderTmpls();
 
+// ── DEMO DATA SEEDER ──
+// Run window.seedDemoData() from the browser console to clear test data and load realistic sample data.
+window.seedDemoData = async function() {
+  if (!currentProfile) { alert('Not signed in — please log in first.'); return; }
+  if (!confirm('This will replace ALL tracker, people plan and headcount data with realistic sample data. Continue?')) return;
+
+  const d = (y,m,day) => new Date(y,m-1,day).toISOString();
+  const ago = n => new Date(Date.now()-n*86400000).toISOString();
+
+  // ── PEOPLE PLAN 2026 ──
+  const ppData = {
+    year: 2026, customCats: [],
+    events: [
+      { id:1,  catId:'performance', title:'Annual appraisal cycle',         startMonth:3,  endMonth:4,  notes:'Line managers complete reviews by end of April. HR to collate and calibrate outcomes.', owner:'HR', startDate:'', endDate:'' },
+      { id:2,  catId:'performance', title:'Mid-year check-ins',             startMonth:9,  endMonth:9,  notes:'Informal 1:1 check-ins across all teams. No formal scoring required.', owner:'Line managers', startDate:'', endDate:'' },
+      { id:3,  catId:'performance', title:'Year-end performance reviews',   startMonth:11, endMonth:12, notes:'Formal year-end cycle. Linked to January pay review.', owner:'HR', startDate:'', endDate:'' },
+      { id:4,  catId:'salary',      title:'Annual pay review',              startMonth:1,  endMonth:2,  notes:'Market benchmarking in January. Letters issued by end of February. Effective 1 April.', owner:'HR / Finance', startDate:'', endDate:'' },
+      { id:5,  catId:'salary',      title:'FY25/26 bonus payments',         startMonth:7,  endMonth:7,  notes:'Discretionary bonus processed in July payroll.', owner:'Finance', startDate:'', endDate:'' },
+      { id:6,  catId:'benefits',    title:'Flex benefits re-enrolment',     startMonth:4,  endMonth:5,  notes:'Annual window for employees to update benefit elections. Deadline 31 May.', owner:'HR', startDate:'', endDate:'' },
+      { id:7,  catId:'benefits',    title:'Private healthcare renewal',     startMonth:10, endMonth:10, notes:'Aviva policy renewal. Review headcount and update provider.', owner:'HR', startDate:'', endDate:'' },
+      { id:8,  catId:'learning',    title:'Management development programme', startMonth:2, endMonth:5,  notes:'ILM Level 5 cohort — 6 managers enrolled. Fortnightly sessions.', owner:'L&D', startDate:'', endDate:'' },
+      { id:9,  catId:'learning',    title:'First Aid at Work recertification', startMonth:6, endMonth:6, notes:'4 first aiders due for renewal. Book external provider by end of May.', owner:'HR', startDate:'', endDate:'' },
+      { id:10, catId:'learning',    title:'Leadership away day',            startMonth:9,  endMonth:9,  notes:'Senior leadership team. Facilitated strategic planning session.', owner:'CEO / HR', startDate:'', endDate:'' },
+      { id:11, catId:'engagement',  title:'Annual engagement survey',       startMonth:2,  endMonth:3,  notes:'Culture Amp survey. Target 80% response rate. Results shared with all managers.', owner:'HR', startDate:'', endDate:'' },
+      { id:12, catId:'engagement',  title:'Summer social',                  startMonth:7,  endMonth:7,  notes:'Company-wide social event. Budget £3k. Team to confirm venue by June.', owner:'HR', startDate:'', endDate:'' },
+      { id:13, catId:'engagement',  title:'Christmas party',                startMonth:12, endMonth:12, notes:'Whole company event. Book venue by September.', owner:'HR', startDate:'', endDate:'' },
+      { id:14, catId:'onboarding',  title:'Graduate intake onboarding',     startMonth:9,  endMonth:10, notes:'3 graduates joining September cohort. Full induction programme to be refreshed.', owner:'HR', startDate:'', endDate:'' },
+      { id:15, catId:'onboarding',  title:'Q1 induction refresh',           startMonth:1,  endMonth:1,  notes:'Update onboarding materials to reflect new handbook and values framework.', owner:'HR', startDate:'', endDate:'' },
+      { id:16, catId:'compliance',  title:'GDPR annual refresher',          startMonth:1,  endMonth:1,  notes:'Mandatory for all staff. Online module via LMS. Deadline 31 January.', owner:'HR', startDate:'', endDate:'' },
+      { id:17, catId:'compliance',  title:'Health & Safety refresher',      startMonth:3,  endMonth:3,  notes:'DSE assessments and fire warden training. Book with HSE provider.', owner:'Facilities / HR', startDate:'', endDate:'' },
+      { id:18, catId:'compliance',  title:'Annual mandatory training window', startMonth:11, endMonth:11, notes:'All staff: GDPR, Anti-bribery, Equality & Diversity, Cyber security.', owner:'HR', startDate:'', endDate:'' },
+    ]
+  };
+  const ppJson = JSON.stringify(ppData);
+  const { data: ppEx } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:PeoplePlan:2026').maybeSingle();
+  if (ppEx) await sb.from('policies').update({ content: ppJson }).eq('id', ppEx.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'SETTING:PeoplePlan:2026', content: ppJson });
+
+  // ── TRACKER — WORKFLOW CASES ──
+  const cases = [
+    { id:'wfc_demo1', employeeName:'Sarah Mitchell', scenarioId:'maternity-leave', checkedSteps:['notify-employer','confirm-matb1','start-risk-assessment'], startedAt:d(2026,3,12), notes:'MATB1 received 14 April. Risk assessment completed. Leave starts 4 Aug 2026.', status:'active', docs:[], contactLog:[
+      { type:'meeting', note:'Sarah notified us of pregnancy. Started risk assessment process.', date:d(2026,3,12) },
+      { type:'email',   note:'Sent Sarah the maternity leave policy and KIT days guidance.',    date:d(2026,3,15) },
+      { type:'email',   note:'Received completed MATB1 form from Sarah.',                       date:d(2026,4,14) },
+      { type:'meeting', note:'Agreed leave start date of 4 August 2026. Expected return August 2027.', date:d(2026,4,22) },
+    ]},
+    { id:'wfc_demo2', employeeName:'James Chen', scenarioId:'paternity-leave', checkedSteps:['notify-employer','confirm-dates'], startedAt:d(2026,4,1), notes:'Partner due mid-July. Taking 2 weeks paternity leave from 14 July 2026.', status:'active', docs:[], contactLog:[
+      { type:'email', note:'James submitted paternity leave form. Confirmed 2 weeks from 14 July 2026.', date:d(2026,4,1) },
+    ]},
+    { id:'wfc_demo3', employeeName:'David Okafor', scenarioId:'short-term-absence', checkedSteps:['record-absence','return-to-work-interview'], startedAt:d(2026,4,10), notes:'3 separate absences in 12 weeks — Bradford Factor score now 72. Trigger point reached. Informal welfare meeting held 20 May.', status:'active', docs:[], contactLog:[
+      { type:'call',    note:'Absence 1 — 3 days, back pain. Return to work interview completed.',            date:d(2026,4,10) },
+      { type:'call',    note:'Absence 2 — 2 days, gastro illness. Return to work interview completed.',       date:d(2026,5,1)  },
+      { type:'call',    note:'Absence 3 — 1 day, migraine. Bradford score now at trigger point.',             date:d(2026,5,19) },
+      { type:'meeting', note:'Welfare meeting held. Support options discussed. EAP signposted.',              date:d(2026,5,20) },
+    ]},
+    { id:'wfc_demo4', employeeName:'Emma Richards', scenarioId:'long-term-absence', checkedSteps:['record-absence','gp-cert-received','oh-referral'], startedAt:d(2026,4,28), notes:'Signed off 28 April with work-related stress. Fit note extended to 23 June. OH referral submitted — report awaited.', status:'active', docs:[], contactLog:[
+      { type:'call',  note:'Emma called to report absence — signed off by GP with work-related stress.',        date:d(2026,4,28) },
+      { type:'email', note:'Sent supportive letter outlining SSP entitlement and EAP details.',                 date:d(2026,4,29) },
+      { type:'call',  note:'Fortnightly welfare call — Emma engaged but struggling. EAP in use.',              date:d(2026,5,12) },
+      { type:'email', note:'OH referral submitted to Optima Health. Report expected within 10 working days.',  date:d(2026,5,15) },
+      { type:'email', note:'Fit note extended to 23 June.',                                                    date:d(2026,5,26) },
+    ]},
+    { id:'wfc_demo5', employeeName:'Tom Bradley', scenarioId:'resignation', checkedSteps:['resignation-received','notice-confirmed','exit-interview-booked'], startedAt:d(2026,5,15), notes:'Resigned 15 May. 6-week notice period. Last day 27 June 2026. Exit interview 24 June.', status:'active', docs:[], contactLog:[
+      { type:'meeting', note:'Tom handed in written resignation. Last day confirmed as 27 June.',              date:d(2026,5,15) },
+      { type:'email',   note:'Resignation acknowledgement letter sent confirming notice and final pay.',       date:d(2026,5,16) },
+      { type:'meeting', note:'Exit interview booked for 24 June. Tom moving to a competitor.',                date:d(2026,5,20) },
+    ]},
+    { id:'wfc_demo6', employeeName:'Priya Sharma', scenarioId:'performance-concern', checkedSteps:['informal-discussion','pip-issued'], startedAt:d(2026,3,10), notes:'Informal support plan started March — no improvement. Formal PIP issued 7 April over 8 weeks. First review 2 June: partial improvement noted.', status:'active', docs:[], contactLog:[
+      { type:'meeting', note:'Informal discussion about missed targets and quality concerns. Informal support plan agreed.', date:d(2026,3,10) },
+      { type:'meeting', note:'Review — no sustained improvement. Decision to move to formal PIP.',                          date:d(2026,4,7)  },
+      { type:'email',   note:'PIP issued in writing — 8 objectives over 8 weeks. Priya acknowledged receipt.',             date:d(2026,4,8)  },
+      { type:'meeting', note:'First PIP review — 3 of 8 objectives met. Improvement noted but not yet sustained.',         date:d(2026,6,2)  },
+    ]},
+    { id:'wfc_demo7', employeeName:'Michael Hayes', scenarioId:'disciplinary', checkedSteps:['investigation','investigation-complete','hearing-invited'], startedAt:d(2026,5,5), notes:'Repeated lateness over 6 weeks (5 occasions). Informal conversation had no effect. Disciplinary hearing scheduled 18 June.', status:'active', docs:[], contactLog:[
+      { type:'meeting', note:'Informal discussion about lateness — Michael acknowledged and agreed to improve.', date:d(2026,4,10) },
+      { type:'meeting', note:'Two further instances. Opened formal investigation.',                              date:d(2026,5,5)  },
+      { type:'meeting', note:'Investigation meeting — Michael acknowledged all instances, cited commute issues.',date:d(2026,5,14) },
+      { type:'email',   note:'Investigation complete. Decision to proceed to disciplinary hearing.',             date:d(2026,5,21) },
+      { type:'email',   note:'Hearing invitation sent — date 18 June 2026. Right to be accompanied confirmed.', date:d(2026,6,3)  },
+    ]},
+    { id:'wfc_demo8', employeeName:'Aisha Patel', scenarioId:'grievance', checkedSteps:['grievance-received','investigation-appointed'], startedAt:d(2026,5,22), notes:'Formal grievance raised regarding management conduct — alleged bullying and exclusion. Independent investigation underway.', status:'active', docs:[], contactLog:[
+      { type:'meeting', note:'Received formal written grievance from Aisha. Acknowledged receipt and confirmed process.', date:d(2026,5,22) },
+      { type:'email',   note:'Appointed independent investigator (external HR consultant). Investigation commenced.',     date:d(2026,5,28) },
+      { type:'meeting', note:'Investigator met with Aisha to hear her account. Notes agreed.',                            date:d(2026,6,4)  },
+    ]},
+  ];
+  const wfJson = JSON.stringify(cases);
+  const { data: wfEx } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','TRACKER:Workflows').maybeSingle();
+  if (wfEx) await sb.from('policies').update({ content: wfJson }).eq('id', wfEx.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'TRACKER:Workflows', content: wfJson });
+
+  // ── TRACKER — MAT/PAT RECORDS ──
+  const mpData = [
+    { id:'mp_demo1', employeeName:'Sarah Mitchell', jobTitle:'Customer Success Manager', type:'maternity', dueDate:'2026-09-15', leaveStart:'2026-08-04', expectedReturn:'2027-08-04', actualReturn:'', kitDaysUsed:0, kitDaysMax:10, dependantAdded:false, contactLog:[], notes:'MATB1 received 14 April 2026. SMP applies — 39 weeks. KIT days to be agreed closer to return.', createdAt:d(2026,3,12), wfCaseId:'wfc_demo1' },
+    { id:'mp_demo2', employeeName:'James Chen',     jobTitle:'Software Engineer',         type:'paternity', dueDate:'2026-07-14', leaveStart:'2026-07-14', expectedReturn:'2026-07-28', actualReturn:'', kitDaysUsed:0, kitDaysMax:0,  dependantAdded:false, contactLog:[], notes:'2 weeks statutory paternity leave.',                    createdAt:d(2026,4,1),  wfCaseId:'wfc_demo2' },
+  ];
+  const mpJson = JSON.stringify(mpData);
+  const { data: mpEx } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','TRACKER:MatPat').maybeSingle();
+  if (mpEx) await sb.from('policies').update({ content: mpJson }).eq('id', mpEx.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'TRACKER:MatPat', content: mpJson });
+
+  // ── HEADCOUNT PLANNING ──
+  const hcData = [
+    { id:'hc_s1', title:'Head of Marketing', dept:'Marketing', country:'UK', hiringManager:'Claire Booth', stage:'interviewing', priority:'urgent', source:'Agency', agencyName:'Hays', agencyFee:15, budget:0, compMin:65000, compMax:80000, targetStart:'2026-08-01', headcount:1, interviewStages:['CV screen','1st interview','2nd interview','Final panel','Offer'], interviewProcess:'CV screen by HR → 1st interview with CMO → task + 2nd interview → offer', notes:'Must have B2B SaaS experience. Ideal candidate has scaled a demand-gen function from scratch.', stageHistory:[{stage:'briefing',startedAt:ago(35)},{stage:'sourcing',startedAt:ago(28)},{stage:'shortlisting',startedAt:ago(18)},{stage:'interviewing',startedAt:ago(6)}], candidates:[
+      { id:'hcs1c1', name:'Rachel Donovan',  email:'rachel@example.com', source:'Agency',   stage:'2nd interview', notes:'Strong demand-gen background. Very impressive 1st interview.', addedAt:ago(12) },
+      { id:'hcs1c2', name:'Oliver Manning',  email:'oliver@example.com', source:'Agency',   stage:'1st interview', notes:'Good CV — digital-first but limited B2B SaaS.', addedAt:ago(8) },
+      { id:'hcs1c3', name:'Fatima Al-Rashid',email:'fatima@example.com', source:'LinkedIn', stage:'CV screen',     notes:'Inbound application — strong profile, awaiting screening call.', addedAt:ago(3) },
+      { id:'hcs1c4', name:'Ben Carter',      email:'',                  source:'Agency',   stage:'Rejected',      notes:'Not enough senior leadership experience at this stage.', addedAt:ago(20) },
+    ], contactLog:[
+      { type:'call',    note:'Briefing call with Hays — JD agreed, search commenced.',                       date:ago(28) },
+      { type:'meeting', note:'1st interview with Rachel Donovan — very strong, moved to 2nd interview.',    date:ago(7)  },
+      { type:'email',   note:'Sent availability options for 2nd interview panel.',                           date:ago(4)  },
+    ], createdAt:ago(35), updatedAt:ago(1) },
+
+    { id:'hc_s2', title:'Senior Data Analyst', dept:'Finance & Analytics', country:'UK', hiringManager:'Marcus Webb', stage:'shortlisting', priority:'high', source:'LinkedIn', agencyName:'', agencyFee:0, budget:0, compMin:50000, compMax:62000, targetStart:'2026-09-01', headcount:1, interviewStages:['CV screen','Technical task','1st interview','Final panel','Offer'], interviewProcess:'CV screen by hiring manager → 90-min SQL/Python task → panel interview with finance and engineering leads → offer', notes:'Strong SQL and Python essential. Experience with Power BI or Tableau preferred.', stageHistory:[{stage:'briefing',startedAt:ago(21)},{stage:'sourcing',startedAt:ago(17)},{stage:'shortlisting',startedAt:ago(5)}], candidates:[
+      { id:'hcs2c1', name:'Kofi Asante',    email:'kofi@example.com',    source:'LinkedIn', stage:'Technical task', notes:'Strong CV — SQL and Python evident. Technical task sent.', addedAt:ago(6) },
+      { id:'hcs2c2', name:'Jess Hartley',   email:'jess@example.com',    source:'LinkedIn', stage:'CV screen',      notes:'Solid background, slightly junior but worth screening.', addedAt:ago(4) },
+      { id:'hcs2c3', name:'Niamh O\'Brien', email:'niamh@example.com',   source:'Job board',stage:'CV screen',      notes:'Inbound from Reed — good profile.', addedAt:ago(2) },
+    ], contactLog:[
+      { type:'email', note:'Job posted on LinkedIn. 14 applications in first week.', date:ago(17) },
+      { type:'email', note:'Shortlist of 3 candidates shared with Marcus for review.', date:ago(5) },
+    ], createdAt:ago(21), updatedAt:ago(2) },
+
+    { id:'hc_s3', title:'Customer Success Manager', dept:'Customer Success', country:'UK', hiringManager:'Nina Patel', stage:'sourcing', priority:'normal', source:'Job board', agencyName:'', agencyFee:0, budget:0, compMin:38000, compMax:46000, targetStart:'2026-10-01', headcount:1, interviewStages:['CV screen','1st interview','Task & final','Offer'], interviewProcess:'CV screen → 1st interview with CS team lead → 30-min customer scenario task + final interview → offer', notes:'Replacement hire following Tom Bradley\'s resignation. Ideally someone who can own a mid-market portfolio from day one.', stageHistory:[{stage:'briefing',startedAt:ago(10)},{stage:'sourcing',startedAt:ago(5)}], candidates:[], contactLog:[
+      { type:'email', note:'JD finalised and posted to Reed, CV Library and LinkedIn.', date:ago(5) },
+    ], createdAt:ago(10), updatedAt:ago(5) },
+
+    { id:'hc_s4', title:'Finance Business Partner', dept:'Finance', country:'UK', hiringManager:'Greg Shaw', stage:'briefing', priority:'high', source:'Agency', agencyName:'Robert Half', agencyFee:18, budget:0, compMin:58000, compMax:72000, targetStart:'2026-10-01', headcount:1, interviewStages:['CV screen','1st interview','Presentation','Final panel','Offer'], interviewProcess:'CV screen by HR → 1st interview with CFO → commercial presentation task → final panel → offer', notes:'CIMA/ACCA qualified essential. This is a newly created role reporting to the CFO to support commercial decision-making across three business units.', stageHistory:[{stage:'briefing',startedAt:ago(4)}], candidates:[], contactLog:[
+      { type:'meeting', note:'Initial briefing with Greg Shaw — agreed scope and brief. Brief sent to Robert Half.', date:ago(4) },
+    ], createdAt:ago(4), updatedAt:ago(4) },
+  ];
+  const hcJson = JSON.stringify(hcData);
+  const { data: hcEx } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:HeadcountPlanning').maybeSingle();
+  if (hcEx) await sb.from('policies').update({ content: hcJson }).eq('id', hcEx.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'SETTING:HeadcountPlanning', content: hcJson });
+
+  // Reset in-memory state so next navigation re-fetches from DB
+  wfCases = null; mpRecords = null; ppPlan = null; hcRoles = null;
+  alert('Done! Navigate to Trackers, People Plan or Headcount to see the sample data.');
+};
+
 
 
 </script>
