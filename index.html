@@ -3539,7 +3539,7 @@ let recHasLive = false;
 async function initRecorder() {
   recFinalTranscript = '';
   recIsRecording = false;
-  recHasLive = !!(window.SpeechRecognition || window.webkitSpeechRecognition);
+  recHasLive = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
   const livePanel  = document.getElementById('recLivePanel');
   const pastePanel = document.getElementById('recPastePanel');
   const hint       = document.getElementById('recToggleHint');
@@ -3552,7 +3552,7 @@ async function initRecorder() {
   } else {
     livePanel.style.display  = 'none';
     pastePanel.style.display = 'block';
-    if (hint) { hint.textContent = 'Live recording requires Chrome or Edge'; hint.style.cursor = 'default'; hint.style.color = 'var(--ink3)'; }
+    if (hint) { hint.textContent = 'Recording requires a modern browser with microphone access'; hint.style.cursor = 'default'; hint.style.color = 'var(--ink3)'; }
     if (status) status.textContent = '';
   }
   document.getElementById('recWriteBtn').disabled = true;
@@ -3580,69 +3580,43 @@ function toggleRecMode() {
 }
 
 
+let _recMediaRecorder = null;
+let _recAudioChunks = [];
+
 function startRecording() {
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-  if (!SpeechRecognition) return;
-  recRecognition = new SpeechRecognition();
-  recRecognition.continuous = true;
-  recRecognition.interimResults = true;
-  recRecognition.lang = 'en-GB';
-  const liveEl = document.getElementById('recLiveText');
-  if (liveEl) { liveEl.style.display = 'block'; liveEl.textContent = ''; }
-  recRecognition.onresult = e => {
-    let interim = '';
-    for (let i = e.resultIndex; i < e.results.length; i++) {
-      if (e.results[i].isFinal) {
-        recFinalTranscript += e.results[i][0].transcript + ' ';
-      } else {
-        interim += e.results[i][0].transcript;
-      }
-    }
-    window._recInterimBuffer = interim;
-    // Show live transcript so user can see Chrome is capturing speech
-    if (liveEl) {
-      liveEl.innerHTML = escapeHtml(recFinalTranscript) +
-        (interim ? `<span style="color:var(--ink3);">${escapeHtml(interim)}</span>` : '');
-      liveEl.scrollTop = liveEl.scrollHeight;
-    }
-    recCheckReady();
-  };
-  recRecognition.onerror = e => { if (e.error !== 'no-speech') stopRecording(); };
-  recRecognition.onend = () => {
-    if (recIsRecording && recRecognition) {
-      try { recRecognition.start(); } catch(e) {}
-    }
-  };
-  recRecognition.start();
-  recIsRecording = true;
-  recSeconds = 0;
-  const btn = document.getElementById('recBtn');
-  btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop recording';
-  btn.style.background = '#374151';
-  btn.style.borderColor = '#374151';
-  document.getElementById('recTimer').style.display = 'block';
-  document.getElementById('recStatus').textContent = 'Recording - speak clearly';
-  recTimerInterval = setInterval(() => {
-    recSeconds++;
-    const m = Math.floor(recSeconds/60), s = recSeconds%60;
-    const t = document.getElementById('recTimer');
-    if (t) t.textContent = `${m}:${s.toString().padStart(2,'0')}`;
-  }, 1000);
+  navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    _recAudioChunks = [];
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') ? 'audio/webm;codecs=opus'
+                   : MediaRecorder.isTypeSupported('audio/webm') ? 'audio/webm'
+                   : MediaRecorder.isTypeSupported('audio/ogg') ? 'audio/ogg'
+                   : 'audio/mp4';
+    _recMediaRecorder = new MediaRecorder(stream, { mimeType });
+    _recMediaRecorder.ondataavailable = e => { if (e.data.size > 0) _recAudioChunks.push(e.data); };
+    _recMediaRecorder.start(1000);
+
+    recIsRecording = true;
+    recSeconds = 0;
+    const btn = document.getElementById('recBtn');
+    btn.innerHTML = '<svg width="12" height="12" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="2"/></svg> Stop recording';
+    btn.style.background = '#374151';
+    btn.style.borderColor = '#374151';
+    document.getElementById('recTimer').style.display = 'block';
+    const liveEl = document.getElementById('recLiveText');
+    if (liveEl) { liveEl.style.display = 'block'; liveEl.textContent = ''; }
+    document.getElementById('recStatus').textContent = 'Recording…';
+    recTimerInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds/60), s = recSeconds%60;
+      const t = document.getElementById('recTimer');
+      if (t) t.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }, 1000);
+  }).catch(err => {
+    document.getElementById('recStatus').textContent = 'Microphone access denied — check browser permissions';
+  });
 }
 
 function stopRecording() {
-  recIsRecording = false; // Set false FIRST so onend doesn't restart
-  if (recRecognition) {
-    // Capture any buffered interim text before stopping (Chrome often skips isFinal)
-    const pending = (window._recInterimBuffer || '').trim();
-    if (pending) recFinalTranscript += pending + ' ';
-    window._recInterimBuffer = '';
-    recRecognition.onresult = null;
-    recRecognition.onerror = null;
-    recRecognition.onend = null;
-    try { recRecognition.stop(); } catch(e) {}
-    recRecognition = null;
-  }
+  recIsRecording = false;
   clearInterval(recTimerInterval);
   const btn = document.getElementById('recBtn');
   if (btn) {
@@ -3650,17 +3624,43 @@ function stopRecording() {
     btn.style.background = '#6B7280';
     btn.style.borderColor = '#6B7280';
   }
-  setTimeout(() => {
-    // Last resort: if still empty, grab whatever is visible in the live text box
-    if (!recFinalTranscript.trim()) {
-      const liveEl = document.getElementById('recLiveText');
-      const liveText = liveEl ? liveEl.innerText.trim() : '';
-      if (liveText) recFinalTranscript = liveText;
-    }
-    const status = document.getElementById('recStatus');
-    if (status) status.textContent = recFinalTranscript.trim() ? 'Recording complete - ready to write up' : 'No speech detected - try speaking more clearly or use the paste option below';
-    recCheckReady();
-  }, 800);
+  const status = document.getElementById('recStatus');
+  if (status) status.textContent = 'Transcribing…';
+  if (_recMediaRecorder && _recMediaRecorder.state !== 'inactive') {
+    _recMediaRecorder.onstop = async () => {
+      const mimeType = _recMediaRecorder.mimeType || 'audio/webm';
+      _recMediaRecorder.stream.getTracks().forEach(t => t.stop());
+      _recMediaRecorder = null;
+      const blob = new Blob(_recAudioChunks, { type: mimeType });
+      _recAudioChunks = [];
+      try {
+        const base64 = await new Promise(resolve => {
+          const reader = new FileReader();
+          reader.onloadend = () => resolve(reader.result.split(',')[1]);
+          reader.readAsDataURL(blob);
+        });
+        const token = await getAuthToken();
+        const res = await fetch('/api/transcribe', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+          body: JSON.stringify({ audio: base64, mimeType })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.text) {
+          if (status) status.textContent = 'Transcription failed: ' + (data.error || 'unknown error');
+          return;
+        }
+        recFinalTranscript = data.text;
+        const liveEl = document.getElementById('recLiveText');
+        if (liveEl) liveEl.textContent = recFinalTranscript;
+        if (status) status.textContent = 'Transcription complete — ready to write up';
+        recCheckReady();
+      } catch(e) {
+        if (status) status.textContent = 'Transcription error: ' + e.message;
+      }
+    };
+    _recMediaRecorder.stop();
+  }
 }
 
 function recCheckReady() {
