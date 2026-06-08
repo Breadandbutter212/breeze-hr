@@ -8164,6 +8164,8 @@ function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
     return results;
   }
   const GROUPS = {
+    // total_comp must come before salary - "Total Comp" contains "compensation" which would otherwise match salary first
+    total_comp: /total.*comp|total.*cash|total.*compensation|total.*package|total.*remuneration|total.*reward/i,
     // pay\b matches "pay","basic pay","annual pay" - NOT "payment","relocation_payment"
     salary:     /salary|pay\b|wage|remuneration|compensation|ctc/i,
     bonus:      /^bonus$|performance.*bonus|target.*bonus|annual.*bonus|incentive/i,
@@ -8197,12 +8199,16 @@ function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
   // Skip keys starting with _ (internal metadata like _sourceFile)
   Object.entries(rowA || {}).forEach(([k,v]) => { if (k.startsWith('_')) return; const g = groupKey(k); if (g && !gA[g]) gA[g] = { key: k, val: v }; });
   Object.entries(rowB || {}).forEach(([k,v]) => { if (k.startsWith('_')) return; const g = groupKey(k); if (g && !gB[g]) gB[g] = { key: k, val: v }; });
-  const allGroups = new Set([...Object.keys(gA), ...Object.keys(gB)]);
+  // Comp mode: only iterate spreadsheet (A) groups - fields only in letter are noise, fields in
+  // spreadsheet but not in letter are silently skipped (dept, location etc. won't appear in a comp letter)
+  const allGroups = Object.keys(gA);
   const results = [];
   for (const g of allGroups) {
     const entA = gA[g], entB = gB[g];
     const valA = entA?.val ?? '', valB = entB?.val ?? '';
-    if (!valA && !valB) continue;
+    if (!valA) continue;
+    // Field present in spreadsheet but not extracted from letter - skip silently (no noise)
+    if (!entB || !String(valB).trim()) continue;
     const isSalary = isSalaryKey(g) || isSalaryKey(entA?.key||'') || isSalaryKey(entB?.key||'');
     const nA = normalizeSalaryValue(valA), nB = normalizeSalaryValue(valB);
     // Use numeric comparison for salary fields OR whenever both sides are plain numbers / £ amounts ≥ 100
@@ -8217,9 +8223,9 @@ function compareMatchedRow(rowA, rowB, extraSkip, exactMatch) {
     } else {
       match = String(valA).toLowerCase().trim().replace(/\s+/g,' ') === String(valB).toLowerCase().trim().replace(/\s+/g,' ');
     }
-    // Field title = the spreadsheet column header (entA key), or letter key if only in letter
-    const displayName = (entA?.key || entB?.key || g).replace(/_/g,' ');
-    results.push({ group: g, displayName, valA: String(valA), valB: String(valB), match, isSalary, onlyInA: !entB, onlyInB: !entA });
+    // Field title = the spreadsheet column header (entA key)
+    const displayName = (entA?.key || g).replace(/_/g,' ');
+    results.push({ group: g, displayName, valA: String(valA), valB: String(valB), match, isSalary, onlyInA: false, onlyInB: false });
   }
   return results;
 }
