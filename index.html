@@ -11265,8 +11265,16 @@ function ocReset() {
 }
 
 function ocToggleCollapse(nodeId) {
-  if (_ocCollapsed.has(nodeId)) _ocCollapsed.delete(nodeId);
-  else _ocCollapsed.add(nodeId);
+  if (_ocCollapsed.has(nodeId)) {
+    _ocCollapsed.delete(nodeId);
+    // Collapse any of this node's children that have their own children
+    const all = []; const walk = n => { all.push(n); (n.children||[]).forEach(walk); };
+    if (_ocTree) walk(_ocTree);
+    const node = all.find(n => n.id === nodeId);
+    if (node) (node.children||[]).forEach(c => { if ((c.children||[]).length > 0) _ocCollapsed.add(c.id); });
+  } else {
+    _ocCollapsed.add(nodeId);
+  }
   document.getElementById('ocNodeMenu')?.remove();
   if (_ocEmps) ocBuild();
 }
