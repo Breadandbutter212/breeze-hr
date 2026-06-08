@@ -4828,11 +4828,15 @@ async function uploadPolicy(event) {
   const file=event.target.files[0];if(!file||!currentProfile){alert('Not logged in');return;}
   const name=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
   const isPdf=file.name.toLowerCase().endsWith('.pdf');
+  const isDocx=file.name.toLowerCase().endsWith('.docx');
+  const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
   let storageContent;
   if(isPdf){
-    const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
     const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
     storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
+  } else if(isDocx){
+    const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
+    storageContent=`DOCX_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
   } else {
     storageContent=await readFileAsText(file);
     if(!storageContent){alert('Could not read file. Try saving as .txt first.');return;}
@@ -4846,13 +4850,17 @@ async function uploadPolicy(event) {
 async function uploadNamedPolicy(event,policyName,existingId) {
   const file=event.target.files[0];if(!file||!currentProfile)return;
   const isPdf=file.name.toLowerCase().endsWith('.pdf');
+  const isDocx=file.name.toLowerCase().endsWith('.docx');
+  const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
   let storageContent;
   if(isPdf){
-    const readBase64=(f)=>new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(f);});
     // Timeout pdf.js text extraction - it can hang if CDN worker fails
     const withTimeout=(p,ms)=>Promise.race([p,new Promise(r=>setTimeout(()=>r(''),ms))]);
     const [b64,txt]=await Promise.all([readBase64(file),withTimeout(readFileAsText(file),5000)]);
     storageContent=`PDF_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
+  } else if(isDocx){
+    const [b64,txt]=await Promise.all([readBase64(file),readFileAsText(file)]);
+    storageContent=`DOCX_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
   } else {
     storageContent=await readFileAsText(file);
     if(!storageContent){alert('Could not read file');return;}
@@ -4887,8 +4895,9 @@ async function viewPolicy(id, name) {
   let modal = document.getElementById('policyViewModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'policyViewModal'; document.body.appendChild(modal); }
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
-  const isPdf = data.content && data.content.startsWith('PDF_BASE64:');
-  const dlLabel = isPdf ? '⬇ Download PDF' : '⬇ Download .doc';
+  const isPdf  = data.content && data.content.startsWith('PDF_BASE64:');
+  const isDocx = data.content && data.content.startsWith('DOCX_BASE64:');
+  const dlLabel = isPdf ? '⬇ Download PDF' : isDocx ? '⬇ Download .docx' : '⬇ Download .doc';
   let bodyHtml;
   if (isPdf) {
     const b64 = data.content.split('|||TEXT:')[0].replace('PDF_BASE64:', '');
@@ -4898,6 +4907,14 @@ async function viewPolicy(id, name) {
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
     bodyHtml = `<iframe src="${blobUrl}" style="flex:1;width:100%;border:none;min-height:0;" onload=""></iframe>`;
+  } else if (isDocx) {
+    const b64 = data.content.split('|||TEXT:')[0].replace('DOCX_BASE64:', '');
+    const binaryStr = atob(b64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    let html = '';
+    try { const r = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer }); html = r.value; } catch(e) {}
+    bodyHtml = `<div class="mammoth-doc" style="flex:1;overflow-y:auto;padding:28px 40px;">${html}</div>`;
   } else {
     bodyHtml = `<div style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(policyText(data.content))}</div>`;
   }
@@ -4926,6 +4943,17 @@ async function downloadPolicyFile(id, name) {
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href=url; a.download=`${name}.pdf`; a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+  if (data.content && data.content.startsWith('DOCX_BASE64:')) {
+    const b64 = data.content.split('|||TEXT:')[0].replace('DOCX_BASE64:', '');
+    const binaryStr = atob(b64);
+    const bytes = new Uint8Array(binaryStr.length);
+    for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
+    const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`${name}.docx`; a.click();
     URL.revokeObjectURL(url);
     return;
   }
