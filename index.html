@@ -385,11 +385,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
 /* ── ORG CHART ── */
-.org-node { position:absolute; width:180px; background:white; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; padding:10px 12px; gap:10px; cursor:grab; user-select:none; transition:box-shadow 0.15s,transform 0.12s; border:1.5px solid #E5E7EB; }
+.org-node { position:absolute; width:180px; background:white; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; padding:10px 12px; gap:10px; cursor:grab; user-select:none; transition:box-shadow 0.15s,transform 0.12s; border:1.5px solid #E5E7EB; overflow:visible; }
 .org-node:hover { box-shadow:0 4px 16px rgba(0,0,0,0.14); transform:translateY(-2px); }
 .org-node.dragging { box-shadow:0 8px 24px rgba(0,0,0,0.18); transform:scale(1.02); z-index:100; cursor:grabbing; }
 .org-node.dimmed { opacity:0.2; }
 .org-node.highlighted { opacity:1; box-shadow:0 0 0 2px var(--accent); }
+.oc-toggle { position:absolute; bottom:-11px; left:50%; transform:translateX(-50%); background:white; border:1.5px solid #CBD5E1; border-radius:20px; padding:0 7px; height:18px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap; z-index:10; color:#6B7280; line-height:16px; font-family:inherit; transition:all 0.1s; }
+.oc-toggle:hover { background:#F1F5F9; border-color:#94A3B8; color:#374151; }
+.oc-toggle.collapsed { background:#EFF6FF; border-color:#93C5FD; color:#3B82F6; }
 .org-avatar { width:34px; height:34px; border-radius:8px; color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
 .org-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .org-title { font-size:10px; color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
@@ -1254,7 +1257,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div class="compare-drop-label" id="compareLabelB">Updated file</div>
       <div class="compare-drop-sub" id="compareSubB">.xlsx, .xls, .docx, .doc</div>
       <div class="compare-drop-file" id="fileBName"></div>
-      <input type="file" id="fileB" accept=".xlsx,.xls,.docx,.doc,.csv" style="display:none" onchange="handleCompareFile(this,'B')">
+      <input type="file" id="fileB" accept=".xlsx,.xls,.docx,.doc,.csv,.pdf" style="display:none" onchange="handleCompareFile(this,'B')">
     </div>
   </div>
   <div class="compare-results" id="compareResults"></div>
@@ -7729,7 +7732,7 @@ function onCompareModeChange() {
     if (labelA) labelA.textContent = mode === 'comp' ? 'File A - payroll / HR spreadsheet' : 'File A - spreadsheet A';
     if (labelB) labelB.textContent = mode === 'comp' ? 'File B - compensation statements (select multiple .docx)' : 'File B - spreadsheet B';
     if (subA) subA.textContent = '.xlsx, .xls, .csv';
-    if (subB) subB.textContent = mode === 'comp' ? '.docx - select multiple files at once' : '.xlsx, .xls, .csv';
+    if (subB) subB.textContent = mode === 'comp' ? '.docx or .pdf - select multiple files at once' : '.xlsx, .xls, .csv';
     if (subTitle) subTitle.textContent = '';
     if (fB) fB.setAttribute('multiple', '');
   } else {
@@ -7823,12 +7826,38 @@ async function extractCsvRowsForCompare(file) {
   });
 }
 
+async function extractPdfRowsForCompare(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = async e => {
+      try {
+        pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+        const pdf = await pdfjsLib.getDocument({ data: e.target.result }).promise;
+        const images = [];
+        for (let i = 1; i <= Math.min(pdf.numPages, 4); i++) {
+          const page = await pdf.getPage(i);
+          const viewport = page.getViewport({ scale: 1.5 });
+          const canvas = document.createElement('canvas');
+          canvas.width = viewport.width;
+          canvas.height = viewport.height;
+          await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+          images.push(canvas.toDataURL('image/jpeg', 0.85).split(',')[1]);
+        }
+        const rows = await extractLetterFieldsWithVision(images, file.name);
+        resolve(rows);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
 async function extractDocxRowsForCompare(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload = async e => {
       try {
-        const result = await mammoth.extractRawText({ arrayBuffer: e.target.result });
+        const result = await mammoth.convertToHtml({ arrayBuffer: e.target.result });
         const rows = await extractLetterFieldsWithAI(result.value, file.name);
         resolve(rows);
       } catch(err) { reject(err); }
@@ -7836,6 +7865,47 @@ async function extractDocxRowsForCompare(file) {
     reader.onerror = reject;
     reader.readAsArrayBuffer(file);
   });
+}
+
+async function extractLetterFieldsWithVision(images, filename) {
+  try {
+    const token = await getAuthToken();
+    const content = [
+      ...images.map(b64 => ({ type: 'image', source: { type: 'base64', media_type: 'image/jpeg', data: b64 } })),
+      { type: 'text', text: `Extract these fields from the compensation statement shown. Return ONLY a JSON object using exactly these field names.
+
+Fields to extract:
+- employee_name: the employee/recipient full name. Look for: "Prepared for:", "Employee Name:", "Dear [name]", name at top of letter, or any label followed by a person's name
+- employee_id: employee ID, staff number, or reference number if present (e.g. "E1001")
+- salary: annual base/gross salary as a plain number (e.g. "£95,000" -> 95000)
+- bonus: performance/target/incentive/variable/annual bonus as a plain number
+- total_comp: total compensation or total package as a plain number
+- relocation: relocation allowance, moving contribution, removal expenses as a plain number
+- signing_bonus: joining award, welcome bonus, sign-on payment as a plain number
+- job_title: the role or position title only, no company name
+- start_date: start or joining date if mentioned
+
+Rules: monetary values as plain numbers only, no currency symbols, no commas. Omit any field not present. Return ONLY the JSON object.` }
+    ];
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        system: 'You extract structured data from HR compensation statements. Return only valid JSON, nothing else.',
+        messages: [{ role: 'user', content }]
+      })
+    });
+    const data = await res.json();
+    const raw = data.content?.[0]?.text || '{}';
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('no json in response');
+    const obj = JSON.parse(jsonMatch[0].replace(/,(\s*[}\]])/g, '$1'));
+    Object.keys(obj).forEach(k => { if (typeof obj[k] === 'number') obj[k] = String(obj[k]); });
+    obj._sourceFile = filename;
+    return [obj];
+  } catch(e) {
+    return [{ _sourceFile: filename }];
+  }
 }
 
 async function extractLetterFieldsWithAI(text, filename) {
@@ -8319,6 +8389,7 @@ async function compareEmployeeMatch(isCompMode) {
       const e = ext(f);
       if (['xlsx','xls'].includes(e)) return extractExcelRowsForCompare(f);
       if (e === 'csv')                return extractCsvRowsForCompare(f);
+      if (e === 'pdf')                return extractPdfRowsForCompare(f);
       return extractDocxRowsForCompare(f);
     };
     // Parse File A (always single - the spreadsheet)
@@ -10673,14 +10744,14 @@ function ocBuildDeptTree(nodes) {
 const OC_GRID_COLS = 8; // max children per row before wrapping to grid
 
 function ocSubW(n) {
-  if (!n.children?.length) return OC_W + OC_HG;
+  if (!n.children?.length || _ocCollapsed.has(n.id)) return OC_W + OC_HG;
   if (n.children.length > OC_GRID_COLS) return OC_GRID_COLS * (OC_W + OC_HG);
   return n.children.reduce((s,c) => s + ocSubW(c), 0);
 }
 
 function ocLayout(n, depth, sx) {
   n._y = depth * (OC_H + OC_VG);
-  const children = n.children || [];
+  const children = _ocCollapsed.has(n.id) ? [] : (n.children || []);
   if (!children.length) { n._x = sx; return; }
 
   if (children.length > OC_GRID_COLS) {
@@ -10716,7 +10787,7 @@ const ocNid = id => 'ocn_' + String(id).replace(/[^a-zA-Z0-9]/g,'_');
 
 // Right-angle "bus" connectors — traditional org chart style
 function ocDrawEdges(node, lines) {
-  const ch = node.children||[]; if(!ch.length) return;
+  const ch = node.children||[]; if(!ch.length || _ocCollapsed.has(node.id)) return;
   const pp=ocPos(node), px=pp.x+OC_W/2, py=pp.y+OC_H;
   const ey=py+Math.round(OC_VG*0.42); // elbow Y
   const S='stroke="#CBD5E1" stroke-width="1.5"';
@@ -11077,6 +11148,7 @@ function ocReset() {
   _ocOffsets={};
   _ocRelations={};
   _ocDeptOverrides={};
+  _ocCollapsed=new Set();
   _ocEmps=ocGetDemoData();
   ocBuild();
 }
@@ -13094,6 +13166,7 @@ function downloadHCCSV() {
 // ── ORG CHART STATE ──
 let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
 let _ocRelations = {}, _ocDeptOverrides = {};
+let _ocCollapsed = new Set();
 let _ocT = { x: 0, y: 0, k: 0.85 };
 let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
 const OC_SNAP = 10;
@@ -13102,7 +13175,7 @@ const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','
 
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
-  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null;
+  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set();
   const root = document.getElementById('orgChartRoot'); if (!root) return;
   root.innerHTML = `
     <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
