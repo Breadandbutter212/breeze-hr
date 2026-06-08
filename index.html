@@ -1621,6 +1621,15 @@ async function onSignedIn(user) {
   if (!localStorage.getItem('breeze_tour_done')) showOnboardingTour();
   // Run data retention cleanup silently in background
   runRetentionOnLogin();
+  // Restore last-visited view now that profile is loaded (must run after auth so data fetches work)
+  (function() {
+    const saved = (() => { try { return localStorage.getItem('bz_view'); } catch(e) { return null; } })();
+    const valid = ['chat','chats','docs','presentations','recorder','peopleplan','orgchart','headcount','manage','trackers','processmaps','analytics','compare','settings','faqs'];
+    if (saved && valid.includes(saved)) {
+      const navEl = document.querySelector(`.ni[onclick*="'${saved}'"]`);
+      showView(saved, navEl);
+    }
+  })();
 }
 
 function showOnboardingTour() {
@@ -13380,15 +13389,6 @@ function initOrgChart() {
 // ── INIT ──
 renderTmpls();
 
-// Restore last-visited view on page load
-(function() {
-  const saved = (() => { try { return localStorage.getItem('bz_view'); } catch(e) { return null; } })();
-  const valid = ['chat','chats','docs','presentations','recorder','peopleplan','orgchart','headcount','manage','trackers','processmaps','analytics','compare','settings','faqs'];
-  if (saved && valid.includes(saved)) {
-    const navEl = document.querySelector(`.ni[onclick*="'${saved}'"]`);
-    showView(saved, navEl);
-  }
-})();
 
 
 </script>
