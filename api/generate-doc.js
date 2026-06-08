@@ -152,6 +152,32 @@ function textToDocxBuffer(text) {
 
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
+
+  // Transcription action — uses Groq Whisper
+  if (req.body?.action === 'transcribe') {
+    const { audio, mimeType = 'audio/webm' } = req.body;
+    if (!audio) return res.status(400).json({ error: 'No audio data' });
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
+    try {
+      const buffer = Buffer.from(audio, 'base64');
+      const ext = mimeType.includes('mp4') || mimeType.includes('m4a') ? 'mp4'
+                : mimeType.includes('ogg') ? 'ogg'
+                : mimeType.includes('wav') ? 'wav' : 'webm';
+      const boundary = '----WhisperBoundary' + Date.now();
+      const header = Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${mimeType}\r\n\r\n`);
+      const footer = Buffer.from(`\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-large-v3-turbo\r\n--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n--${boundary}--\r\n`);
+      const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
+        method: 'POST',
+        headers: { 'Authorization': `Bearer ${apiKey}`, 'Content-Type': `multipart/form-data; boundary=${boundary}` },
+        body: Buffer.concat([header, buffer, footer]),
+      });
+      if (!response.ok) { const err = await response.text(); return res.status(500).json({ error: err.substring(0, 200) }); }
+      const result = await response.json();
+      return res.status(200).json({ text: result.text || '' });
+    } catch(e) { return res.status(500).json({ error: e.message }); }
+  }
+
   try {
     const { templateBase64, fields, plainText, templateName } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';

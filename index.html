@@ -3640,10 +3640,10 @@ function stopRecording() {
           reader.readAsDataURL(blob);
         });
         const token = await getAuthToken();
-        const res = await fetch('/api/transcribe', {
+        const res = await fetch('/api/generate-doc', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-          body: JSON.stringify({ audio: base64, mimeType })
+          body: JSON.stringify({ action: 'transcribe', audio: base64, mimeType })
         });
         const data = await res.json();
         if (!res.ok || !data.text) {
