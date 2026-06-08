@@ -5507,6 +5507,7 @@ async function savePassword() {
 
 // ── NAV ──
 function showView(v,navEl) {
+  try { localStorage.setItem('bz_view', v); } catch(e) {}
   // Remove known modal overlays that may have been left open
   ['mpRecordPanel','policyViewModal','sendEmailModal'].forEach(id => document.getElementById(id)?.remove());
   // Remove any dynamically-appended overlays (created by workflow/tracker modals - they have no ID)
@@ -13349,6 +13350,16 @@ function initOrgChart() {
 
 // ── INIT ──
 renderTmpls();
+
+// Restore last-visited view on page load
+(function() {
+  const saved = (() => { try { return localStorage.getItem('bz_view'); } catch(e) { return null; } })();
+  const valid = ['chat','chats','docs','presentations','recorder','peopleplan','orgchart','headcount','manage','trackers','processmaps','analytics','compare','settings','faqs'];
+  if (saved && valid.includes(saved)) {
+    const navEl = document.querySelector(`.ni[onclick*="'${saved}'"]`);
+    showView(saved, navEl);
+  }
+})();
 
 
 </script>
