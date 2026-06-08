@@ -6557,6 +6557,7 @@ async function loadEmailInbox(pageToken = null) {
       list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--red);font-size:12px;">Could not load emails.<br><span style="color:var(--ink3);font-size:11px;">${escapeHtml(data?.error||res.status)}</span></div>`;
       return;
     }
+    if (provider === 'outlook') console.log('[Outlook raw]', JSON.stringify(data).substring(0, 3000));
     const newEmails = parseEmailList(data, provider);
     _emailNextPageToken = data?.data?.data?.nextPageToken || data?.data?.nextPageToken || null;
     if (pageToken) {
@@ -6571,7 +6572,10 @@ async function loadEmailInbox(pageToken = null) {
 }
 
 function parseEmailList(apiData, provider) {
+  // Microsoft Graph (Outlook) returns a `value` array; Gmail returns `messages`
   const messages =
+    apiData?.data?.data?.value ||
+    apiData?.data?.value ||
     apiData?.data?.data?.messages ||
     apiData?.data?.messages ||
     apiData?.messages || [];
@@ -6595,11 +6599,13 @@ function parseEmailList(apiData, provider) {
     const body    = cleanBody(m.messageText || m.body || m.bodyPreview || '');
     const snippet = body.substring(0, 160);
 
-    const from    = getHeader('from') || m.sender || m.from || m.senderEmail || m.fromAddress || '';
+    // Microsoft Graph: from.emailAddress.name/address
+    const graphFrom = m.from?.emailAddress ? `${m.from.emailAddress.name||''} <${m.from.emailAddress.address||''}>`.trim() : '';
+    const from    = graphFrom || getHeader('from') || m.sender || m.from || m.senderEmail || m.fromAddress || '';
     const subject = getHeader('subject') || m.subject || m.messageSubject || '(No subject)';
 
-    // internalDate = epoch ms string; also try header Date
-    const rawDate = m.internalDate || m.date || m.receivedAt || m.timestamp || getHeader('date') || '';
+    // Microsoft Graph: receivedDateTime; Gmail: internalDate (epoch ms)
+    const rawDate = m.receivedDateTime || m.internalDate || m.date || m.receivedAt || m.timestamp || getHeader('date') || '';
     const dateObj = rawDate ? new Date(isNaN(rawDate) ? rawDate : parseInt(rawDate)) : null;
     const date    = dateObj && !isNaN(dateObj.getTime()) ? dateObj.toISOString() : '';
 
