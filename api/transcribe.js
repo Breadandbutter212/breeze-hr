@@ -21,8 +21,8 @@ export default async function handler(req, res) {
   const { audio, mimeType = 'audio/webm' } = req.body;
   if (!audio) return res.status(400).json({ error: 'No audio data' });
 
-  const apiKey = process.env.OPENAI_API_KEY;
-  if (!apiKey) return res.status(500).json({ error: 'OPENAI_API_KEY not configured' });
+  const apiKey = process.env.GROQ_API_KEY;
+  if (!apiKey) return res.status(500).json({ error: 'GROQ_API_KEY not configured' });
 
   try {
     const buffer = Buffer.from(audio, 'base64');
@@ -36,13 +36,13 @@ export default async function handler(req, res) {
       `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="audio.${ext}"\r\nContent-Type: ${mimeType}\r\n\r\n`
     );
     const footer = Buffer.from(
-      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-1\r\n` +
+      `\r\n--${boundary}\r\nContent-Disposition: form-data; name="model"\r\n\r\nwhisper-large-v3-turbo\r\n` +
       `--${boundary}\r\nContent-Disposition: form-data; name="language"\r\n\r\nen\r\n` +
       `--${boundary}--\r\n`
     );
     const body = Buffer.concat([header, buffer, footer]);
 
-    const response = await fetch('https://api.openai.com/v1/audio/transcriptions', {
+    const response = await fetch('https://api.groq.com/openai/v1/audio/transcriptions', {
       method: 'POST',
       headers: {
         'Authorization': `Bearer ${apiKey}`,
