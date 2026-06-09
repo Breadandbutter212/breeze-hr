@@ -2429,7 +2429,21 @@ function presStatusPersist(msg, isError) {
   presLog(msg, isError ? 'error' : 'ok');
 }
 
+// Small popup used to block expensive actions on demo/test accounts
+function showTestRestricted(feature) {
+  let m = document.getElementById('testRestrictModal');
+  if (!m) { m = document.createElement('div'); m.id = 'testRestrictModal'; document.body.appendChild(m); }
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.innerHTML = `<div style="background:white;border-radius:14px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:28px 26px;text-align:center;">
+    <div style="width:48px;height:48px;border-radius:50%;background:#F3E8FF;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;">🔒</div>
+    <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;">Restricted on test accounts</div>
+    <div style="font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:20px;">${escapeHtml(feature || 'This feature')} is disabled on test accounts to avoid generation costs. It works normally on a full account.</div>
+    <button onclick="document.getElementById('testRestrictModal').remove()" class="btn btn-primary" style="width:100%;padding:10px;font-size:13px;">Got it</button>
+  </div>`;
+}
+
 async function generatePresentation() {
+  if (window._isTestAccount) { showTestRestricted('Building presentations'); return; }
   const topic = document.getElementById('pres-topic')?.value?.trim();
   if (!topic) { document.getElementById('pres-topic')?.focus(); return; }
 
@@ -2838,6 +2852,7 @@ function addSlide() {
 }
 
 async function presAiEdit() {
+  if (window._isTestAccount) { showTestRestricted('Editing presentations'); return; }
   const input = document.getElementById('pres-chat-input');
   const btn = document.getElementById('pres-chat-btn');
   const status = document.getElementById('pres-chat-status');
