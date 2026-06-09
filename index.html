@@ -7128,6 +7128,43 @@ function kpiCard(label, value, sub, color) {
   </div>`;
 }
 
+// Identifier / PII columns that should never be charted or averaged (names, ids, contact details)
+const ANALYTICS_EXCLUDE_RX = /(^|_)(name|full_?name|first_?name|last_?name|surname|forename|email|e_?mail|phone|mobile|tel|address|postcode|zip|dob|date_of_birth|nino|ni_?number|national_insurance|ssn|id|emp_?id|employee_?id|staff_?id|payroll_?number|ref|reference|uuid|guid)($|_)/i;
+// Categorical dimensions worth charting, in priority order (department, team, location, gender, DEI, contract, grade, role)
+const ANALYTICS_CAT_PRIORITY = [
+  /dep(artment|t)|division|business_?unit|^bu$|function/i,
+  /team|squad|^group$/i,
+  /location|office|site|country|region|^city$|based/i,
+  /gender|^sex$/i,
+  /ethnic|diversity|^dei$|^race$|nationality|disab|age_?band|age_?group|religion|orientation/i,
+  /employ(ment|ee)_?type|contract|^status$|work_?pattern|full_?time|part_?time/i,
+  /grade|^level$|seniority|^band$|^tier$/i,
+  /job_?title|^role$|position/i,
+];
+// Numeric columns that make a meaningful distribution (compensation/pay)
+const ANALYTICS_COMP_RX = /comp|salary|^sal$|^pay$|wage|ctc|remuneration|earnings|bonus/i;
+
+// Round a value to a compact, readable string (68.2k, £75k, 1.2m)
+function fmtCompact(v, cur) {
+  cur = cur || '';
+  const a = Math.abs(v);
+  if (a >= 1e6) return cur + (v / 1e6).toFixed(v % 1e6 === 0 ? 0 : 1) + 'm';
+  if (a >= 1e3) return cur + (v / 1e3).toFixed(a < 1e4 && v % 1e3 !== 0 ? 1 : 0) + 'k';
+  return cur + Math.round(v).toString();
+}
+
+// Build histogram buckets with "nice" round edges (e.g. 60k-70k rather than 68200-79206)
+function niceBuckets(mn, mx, target) {
+  const rawStep = (mx - mn) / target;
+  const mag = Math.pow(10, Math.floor(Math.log10(rawStep)));
+  const norm = rawStep / mag;
+  const step = (norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10) * mag;
+  const start = Math.floor(mn / step) * step;
+  const end = Math.ceil(mx / step) * step;
+  const count = Math.max(1, Math.round((end - start) / step));
+  return { start, step, count };
+}
+
 function renderDashboard() {
   const body = document.getElementById('analyticsBody');
   if (!body || !analyticsData) return;
@@ -7140,8 +7177,15 @@ function renderDashboard() {
   const gridC = '#F0F0F0';
 
   const types = detectColumnTypes(rows);
-  const catCols  = Object.entries(types).filter(([,t])=>t==='categorical').map(([c])=>c);
-  const numCols  = Object.entries(types).filter(([,t])=>t==='numeric').map(([c])=>c);
+  // Drop identifier/PII columns (names, ids, emails) — never chart or average those
+  const catCols  = Object.entries(types).filter(([,t])=>t==='categorical').map(([c])=>c)
+    .filter(c=>!ANALYTICS_EXCLUDE_RX.test(c))
+    .sort((a,b)=>{
+      const rank = c => { const i = ANALYTICS_CAT_PRIORITY.findIndex(rx=>rx.test(c)); return i===-1 ? 99 : i; };
+      return rank(a) - rank(b);
+    });
+  const numCols  = Object.entries(types).filter(([,t])=>t==='numeric').map(([c])=>c)
+    .filter(c=>!ANALYTICS_EXCLUDE_RX.test(c));
   const dateCols = Object.entries(types).filter(([,t])=>t==='date').map(([c])=>c);
 
   // KPI row: total rows + up to 3 numeric summaries
@@ -7192,16 +7236,24 @@ function renderDashboard() {
     }
   });
 
-  // Numeric histogram for first numeric column not already in KPIs
-  const histCol = numCols.find(c=>!kpiNums.includes(c)) || numCols[0];
-  if (histCol && numCols.length > 1) {
-    const vals = rows.map(r=>parseFloat(String(r[histCol]||'').replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
-    if (vals.length > 4) {
-      const mn=Math.min(...vals), mx=Math.max(...vals), step=(mx-mn)/8;
-      const buckets = Array.from({length:8},(_,i)=>({ label:`${(mn+i*step).toFixed(0)}-${(mn+(i+1)*step).toFixed(0)}`, count:0 }));
-      vals.forEach(v=>{ const bi=Math.min(7,Math.floor((v-mn)/(step||1))); buckets[bi].count++; });
+  // Numeric histogram — prefer a compensation/pay column, with clean round bucket edges
+  const histCol = numCols.find(c=>ANALYTICS_COMP_RX.test(c))
+    || numCols.find(c=>!kpiNums.includes(c))
+    || numCols[0];
+  if (histCol) {
+    const raw = rows.map(r=>String(r[histCol]||''));
+    const curMatch = raw.find(s=>/[£$€]/.test(s));
+    const curSym = curMatch ? curMatch.match(/[£$€]/)[0] : '';
+    const vals = raw.map(s=>parseFloat(s.replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
+    // Need a real spread and enough people for a distribution to mean anything
+    if (vals.length >= 5 && Math.min(...vals) < Math.max(...vals)) {
+      const mn=Math.min(...vals), mx=Math.max(...vals);
+      const target = Math.min(8, Math.max(4, Math.ceil(Math.sqrt(vals.length))));
+      const h = niceBuckets(mn, mx, target);
+      const buckets = Array.from({length:h.count},(_,i)=>({ lo:h.start+i*h.step, count:0 }));
+      vals.forEach(v=>{ let bi=Math.floor((v-h.start)/h.step); if(bi<0)bi=0; if(bi>=buckets.length)bi=buckets.length-1; buckets[bi].count++; });
       charts.push({ id:'ac-hist', title:histCol.replace(/_/g,' ')+' distribution', type:'bar',
-        data:{ labels:buckets.map(b=>b.label), datasets:[{data:buckets.map(b=>b.count),backgroundColor:'#6B4FBB',borderRadius:4}]},
+        data:{ labels:buckets.map(b=>`${fmtCompact(b.lo,curSym)}–${fmtCompact(b.lo+h.step,curSym)}`), datasets:[{data:buckets.map(b=>b.count),backgroundColor:'#6B4FBB',borderRadius:4}]},
         opts:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{font:{size:10},maxRotation:30}},y:{grid:{color:gridC},ticks:{precision:0}}}} });
     }
   }
