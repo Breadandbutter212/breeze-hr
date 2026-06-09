@@ -759,6 +759,11 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail')" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
     </div>
+    <!-- Test inbox (demo emails - test accounts only) -->
+    <div class="app-topbar-integration connected" id="topbar-testmail" title="Test inbox (demo)" onclick="toggleEmailPanel('test')" style="cursor:pointer;display:none;position:relative;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6.5L4.2 17a2 2 0 0 0 1.8 3h12a2 2 0 0 0 1.8-3L15 8.5V2"/><path d="M7.5 2h9"/><path d="M8 14h8"/></svg>
+      <span style="position:absolute;top:-4px;right:-6px;background:#7C3AED;color:#fff;font-size:7px;font-weight:700;line-height:1;padding:2px 3px;border-radius:4px;letter-spacing:0.02em;">TEST</span>
+    </div>
     <!-- Outlook -->
     <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook inbox" onclick="if(window._outlookConnected)toggleEmailPanel('outlook')" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 7.387v10.478l-4.262-3.632V9.978z" fill="#0078D4"/><path d="M0 5.919l10.218 6.774L24 7.387v-1.81A1.578 1.578 0 0 0 22.422 4H1.578A1.578 1.578 0 0 0 0 5.578z" fill="#0078D4"/><path d="M0 5.919v12.163a1.578 1.578 0 0 0 1.578 1.578H22.42A1.578 1.578 0 0 0 24 17.865v-.478L10.218 12.69z" fill="#1E4F96"/></svg>
@@ -1596,6 +1601,10 @@ async function onSignedIn(user) {
     const sidebarCo = document.getElementById('sidebarCompanyName');
     if (sidebarCo && profile.company_name) sidebarCo.textContent = profile.company_name;
   }
+  // Test accounts (@getbreeze.co.uk) get a demo "Test inbox" button next to Gmail
+  window._isTestAccount = !!(user.email && user.email.toLowerCase().endsWith('@getbreeze.co.uk'));
+  const testMailEl = document.getElementById('topbar-testmail');
+  if (testMailEl) testMailEl.style.display = window._isTestAccount ? 'flex' : 'none';
   chatSystemPrompt = null;
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
   loadChatList();
@@ -6522,10 +6531,42 @@ function toggleEmailPanel(provider) {
 
 let _emailNextPageToken = null;
 
+// Demo inbox for test accounts - realistic HR emails so testers can try the
+// "Draft reply -> chat" flow without connecting a real mailbox.
+function getTestEmails() {
+  const d = (daysAgo, h, m) => { const x = new Date(); x.setDate(x.getDate() - daysAgo); x.setHours(h, m, 0, 0); return x.toISOString(); };
+  return [
+    { id: 'test-1', threadId: 'test-1', from: 'Sarah Mitchell <sarah.mitchell@example.com>', subject: 'Maternity leave - notifying you of my due date', date: d(0, 9, 12),
+      snippet: 'Hi, I wanted to let you know that I am expecting and my due date is 14 October. I would like to start my maternity leave two weeks before that.',
+      body: 'Hi,\n\nI wanted to let you know that I am expecting and my baby is due on 14 October. I would like to start my maternity leave two weeks before my due date, so from around 30 September.\n\nCould you let me know what I need to do next, what I am entitled to, and whether I need to fill in any forms? I would also like to understand how my pay will work during leave.\n\nThanks,\nSarah Mitchell\nMarketing Team' },
+    { id: 'test-2', threadId: 'test-2', from: 'James Okafor <james.okafor@example.com>', subject: 'Question about pension contributions', date: d(1, 14, 33),
+      snippet: 'I have been looking at my payslip and wanted to understand how the company pension scheme works and whether I can increase my contributions.',
+      body: 'Hello,\n\nI have been looking at my payslip and I wanted to understand how the company pension scheme works. Specifically:\n\n1. How much does the company contribute on top of my own contributions?\n2. Can I increase my own contribution percentage, and how do I do that?\n3. Is there a maximum the company will match?\n\nThanks in advance,\nJames Okafor\nFinance' },
+    { id: 'test-3', threadId: 'test-3', from: 'Dr. Reception <reception@medicalpractice.example>', subject: 'Fit note for Tom Bradley - long term sickness', date: d(2, 8, 5),
+      snippet: 'Please find attached a fit note covering Tom Bradley for a further 4 weeks. The reason given is stress-related illness.',
+      body: 'Dear HR,\n\nPlease find attached a fit note covering your employee Tom Bradley for a further 4 weeks from today. The reason given is a stress-related illness and he is signed off as not fit for work.\n\nThis follows two previous fit notes. Please contact us if you require any further information.\n\nKind regards,\nThe Practice' },
+    { id: 'test-4', threadId: 'test-4', from: 'Priya Nair <priya.nair@example.com>', subject: 'Flexible working request', date: d(3, 16, 47),
+      snippet: 'I would like to formally request a change to my working pattern to compress my hours into a four-day week.',
+      body: 'Hi,\n\nI would like to formally request a change to my working pattern. I would like to compress my full-time hours into a four-day week (working Monday to Thursday).\n\nI believe this would not affect my output and I am happy to discuss how to manage handovers on Fridays. This is my first flexible working request.\n\nCould you let me know the process and timescales?\n\nMany thanks,\nPriya Nair\nCustomer Success' },
+    { id: 'test-5', threadId: 'test-5', from: 'Mark Davies <mark.davies@example.com>', subject: 'Raising a grievance', date: d(5, 11, 20),
+      snippet: 'I would like to raise a formal grievance regarding the way a recent project decision was handled by my line manager.',
+      body: 'Dear HR,\n\nI would like to raise a formal grievance regarding the way a recent project decision was handled by my line manager. I feel I was excluded from a decision that directly affects my role and I was spoken to in a way I found unprofessional in front of colleagues.\n\nI would like to understand the formal grievance process and what happens next.\n\nRegards,\nMark Davies\nOperations' }
+  ];
+}
+
 async function loadEmailInbox(pageToken = null) {
   if (!currentUser) return;
   const list = document.getElementById('emailList');
   const titleEl = document.getElementById('emailPanelTitle');
+
+  // Test inbox - serve demo emails, skip all real connection/fetch logic
+  if (window._emailProvider === 'test') {
+    if (titleEl) titleEl.textContent = 'Test inbox (demo)';
+    _emailNextPageToken = null;
+    _allEmails = getTestEmails();
+    renderEmailList(_allEmails);
+    return;
+  }
 
   // Always re-check connection status so reconnected accounts are picked up immediately
   try {
@@ -6632,11 +6673,11 @@ function renderEmailList(emails) {
       <div class="email-item-subject">${escapeHtml(e.subject)}</div>
       ${e.snippet ? `<div class="email-item-snippet">${escapeHtml(e.snippet)}</div>` : ''}
       <div style="display:flex;gap:6px;margin-top:8px;">
-        <button onclick="openEmailExternal('${e.id}')"
+        ${window._emailProvider === 'test' ? '' : `<button onclick="openEmailExternal('${e.id}')"
           style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--ink2);cursor:pointer;font-family:inherit;"
           onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
           ${window._emailProvider === 'outlook' ? 'Open in Outlook ↗' : 'Open in Gmail ↗'}
-        </button>
+        </button>`}
         <button onclick="selectEmailForChat(${i})"
           style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
           onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
@@ -6761,7 +6802,7 @@ function openSendEmailModal() {
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:560px;box-shadow:var(--shadow-lg);">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:14px;font-weight:600;">Send via ${provider === 'outlook' ? 'Outlook' : 'Gmail'}</div>
+      <div style="font-size:14px;font-weight:600;">Send via ${provider === 'outlook' ? 'Outlook' : provider === 'test' ? 'Test inbox' : 'Gmail'}</div>
       <button onclick="document.getElementById('sendEmailModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:20px;color:var(--ink3);">×</button>
     </div>
     <div style="padding:20px;display:flex;flex-direction:column;gap:12px;">
@@ -6850,6 +6891,15 @@ async function submitSendEmail(provider) {
   const btn = document.getElementById('sendEmailBtn');
   if (!to) { if (msg) { msg.style.color='var(--red)'; msg.textContent = 'Please enter a recipient email.'; } return; }
   if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+  // Test inbox: simulate a successful send (no real mailbox is connected)
+  if (window._emailProvider === 'test') {
+    setTimeout(() => {
+      if (msg) { msg.style.color = 'var(--green)'; msg.textContent = '✓ Email sent (test mode - nothing was actually sent)'; }
+      if (btn) { btn.textContent = '✓ Sent'; }
+      setTimeout(() => { const m = document.getElementById('sendEmailModal'); if (m) m.style.display = 'none'; }, 1600);
+    }, 500);
+    return;
+  }
   try {
     const token = await getAuthToken();
     const payload = { userId: currentUser.id, to, subject, body, provider };
@@ -7069,11 +7119,9 @@ async function loadAnalyticsFile(event) {
       const buf = await file.arrayBuffer();
       const wb = XLSX.read(buf);
       const ws = wb.Sheets[wb.SheetNames[0]];
-      rows = XLSX.utils.sheet_to_json(ws, { defval: '' }).map(r => {
-        const obj = {};
-        Object.entries(r).forEach(([k,v]) => { obj[k.toLowerCase().replace(/\s+/g,'_')] = String(v); });
-        return obj;
-      });
+      // Read as raw rows (header:1) so blank header cells don't become "__EMPTY"
+      const matrix = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', blankrows:false });
+      rows = rowsFromMatrix(matrix);
     } else {
       rows = parseAnalyticsCSV(await file.text());
     }
@@ -7086,21 +7134,47 @@ async function loadAnalyticsFile(event) {
   event.target.value = '';
 }
 
+function splitCsvLine(line) {
+  const vals = []; let cur = '', inQ = false;
+  for (const ch of line+',') {
+    if (ch==='"') inQ=!inQ;
+    else if (ch===',' && !inQ) { vals.push(cur.trim().replace(/^"|"$/g,'')); cur=''; }
+    else cur+=ch;
+  }
+  return vals;
+}
+
 function parseAnalyticsCSV(text) {
-  const lines = text.split('\n').filter(l => l.trim());
-  if (lines.length < 2) return [];
-  const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g,'').toLowerCase().replace(/\s+/g,'_'));
-  return lines.slice(1).map(line => {
-    const vals = []; let cur = '', inQ = false;
-    for (const ch of line+',') {
-      if (ch==='"') inQ=!inQ;
-      else if (ch===',' && !inQ) { vals.push(cur.trim()); cur=''; }
-      else cur+=ch;
-    }
-    const obj = {};
-    headers.forEach((h,i) => { obj[h] = (vals[i]||'').replace(/^"|"$/g,''); });
-    return obj;
-  }).filter(r => Object.values(r).some(v=>v));
+  const matrix = text.split(/\r?\n/).filter(l => l.trim()).map(splitCsvLine);
+  return rowsFromMatrix(matrix);
+}
+
+// Turn a raw 2D cell grid into clean row-objects: skip title/banner rows that sit
+// above the real header, name blank-header columns sensibly, and de-dupe keys.
+function rowsFromMatrix(matrix) {
+  const grid = (matrix||[]).map(r => (r||[]).map(c => String(c==null?'':c).trim()))
+                           .filter(r => r.some(c => c !== ''));
+  if (grid.length < 2) return [];
+  const isNum = c => c !== '' && !isNaN(parseFloat(c.replace(/[£$€,\s%]/g,'')));
+  // Header = first row with >=2 mostly-text cells that has a data row beneath it
+  let hdrIdx = 0;
+  for (let i = 0; i < Math.min(10, grid.length - 1); i++) {
+    const cells = grid[i].filter(c => c !== '');
+    const below = grid[i+1].filter(c => c !== '').length;
+    if (cells.length >= 2 && cells.filter(c => !isNum(c)).length >= cells.length * 0.6 && below >= 2) { hdrIdx = i; break; }
+  }
+  const raw = grid[hdrIdx];
+  const ncol = Math.max(...grid.slice(hdrIdx).map(r => r.length));
+  const headers = [];
+  for (let i = 0; i < ncol; i++) {
+    let h = (raw[i] || '').toLowerCase().replace(/\s+/g,'_');
+    if (!h) h = 'column_' + (i + 1);
+    let base = h, k = 2; while (headers.includes(h)) h = base + '_' + (k++);
+    headers.push(h);
+  }
+  return grid.slice(hdrIdx + 1).map(r => {
+    const obj = {}; headers.forEach((h, i) => obj[h] = r[i] || ''); return obj;
+  }).filter(r => Object.values(r).some(v => v));
 }
 
 function detectColumnTypes(rows) {
@@ -7478,6 +7552,7 @@ async function renderChatsPage() {
     </div>
     <div id="chatPageList"></div>`;
   renderChatPageItems(chatList);
+  backfillChatTitles(); // fire-and-forget: tidy up old raw titles in the background
 }
 
 function filterChatsPage(q) {
@@ -7536,6 +7611,18 @@ async function openChatHistory(id) {
   closeArtifact();
   renderChatHistory();
   showView('chat', document.getElementById('nav-chat'));
+  // Lazily upgrade a still-raw title now that we have the full conversation loaded
+  const entry = chatList.find(c => c.id === id);
+  if (entry && titleLooksRaw(entry.title) && chatMessages.length) {
+    generateChatTitle(chatMessages).then(better => {
+      if (better && better !== entry.title) {
+        sb.from('policies').update({ name: `CHAT:${better}` }).eq('id', id).eq('company_id', currentProfile.company_id).then(() => {
+          entry.title = better;
+          renderChatPageItems(chatList);
+        });
+      }
+    });
+  }
 }
 
 async function deleteChatHistory(id) {
@@ -7551,13 +7638,48 @@ async function deleteChatHistory(id) {
   renderChatPageItems(chatList);
 }
 
+// Ask the model for a short, descriptive topic title instead of the raw first line
+async function generateChatTitle(messages) {
+  try {
+    const convo = (messages || []).slice(0, 4)
+      .map(m => `${m.role === 'user' ? 'User' : 'Assistant'}: ${(m.content || '').substring(0, 500)}`)
+      .join('\n\n');
+    if (!convo.trim()) return null;
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({
+        system: 'You write very short titles for saved HR chat conversations. Reply with ONLY the title: 3 to 6 words, Title Case, no quotes, no trailing punctuation. Capture the specific HR topic, e.g. "ACAS Guidance on Long-Term Sickness" or "Pension Query Reply to Employee".',
+        messages: [{ role: 'user', content: `Give a short title for this conversation:\n\n${convo}` }]
+      })
+    });
+    const data = await res.json();
+    let t = (data.content?.[0]?.text || '').trim().replace(/^["']|["']$/g, '').replace(/[.\s]+$/, '').replace(/\n/g, ' ');
+    return t ? t.substring(0, 60) : null;
+  } catch (e) { return null; }
+}
+
+// A title is "raw" if it's just the truncated first message (so it's worth re-summarising)
+function titleLooksRaw(t) {
+  t = (t || '').trim();
+  if (t.length >= 48) return true; // truncated mid-sentence
+  return /^(draft|write|create|compose|reply|respond|what|how|can you|please|give me|help|i need|tell me|explain)\b/i.test(t);
+}
+
+let _chatSaveInFlight = false;
 async function saveCurrentChat() {
   if (!currentProfile || !chatMessages.length) return;
-  const title = (chatMessages[0]?.content || 'Chat').substring(0, 50).replace(/\n/g, ' ');
   const content = JSON.stringify(chatMessages);
   if (currentChatId) {
     await sb.from('policies').update({ content }).eq('id', currentChatId).eq('company_id', currentProfile.company_id);
-  } else {
+    return;
+  }
+  if (_chatSaveInFlight) return; // avoid duplicate inserts while the title is generating
+  _chatSaveInFlight = true;
+  try {
+    const fallback = (chatMessages[0]?.content || 'Chat').substring(0, 50).replace(/\n/g, ' ');
+    const title = (await generateChatTitle(chatMessages)) || fallback;
     const { data } = await sb.from('policies').insert({
       company_id: currentProfile.company_id,
       name: `CHAT:${title}`,
@@ -7567,6 +7689,30 @@ async function saveCurrentChat() {
       currentChatId = data.id;
       chatList.unshift({ id: data.id, title, created_at: data.created_at });
     }
+  } finally {
+    _chatSaveInFlight = false;
+  }
+}
+
+// One-off background pass: re-title existing chats whose titles are still raw
+let _titleBackfillDone = false;
+async function backfillChatTitles() {
+  if (_titleBackfillDone || !currentProfile) return;
+  _titleBackfillDone = true;
+  const raw = chatList.filter(c => titleLooksRaw(c.title)).slice(0, 25);
+  for (const c of raw) {
+    try {
+      const { data } = await sb.from('policies').select('content').eq('id', c.id).eq('company_id', currentProfile.company_id).single();
+      if (!data) continue;
+      let msgs; try { msgs = JSON.parse(data.content); } catch (e) { continue; }
+      if (!msgs?.length) continue;
+      const better = await generateChatTitle(msgs);
+      if (better && better !== c.title) {
+        await sb.from('policies').update({ name: `CHAT:${better}` }).eq('id', c.id).eq('company_id', currentProfile.company_id);
+        c.title = better;
+        renderChatPageItems(chatList);
+      }
+    } catch (e) {}
   }
 }
 
