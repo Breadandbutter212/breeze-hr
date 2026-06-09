@@ -760,9 +760,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
     </div>
     <!-- Test inbox (demo emails - test accounts only) -->
-    <div class="app-topbar-integration connected" id="topbar-testmail" title="Test inbox (demo)" onclick="toggleEmailPanel('test')" style="cursor:pointer;display:none;position:relative;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#7C3AED" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2v6.5L4.2 17a2 2 0 0 0 1.8 3h12a2 2 0 0 0 1.8-3L15 8.5V2"/><path d="M7.5 2h9"/><path d="M8 14h8"/></svg>
-      <span style="position:absolute;top:-4px;right:-6px;background:#7C3AED;color:#fff;font-size:7px;font-weight:700;line-height:1;padding:2px 3px;border-radius:4px;letter-spacing:0.02em;">TEST</span>
+    <div class="app-topbar-integration connected" id="topbar-testmail" title="Test inbox (demo emails)" onclick="toggleEmailPanel('test')" style="cursor:pointer;display:none;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="#7C3AED"><path d="M9 2h6v2h-1v5.2l4.8 8.3A2 2 0 0 1 17.1 20H6.9a2 2 0 0 1-1.7-2.5L10 9.2V4H9V2z"/></svg>
     </div>
     <!-- Outlook -->
     <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook inbox" onclick="if(window._outlookConnected)toggleEmailPanel('outlook')" style="cursor:pointer;">
