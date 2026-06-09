@@ -385,9 +385,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
 /* ── ORG CHART ── */
-.org-node { position:absolute; width:180px; background:white; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; padding:10px 12px; gap:10px; cursor:grab; user-select:none; transition:box-shadow 0.15s,transform 0.12s; border:1.5px solid #E5E7EB; overflow:visible; }
+.org-node { position:absolute; width:180px; background:white; border-radius:10px; box-shadow:0 2px 8px rgba(0,0,0,0.08); display:flex; align-items:center; padding:10px 12px; gap:10px; cursor:pointer; user-select:none; transition:box-shadow 0.15s,transform 0.12s; border:1.5px solid #E5E7EB; overflow:visible; }
 .org-node:hover { box-shadow:0 4px 16px rgba(0,0,0,0.14); transform:translateY(-2px); }
-.org-node.dragging { box-shadow:0 8px 24px rgba(0,0,0,0.18); transform:scale(1.02); z-index:100; cursor:grabbing; }
+.org-node.dragging { box-shadow:0 4px 16px rgba(0,0,0,0.14); z-index:100; }
 .org-node.dimmed { opacity:0.2; }
 .org-node.highlighted { opacity:1; box-shadow:0 0 0 2px var(--accent); }
 .oc-toggle { position:absolute; bottom:-11px; left:50%; transform:translateX(-50%); background:white; border:1.5px solid #CBD5E1; border-radius:20px; padding:0 7px; height:18px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap; z-index:10; color:#6B7280; line-height:16px; font-family:inherit; transition:all 0.1s; }
@@ -11074,19 +11074,11 @@ function ocPanDown(e) {
 
 function ocPanMove(e) {
   if(_ocDragNode) {
+    // Boxes are locked to the grid layout. Track movement only so a drag
+    // gesture doesn't pop the node menu — never reposition the box.
     const mdx=e.clientX-_ocDragNode.sx, mdy=e.clientY-_ocDragNode.sy;
     if(Math.abs(mdx)>4||Math.abs(mdy)>4) _ocDragNode.moved=true;
-    if(!_ocDragNode.moved) return;
-    const dx=mdx/_ocT.k, dy=mdy/_ocT.k;
-    _ocOffsets[_ocDragNode.id]={dx:_ocDragNode.odx+dx,dy:_ocDragNode.ody+dy};
-    // Update node position via safe ID
-    const d=document.getElementById(ocNid(_ocDragNode.id));
-    if(d){
-      const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
-      const node=all.find(n=>n.id===_ocDragNode.id);
-      if(node){const p=ocPos(node);d.style.left=p.x+'px';d.style.top=p.y+'px';}
-    }
-    ocRedrawEdges(); return;
+    return;
   }
   if(!_ocPanning||!_ocPanOrig) return;
   _ocT.x=_ocPanOrig.tx+(e.clientX-_ocPanOrig.mx);
@@ -11097,22 +11089,14 @@ function ocPanMove(e) {
 function ocPanUp(e) {
   if(_ocDragNode) {
     const nid=_ocDragNode.id; const d=document.getElementById(ocNid(nid));
+    if(d) d.classList.remove('dragging');
     if(!_ocDragNode.moved) {
-      if(d) d.classList.remove('dragging');
       const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; if(_ocTree) col(_ocTree);
       const node=all.find(n=>n.id===nid);
       _ocDragNode=null;
       if(node) ocShowNodeMenu(node);
     } else {
-      const off=_ocOffsets[nid];
-      if(off){off.dx=Math.round(off.dx/OC_SNAP)*OC_SNAP;off.dy=Math.round(off.dy/OC_SNAP)*OC_SNAP;}
-      if(d){
-        d.classList.remove('dragging');
-        const all2=[]; const col2=n=>{all2.push(n);(n.children||[]).forEach(col2);}; if(_ocTree) col2(_ocTree);
-        const node2=all2.find(n=>n.id===nid);
-        if(node2){const p=ocPos(node2);d.style.left=p.x+'px';d.style.top=p.y+'px';}
-      }
-      ocRedrawEdges();
+      // Box stays locked to the grid — drag gesture is discarded, nothing moves.
       _ocDragNode=null;
     }
   }
