@@ -13834,51 +13834,62 @@ async function saveProjects(){
 function projActive(){ return (projectsData||[]).find(p=>p.id===projectActiveId); }
 
 function projDemoData(){
+  const ms = (title, owner, wk, status, description, subs, atts) => ({ id:projUid('m'), title, owner:owner||'', dueDate:projDateIn(wk), status:status||'not-started', done:status==='done', description:description||'', subtasks:(subs||[]).map(([t,d])=>({id:projUid('s'),text:t,done:!!d})), attachments:atts||[] });
   return [
-    { id:'proj_hris', name:'Roll out new HRIS', objective:'Replace the legacy HR system with a modern HRIS, live by Q1.', owner:'You', category:'Systems', stage:'in-progress', rag:'auto', priority:'high', startDate:projDateIn(-6), targetDate:projDateIn(16),
+    { id:'proj_hris', name:'HRIS implementation', objective:'Replace the legacy HR system with a modern cloud HRIS, live by Q1.', owner:'Sarah Mitchell', category:'Systems', stage:'in-progress', rag:'auto', priority:'high', startDate:projDateIn(-6), targetDate:projDateIn(16), createdAt:projDateIn(-6),
       milestones:[
-        { id:projUid('m'), title:'Requirements & scoping', owner:'You', dueDate:projDateIn(-4), done:true },
-        { id:projUid('m'), title:'Vendor shortlist & demos', owner:'You', dueDate:projDateIn(-2), done:true },
-        { id:projUid('m'), title:'Business case sign-off', owner:'HR Director', dueDate:projDateIn(-1), done:true },
-        { id:projUid('m'), title:'Data audit & cleansing', owner:'You', dueDate:projDateIn(-0.5), status:'in-progress', description:'Review the quality of employee data in the legacy system and clean it before migration - duplicates, missing fields and inconsistent formats. Done = a validated dataset signed off by each manager.', subtasks:[ {id:projUid('s'),text:'Export full dataset from legacy system',done:true}, {id:projUid('s'),text:'Identify duplicate and incomplete records',done:true}, {id:projUid('s'),text:'Standardise job titles and departments',done:false}, {id:projUid('s'),text:'Sign off cleansed data with each manager',done:false} ] },
-        { id:projUid('m'), title:'DPA / security review (DPIA)', owner:'DPO', dueDate:projDateIn(2), done:false },
-        { id:projUid('m'), title:'System configuration', owner:'Vendor', dueDate:projDateIn(5), done:false },
-        { id:projUid('m'), title:'Data migration & validation', owner:'You', dueDate:projDateIn(8), done:false },
-        { id:projUid('m'), title:'Payroll / SSO integration', owner:'IT', dueDate:projDateIn(10), done:false },
-        { id:projUid('m'), title:'UAT testing', owner:'HR team', dueDate:projDateIn(12), done:false },
-        { id:projUid('m'), title:'Comms & training', owner:'You', dueDate:projDateIn(14), done:false },
-        { id:projUid('m'), title:'Go-live / cutover', owner:'You', dueDate:projDateIn(16), done:false }
+        ms('Requirements & scoping','Sarah Mitchell',-4,'done','Agree the must-have requirements with each team and document the scope.',[['Workshops with each department',1],['Document must-have vs nice-to-have',1]]),
+        ms('Vendor shortlist & demos','Sarah Mitchell',-2,'done','Shortlist providers, run demos and check references.',[['Longlist of 6 vendors',1],['Demos with top 3',1],['Reference calls',1]]),
+        ms('Business case sign-off','HR Director',-1,'done'),
+        ms('Data audit & cleansing','James Okafor',-0.5,'in-progress','Clean the legacy employee data before migration - duplicates, missing fields and inconsistent formats.',[['Export full dataset',1],['Identify duplicate/incomplete records',1],['Standardise job titles & departments',0],['Sign off cleansed data with managers',0]],[{type:'note',title:'Data quality worse than expected - flagged to IT'}]),
+        ms('DPA / security review (DPIA)','DPO',2,'not-started','Complete the data protection impact assessment and security review.'),
+        ms('System configuration','Vendor',5),
+        ms('Data migration & validation','James Okafor',8),
+        ms('Payroll / SSO integration','IT',10),
+        ms('UAT testing','HR team',12),
+        ms('Comms & training','Sarah Mitchell',14),
+        ms('Go-live / cutover','Sarah Mitchell',16)
       ],
-      raid:[
-        { id:projUid('r'), type:'risk', text:'Poor legacy data quality could cause migration errors', mitigation:'Early data audit and cleansing before migration' },
-        { id:projUid('r'), type:'risk', text:'Low manager adoption of the new system', mitigation:'Targeted training and clear comms plan' },
-        { id:projUid('r'), type:'dependency', text:'IT capacity for SSO; payroll provider for integration', mitigation:'Confirm IT and payroll resource up front' },
-        { id:projUid('r'), type:'assumption', text:'Budget approved and vendor contract signed by sign-off date', mitigation:'' }
-      ],
-      raci:[ {id:projUid('c'),name:'HR Director',raci:'A'}, {id:projUid('c'),name:'You (project lead)',raci:'R'}, {id:projUid('c'),name:'IT',raci:'C'}, {id:projUid('c'),name:'Payroll',raci:'C'}, {id:projUid('c'),name:'DPO',raci:'C'}, {id:projUid('c'),name:'Managers & employees',raci:'I'} ],
-      log:[ {date:projDateIn(-2), note:'Vendor demos complete - shortlisted 2 providers.'}, {date:projDateIn(-1), note:'Business case approved by HR Director.'} ],
-      attachments:[] },
-    { id:'proj_payreview', name:'Annual pay review', objective:'Run this year’s pay review cycle within a 3% budget.', owner:'You', category:'Comp & reward', stage:'in-progress', rag:'auto', priority:'high', startDate:projDateIn(-2), targetDate:projDateIn(6),
+      raid:[], raci:[], log:[ {date:projDateIn(-2), note:'Vendor demos complete - shortlisted 2 providers.'}, {date:projDateIn(-1), note:'Business case approved by HR Director.'} ], attachments:[] },
+
+    { id:'proj_payreview', name:'Annual pay & bonus review', objective:'Run this year\'s pay review and bonus round within a 3% budget.', owner:'James Okafor', category:'Comp & reward', stage:'in-progress', rag:'auto', priority:'high', startDate:projDateIn(-2), targetDate:projDateIn(6), createdAt:projDateIn(-2),
       milestones:[
-        { id:projUid('m'), title:'Confirm budget with Finance', owner:'You', dueDate:projDateIn(-1), done:true },
-        { id:projUid('m'), title:'Benchmark key roles', owner:'You', dueDate:projDateIn(1), done:false },
-        { id:projUid('m'), title:'Manager recommendations', owner:'Managers', dueDate:projDateIn(3), done:false },
-        { id:projUid('m'), title:'Calibration & sign-off', owner:'HR Director', dueDate:projDateIn(4), done:false },
-        { id:projUid('m'), title:'Issue increase letters', owner:'You', dueDate:projDateIn(6), done:false }
+        ms('Confirm budget with Finance','James Okafor',-1,'done'),
+        ms('Benchmark key roles','James Okafor',-0.5,'in-progress','Benchmark critical and hard-to-fill roles against market data.',[['Pull market data for top 10 roles',1],['Identify roles below market',0]]),
+        ms('Manager recommendations','Line managers',3,'not-started','Managers submit proposed increases and bonus recommendations.'),
+        ms('Calibration & sign-off','HR Director',4),
+        ms('Issue increase & bonus letters','James Okafor',6,'not-started','Generate and send personalised letters once approved.')
       ],
-      raid:[ {id:projUid('r'),type:'risk',text:'Recommendations exceed budget',mitigation:'Calibration round before sign-off'} ],
-      raci:[ {id:projUid('c'),name:'HR Director',raci:'A'}, {id:projUid('c'),name:'You',raci:'R'}, {id:projUid('c'),name:'Finance',raci:'C'}, {id:projUid('c'),name:'Managers',raci:'I'} ],
-      log:[], attachments:[] },
-    { id:'proj_engagement', name:'Engagement survey & action plan', objective:'Run the annual engagement survey and agree actions.', owner:'You', category:'Wellbeing', stage:'on-hold', rag:'auto', priority:'normal', startDate:projDateIn(-1), targetDate:projDateIn(9),
+      raid:[], raci:[], log:[], attachments:[] },
+
+    { id:'proj_onboarding', name:'Onboarding process revamp', objective:'Redesign new-starter onboarding to improve the first 90 days.', owner:'Priya Nair', category:'Recruitment', stage:'in-progress', rag:'auto', priority:'normal', startDate:projDateIn(-3), targetDate:projDateIn(7), createdAt:projDateIn(-3),
       milestones:[
-        { id:projUid('m'), title:'Finalise survey questions', owner:'You', dueDate:projDateIn(-0.5), done:false },
-        { id:projUid('m'), title:'Launch survey', owner:'You', dueDate:projDateIn(2), done:false },
-        { id:projUid('m'), title:'Analyse results', owner:'You', dueDate:projDateIn(5), done:false },
-        { id:projUid('m'), title:'Agree action plan with leadership', owner:'HR Director', dueDate:projDateIn(9), done:false }
+        ms('Map the current onboarding journey','Priya Nair',-2,'done','Document every step from offer to end of probation.'),
+        ms('Gather new-starter feedback','Priya Nair',-0.5,'in-progress','Survey recent joiners on what worked and what did not.',[['Draft survey',1],['Send to last 20 joiners',1],['Summarise themes',0]]),
+        ms('Design new onboarding pack','Priya Nair',3),
+        ms('Build manager checklist','Line managers',4),
+        ms('Pilot with one team','Priya Nair',7)
       ],
-      raid:[ {id:projUid('r'),type:'issue',text:'On hold pending leadership availability for kick-off',mitigation:'Reschedule kick-off once dates confirmed'} ],
-      raci:[ {id:projUid('c'),name:'HR Director',raci:'A'}, {id:projUid('c'),name:'You',raci:'R'}, {id:projUid('c'),name:'All staff',raci:'I'} ],
-      log:[], attachments:[] }
+      raid:[], raci:[], log:[], attachments:[] },
+
+    { id:'proj_dei', name:'DEI strategy & action plan', objective:'Agree a 12-month diversity, equity and inclusion plan.', owner:'Sarah Mitchell', category:'DEI', stage:'not-started', rag:'auto', priority:'normal', startDate:projDateIn(1), targetDate:projDateIn(20), createdAt:projDateIn(-1),
+      milestones:[
+        ms('Baseline diversity data review','Sarah Mitchell',3,'not-started','Analyse current workforce diversity data to set a baseline.'),
+        ms('Listening sessions with staff','Sarah Mitchell',6),
+        ms('Draft DEI commitments','HR Director',10),
+        ms('Leadership sign-off','HR Director',13),
+        ms('Launch & communicate','Sarah Mitchell',20)
+      ],
+      raid:[], raci:[], log:[], attachments:[] },
+
+    { id:'proj_wellbeing', name:'Wellbeing programme launch', objective:'Launch a wellbeing programme including EAP and mental health support.', owner:'Priya Nair', category:'Wellbeing', stage:'on-hold', rag:'auto', priority:'low', startDate:projDateIn(-1), targetDate:projDateIn(12), createdAt:projDateIn(-4),
+      milestones:[
+        ms('Review EAP provider options','Priya Nair',2,'not-started','Compare EAP providers on cost and coverage.'),
+        ms('Train mental health first aiders','Priya Nair',6),
+        ms('Build wellbeing intranet hub','IT',9),
+        ms('Launch to all staff','Priya Nair',12)
+      ],
+      raid:[], raci:[], log:[ {date:projDateIn(-1), note:'On hold pending budget confirmation for next quarter.'} ], attachments:[] }
   ];
 }
 
@@ -14206,7 +14217,7 @@ function projMilestonesBlock(p, sel, card){
 function projRenderTimeline(p){
   const ms = (p.milestones||[]).filter(m=>m.dueDate).slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
   if (!ms.length) return '<div style="font-size:12px;color:var(--ink3);padding:14px 0;">Add due dates to tasks to see the timeline.</div>';
-  const LBL = 196, ROW = 44, HEAD = 26;
+  const LBL = 220, ROW = 54, HEAD = 26;
   const dues = ms.map(m=>new Date(m.dueDate).getTime());
   let min = Math.min(...dues, p.startDate?new Date(p.startDate).getTime():dues[0]);
   let max = Math.max(...dues, p.targetDate?new Date(p.targetDate).getTime():dues[dues.length-1]);
