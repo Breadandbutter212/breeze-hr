@@ -5615,7 +5615,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;loadProjects().then(renderProjects);}
+  if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;_projFilter={q:'',cat:'',owner:'',sort:'newest'};loadProjects().then(renderProjects);}
   if(v==='settings') { try { renderSettings(); } catch(e) { console.error('[Settings]',e); const b=document.getElementById('settingsBody'); if(b) b.innerHTML='<div style="padding:20px;color:red;">'+String(e)+'</div>'; } }
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
@@ -13778,7 +13778,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false;
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'};
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#8A94A6' },
@@ -13817,6 +13817,7 @@ async function loadProjects(){
   const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','TRACKER:Projects').maybeSingle();
   try { projectsData = data?.content ? JSON.parse(data.content) : []; } catch(e){ projectsData = []; }
   if (!Array.isArray(projectsData) || !projectsData.length) projectsData = projDemoData();
+  projectsData.forEach(p=>{ if(!p.createdAt) p.createdAt = p.startDate || ''; });
 }
 async function saveProjects(){
   if (!currentProfile) return;
@@ -13891,10 +13892,10 @@ function projFromTemplate(key){
   return {
     id: projUid('proj_'), name: t.name, objective:'', owner:'You', category: t.category, stage:'not-started', rag:'auto', priority:'normal',
     startDate: projDateIn(0), targetDate: projDateIn(t.milestones[t.milestones.length-1][1]),
-    milestones: t.milestones.map(([title,wk])=>({ id:projUid('m'), title, owner:'', dueDate:projDateIn(wk), done:false })),
+    milestones: t.milestones.map(([title,wk])=>({ id:projUid('m'), title, owner:'', dueDate:projDateIn(wk), status:'not-started', description:'', subtasks:[] })),
     raid: (t.raid||[]).map(([type,text,mit])=>({ id:projUid('r'), type, text, mitigation:mit||'' })),
     raci: [ {id:projUid('c'),name:'HR Director',raci:'A'}, {id:projUid('c'),name:'You',raci:'R'} ],
-    log: [], attachments: []
+    log: [], attachments: [], createdAt: new Date().toISOString()
   };
 }
 
@@ -13903,56 +13904,67 @@ function renderProjects(){
   const body = document.getElementById('projectsBody'); if(!body) return;
   projectActiveId = null;
   const ps = projectsData||[];
-  const inProg = ps.filter(p=>p.stage==='in-progress').length;
-  const atRisk = ps.filter(p=>['amber','red'].includes(projComputeRag(p)) && p.stage!=='complete').length;
-  const now = projToday(); const monthEnd = new Date(now.getFullYear(), now.getMonth()+1, 0);
-  const dueThisMonth = ps.filter(p=>p.targetDate && new Date(p.targetDate)>=now && new Date(p.targetDate)<=monthEnd && p.stage!=='complete').length;
   const overdueItems = ps.flatMap(p=>projOverdueList(p).map(m=>({p,m})));
-
-  const tile = (n,label,color)=>`<div style="flex:1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;"><div style="font-size:26px;font-weight:700;color:${color};letter-spacing:-0.03em;line-height:1;">${n}</div><div style="font-size:12px;color:var(--ink2);margin-top:6px;">${label}</div></div>`;
+  const cats = [...new Set(ps.map(p=>p.category).filter(Boolean))];
+  const owners = [...new Set(ps.map(p=>p.owner).filter(Boolean))];
+  const f = _projFilter;
+  const ss = 'border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;background:var(--surface2);outline:none;cursor:pointer;';
+  const catOpts = `<option value="">All topics</option>`+cats.map(c=>`<option value="${escapeHtml(c)}" ${f.cat===c?'selected':''}>${escapeHtml(c)}</option>`).join('');
+  const ownerOpts = `<option value="">All owners</option>`+owners.map(o=>`<option value="${escapeHtml(o)}" ${f.owner===o?'selected':''}>${escapeHtml(o)}</option>`).join('');
+  const sortOpts = [['newest','Newest first'],['oldest','Oldest first'],['due','Due soonest'],['progress','Most progress'],['name','Name A–Z']].map(([v,l])=>`<option value="${v}" ${f.sort===v?'selected':''}>${l}</option>`).join('');
 
   body.innerHTML = `
-    <div style="display:flex;gap:12px;margin-bottom:16px;">
-      ${tile(ps.length,'Projects','#0066CC')}
-      ${tile(inProg,'In progress','#0066CC')}
-      ${tile(atRisk,'At risk','#F59E0B')}
-      ${tile(dueThisMonth,'Due this month','#6B4FBB')}
-      ${tile(overdueItems.length,'Overdue tasks', overdueItems.length?'#EF4444':'#30D158')}
-    </div>
     ${(overdueItems.length && !_projHideAttention) ? `<div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;">
       <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:600;color:#B91C1C;">⚠ Needs attention</div><button onclick="projDismissAttention()" title="Dismiss" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:16px;line-height:1;padding:0 2px;">✕</button></div>
       ${overdueItems.slice(0,6).map(({p,m})=>`<div style="font-size:12px;color:#7F1D1D;padding:2px 0;cursor:pointer;" onclick="openProject('${p.id}')">• <strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} — was due ${projFmtDate(m.dueDate)}</div>`).join('')}
     </div>` : ''}
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-      <input id="projSearch" placeholder="Search projects..." oninput="renderProjectsList(this.value)" style="flex:1;max-width:320px;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);">
+    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
+      <input id="projSearch" value="${jsAttr(f.q)}" placeholder="Search projects..." oninput="projSetFilter('q',this.value)" style="flex:1;min-width:150px;${ss}cursor:text;">
+      <select style="${ss}" onchange="projSetFilter('cat',this.value)">${catOpts}</select>
+      <select style="${ss}" onchange="projSetFilter('owner',this.value)">${ownerOpts}</select>
+      <select style="${ss}" onchange="projSetFilter('sort',this.value)">${sortOpts}</select>
       <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()">+ New project</button>
     </div>
     <div id="projListWrap"></div>`;
-  renderProjectsList('');
+  renderProjectsList();
 }
 
-function renderProjectsList(q){
+function projSetFilter(k,v){ _projFilter[k]=v; renderProjectsList(); }
+
+function renderProjectsList(){
   const wrap = document.getElementById('projListWrap'); if(!wrap) return;
-  let ps = projectsData||[];
-  if (q) { const s=q.toLowerCase(); ps = ps.filter(p=>(p.name||'').toLowerCase().includes(s)||(p.objective||'').toLowerCase().includes(s)||(p.category||'').toLowerCase().includes(s)); }
-  if (!ps.length) { wrap.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px;">No projects yet. Click <strong>+ New project</strong> to start.</div>`; return; }
-  wrap.innerHTML = ps.map(p=>{
-    const rag = projComputeRag(p); const st = PROJ_STAGES[p.stage]||PROJ_STAGES['not-started']; const pct = projPct(p);
-    const od = projOverdueList(p).length;
-    return `<div onclick="openProject('${p.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;margin-bottom:8px;cursor:pointer;transition:box-shadow 0.12s,border-color 0.12s;" onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
-      <div style="display:flex;align-items:center;gap:12px;">
-        <span title="${rag}" style="width:10px;height:10px;border-radius:50%;background:${PROJ_RAG[rag]};flex-shrink:0;"></span>
+  const f = _projFilter; const all = projectsData||[]; let ps = all.slice();
+  if (f.q){ const s=f.q.toLowerCase(); ps = ps.filter(p=>(p.name||'').toLowerCase().includes(s)||(p.objective||'').toLowerCase().includes(s)||(p.owner||'').toLowerCase().includes(s)||(p.category||'').toLowerCase().includes(s)); }
+  if (f.cat) ps = ps.filter(p=>p.category===f.cat);
+  if (f.owner) ps = ps.filter(p=>p.owner===f.owner);
+  const ix = p=>all.indexOf(p);
+  ps.sort((a,b)=>{
+    switch(f.sort){
+      case 'oldest': return (a.createdAt||'').localeCompare(b.createdAt||'') || ix(a)-ix(b);
+      case 'due': return new Date(a.targetDate||'2999-12-31')-new Date(b.targetDate||'2999-12-31');
+      case 'progress': return projPct(b)-projPct(a);
+      case 'name': return (a.name||'').localeCompare(b.name||'');
+      default: return (b.createdAt||'').localeCompare(a.createdAt||'') || ix(a)-ix(b);
+    }
+  });
+  if (!ps.length) { wrap.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px;">No projects match. Click <strong>+ New project</strong> to start.</div>`; return; }
+  wrap.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` + ps.map(p=>{
+    const rag = projComputeRag(p); const st = PROJ_STAGES[p.stage]||PROJ_STAGES['not-started']; const pct = projPct(p); const od = projOverdueList(p).length;
+    return `<div onclick="openProject('${p.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;cursor:pointer;transition:box-shadow 0.12s,border-color 0.12s;" onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
+      <div style="display:flex;gap:14px;align-items:center;">
+        <div style="width:58px;height:58px;border-radius:50%;background:conic-gradient(${PROJ_RAG[rag]} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--ink);">${pct}%</div></div>
         <div style="flex:1;min-width:0;">
-          <div style="font-size:14px;font-weight:600;color:var(--ink);">${escapeHtml(p.name)}</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(p.category||'')} · ${escapeHtml(p.owner||'Unassigned')} · target ${projFmtDate(p.targetDate)}${od?` · <span style="color:#EF4444;">${od} overdue</span>`:''}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:14px;flex-shrink:0;">
-          <span style="font-size:11px;font-weight:600;color:${st.color};background:${st.color}1a;padding:3px 9px;border-radius:20px;">${st.label}</span>
-          <div style="width:90px;"><div style="height:6px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${PROJ_RAG[rag]};"></div></div><div style="font-size:10px;color:var(--ink3);text-align:right;margin-top:2px;">${pct}%</div></div>
+          <div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.name)}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:4px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(p.owner||'Unassigned')}</div>
+          <div style="font-size:11px;color:${od?'#EF4444':'var(--ink3)'};margin-top:3px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Due ${projFmtDate(p.targetDate)}${od?` · ${od} overdue`:''}</div>
         </div>
       </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
+        <span style="font-size:11px;font-weight:600;color:${st.color};background:${st.color}1a;padding:3px 10px;border-radius:20px;">${st.label}</span>
+        <span style="font-size:11px;color:var(--ink3);">${escapeHtml(p.category||'')}</span>
+      </div>
     </div>`;
-  }).join('');
+  }).join('') + `</div>`;
 }
 
 function openProject(id){ projectActiveId = id; renderProjectDetail(); }
@@ -14004,7 +14016,7 @@ function renderProjectDetail(){
 async function projSet(field, value){ const p=projActive(); if(!p) return; p[field]=value; await saveProjects(); renderProjectDetail(); }
 async function projEditField(field){ const p=projActive(); if(!p) return; const v=prompt(field==='name'?'Project name':'Objective', p[field]||''); if(v===null) return; p[field]=v.trim(); await saveProjects(); renderProjectDetail(); }
 async function projAddMilestone(){ const p=projActive(); if(!p) return; const t=prompt('Milestone title'); if(!t) return; p.milestones=p.milestones||[]; const id=projUid('m'); p.milestones.push({id,title:t.trim(),owner:'',dueDate:projDateIn(2),status:'not-started',description:'',subtasks:[]}); _projExpandedMs[id]=true; await saveProjects(); renderProjectDetail(); }
-async function projToggleMilestone(id){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(m){ const nd=!projMsDone(m); m.status=nd?'done':'not-started'; m.done=nd; await saveProjects(); renderProjectDetail(); } }
+async function projToggleMilestone(id){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(m){ const nd=!projMsDone(m); (m.subtasks||[]).forEach(s=>s.done=nd); m.status=nd?'done':'not-started'; m.done=nd; await saveProjects(); renderProjectDetail(); } }
 async function projDeleteMilestone(id){ const p=projActive(); if(!p) return; p.milestones=(p.milestones||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
 async function projAddRaid(){ const p=projActive(); if(!p) return; const text=prompt('Describe the risk / issue / assumption / dependency'); if(!text) return; let type=(prompt('Type: risk, issue, assumption or dependency','risk')||'risk').toLowerCase().trim(); if(!['risk','issue','assumption','dependency'].includes(type)) type='risk'; const mit=prompt('Mitigation / action (optional)','')||''; p.raid=p.raid||[]; p.raid.push({id:projUid('r'),type,text:text.trim(),mitigation:mit.trim()}); await saveProjects(); renderProjectDetail(); }
 async function projDeleteRaid(id){ const p=projActive(); if(!p) return; p.raid=(p.raid||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
@@ -14033,7 +14045,7 @@ function openNewProjectModal(){
   m.onclick=e=>{ if(e.target===m) m.remove(); };
   setTimeout(()=>document.getElementById('newProjGoal')?.focus(),50);
 }
-async function projCreateBlank(){ const p={id:projUid('proj_'),name:'Untitled project',objective:'',owner:'You',category:'Other',stage:'not-started',rag:'auto',priority:'normal',startDate:projDateIn(0),targetDate:projDateIn(8),milestones:[],raid:[],raci:[],log:[],attachments:[]}; projectsData=projectsData||[]; projectsData.unshift(p); await saveProjects(); document.getElementById('newProjModal')?.remove(); openProject(p.id); }
+async function projCreateBlank(){ const p={id:projUid('proj_'),name:'Untitled project',objective:'',owner:'You',category:'Other',stage:'not-started',rag:'auto',priority:'normal',startDate:projDateIn(0),targetDate:projDateIn(8),milestones:[],raid:[],raci:[],log:[],attachments:[],createdAt:new Date().toISOString()}; projectsData=projectsData||[]; projectsData.unshift(p); await saveProjects(); document.getElementById('newProjModal')?.remove(); openProject(p.id); }
 async function projCreateFromTemplate(key){ const p=projFromTemplate(key); if(!p) return; projectsData=projectsData||[]; projectsData.unshift(p); await saveProjects(); document.getElementById('newProjModal')?.remove(); openProject(p.id); }
 async function projAiGenerate(){
   const goal=document.getElementById('newProjGoal')?.value?.trim(); if(!goal){ document.getElementById('newProjGoal')?.focus(); return; }
@@ -14050,7 +14062,7 @@ async function projAiGenerate(){
       milestones:(plan.milestones||[]).map(m=>({id:projUid('m'),title:m.title||'Milestone',owner:m.owner||'',dueDate:m.dueDate||'',status:'not-started',description:m.description||'',subtasks:(m.subtasks||[]).filter(x=>typeof x==='string').map(t=>({id:projUid('s'),text:t,done:false}))})),
       raid:(plan.raid||[]).map(r=>({id:projUid('r'),type:['risk','issue','assumption','dependency'].includes((r.type||'').toLowerCase())?r.type.toLowerCase():'risk',text:r.text||'',mitigation:r.mitigation||''})),
       raci:(plan.raci||[]).map(c=>({id:projUid('c'),name:c.name||'',raci:['R','A','C','I'].includes((c.raci||'').toUpperCase())?c.raci.toUpperCase():'I'})),
-      log:[], attachments:[] };
+      log:[], attachments:[], createdAt:new Date().toISOString() };
     projectsData=projectsData||[]; projectsData.unshift(p); await saveProjects(); document.getElementById('newProjModal')?.remove(); openProject(p.id);
   }catch(e){ if(st) st.textContent='Sorry, could not generate a plan — try rephrasing, or use a template.'; if(btn){ btn.disabled=false; btn.textContent='✦ Generate plan'; } }
 }
@@ -14143,38 +14155,36 @@ function projMilestonesBlock(p, sel, card){
   const cards = ms.map(m=>{
     const ov = projMilestoneOverdue(m); const stt = MS_STATUS[projMsStatus(m)]; const prog = projMsProgress(m);
     const expanded = !!_projExpandedMs[m.id]; const subs = m.subtasks||[];
-    const statusOpts = Object.entries(MS_STATUS).map(([k,v])=>`<option value="${k}" ${projMsStatus(m)===k?'selected':''}>${v.label}</option>`).join('');
     return `<div style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;background:var(--surface);">
-      <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;" onclick="projToggleExpand('${m.id}')">
-        <span style="width:9px;height:9px;border-radius:50%;background:${stt.color};flex-shrink:0;"></span>
-        <div style="flex:1;min-width:0;">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;">
+        <input type="checkbox" ${projMsDone(m)?'checked':''} title="Mark complete" onclick="event.stopPropagation()" onchange="projToggleMilestone('${m.id}')" style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
+        <div style="flex:1;min-width:0;cursor:pointer;" onclick="projToggleExpand('${m.id}')">
           <div style="font-size:13px;font-weight:500;color:${projMsDone(m)?'var(--ink3)':'var(--ink)'};${projMsDone(m)?'text-decoration:line-through;':''}">${escapeHtml(m.title)}</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(stt.label)}${m.owner?' · '+escapeHtml(m.owner):''} · due ${projFmtDate(m.dueDate)}${subs.length?` · ${subs.filter(s=>s.done).length}/${subs.length} tasks`:''}${ov?' · <span style="color:#EF4444;font-weight:600;">OVERDUE</span>':''}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(stt.label)}${subs.length?` · ${subs.filter(s=>s.done).length}/${subs.length} tasks`:''}${ov?' · <span style="color:#EF4444;font-weight:600;">OVERDUE</span>':''}</div>
         </div>
-        ${subs.length?`<div style="width:60px;flex-shrink:0;"><div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${prog}%;background:${stt.color};"></div></div></div>`:''}
-        <span style="color:var(--ink3);font-size:10px;flex-shrink:0;display:inline-block;transform:rotate(${expanded?'90':'0'}deg);">▶</span>
+        <span onclick="event.stopPropagation();projEditMsOwner('${m.id}')" title="Owner — click to edit" style="font-size:11px;color:${m.owner?'var(--ink2)':'var(--ink3)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;max-width:120px;overflow:hidden;white-space:nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(m.owner||'Owner')}</span>
+        <input type="date" value="${m.dueDate||''}" title="Due date" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;flex-shrink:0;${ov?'color:#EF4444;border-color:#FECACA;':''}">
+        ${subs.length?`<div style="width:54px;flex-shrink:0;"><div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${prog}%;background:${stt.color};"></div></div></div>`:''}
+        <span onclick="projToggleExpand('${m.id}')" style="color:var(--ink3);font-size:10px;flex-shrink:0;cursor:pointer;display:inline-block;transform:rotate(${expanded?'90':'0'}deg);">▶</span>
       </div>
-      ${expanded?`<div style="padding:2px 13px 13px 32px;border-top:1px solid var(--border);">
+      ${expanded?`<div style="padding:2px 13px 13px 39px;border-top:1px solid var(--border);">
         <div style="margin-top:10px;font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description…</span>'}</div>
-        ${m.guidance?`<div style="margin-top:10px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--ink);line-height:1.6;position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.03em;">✦ How to approach this</div><button onclick="projClearGuidance('${m.id}')" title="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;line-height:1;">✕</button></div>${escapeHtml(m.guidance).replace(/\n/g,'<br>')}</div>`:''}
-        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;">
-          <label style="font-size:11px;color:var(--ink3);">Status <select style="${sel}" onclick="event.stopPropagation()" onchange="projSetMsStatus('${m.id}',this.value)">${statusOpts}</select></label>
-          <label style="font-size:11px;color:var(--ink3);">Owner <input value="${jsAttr(m.owner||'')}" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','owner',this.value)" style="${sel}width:110px;cursor:text;"></label>
-          <label style="font-size:11px;color:var(--ink3);">Due <input type="date" value="${m.dueDate||''}" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;"></label>
-        </div>
         <div style="margin-top:12px;">
           <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Tasks</div>
-          ${subs.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-            <input type="checkbox" ${s.done?'checked':''} onchange="projToggleSubtask('${m.id}','${s.id}')" style="width:14px;height:14px;cursor:pointer;flex-shrink:0;">
-            <span style="flex:1;font-size:12px;color:${s.done?'var(--ink3)':'var(--ink)'};${s.done?'text-decoration:line-through;':''}">${escapeHtml(s.text)}</span>
-            <button onclick="projDeleteSubtask('${m.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;">✕</button>
+          ${subs.map(s=>`<div style="padding:3px 0;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <input type="checkbox" ${s.done?'checked':''} onchange="projToggleSubtask('${m.id}','${s.id}')" style="width:14px;height:14px;cursor:pointer;flex-shrink:0;">
+              <span style="flex:1;font-size:12px;color:${s.done?'var(--ink3)':'var(--ink)'};${s.done?'text-decoration:line-through;':''}cursor:text;" onclick="projEditSubtask('${m.id}','${s.id}')" title="Click to edit">${escapeHtml(s.text)}</span>
+              <button id="sh-${s.id}" onclick="projAiSubtaskHelp('${m.id}','${s.id}')" title="How do I do this?" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:11px;font-family:inherit;flex-shrink:0;">✦ help</button>
+              <button onclick="projDeleteSubtask('${m.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
+            </div>
+            ${s.guidance?`<div style="margin:6px 0 6px 22px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:9px 11px;font-size:12px;color:var(--ink);line-height:1.6;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:4px;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.03em;">✦ How to approach this</div><button onclick="projClearSubtaskGuidance('${m.id}','${s.id}')" title="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;line-height:1;">✕</button></div>${escapeHtml(s.guidance).replace(/\n/g,'<br>')}</div>`:''}
           </div>`).join('')}
           <button onclick="projAddSubtask('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Add task</button>
         </div>
         <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">✦ Break into tasks</button>
-          <button class="btn btn-secondary btn-sm" id="hlp-${m.id}" onclick="projAiHelp('${m.id}')">✦ Need help?</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto;" onclick="projDeleteMilestone('${m.id}')">Delete</button>
+          <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">${subs.length?'✦ Suggest more tasks':'✦ Break into tasks'}</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto;" onclick="projDeleteMilestone('${m.id}')">Delete milestone</button>
         </div>
       </div>`:''}
     </div>`;
@@ -14197,7 +14207,7 @@ function projRenderTimeline(p){
   let grid=''; const gd = new Date(min); gd.setDate(1);
   while (gd.getTime() < max) { const lp = pct(gd.getTime()); if (lp>=0&&lp<=100) grid += `<div style="position:absolute;left:${xc(lp)};top:${HEAD}px;height:${rowsH}px;width:1px;background:var(--border);opacity:0.55;"></div><div style="position:absolute;left:${xc(lp)};top:2px;font-size:9px;color:var(--ink3);transform:translateX(4px);white-space:nowrap;">${gd.toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</div>`; gd.setMonth(gd.getMonth()+1); }
   const todayPct = pct(projToday().getTime());
-  const todayLine = (todayPct>=0&&todayPct<=100) ? `<div style="position:absolute;left:${xc(todayPct)};top:${HEAD-2}px;height:${rowsH+2}px;width:2px;background:#EF4444;opacity:0.5;z-index:2;"></div><div style="position:absolute;left:${xc(todayPct)};top:${HEAD-13}px;transform:translateX(-50%);font-size:8px;font-weight:700;color:#EF4444;white-space:nowrap;">TODAY</div>` : '';
+  const todayLine = (todayPct>=0&&todayPct<=100) ? `<div title="Today" style="position:absolute;left:${xc(todayPct)};top:${HEAD}px;height:${rowsH}px;width:2px;background:#EF4444;opacity:0.5;z-index:2;"></div>` : '';
   const bars = ms.map((m,i)=>{
     const due = new Date(m.dueDate).getTime();
     const startT = m.startDate ? new Date(m.startDate).getTime() : (i>0 ? new Date(ms[i-1].dueDate).getTime() : min+pad*0.5);
@@ -14235,18 +14245,20 @@ async function projAiBreakTasks(id){
   }catch(e){}
   renderProjectDetail();
 }
-async function projAiHelp(id){
-  const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return;
-  const btn=document.getElementById('hlp-'+id); if(btn){ btn.disabled=true; btn.textContent='⟳ Thinking…'; }
+async function projEditMsOwner(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Owner for this milestone', m.owner||''); if(v===null) return; m.owner=v.trim(); await saveProjects(); renderProjectDetail(); }
+async function projEditSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return; const v=prompt('Edit task', s.text||''); if(v===null) return; if(!v.trim()){ m.subtasks=m.subtasks.filter(x=>x.id!==sid); } else { s.text=v.trim(); } await saveProjects(); renderProjectDetail(); }
+async function projAiSubtaskHelp(mid,sid){
+  const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return;
+  const btn=document.getElementById('sh-'+sid); if(btn){ btn.disabled=true; btn.textContent='⟳…'; }
   try{
     const token=await getAuthToken();
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`I'm an HR professional working on the project "${p.name}" (${p.objective||'no objective set'}). Give me practical guidance for this milestone: "${m.title}".\nCover: how to approach it, the key steps, what to watch out for, and any UK HR/legal considerations. Keep it concise and skimmable — short labelled points, plain text, no markdown symbols, no em dashes.`}],system:'You are a senior UK HR advisor giving a colleague practical, actionable guidance. Plain text only.'})});
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`I'm an HR professional. Project: "${p.name}" (${p.objective||'no objective'}). Milestone: "${m.title}". Give me practical guidance on how to do this specific task: "${s.text}".\nCover how to approach it, the key steps, what to watch out for, and any UK HR/legal considerations. Keep it concise and skimmable, plain text, no markdown symbols, no em dashes.`}],system:'You are a senior UK HR advisor giving a colleague practical, actionable guidance. Plain text only.'})});
     const d=await res.json(); const txt=(d.content?.[0]?.text||'').trim();
-    if(txt){ m.guidance=txt; _projExpandedMs[id]=true; await saveProjects(); }
+    if(txt){ s.guidance=txt; _projExpandedMs[mid]=true; await saveProjects(); }
   }catch(e){}
   renderProjectDetail();
 }
-async function projClearGuidance(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(m){ delete m.guidance; await saveProjects(); renderProjectDetail(); } }
+async function projClearSubtaskGuidance(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(s){ delete s.guidance; await saveProjects(); renderProjectDetail(); } }
 function projDismissAttention(){ _projHideAttention = true; renderProjects(); }
 
 
