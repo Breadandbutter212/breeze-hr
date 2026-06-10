@@ -5615,7 +5615,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='projects'){projectsData=null;projectActiveId=null;loadProjects().then(renderProjects);}
+  if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;loadProjects().then(renderProjects);}
   if(v==='settings') { try { renderSettings(); } catch(e) { console.error('[Settings]',e); const b=document.getElementById('settingsBody'); if(b) b.innerHTML='<div style="padding:20px;color:red;">'+String(e)+'</div>'; } }
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
@@ -13778,7 +13778,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'list';
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false;
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#8A94A6' },
@@ -13919,8 +13919,8 @@ function renderProjects(){
       ${tile(dueThisMonth,'Due this month','#6B4FBB')}
       ${tile(overdueItems.length,'Overdue tasks', overdueItems.length?'#EF4444':'#30D158')}
     </div>
-    ${overdueItems.length ? `<div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;">
-      <div style="font-size:12px;font-weight:600;color:#B91C1C;margin-bottom:6px;">⚠ Needs attention</div>
+    ${(overdueItems.length && !_projHideAttention) ? `<div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:600;color:#B91C1C;">⚠ Needs attention</div><button onclick="projDismissAttention()" title="Dismiss" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:16px;line-height:1;padding:0 2px;">✕</button></div>
       ${overdueItems.slice(0,6).map(({p,m})=>`<div style="font-size:12px;color:#7F1D1D;padding:2px 0;cursor:pointer;" onclick="openProject('${p.id}')">• <strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} — was due ${projFmtDate(m.dueDate)}</div>`).join('')}
     </div>` : ''}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -13988,7 +13988,6 @@ function renderProjectDetail(){
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;align-items:center;">
         <label style="font-size:11px;color:var(--ink3);">Stage <select style="${sel}" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
-        <label style="font-size:11px;color:var(--ink3);">Health <select style="${sel}" onchange="projSet('rag',this.value)">${ragOpts}</select></label>
         <label style="font-size:11px;color:var(--ink3);">Category <select style="${sel}" onchange="projSet('category',this.value)">${catOpts}</select></label>
         <label style="font-size:11px;color:var(--ink3);">Priority <select style="${sel}" onchange="projSet('priority',this.value)">${priOpts}</select></label>
         <label style="font-size:11px;color:var(--ink3);">Owner <input value="${jsAttr(p.owner||'')}" onchange="projSet('owner',this.value)" style="${sel}width:120px;cursor:text;"></label>
@@ -13998,41 +13997,7 @@ function renderProjectDetail(){
       <div style="margin-top:14px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${PROJ_RAG[rag]};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(m=>m.done).length}/${(p.milestones||[]).length} milestones</div></div>
     </div>
 
-    ${projMilestonesBlock(p, sel, card)}
-
-    <div style="display:flex;gap:14px;flex-wrap:wrap;">
-      <div style="${card}flex:1;min-width:300px;margin-bottom:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:13px;font-weight:600;color:var(--ink);">RAID log</div><button class="btn btn-secondary btn-sm" onclick="projAddRaid()">+ Add</button></div>
-        ${(p.raid||[]).length ? (p.raid||[]).map(r=>`<div style="display:flex;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px;">
-          <span style="flex-shrink:0;font-size:9px;font-weight:700;text-transform:uppercase;color:${raidColor[r.type]||'#888'};background:${(raidColor[r.type]||'#888')}1a;padding:2px 6px;border-radius:4px;height:fit-content;">${escapeHtml(r.type)}</span>
-          <div style="flex:1;"><div style="color:var(--ink);">${escapeHtml(r.text)}</div>${r.mitigation?`<div style="color:var(--ink3);margin-top:2px;">→ ${escapeHtml(r.mitigation)}</div>`:''}</div>
-          <button onclick="projDeleteRaid('${r.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;flex-shrink:0;">✕</button>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No risks/issues logged.</div>'}
-      </div>
-      <div style="${card}flex:1;min-width:260px;margin-bottom:0;">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:13px;font-weight:600;color:var(--ink);">RACI</div><button class="btn btn-secondary btn-sm" onclick="projAddRaci()">+ Add</button></div>
-        ${(p.raci||[]).length ? (p.raci||[]).map(c=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-top:1px solid var(--border);font-size:12px;">
-          <span style="flex-shrink:0;width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-weight:700;font-size:11px;display:flex;align-items:center;justify-content:center;">${escapeHtml((c.raci||'?')[0])}</span>
-          <span style="flex:1;color:var(--ink);">${escapeHtml(c.name)}</span>
-          <button onclick="projDeleteRaci('${c.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;">✕</button>
-        </div>`).join('') : '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No stakeholders added.</div>'}
-        <div style="font-size:10px;color:var(--ink3);margin-top:8px;">R Responsible · A Accountable · C Consulted · I Informed</div>
-      </div>
-    </div>
-
-    <div style="${card}margin-top:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:13px;font-weight:600;color:var(--ink);">Attachments & emails</div><div style="display:flex;gap:6px;"><button class="btn btn-secondary btn-sm" onclick="projAttachEmail()">✉ Attach email</button><button class="btn btn-secondary btn-sm" onclick="projAddLink()">+ Link / doc</button></div></div>
-      ${(p.attachments||[]).length ? (p.attachments||[]).map((a,i)=>`<div style="display:flex;align-items:center;gap:8px;padding:7px 0;border-top:1px solid var(--border);font-size:12px;">
-        <span style="flex-shrink:0;">${a.type==='email'?'✉':'🔗'}</span>
-        <div style="flex:1;min-width:0;">${a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`}${a.meta?`<div style="color:var(--ink3);">${escapeHtml(a.meta)}</div>`:''}</div>
-        <button onclick="projRemoveAttachment(${i})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;">✕</button>
-      </div>`).join('') : '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No attachments. Attach key emails or link documents.</div>'}
-    </div>
-
-    <div style="${card}margin-top:14px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:13px;font-weight:600;color:var(--ink);">Update log</div><button class="btn btn-secondary btn-sm" onclick="projAddLog()">+ Add update</button></div>
-      ${(p.log||[]).length ? (p.log||[]).slice().reverse().map(l=>`<div style="padding:7px 0;border-top:1px solid var(--border);font-size:12px;"><span style="color:var(--ink3);">${projFmtDate(l.date)}</span> — <span style="color:var(--ink);">${escapeHtml(l.note)}</span></div>`).join('') : '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No updates yet.</div>'}
-    </div>`;
+    ${projMilestonesBlock(p, sel, card)}`;
 }
 
 // ── Mutations ──
@@ -14191,6 +14156,7 @@ function projMilestonesBlock(p, sel, card){
       </div>
       ${expanded?`<div style="padding:2px 13px 13px 32px;border-top:1px solid var(--border);">
         <div style="margin-top:10px;font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description…</span>'}</div>
+        ${m.guidance?`<div style="margin-top:10px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:10px 12px;font-size:12px;color:var(--ink);line-height:1.6;position:relative;"><div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:5px;"><div style="font-size:10px;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:0.03em;">✦ How to approach this</div><button onclick="projClearGuidance('${m.id}')" title="Dismiss" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;line-height:1;">✕</button></div>${escapeHtml(m.guidance).replace(/\n/g,'<br>')}</div>`:''}
         <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;">
           <label style="font-size:11px;color:var(--ink3);">Status <select style="${sel}" onclick="event.stopPropagation()" onchange="projSetMsStatus('${m.id}',this.value)">${statusOpts}</select></label>
           <label style="font-size:11px;color:var(--ink3);">Owner <input value="${jsAttr(m.owner||'')}" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','owner',this.value)" style="${sel}width:110px;cursor:text;"></label>
@@ -14207,7 +14173,7 @@ function projMilestonesBlock(p, sel, card){
         </div>
         <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;">
           <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">✦ Break into tasks</button>
-          <button class="btn btn-secondary btn-sm" id="exp-${m.id}" onclick="projAiExpandDetail('${m.id}')">✦ Add detail</button>
+          <button class="btn btn-secondary btn-sm" id="hlp-${m.id}" onclick="projAiHelp('${m.id}')">✦ Need help?</button>
           <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto;" onclick="projDeleteMilestone('${m.id}')">Delete</button>
         </div>
       </div>`:''}
@@ -14218,32 +14184,35 @@ function projMilestonesBlock(p, sel, card){
 
 function projRenderTimeline(p){
   const ms = (p.milestones||[]).filter(m=>m.dueDate).slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
-  if (!ms.length) return '<div style="font-size:12px;color:var(--ink3);padding:10px 0;">Add due dates to milestones to see the timeline.</div>';
+  if (!ms.length) return '<div style="font-size:12px;color:var(--ink3);padding:14px 0;">Add due dates to milestones to see the timeline.</div>';
+  const LBL = 168, ROW = 32, HEAD = 22;
   const dues = ms.map(m=>new Date(m.dueDate).getTime());
   let min = Math.min(...dues, p.startDate?new Date(p.startDate).getTime():dues[0]);
   let max = Math.max(...dues, p.targetDate?new Date(p.targetDate).getTime():dues[dues.length-1]);
-  const pad = (max-min)*0.05 || 86400000*7; min -= pad; max += pad; const span = max-min || 1;
+  const pad = (max-min)*0.06 || 86400000*10; min -= pad; max += pad; const span = max-min || 1;
   const pct = t => (t-min)/span*100;
-  const todayPct = pct(projToday().getTime());
+  const xc = v => `calc(${LBL}px + (100% - ${LBL}px) * ${v/100})`;
+  const wc = w => `calc((100% - ${LBL}px) * ${w/100})`;
+  const rowsH = ms.length*ROW;
   let grid=''; const gd = new Date(min); gd.setDate(1);
-  while (gd.getTime() < max) { const lp = pct(gd.getTime()); if (lp>=0&&lp<=100) grid += `<div style="position:absolute;left:${lp}%;top:0;bottom:0;width:1px;background:var(--border);"></div><div style="position:absolute;left:${lp}%;top:0;font-size:9px;color:var(--ink3);transform:translateX(3px);">${gd.toLocaleDateString('en-GB',{month:'short'})}</div>`; gd.setMonth(gd.getMonth()+1); }
-  const rows = ms.map((m,i)=>{
+  while (gd.getTime() < max) { const lp = pct(gd.getTime()); if (lp>=0&&lp<=100) grid += `<div style="position:absolute;left:${xc(lp)};top:${HEAD}px;height:${rowsH}px;width:1px;background:var(--border);opacity:0.55;"></div><div style="position:absolute;left:${xc(lp)};top:2px;font-size:9px;color:var(--ink3);transform:translateX(4px);white-space:nowrap;">${gd.toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</div>`; gd.setMonth(gd.getMonth()+1); }
+  const todayPct = pct(projToday().getTime());
+  const todayLine = (todayPct>=0&&todayPct<=100) ? `<div style="position:absolute;left:${xc(todayPct)};top:${HEAD-2}px;height:${rowsH+2}px;width:2px;background:#EF4444;opacity:0.5;z-index:2;"></div><div style="position:absolute;left:${xc(todayPct)};top:${HEAD-13}px;transform:translateX(-50%);font-size:8px;font-weight:700;color:#EF4444;white-space:nowrap;">TODAY</div>` : '';
+  const bars = ms.map((m,i)=>{
     const due = new Date(m.dueDate).getTime();
-    const startT = m.startDate ? new Date(m.startDate).getTime() : (i>0 ? new Date(ms[i-1].dueDate).getTime() : min+pad);
-    const a = Math.min(startT,due); let left = Math.max(0,pct(a)); let width = Math.max(2, pct(due)-pct(a)); if (left+width>100) width = 100-left;
-    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m);
-    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
-      <div style="width:150px;flex-shrink:0;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${jsAttr(m.title)}">${escapeHtml(m.title)}</div>
-      <div style="flex:1;position:relative;height:20px;">
-        <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} — due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${left}%;width:${width}%;top:2px;height:16px;background:${ov?'#EF4444':stt.color};border-radius:8px;cursor:pointer;min-width:8px;opacity:0.92;"></div>
-      </div>
+    const startT = m.startDate ? new Date(m.startDate).getTime() : (i>0 ? new Date(ms[i-1].dueDate).getTime() : min+pad*0.5);
+    const a = Math.min(startT,due); let l = Math.max(0,pct(a)); let w = Math.max(2.5, pct(due)-pct(a)); if (l+w>100) w = 100-l;
+    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m); const col = ov?'#EF4444':stt.color; const done = projMsDone(m);
+    const top = HEAD + i*ROW;
+    return `<div style="position:absolute;left:0;top:${top}px;height:${ROW}px;width:100%;${i%2?'background:var(--surface2);':''}border-radius:6px;">
+      <div title="${jsAttr(m.title)}" style="position:absolute;left:10px;top:9px;width:${LBL-20}px;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.title)}</div>
+      <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} — ${escapeHtml(stt.label)}, due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(l)};width:${wc(w)};top:9px;height:14px;background:${col};border-radius:7px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.12);opacity:${done?0.5:0.95};"></div>
+      <div style="position:absolute;left:${xc(pct(due))};top:11px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid ${col};transform:translateX(-50%);box-shadow:0 1px 2px rgba(0,0,0,0.15);cursor:pointer;"></div>
     </div>`;
   }).join('');
-  return `<div style="overflow-x:auto;"><div style="position:relative;min-width:520px;">
-    ${todayPct>=0&&todayPct<=100?`<div style="position:absolute;left:calc((100% - 160px) * ${todayPct/100} + 160px);top:0;bottom:0;width:2px;background:#EF4444;opacity:0.45;z-index:1;"></div>`:''}
-    <div style="position:relative;margin-left:160px;height:14px;margin-bottom:8px;">${grid}</div>
-    ${rows}
-  </div><div style="font-size:10px;color:var(--ink3);margin-top:8px;">Bars run to each milestone's due date · red line = today · click a bar to open it</div></div>`;
+  const legend = Object.entries(MS_STATUS).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:9px;height:9px;border-radius:3px;background:${v.color};"></span>${v.label}</span>`).join('');
+  return `<div style="overflow-x:auto;"><div style="position:relative;min-width:580px;height:${HEAD+rowsH+4}px;">${grid}${todayLine}${bars}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">${legend}<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:11px;height:2px;background:#EF4444;"></span>Today</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;">Click any bar to open the milestone</span></div></div>`;
 }
 
 // ── Milestone + subtask mutations ──
@@ -14266,17 +14235,19 @@ async function projAiBreakTasks(id){
   }catch(e){}
   renderProjectDetail();
 }
-async function projAiExpandDetail(id){
+async function projAiHelp(id){
   const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return;
-  const btn=document.getElementById('exp-'+id); if(btn){ btn.disabled=true; btn.textContent='⟳ Thinking…'; }
+  const btn=document.getElementById('hlp-'+id); if(btn){ btn.disabled=true; btn.textContent='⟳ Thinking…'; }
   try{
     const token=await getAuthToken();
-    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`HR project: "${p.name}". Objective: ${p.objective||'n/a'}. Write a short, practical description (2-3 sentences) of what this milestone involves and what 'done' looks like: "${m.title}". Plain text only.`}],system:'You are an experienced UK HR project manager. Reply with plain text only, no markdown.'})});
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`I'm an HR professional working on the project "${p.name}" (${p.objective||'no objective set'}). Give me practical guidance for this milestone: "${m.title}".\nCover: how to approach it, the key steps, what to watch out for, and any UK HR/legal considerations. Keep it concise and skimmable — short labelled points, plain text, no markdown symbols, no em dashes.`}],system:'You are a senior UK HR advisor giving a colleague practical, actionable guidance. Plain text only.'})});
     const d=await res.json(); const txt=(d.content?.[0]?.text||'').trim();
-    if(txt){ m.description=txt; _projExpandedMs[id]=true; await saveProjects(); }
+    if(txt){ m.guidance=txt; _projExpandedMs[id]=true; await saveProjects(); }
   }catch(e){}
   renderProjectDetail();
 }
+async function projClearGuidance(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(m){ delete m.guidance; await saveProjects(); renderProjectDetail(); } }
+function projDismissAttention(){ _projHideAttention = true; renderProjects(); }
 
 
 
