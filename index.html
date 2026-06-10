@@ -13778,7 +13778,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [];
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'list';
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#8A94A6' },
@@ -13790,14 +13790,18 @@ const PROJ_STAGES = {
 const PROJ_RAG = { green: '#30D158', amber: '#F59E0B', red: '#EF4444' };
 const PROJ_CATEGORIES = ['Comp & reward','Employee relations','Policy','Wellbeing','DEI','Recruitment','Compliance','Systems','Other'];
 const PROJ_PRIORITIES = ['low','normal','high','urgent'];
+const MS_STATUS = { 'not-started':{label:'Not started',color:'#8A94A6'}, 'in-progress':{label:'In progress',color:'#0066CC'}, 'blocked':{label:'Blocked',color:'#EF4444'}, 'done':{label:'Done',color:'#30D158'} };
+function projMsStatus(m){ return m.status || (m.done ? 'done' : 'not-started'); }
+function projMsDone(m){ return projMsStatus(m) === 'done'; }
+function projMsProgress(m){ const s = m.subtasks||[]; if (s.length) return Math.round(s.filter(x=>x.done).length / s.length * 100); return projMsDone(m) ? 100 : (projMsStatus(m)==='in-progress' ? 40 : 0); }
 
 function projUid(p){ return p + Math.random().toString(36).slice(2,9); }
 function projToday(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
 function projDateIn(weeks){ const d = new Date(); d.setDate(d.getDate() + Math.round(weeks*7)); return d.toISOString().slice(0,10); }
 function projFmtDate(iso){ if(!iso) return '—'; const d = new Date(iso); return isNaN(d) ? '—' : d.toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}); }
-function projMilestoneOverdue(m){ return m && m.dueDate && !m.done && new Date(m.dueDate) < projToday(); }
+function projMilestoneOverdue(m){ return m && m.dueDate && !projMsDone(m) && new Date(m.dueDate) < projToday(); }
 function projOverdueList(p){ return (p.milestones||[]).filter(projMilestoneOverdue); }
-function projPct(p){ const ms = p.milestones||[]; if(!ms.length) return p.stage==='complete'?100:0; return Math.round(ms.filter(m=>m.done).length / ms.length * 100); }
+function projPct(p){ const ms = p.milestones||[]; if(!ms.length) return p.stage==='complete'?100:0; return Math.round(ms.reduce((s,m)=>s+projMsProgress(m),0) / ms.length); }
 function projComputeRag(p){
   if (p.rag && p.rag !== 'auto') return p.rag;
   if (p.stage === 'complete') return 'green';
@@ -13830,7 +13834,7 @@ function projDemoData(){
         { id:projUid('m'), title:'Requirements & scoping', owner:'You', dueDate:projDateIn(-4), done:true },
         { id:projUid('m'), title:'Vendor shortlist & demos', owner:'You', dueDate:projDateIn(-2), done:true },
         { id:projUid('m'), title:'Business case sign-off', owner:'HR Director', dueDate:projDateIn(-1), done:true },
-        { id:projUid('m'), title:'Data audit & cleansing', owner:'You', dueDate:projDateIn(-0.5), done:false },
+        { id:projUid('m'), title:'Data audit & cleansing', owner:'You', dueDate:projDateIn(-0.5), status:'in-progress', description:'Review the quality of employee data in the legacy system and clean it before migration — duplicates, missing fields and inconsistent formats. Done = a validated dataset signed off by each manager.', subtasks:[ {id:projUid('s'),text:'Export full dataset from legacy system',done:true}, {id:projUid('s'),text:'Identify duplicate and incomplete records',done:true}, {id:projUid('s'),text:'Standardise job titles and departments',done:false}, {id:projUid('s'),text:'Sign off cleansed data with each manager',done:false} ] },
         { id:projUid('m'), title:'DPA / security review (DPIA)', owner:'DPO', dueDate:projDateIn(2), done:false },
         { id:projUid('m'), title:'System configuration', owner:'Vendor', dueDate:projDateIn(5), done:false },
         { id:projUid('m'), title:'Data migration & validation', owner:'You', dueDate:projDateIn(8), done:false },
@@ -13974,12 +13978,13 @@ function renderProjectDetail(){
     </div>
 
     <div style="${card}">
-      <div style="display:flex;align-items:flex-start;gap:12px;">
-        <span style="width:12px;height:12px;border-radius:50%;background:${PROJ_RAG[rag]};margin-top:6px;flex-shrink:0;"></span>
-        <div style="flex:1;">
+      <div style="display:flex;align-items:flex-start;gap:14px;">
+        <span style="width:12px;height:12px;border-radius:50%;background:${PROJ_RAG[rag]};margin-top:7px;flex-shrink:0;"></span>
+        <div style="flex:1;min-width:0;">
           <div style="font-size:18px;font-weight:700;color:var(--ink);cursor:pointer;" onclick="projEditField('name')" title="Click to edit">${escapeHtml(p.name)}</div>
           <div style="font-size:13px;color:var(--ink2);margin-top:4px;cursor:pointer;" onclick="projEditField('objective')" title="Click to edit">${escapeHtml(p.objective||'Add an objective…')}</div>
         </div>
+        <div style="width:62px;height:62px;border-radius:50%;background:conic-gradient(${PROJ_RAG[rag]} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);">${pct}%</div></div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;align-items:center;">
         <label style="font-size:11px;color:var(--ink3);">Stage <select style="${sel}" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
@@ -13993,19 +13998,7 @@ function renderProjectDetail(){
       <div style="margin-top:14px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${PROJ_RAG[rag]};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(m=>m.done).length}/${(p.milestones||[]).length} milestones</div></div>
     </div>
 
-    <div style="${card}">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><div style="font-size:13px;font-weight:600;color:var(--ink);">Milestones</div><button class="btn btn-secondary btn-sm" onclick="projAddMilestone()">+ Add</button></div>
-      ${(p.milestones||[]).length ? (p.milestones||[]).map(m=>{
-        const ov = projMilestoneOverdue(m);
-        return `<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-top:1px solid var(--border);">
-          <input type="checkbox" ${m.done?'checked':''} onchange="projToggleMilestone('${m.id}')" style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
-          <div style="flex:1;min-width:0;"><div style="font-size:13px;color:${m.done?'var(--ink3)':'var(--ink)'};${m.done?'text-decoration:line-through;':''}cursor:pointer;" onclick="projEditMilestone('${m.id}')">${escapeHtml(m.title)}</div>${m.owner?`<div style="font-size:11px;color:var(--ink3);">${escapeHtml(m.owner)}</div>`:''}</div>
-          <input type="date" value="${m.dueDate||''}" onchange="projSetMilestoneDate('${m.id}',this.value)" style="${sel}cursor:text;${ov?'color:#EF4444;border-color:#FECACA;':''}">
-          ${ov?'<span style="font-size:10px;color:#EF4444;font-weight:600;flex-shrink:0;">OVERDUE</span>':''}
-          <button onclick="projDeleteMilestone('${m.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:15px;flex-shrink:0;">✕</button>
-        </div>`;
-      }).join('') : '<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No milestones yet.</div>'}
-    </div>
+    ${projMilestonesBlock(p, sel, card)}
 
     <div style="display:flex;gap:14px;flex-wrap:wrap;">
       <div style="${card}flex:1;min-width:300px;margin-bottom:0;">
@@ -14045,10 +14038,8 @@ function renderProjectDetail(){
 // ── Mutations ──
 async function projSet(field, value){ const p=projActive(); if(!p) return; p[field]=value; await saveProjects(); renderProjectDetail(); }
 async function projEditField(field){ const p=projActive(); if(!p) return; const v=prompt(field==='name'?'Project name':'Objective', p[field]||''); if(v===null) return; p[field]=v.trim(); await saveProjects(); renderProjectDetail(); }
-async function projAddMilestone(){ const p=projActive(); if(!p) return; const t=prompt('Milestone title'); if(!t) return; p.milestones=p.milestones||[]; p.milestones.push({id:projUid('m'),title:t.trim(),owner:'',dueDate:projDateIn(2),done:false}); await saveProjects(); renderProjectDetail(); }
-async function projToggleMilestone(id){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(m){ m.done=!m.done; await saveProjects(); renderProjectDetail(); } }
-async function projSetMilestoneDate(id,v){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(m){ m.dueDate=v; await saveProjects(); renderProjectDetail(); } }
-async function projEditMilestone(id){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=prompt('Milestone title', m.title); if(t===null) return; m.title=t.trim(); const o=prompt('Owner (optional)', m.owner||''); if(o!==null) m.owner=o.trim(); await saveProjects(); renderProjectDetail(); }
+async function projAddMilestone(){ const p=projActive(); if(!p) return; const t=prompt('Milestone title'); if(!t) return; p.milestones=p.milestones||[]; const id=projUid('m'); p.milestones.push({id,title:t.trim(),owner:'',dueDate:projDateIn(2),status:'not-started',description:'',subtasks:[]}); _projExpandedMs[id]=true; await saveProjects(); renderProjectDetail(); }
+async function projToggleMilestone(id){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(m){ const nd=!projMsDone(m); m.status=nd?'done':'not-started'; m.done=nd; await saveProjects(); renderProjectDetail(); } }
 async function projDeleteMilestone(id){ const p=projActive(); if(!p) return; p.milestones=(p.milestones||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
 async function projAddRaid(){ const p=projActive(); if(!p) return; const text=prompt('Describe the risk / issue / assumption / dependency'); if(!text) return; let type=(prompt('Type: risk, issue, assumption or dependency','risk')||'risk').toLowerCase().trim(); if(!['risk','issue','assumption','dependency'].includes(type)) type='risk'; const mit=prompt('Mitigation / action (optional)','')||''; p.raid=p.raid||[]; p.raid.push({id:projUid('r'),type,text:text.trim(),mitigation:mit.trim()}); await saveProjects(); renderProjectDetail(); }
 async function projDeleteRaid(id){ const p=projActive(); if(!p) return; p.raid=(p.raid||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
@@ -14085,13 +14076,13 @@ async function projAiGenerate(){
   if(btn){ btn.disabled=true; btn.textContent='⟳ Building plan...'; } if(st) st.textContent='Drafting milestones, risks and stakeholders…';
   try{
     const token=await getAuthToken(); const today=new Date().toISOString().slice(0,10);
-    const prompt=`Create a realistic UK HR project plan for: "${goal}".\nToday is ${today}. Spread sensible due dates across the project as ISO YYYY-MM-DD.\nReturn ONLY this JSON shape: {"name":"short name","objective":"one sentence","category":"one of [${PROJ_CATEGORIES.join(', ')}]","targetDate":"YYYY-MM-DD","milestones":[{"title":"...","dueDate":"YYYY-MM-DD","owner":""}],"raid":[{"type":"risk|assumption|issue|dependency","text":"...","mitigation":"..."}],"raci":[{"name":"role or function","raci":"R|A|C|I"}]}. 6-12 milestones, 3-6 raid items, 4-6 raci rows.`;
+    const prompt=`Create a detailed, realistic UK HR project plan for: "${goal}".\nToday is ${today}. Spread sensible due dates across the project as ISO YYYY-MM-DD.\nReturn ONLY this JSON shape: {"name":"short name","objective":"one sentence","category":"one of [${PROJ_CATEGORIES.join(', ')}]","targetDate":"YYYY-MM-DD","milestones":[{"title":"...","dueDate":"YYYY-MM-DD","owner":"role","description":"1-2 sentences on what this milestone involves and what done looks like","subtasks":["concrete task","concrete task","concrete task"]}],"raid":[{"type":"risk|assumption|issue|dependency","text":"...","mitigation":"..."}],"raci":[{"name":"role or function","raci":"R|A|C|I"}]}. 6-12 milestones each with a description and 3-5 subtasks, 3-6 raid items, 4-6 raci rows.`;
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:prompt}],system:'You are an experienced UK HR project manager. Return ONLY valid JSON, no markdown, no explanation.'})});
     const d=await res.json(); const text=(d.content?.[0]?.text||'').trim(); const match=text.match(/\{[\s\S]*\}/);
     if(!match) throw new Error('Could not parse plan');
     const plan=JSON.parse(match[0]);
     const p={ id:projUid('proj_'), name:plan.name||goal.slice(0,60), objective:plan.objective||'', owner:'You', category:PROJ_CATEGORIES.includes(plan.category)?plan.category:'Other', stage:'not-started', rag:'auto', priority:'normal', startDate:projDateIn(0), targetDate:plan.targetDate||projDateIn(12),
-      milestones:(plan.milestones||[]).map(m=>({id:projUid('m'),title:m.title||'Milestone',owner:m.owner||'',dueDate:m.dueDate||'',done:false})),
+      milestones:(plan.milestones||[]).map(m=>({id:projUid('m'),title:m.title||'Milestone',owner:m.owner||'',dueDate:m.dueDate||'',status:'not-started',description:m.description||'',subtasks:(m.subtasks||[]).filter(x=>typeof x==='string').map(t=>({id:projUid('s'),text:t,done:false}))})),
       raid:(plan.raid||[]).map(r=>({id:projUid('r'),type:['risk','issue','assumption','dependency'].includes((r.type||'').toLowerCase())?r.type.toLowerCase():'risk',text:r.text||'',mitigation:r.mitigation||''})),
       raci:(plan.raci||[]).map(c=>({id:projUid('c'),name:c.name||'',raci:['R','A','C','I'].includes((c.raci||'').toUpperCase())?c.raci.toUpperCase():'I'})),
       log:[], attachments:[] };
@@ -14164,6 +14155,127 @@ async function projAttachEmailChosen(i){
   const from=(e.from||'').replace(/<[^>]+>/,'').replace(/"/g,'').trim();
   p.attachments=p.attachments||[]; p.attachments.push({ type:'email', title:e.subject||'(No subject)', meta:`From ${from}${e.date?' · '+new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}):''}` });
   await saveProjects(); document.getElementById('projEmailPickModal')?.remove(); renderProjectDetail();
+}
+
+// ── Rich milestones (list + timeline) ──
+function projSetView(v){ _projDetailView = v; renderProjectDetail(); }
+function projToggleExpand(id){ _projExpandedMs[id] = !_projExpandedMs[id]; renderProjectDetail(); }
+
+function projMilestonesBlock(p, sel, card){
+  const ms = p.milestones||[];
+  const head = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+    <div style="font-size:13px;font-weight:600;color:var(--ink);">Milestones <span style="color:var(--ink3);font-weight:400;">(${ms.filter(projMsDone).length}/${ms.length})</span></div>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;">
+        <button onclick="projSetView('list')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='list'?'white':'transparent'};color:${_projDetailView==='list'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='list'?'var(--shadow-sm)':'none'};">List</button>
+        <button onclick="projSetView('timeline')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='timeline'?'white':'transparent'};color:${_projDetailView==='timeline'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='timeline'?'var(--shadow-sm)':'none'};">Timeline</button>
+      </div>
+      <button class="btn btn-secondary btn-sm" onclick="projAddMilestone()">+ Add</button>
+    </div>
+  </div>`;
+  if (!ms.length) return `<div style="${card}">${head}<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No milestones yet. Add one, or create the project with AI to generate a full plan.</div></div>`;
+  if (_projDetailView === 'timeline') return `<div style="${card}">${head}${projRenderTimeline(p)}</div>`;
+  const cards = ms.map(m=>{
+    const ov = projMilestoneOverdue(m); const stt = MS_STATUS[projMsStatus(m)]; const prog = projMsProgress(m);
+    const expanded = !!_projExpandedMs[m.id]; const subs = m.subtasks||[];
+    const statusOpts = Object.entries(MS_STATUS).map(([k,v])=>`<option value="${k}" ${projMsStatus(m)===k?'selected':''}>${v.label}</option>`).join('');
+    return `<div style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;background:var(--surface);">
+      <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;cursor:pointer;" onclick="projToggleExpand('${m.id}')">
+        <span style="width:9px;height:9px;border-radius:50%;background:${stt.color};flex-shrink:0;"></span>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:13px;font-weight:500;color:${projMsDone(m)?'var(--ink3)':'var(--ink)'};${projMsDone(m)?'text-decoration:line-through;':''}">${escapeHtml(m.title)}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(stt.label)}${m.owner?' · '+escapeHtml(m.owner):''} · due ${projFmtDate(m.dueDate)}${subs.length?` · ${subs.filter(s=>s.done).length}/${subs.length} tasks`:''}${ov?' · <span style="color:#EF4444;font-weight:600;">OVERDUE</span>':''}</div>
+        </div>
+        ${subs.length?`<div style="width:60px;flex-shrink:0;"><div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${prog}%;background:${stt.color};"></div></div></div>`:''}
+        <span style="color:var(--ink3);font-size:10px;flex-shrink:0;display:inline-block;transform:rotate(${expanded?'90':'0'}deg);">▶</span>
+      </div>
+      ${expanded?`<div style="padding:2px 13px 13px 32px;border-top:1px solid var(--border);">
+        <div style="margin-top:10px;font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description…</span>'}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-top:12px;">
+          <label style="font-size:11px;color:var(--ink3);">Status <select style="${sel}" onclick="event.stopPropagation()" onchange="projSetMsStatus('${m.id}',this.value)">${statusOpts}</select></label>
+          <label style="font-size:11px;color:var(--ink3);">Owner <input value="${jsAttr(m.owner||'')}" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','owner',this.value)" style="${sel}width:110px;cursor:text;"></label>
+          <label style="font-size:11px;color:var(--ink3);">Due <input type="date" value="${m.dueDate||''}" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;"></label>
+        </div>
+        <div style="margin-top:12px;">
+          <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Tasks</div>
+          ${subs.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+            <input type="checkbox" ${s.done?'checked':''} onchange="projToggleSubtask('${m.id}','${s.id}')" style="width:14px;height:14px;cursor:pointer;flex-shrink:0;">
+            <span style="flex:1;font-size:12px;color:${s.done?'var(--ink3)':'var(--ink)'};${s.done?'text-decoration:line-through;':''}">${escapeHtml(s.text)}</span>
+            <button onclick="projDeleteSubtask('${m.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;">✕</button>
+          </div>`).join('')}
+          <button onclick="projAddSubtask('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Add task</button>
+        </div>
+        <div style="display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center;">
+          <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">✦ Break into tasks</button>
+          <button class="btn btn-secondary btn-sm" id="exp-${m.id}" onclick="projAiExpandDetail('${m.id}')">✦ Add detail</button>
+          <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto;" onclick="projDeleteMilestone('${m.id}')">Delete</button>
+        </div>
+      </div>`:''}
+    </div>`;
+  }).join('');
+  return `<div style="${card}">${head}${cards}</div>`;
+}
+
+function projRenderTimeline(p){
+  const ms = (p.milestones||[]).filter(m=>m.dueDate).slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
+  if (!ms.length) return '<div style="font-size:12px;color:var(--ink3);padding:10px 0;">Add due dates to milestones to see the timeline.</div>';
+  const dues = ms.map(m=>new Date(m.dueDate).getTime());
+  let min = Math.min(...dues, p.startDate?new Date(p.startDate).getTime():dues[0]);
+  let max = Math.max(...dues, p.targetDate?new Date(p.targetDate).getTime():dues[dues.length-1]);
+  const pad = (max-min)*0.05 || 86400000*7; min -= pad; max += pad; const span = max-min || 1;
+  const pct = t => (t-min)/span*100;
+  const todayPct = pct(projToday().getTime());
+  let grid=''; const gd = new Date(min); gd.setDate(1);
+  while (gd.getTime() < max) { const lp = pct(gd.getTime()); if (lp>=0&&lp<=100) grid += `<div style="position:absolute;left:${lp}%;top:0;bottom:0;width:1px;background:var(--border);"></div><div style="position:absolute;left:${lp}%;top:0;font-size:9px;color:var(--ink3);transform:translateX(3px);">${gd.toLocaleDateString('en-GB',{month:'short'})}</div>`; gd.setMonth(gd.getMonth()+1); }
+  const rows = ms.map((m,i)=>{
+    const due = new Date(m.dueDate).getTime();
+    const startT = m.startDate ? new Date(m.startDate).getTime() : (i>0 ? new Date(ms[i-1].dueDate).getTime() : min+pad);
+    const a = Math.min(startT,due); let left = Math.max(0,pct(a)); let width = Math.max(2, pct(due)-pct(a)); if (left+width>100) width = 100-left;
+    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m);
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+      <div style="width:150px;flex-shrink:0;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" title="${jsAttr(m.title)}">${escapeHtml(m.title)}</div>
+      <div style="flex:1;position:relative;height:20px;">
+        <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} — due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${left}%;width:${width}%;top:2px;height:16px;background:${ov?'#EF4444':stt.color};border-radius:8px;cursor:pointer;min-width:8px;opacity:0.92;"></div>
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="overflow-x:auto;"><div style="position:relative;min-width:520px;">
+    ${todayPct>=0&&todayPct<=100?`<div style="position:absolute;left:calc((100% - 160px) * ${todayPct/100} + 160px);top:0;bottom:0;width:2px;background:#EF4444;opacity:0.45;z-index:1;"></div>`:''}
+    <div style="position:relative;margin-left:160px;height:14px;margin-bottom:8px;">${grid}</div>
+    ${rows}
+  </div><div style="font-size:10px;color:var(--ink3);margin-top:8px;">Bars run to each milestone's due date · red line = today · click a bar to open it</div></div>`;
+}
+
+// ── Milestone + subtask mutations ──
+async function projSetMsStatus(id,status){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(m){ m.status=status; m.done=(status==='done'); await saveProjects(); renderProjectDetail(); } }
+async function projSetMsField(id,field,val){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(m){ m[field]=val; await saveProjects(); renderProjectDetail(); } }
+async function projEditMsDesc(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Milestone description', m.description||''); if(v===null) return; m.description=v.trim(); await saveProjects(); renderProjectDetail(); }
+async function projAddSubtask(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=prompt('Task'); if(!t) return; m.subtasks=m.subtasks||[]; m.subtasks.push({id:projUid('s'),text:t.trim(),done:false}); projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); }
+async function projToggleSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(s){ s.done=!s.done; projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); } }
+async function projDeleteSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; m.subtasks=(m.subtasks||[]).filter(x=>x.id!==sid); projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); }
+function projSyncMsStatus(m){ const s=m.subtasks||[]; if(!s.length) return; const done=s.filter(x=>x.done).length; if(done===s.length){ m.status='done'; m.done=true; } else if(done>0){ if(m.status==='done'||m.status==='not-started'||!m.status){ m.status='in-progress'; } m.done=false; } else { if(m.status==='done'){ m.status='in-progress'; } m.done=false; } }
+
+async function projAiBreakTasks(id){
+  const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return;
+  const btn=document.getElementById('brk-'+id); if(btn){ btn.disabled=true; btn.textContent='⟳ Thinking…'; }
+  try{
+    const token=await getAuthToken();
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`HR project: "${p.name}". Objective: ${p.objective||'n/a'}. Break this milestone into 3-6 concrete, actionable sub-tasks an HR team would do: "${m.title}". Return ONLY a JSON array of short task strings.`}],system:'Return only a valid JSON array of short strings. No markdown, no explanation.'})});
+    const d=await res.json(); const text=(d.content?.[0]?.text||'').trim(); const match=text.match(/\[[\s\S]*\]/);
+    if(match){ const arr=JSON.parse(match[0]); m.subtasks=(m.subtasks||[]).concat(arr.filter(x=>typeof x==='string').map(t=>({id:projUid('s'),text:t,done:false}))); _projExpandedMs[id]=true; await saveProjects(); }
+  }catch(e){}
+  renderProjectDetail();
+}
+async function projAiExpandDetail(id){
+  const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return;
+  const btn=document.getElementById('exp-'+id); if(btn){ btn.disabled=true; btn.textContent='⟳ Thinking…'; }
+  try{
+    const token=await getAuthToken();
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:`HR project: "${p.name}". Objective: ${p.objective||'n/a'}. Write a short, practical description (2-3 sentences) of what this milestone involves and what 'done' looks like: "${m.title}". Plain text only.`}],system:'You are an experienced UK HR project manager. Reply with plain text only, no markdown.'})});
+    const d=await res.json(); const txt=(d.content?.[0]?.text||'').trim();
+    if(txt){ m.description=txt; _projExpandedMs[id]=true; await saveProjects(); }
+  }catch(e){}
+  renderProjectDetail();
 }
 
 
