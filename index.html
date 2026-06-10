@@ -5615,7 +5615,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;_projFilter={q:'',cat:'',owner:'',sort:'newest'};loadProjects().then(renderProjects);}
+  if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;_projDismissedAttn={};_projFilter={q:'',cat:'',owner:'',sort:'newest'};loadProjects().then(renderProjects);}
   if(v==='settings') { try { renderSettings(); } catch(e) { console.error('[Settings]',e); const b=document.getElementById('settingsBody'); if(b) b.innerHTML='<div style="padding:20px;color:red;">'+String(e)+'</div>'; } }
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
@@ -13783,7 +13783,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null;
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#8A94A6' },
@@ -13909,7 +13909,7 @@ function renderProjects(){
   const body = document.getElementById('projectsBody'); if(!body) return;
   projectActiveId = null;
   const ps = projectsData||[];
-  const overdueItems = ps.flatMap(p=>projOverdueList(p).map(m=>({p,m})));
+  const overdueItems = ps.flatMap(p=>projOverdueList(p).map(m=>({p,m}))).filter(({p,m})=>!_projDismissedAttn[p.id+':'+m.id]);
   const cats = [...new Set(ps.map(p=>p.category).filter(Boolean))];
   const owners = [...new Set(ps.map(p=>p.owner).filter(Boolean))];
   const f = _projFilter;
@@ -13920,8 +13920,8 @@ function renderProjects(){
 
   body.innerHTML = `
     ${(overdueItems.length && !_projHideAttention) ? `<div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:600;color:#B91C1C;">⚠ Needs attention</div><button onclick="projDismissAttention()" title="Dismiss" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:16px;line-height:1;padding:0 2px;">✕</button></div>
-      ${overdueItems.slice(0,6).map(({p,m})=>`<div style="font-size:12px;color:#7F1D1D;padding:2px 0;cursor:pointer;" onclick="openProject('${p.id}')">• <strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} - was due ${projFmtDate(m.dueDate)}</div>`).join('')}
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:600;color:#B91C1C;">⚠ Needs attention</div><button onclick="projDismissAttention()" title="Dismiss all" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:11px;line-height:1;padding:0 2px;">Dismiss all</button></div>
+      ${overdueItems.slice(0,8).map(({p,m})=>`<div style="display:flex;align-items:center;gap:8px;padding:2px 0;"><div style="flex:1;font-size:12px;color:#7F1D1D;cursor:pointer;" onclick="openProject('${p.id}')">• <strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} - was due ${projFmtDate(m.dueDate)}</div><button onclick="event.stopPropagation();projDismissAttnItem('${p.id}','${m.id}')" title="Dismiss this one" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:13px;line-height:1;flex-shrink:0;">✕</button></div>`).join('')}
     </div>` : ''}
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <input id="projSearch" value="${jsAttr(f.q)}" placeholder="Search projects..." oninput="projSetFilter('q',this.value)" style="flex:1;min-width:150px;${ss}cursor:text;">
@@ -14206,7 +14206,7 @@ function projMilestonesBlock(p, sel, card){
 function projRenderTimeline(p){
   const ms = (p.milestones||[]).filter(m=>m.dueDate).slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
   if (!ms.length) return '<div style="font-size:12px;color:var(--ink3);padding:14px 0;">Add due dates to tasks to see the timeline.</div>';
-  const LBL = 168, ROW = 32, HEAD = 22;
+  const LBL = 196, ROW = 44, HEAD = 26;
   const dues = ms.map(m=>new Date(m.dueDate).getTime());
   let min = Math.min(...dues, p.startDate?new Date(p.startDate).getTime():dues[0]);
   let max = Math.max(...dues, p.targetDate?new Date(p.targetDate).getTime():dues[dues.length-1]);
@@ -14216,24 +14216,27 @@ function projRenderTimeline(p){
   const wc = w => `calc((100% - ${LBL}px) * ${w/100})`;
   const rowsH = ms.length*ROW;
   let grid=''; const gd = new Date(min); gd.setDate(1);
-  while (gd.getTime() < max) { const lp = pct(gd.getTime()); if (lp>=0&&lp<=100) grid += `<div style="position:absolute;left:${xc(lp)};top:${HEAD}px;height:${rowsH}px;width:1px;background:var(--border);opacity:0.55;"></div><div style="position:absolute;left:${xc(lp)};top:2px;font-size:9px;color:var(--ink3);transform:translateX(4px);white-space:nowrap;">${gd.toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</div>`; gd.setMonth(gd.getMonth()+1); }
+  while (gd.getTime() < max) { const lp = pct(gd.getTime()); if (lp>=0&&lp<=100) grid += `<div style="position:absolute;left:${xc(lp)};top:${HEAD}px;height:${rowsH}px;width:1px;background:var(--border);opacity:0.5;"></div><div style="position:absolute;left:${xc(lp)};top:4px;font-size:9px;font-weight:600;color:var(--ink3);transform:translateX(4px);white-space:nowrap;">${gd.toLocaleDateString('en-GB',{month:'short',year:'2-digit'})}</div>`; gd.setMonth(gd.getMonth()+1); }
   const todayPct = pct(projToday().getTime());
-  const todayLine = (todayPct>=0&&todayPct<=100) ? `<div title="Today" style="position:absolute;left:${xc(todayPct)};top:${HEAD}px;height:${rowsH}px;width:2px;background:#EF4444;opacity:0.5;z-index:2;"></div>` : '';
+  const todayLine = (todayPct>=0&&todayPct<=100) ? `<div title="Today" style="position:absolute;left:${xc(todayPct)};top:${HEAD-4}px;height:${rowsH+4}px;width:2px;background:#EF4444;opacity:0.55;z-index:2;"></div>` : '';
+  const headerBand = `<div style="position:absolute;left:${LBL}px;right:0;top:0;height:${HEAD-4}px;background:var(--surface2);border-radius:6px;"></div>`;
   const bars = ms.map((m,i)=>{
     const due = new Date(m.dueDate).getTime();
     const startT = m.startDate ? new Date(m.startDate).getTime() : (i>0 ? new Date(ms[i-1].dueDate).getTime() : min+pad*0.5);
     const a = Math.min(startT,due); let l = Math.max(0,pct(a)); let w = Math.max(2.5, pct(due)-pct(a)); if (l+w>100) w = 100-l;
-    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m); const col = ov?'#EF4444':stt.color; const done = projMsDone(m);
-    const top = HEAD + i*ROW;
+    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m); const col = ov?'#EF4444':stt.color; const prog = projMsProgress(m);
+    const top = HEAD + i*ROW; const barTop = 13;
     return `<div style="position:absolute;left:0;top:${top}px;height:${ROW}px;width:100%;${i%2?'background:var(--surface2);':''}border-radius:6px;">
-      <div title="${jsAttr(m.title)}" style="position:absolute;left:10px;top:9px;width:${LBL-20}px;font-size:11px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(m.title)}</div>
-      <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} - ${escapeHtml(stt.label)}, due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(l)};width:${wc(w)};top:9px;height:14px;background:${col};border-radius:7px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.12);opacity:${done?0.5:0.95};"></div>
-      <div style="position:absolute;left:${xc(pct(due))};top:11px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid ${col};transform:translateX(-50%);box-shadow:0 1px 2px rgba(0,0,0,0.15);cursor:pointer;"></div>
+      <div title="${jsAttr(m.title)}" style="position:absolute;left:12px;top:6px;width:${LBL-22}px;font-size:11px;color:var(--ink);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(m.title)}</div>
+      <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} - ${escapeHtml(stt.label)}, ${prog}% done, due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(l)};width:${wc(w)};top:${barTop}px;height:18px;background:${col}2e;border:1px solid ${col}80;border-radius:9px;cursor:pointer;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.08);" onmouseover="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.08)'">
+        <div style="height:100%;width:${prog}%;background:${col};border-radius:9px;"></div>
+      </div>
+      <div title="Due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(pct(due))};top:${barTop+1}px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid ${col};transform:translateX(-50%);box-shadow:0 1px 2px rgba(0,0,0,0.15);cursor:pointer;z-index:1;"></div>
     </div>`;
   }).join('');
   const legend = Object.entries(MS_STATUS).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:9px;height:9px;border-radius:3px;background:${v.color};"></span>${v.label}</span>`).join('');
-  return `<div style="overflow-x:auto;"><div style="position:relative;min-width:580px;height:${HEAD+rowsH+4}px;">${grid}${todayLine}${bars}</div>
-    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">${legend}<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:11px;height:2px;background:#EF4444;"></span>Today</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;">Click any bar to open the task</span></div></div>`;
+  return `<div style="overflow-x:auto;"><div style="position:relative;min-width:600px;height:${HEAD+rowsH+4}px;">${headerBand}${grid}${todayLine}${bars}</div>
+    <div style="display:flex;gap:16px;flex-wrap:wrap;align-items:center;margin-top:12px;padding-top:10px;border-top:1px solid var(--border);">${legend}<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:11px;height:2px;background:#EF4444;"></span>Today</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;">Bar fill shows progress · click a bar to open the task</span></div></div>`;
 }
 
 // ── Milestone + subtask mutations ──
@@ -14271,6 +14274,7 @@ async function projAiSubtaskHelp(mid,sid){
 }
 async function projClearSubtaskGuidance(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(s){ delete s.guidance; await saveProjects(); renderProjectDetail(); } }
 function projDismissAttention(){ _projHideAttention = true; renderProjects(); }
+function projDismissAttnItem(pid,mid){ _projDismissedAttn[pid+':'+mid] = true; renderProjects(); }
 
 // ── Per-task help (popup), attachments, and email linking ──
 async function projTaskHelp(id){
