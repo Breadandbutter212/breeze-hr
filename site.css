@@ -73,6 +73,20 @@ img{display:block;max-width:100%}
 .card{background:#fff;border:1px solid var(--line);border-radius:var(--r);padding:26px;transition:transform .18s,box-shadow .18s,border-color .18s}
 .card:hover{transform:translateY(-6px);box-shadow:var(--shadow-sm);border-color:#d7deea}
 .card .ci{width:46px;height:46px;border-radius:12px;background:#EAF1FD;color:var(--accent);display:flex;align-items:center;justify-content:center;margin-bottom:16px}
+.card .ci svg{width:22px;height:22px}
+.tcard .ci svg{width:20px;height:20px}
+.hero-chip .ic svg{width:14px;height:14px}
+.int-logos{display:flex;flex-wrap:wrap;gap:14px;justify-content:center}
+.int-pill{display:inline-flex;align-items:center;gap:9px;background:#fff;border:1px solid var(--line);border-radius:30px;padding:11px 20px;font-size:14px;font-weight:600;color:var(--ink)}
+.int-pill svg{width:18px;height:18px;color:var(--accent)}
+.sec-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:20px}
+.sec{display:flex;flex-direction:column;gap:8px}
+.sec .si{width:40px;height:40px;border-radius:11px;background:rgba(255,255,255,.1);display:flex;align-items:center;justify-content:center;color:#fff}
+.sec .si svg{width:20px;height:20px}
+.sec h3{font-size:15px;font-weight:700;color:#fff}
+.sec p{font-size:13px;color:rgba(255,255,255,.65);line-height:1.6}
+@media (max-width:880px){.sec-grid{grid-template-columns:1fr 1fr}}
+@media (max-width:560px){.sec-grid{grid-template-columns:1fr}}
 .card h3{font-size:17px;font-weight:700;margin-bottom:8px}
 .card p{font-size:14px;color:var(--ink2);line-height:1.65}
 
