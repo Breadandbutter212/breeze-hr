@@ -2,7 +2,12 @@
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
+    { "source": "/templates", "destination": "/templates.html" },
     { "source": "/templates/offer-letter", "destination": "/offer-letter-template.html" },
+    { "source": "/templates/contract-of-employment", "destination": "/contract-of-employment-template.html" },
+    { "source": "/templates/disciplinary-letter", "destination": "/disciplinary-letter-template.html" },
+    { "source": "/templates/maternity-leave-letter", "destination": "/maternity-leave-letter-template.html" },
+    { "source": "/templates/redundancy-letter", "destination": "/redundancy-letter-template.html" },
     { "source": "/", "destination": "/landing.html" }
   ],
   "functions": {
