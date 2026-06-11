@@ -456,7 +456,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .tok { position:relative; display:inline-block; vertical-align:baseline; }
 .tok .szr { visibility:hidden; white-space:nowrap; font-weight:600; padding:0 4px; }
 .tok .ph { position:absolute; left:0; top:0; white-space:nowrap; box-sizing:border-box; font-size:8.5px; color:#9aa4b5; background:#F3F5F8; border:1px dashed #cdd5e0; border-radius:4px; padding:0 4px; transition:opacity 0.5s; }
-.tok .val { position:absolute; left:0; top:0; white-space:nowrap; color:#0066CC; font-weight:600; background:rgba(0,102,204,0.10); border-radius:4px; padding:0 4px; opacity:0; transform:translate(30px,-46px) rotate(2deg); filter:blur(4px); transition:all 0.9s cubic-bezier(0.22,1,0.36,1); }
+.tok .val { position:absolute; left:0; top:0; white-space:nowrap; color:#0066CC; font-weight:600; background:rgba(0,102,204,0.10); border-radius:4px; padding:0 4px; opacity:0; transform:translate(30px,-46px) rotate(2deg); filter:blur(4px); transition:all 0.55s cubic-bezier(0.22,1,0.36,1); }
 .pB.f1 .t1 .val,.pB.f2 .t2 .val,.pB.f3 .t3 .val,.pB.f4 .t4 .val { opacity:1; transform:none; filter:none; }
 .pB.f1 .t1 .ph,.pB.f2 .t2 .ph,.pB.f3 .t3 .ph,.pB.f4 .t4 .ph { opacity:0; }
 .lv-ready { display:inline-flex; align-items:center; gap:5px; margin-top:6px; background:#0A1628; color:#fff; font-size:8px; font-weight:600; border-radius:6px; padding:4px 11px; opacity:0; transform:translateY(8px); transition:all 0.6s cubic-bezier(0.22,1,0.36,1); }
@@ -474,20 +474,20 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-email .fr b { display:block; font-size:10px; font-weight:600; color:#1A2233; }
 .lv-email .fr span { font-size:8.5px; color:#9aa4b5; }
 .lv-email p { font-size:9px; color:#54607A; line-height:1.5; margin:8px 0 0; }
-.lv-flag { display:flex; align-items:center; gap:8px; margin-top:10px; background:#FFFBEB; border:1px solid #FCD34D; border-radius:9px; padding:9px 11px; opacity:0; transform:translateY(10px); transition:all 0.55s cubic-bezier(0.22,1,0.36,1); }
-.lv-flag .ft { flex:1; font-size:9px; font-weight:600; color:#92400e; }
-.lv-flag .fb { flex-shrink:0; background:#F59E0B; color:#fff; font-size:8px; font-weight:700; border-radius:13px; padding:4px 10px; transition:all 0.3s; }
+.lv-flag { display:flex; align-items:center; gap:6px; margin-top:9px; background:#FFFBEB; border:1px solid #FCD34D; border-radius:8px; padding:6px 8px; opacity:0; transform:translateY(8px); transition:all 0.45s cubic-bezier(0.22,1,0.36,1); }
+.lv-flag .ft { flex:1; font-size:8px; font-weight:600; color:#92400e; line-height:1.3; }
+.lv-flag .fb { flex-shrink:0; background:#F59E0B; color:#fff; font-size:7.5px; font-weight:700; border-radius:11px; padding:3px 8px; transition:all 0.3s; white-space:nowrap; }
 .flow.g2 .lv-flag, .flow.g3 .lv-flag, .flow.g4 .lv-flag { opacity:1; transform:none; }
 .flow.g3 .lv-flag, .flow.g4 .lv-flag { background:#ECFDF3; border-color:#bdebcd; }
 .flow.g3 .lv-flag .ft, .flow.g4 .lv-flag .ft { color:#0a7a37; }
 .flow.g3 .lv-flag .fb, .flow.g4 .lv-flag .fb { background:#16a34a; }
-.lv-tracker .th { display:flex; align-items:center; gap:6px; font-size:8.5px; font-weight:700; color:#0a7a37; margin-bottom:8px; }
-.lv-tracker .th svg { width:11px; height:11px; }
-.lv-tracker .tr { display:flex; align-items:center; gap:9px; background:#F7F9FC; border:1px solid #EDF1F6; border-radius:9px; padding:7px 10px; margin-bottom:6px; }
-.lv-tracker .tr .rb { flex:1; min-width:0; }
-.lv-tracker .tr .rb b { display:block; font-size:9.5px; font-weight:600; color:#1A2233; }
-.lv-tracker .tr .rb span { font-size:8px; color:#9aa4b5; }
-.lv-tracker .tr .pill { font-size:8px; font-weight:600; border-radius:20px; padding:2px 9px; white-space:nowrap; }
+.lv-tracker .ts { font-size:8px; color:#9aa4b5; margin:0 0 7px; }
+.lv-step { display:flex; align-items:center; gap:7px; font-size:9px; color:#54607A; padding:3px 0; }
+.lv-step .bx { width:13px; height:13px; border-radius:4px; border:1.5px solid #cdd5e0; flex-shrink:0; display:flex; align-items:center; justify-content:center; }
+.lv-step .bx svg { width:8px; height:8px; color:#fff; opacity:0; }
+.lv-step.done { color:#1A2233; }
+.lv-step.done .bx { background:#16a34a; border-color:#16a34a; }
+.lv-step.done .bx svg { opacity:1; }
 
 /* Analytics */
 .lv-akpis { display:flex; gap:6px; margin-bottom:9px; }
@@ -694,11 +694,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
             </div>
             <div class="lv-flag"><span class="ft">Looks like a maternity email</span><span class="fb">+ Add to tracker</span></div>
           </div>
-          <!-- tracker view (card switches to this) -->
+          <!-- tracker view: next steps checklist -->
           <div class="lv-view lv-tracker">
-            <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><b>Family Leave tracker</b></div>
-            <div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added to tracker</div>
-            <div class="tr"><span class="lv-av">SM</span><div class="rb"><b>Sarah Mitchell</b><span>Maternity · due 14 Oct</span></div><span class="pill" style="background:#d6f5e1;color:#0a7a37;">On track</span></div>
+            <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><b>Maternity - Sarah Mitchell</b></div>
+            <div class="ts">Next steps · due 14 Oct</div>
+            <div class="lv-step done"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Leave request logged</div>
+            <div class="lv-step done"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>MATB1 received</div>
+            <div class="lv-step"><span class="bx"></span>Complete DSE / risk assessment</div>
+            <div class="lv-step"><span class="bx"></span>Confirm leave dates</div>
           </div>
         </div>
         <!-- 3. Analytics -->
@@ -14510,8 +14513,8 @@ async function projConfirmEmailToTask(){
     function run(){
       timers.forEach(clearTimeout); timers = [];
       steps.forEach(function(s){ p.classList.remove(s); });
-      steps.forEach(function(s,i){ timers.push(setTimeout(function(){ p.classList.add(s); }, 1100 + i*1100)); });
-      timers.push(setTimeout(run, 10500));
+      steps.forEach(function(s,i){ timers.push(setTimeout(function(){ p.classList.add(s); }, 500 + i*600)); });
+      timers.push(setTimeout(run, 7000));
     }
     run();
   }
