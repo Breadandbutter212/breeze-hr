@@ -453,9 +453,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-letter .lt { font-size:10px; font-weight:700; color:#0A1628; margin:7px 0 7px; }
 .lv-letter p { font-size:9px; color:#3A4760; line-height:1.85; margin:0 0 7px; }
 .lv-letter s { display:block; height:4px; border-radius:2px; background:#EEF2F7; margin-bottom:5px; }
-.tok { position:relative; display:inline-block; }
-.tok { vertical-align:baseline; }
-.tok .ph { display:inline-block; min-width:100%; box-sizing:border-box; font-size:8.5px; color:#9aa4b5; background:#F3F5F8; border:1px dashed #cdd5e0; border-radius:4px; padding:0 4px; transition:opacity 0.5s; }
+.tok { position:relative; display:inline-block; vertical-align:baseline; }
+.tok .szr { visibility:hidden; white-space:nowrap; font-weight:600; padding:0 4px; }
+.tok .ph { position:absolute; left:0; top:0; white-space:nowrap; box-sizing:border-box; font-size:8.5px; color:#9aa4b5; background:#F3F5F8; border:1px dashed #cdd5e0; border-radius:4px; padding:0 4px; transition:opacity 0.5s; }
 .tok .val { position:absolute; left:0; top:0; white-space:nowrap; color:#0066CC; font-weight:600; background:rgba(0,102,204,0.10); border-radius:4px; padding:0 4px; opacity:0; transform:translate(30px,-46px) rotate(2deg); filter:blur(4px); transition:all 0.9s cubic-bezier(0.22,1,0.36,1); }
 .pB.f1 .t1 .val,.pB.f2 .t2 .val,.pB.f3 .t3 .val,.pB.f4 .t4 .val { opacity:1; transform:none; filter:none; }
 .pB.f1 .t1 .ph,.pB.f2 .t2 .ph,.pB.f3 .t3 .ph,.pB.f4 .t4 .ph { opacity:0; }
@@ -463,18 +463,28 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-ready svg { width:9px;height:9px; }
 .pB.done .lv-ready { opacity:1; transform:none; }
 
-/* HR calendar */
-.lv-ev { display:flex; align-items:center; gap:9px; padding:5px 0; border-top:1px solid #F0F3F7; }
-.lv-ev:first-of-type { border-top:none; }
-.lv-date { width:30px;height:32px;border-radius:7px;background:#EEF4FB;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1; }
-.lv-date b { font-size:12px;font-weight:700;color:#0066CC; }
-.lv-date span { font-size:6.5px;font-weight:700;letter-spacing:0.06em;color:#7aa0c8; }
-.lv-ev .eb { flex:1;min-width:0; }
-.lv-ev .eb b { display:block;font-size:9px;font-weight:600;color:#1A2233;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
-.lv-ev .eb span { font-size:8px;color:#9aa4b5; }
-.lv-addcal { flex-shrink:0;border:1px solid #d6e0ec;background:#fff;color:#0066CC;font-size:8px;font-weight:600;border-radius:14px;padding:3px 9px;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap; }
-.lv-addcal:hover { background:#EEF4FB; }
-.lv-addcal.on { background:#d6f5e1;border-color:#bdebcd;color:#0a7a37;cursor:default; }
+/* Email -> flag -> tracker flow */
+.lv-av { width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;background:#6B4FBB; }
+.lv-email .fr { display:flex; align-items:center; gap:8px; }
+.lv-email .fr b { display:block; font-size:10px; font-weight:600; color:#1A2233; }
+.lv-email .fr span { font-size:8.5px; color:#9aa4b5; }
+.lv-email p { font-size:9px; color:#54607A; line-height:1.5; margin:8px 0 0; }
+.lv-slot { position:relative; margin-top:10px; min-height:58px; }
+.lv-flag, .lv-trk { position:absolute; left:0; right:0; top:0; opacity:0; transform:translateY(10px); transition:all 0.6s cubic-bezier(0.22,1,0.36,1); }
+.lv-flag { display:flex; align-items:center; gap:8px; background:#FFFBEB; border:1px solid #FCD34D; border-radius:9px; padding:9px 11px; }
+.lv-flag .ft { flex:1; font-size:9px; font-weight:600; color:#92400e; }
+.lv-flag .fb { flex-shrink:0; background:#F59E0B; color:#fff; font-size:8px; font-weight:700; border-radius:13px; padding:4px 10px; transition:all 0.3s; }
+.lv-trk .th { display:flex; align-items:center; gap:6px; font-size:8.5px; font-weight:700; color:#0a7a37; margin-bottom:8px; }
+.lv-trk .th svg { width:11px; height:11px; }
+.lv-trk .tr { display:flex; align-items:center; gap:9px; background:#F7F9FC; border:1px solid #EDF1F6; border-radius:9px; padding:8px 10px; }
+.lv-trk .tr .rb { flex:1; min-width:0; }
+.lv-trk .tr .rb b { display:block; font-size:9.5px; font-weight:600; color:#1A2233; }
+.lv-trk .tr .rb span { font-size:8px; color:#9aa4b5; }
+.lv-trk .tr .pill { font-size:8px; font-weight:600; border-radius:20px; padding:2px 9px; background:#d6f5e1; color:#0a7a37; white-space:nowrap; }
+.flow.g2 .lv-flag { opacity:1; transform:none; }
+.flow.g3 .lv-flag { opacity:0; transform:translateY(-8px); }
+.flow.g3 .lv-flag .fb { background:#16a34a; }
+.flow.g3 .lv-trk { opacity:1; transform:none; }
 
 /* Analytics */
 .lv-akpis { display:flex; gap:6px; margin-bottom:9px; }
@@ -491,13 +501,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-area circle { opacity:0; animation:lvFadeIn 0.5s ease-out 1.7s forwards; }
 @keyframes lvDraw { to { stroke-dashoffset:0; } }
 @keyframes lvFadeIn { to { opacity:1; } }
-.lv-c2 .lv-ev { opacity:0; transform:translateY(7px); animation:lvUp 0.5s ease-out forwards; }
-.lv-c2 .lv-ev:nth-child(2){ animation-delay:0.15s; } .lv-c2 .lv-ev:nth-child(3){ animation-delay:0.3s; } .lv-c2 .lv-ev:nth-child(4){ animation-delay:0.45s; }
-@keyframes lvUp { to { opacity:1; transform:none; } }
 @media (prefers-reduced-motion: reduce) {
   .tok .val{transition:none;} .lv-ready{transition:none;} .lv-live::before{animation:none;}
   .lv-area polyline{stroke-dashoffset:0;animation:none;} .lv-area polygon,.lv-area circle{opacity:1;animation:none;}
-  .lv-c2 .lv-ev{opacity:1;transform:none;animation:none;}
+  .lv-flag,.lv-trk{transition:none;}
 }
 .login-right { flex: 1 1 50%; min-width: 0; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; position: relative; z-index: 1; }
 .login-box { width: 100%; max-width: 380px; }
@@ -668,17 +675,25 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
           <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="lv-eyebrow">Documents · from your template</div></div></div>
           <div class="lv-letter">
             <div class="lt">Offer of Employment</div>
-            <p>Dear <span class="tok t1" style="min-width:80px"><span class="ph">{first_name}</span><span class="val">Amelia Silva</span></span>, we are delighted to offer you the role of <span class="tok t2" style="min-width:52px"><span class="ph">{role}</span><span class="val">Analyst</span></span>, starting <span class="tok t3" style="min-width:72px"><span class="ph">{start_date}</span><span class="val">1 Sept 2026</span></span> on a salary of <span class="tok t4" style="min-width:54px"><span class="ph">{salary}</span><span class="val">£42,000</span></span>.</p>
+            <p>Dear <span class="tok t1"><span class="szr">Amelia Silva</span><span class="ph">{first_name}</span><span class="val">Amelia Silva</span></span>, we are delighted to offer you the role of <span class="tok t2"><span class="szr">Analyst</span><span class="ph">{role}</span><span class="val">Analyst</span></span>, starting <span class="tok t3"><span class="szr">1 Sept 2026</span><span class="ph">{start_date}</span><span class="val">1 Sept 2026</span></span> on a salary of <span class="tok t4"><span class="szr">£42,000</span><span class="ph">{salary}</span><span class="val">£42,000</span></span>.</p>
             <s style="width:88%"></s><s style="width:66%"></s>
             <div class="lv-ready"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Ready to send - your formatting kept</div>
           </div>
         </div>
-        <!-- 2. HR calendar -->
-        <div class="lv-c lv-c2" id="lvCal">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><b>HR calendar</b></div>
-          <div class="lv-ev"><div class="lv-date"><b>14</b><span>JUL</span></div><div class="eb"><b>Probation review - Tom</b><span>2:00 pm</span></div><button class="lv-addcal" onclick="this.classList.add('on');this.textContent='Added'">+ Add</button></div>
-          <div class="lv-ev"><div class="lv-date"><b>22</b><span>JUL</span></div><div class="eb"><b>Return to work - Sarah</b><span>All day</span></div><button class="lv-addcal" onclick="this.classList.add('on');this.textContent='Added'">+ Add</button></div>
-          <div class="lv-ev"><div class="lv-date"><b>30</b><span>JUL</span></div><div class="eb"><b>Right to work check</b><span>Due</span></div><button class="lv-addcal" onclick="this.classList.add('on');this.textContent='Added'">+ Add</button></div>
+        <!-- 2. Email -> maternity flag -> tracker flow -->
+        <div class="lv-c lv-c2 flow" id="lvFlow">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg></div><b>Inbox</b></div>
+          <div class="lv-email">
+            <div class="fr"><span class="lv-av">SM</span><div><b>Sarah Mitchell</b><span>My maternity news</span></div></div>
+            <p>Hi, I wanted to let you know I'm expecting - my due date is 14 October...</p>
+          </div>
+          <div class="lv-slot">
+            <div class="lv-flag"><span class="ft">Looks like a maternity email</span><span class="fb">+ Add to tracker</span></div>
+            <div class="lv-trk">
+              <div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added to Family Leave tracker</div>
+              <div class="tr"><span class="lv-av">SM</span><div class="rb"><b>Sarah Mitchell</b><span>Maternity · due 14 Oct</span></div><span class="pill">On track</span></div>
+            </div>
+          </div>
         </div>
         <!-- 3. Analytics -->
         <div class="lv-c lv-c3">
@@ -14515,9 +14530,20 @@ async function projConfirmEmailToTask(){
       if (reduce) { el.textContent = (parseFloat(el.getAttribute('data-to'))||0).toFixed(parseInt(el.getAttribute('data-dec')||'0',10)) + (el.getAttribute('data-suffix')||''); }
       else setTimeout(function(){ countUp(el); }, 500);
     });
-    if (!reduce) {
-      var firstAdd = document.querySelector('#lvCal .lv-addcal');
-      if (firstAdd) setTimeout(function(){ firstAdd.classList.add('on'); firstAdd.textContent = 'Added'; }, 2200);
+    var flow = document.getElementById('lvFlow');
+    if (flow) {
+      if (reduce) { flow.classList.add('g2','g3'); }
+      else {
+        var fs = ['g1','g2','g3'], ft = [];
+        (function runFlow(){
+          ft.forEach(clearTimeout); ft = [];
+          fs.forEach(function(s){ flow.classList.remove(s); });
+          ft.push(setTimeout(function(){ flow.classList.add('g1'); }, 500));
+          ft.push(setTimeout(function(){ flow.classList.add('g2'); }, 1900));
+          ft.push(setTimeout(function(){ flow.classList.add('g3'); }, 3700));
+          ft.push(setTimeout(runFlow, 8200));
+        })();
+      }
     }
   }
   function initAll(){ initLetterAnim(); initExtras(); }
