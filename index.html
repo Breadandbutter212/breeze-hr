@@ -527,16 +527,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-toggle a { color: #0066CC; text-decoration: none; font-weight: 600; cursor: pointer; }
 .login-toggle a:hover { text-decoration: underline; }
 @media (max-width: 700px) {
-  /* Sign-in page stacks: animated visual on top (~50vh), form below. Lifted above the desktop-only app gate so the login is usable on mobile. */
-  .login-screen { flex-direction: column; z-index: 10000; }
-  .login-left { width: 100%; height: 50vh; min-height: 50vh; padding: 22px 24px; }
-  .login-left .lv-title { font-size: 24px; }
-  .login-left .lv-sub { display: none; }
-  .lv-scene { height: auto; margin-top: 12px; }
-  .lv-c2, .lv-c3 { display: none; }
-  .lv-c1 { position: relative; inset: auto; top: auto; left: auto; width: 100%; animation: none; transform: none; }
-  .login-right { flex: 1; width: 100%; padding: 32px 24px; display: flex; align-items: center; justify-content: center; }
-  .login-box { width: 100%; max-width: 420px; }
+  /* Mobile: show the desktop-only notice over everything (login + app) */
   .login-input { font-size: 16px; }
   .shell { display: none !important; }
   #mobileBlock { display: flex !important; }
@@ -779,7 +770,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
     <text x="65" y="43" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="rgba(255,255,255,0.5)">People operations platform</text>
   </svg>
   <div style="font-size:22px;font-weight:700;color:white;letter-spacing:-0.03em;margin-bottom:12px;">Built for desktop</div>
-  <div style="font-size:15px;color:rgba(255,255,255,0.6);line-height:1.7;max-width:280px;">Breeze HR is designed for desktop use. Please open it on your laptop or computer for the full experience.</div>
+  <div style="font-size:15px;color:rgba(255,255,255,0.6);line-height:1.7;max-width:300px;">Breeze HR works on desktop for now - please open it on your laptop or computer. Our mobile app is coming soon.</div>
   <div style="margin-top:32px;font-size:13px;color:rgba(255,255,255,0.35);">getbreeze.co.uk</div>
 </div>
 
