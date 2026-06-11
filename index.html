@@ -82,9 +82,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .app-rail { display:none; }
 body.nav-rail .sidebar { display:none !important; }
 body.nav-rail .app-rail { display:flex; }
-.app-rail { width:56px; flex-shrink:0; background:var(--rail-bg); flex-direction:column; align-items:center; padding:10px 0; gap:4px; height:100%; }
+.app-rail { width:68px; flex-shrink:0; background:var(--rail-bg); flex-direction:column; align-items:center; padding:12px 0; gap:5px; height:100%; }
 .rail-logo { width:28px; height:28px; border-radius:8px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:500; font-size:14px; margin-bottom:12px; flex-shrink:0; }
-.rail-btn { width:36px; height:36px; border-radius:8px; border:none; background:none; color:rgba(255,255,255,0.75); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.12s, color 0.12s; }
+.rail-btn { width:40px; height:40px; border-radius:9px; border:none; background:none; color:rgba(255,255,255,0.75); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.12s, color 0.12s; }
 .rail-btn svg { width:18px; height:18px; }
 .rail-btn:hover { color:rgba(255,255,255,0.9); }
 .rail-btn.active { background:rgba(255,255,255,0.16); color:#fff; }
@@ -93,30 +93,30 @@ body.nav-rail .app-rail { display:flex; }
 .rail-spacer { flex:1; }
 .rail-settings { color:rgba(255,255,255,0.45); }
 .rail-avatar { width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:500; cursor:pointer; margin-top:4px; border:none; }
-.rail-tip { position:absolute; left:46px; top:50%; transform:translateY(-50%); background:#1D1D1F; color:#fff; font-size:12px; font-weight:400; padding:5px 9px; border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:60; }
+.rail-tip { position:absolute; left:52px; top:50%; transform:translateY(-50%); background:#1D1D1F; color:#fff; font-size:12px; font-weight:400; padding:5px 9px; border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:60; }
 .rail-btn:hover .rail-tip, .rail-avatar:hover .rail-tip, .rail-settings:hover .rail-tip { opacity:1; }
 /* flyout */
-.flyout { display:none; width:168px; flex-shrink:0; background:var(--surface2); border-right:0.5px solid var(--border); flex-direction:column; padding:14px 10px 10px; overflow:hidden; transition:width 0.15s ease-out; }
+.flyout { display:none; width:184px; flex-shrink:0; background:var(--rail-bg); border-right:1px solid rgba(255,255,255,0.08); flex-direction:column; padding:14px 12px 12px; overflow:hidden; transition:width 0.15s ease-out; }
 body.nav-rail .flyout { display:flex; }
 body.flyout-collapsed .flyout { width:0; padding:0; border-right:none; }
-.flyout-h { font-size:13px; font-weight:500; color:var(--ink); padding:0 6px 10px; display:flex; align-items:center; gap:6px; white-space:nowrap; }
-.flyout-h .beta { font-size:11px; font-weight:400; color:var(--ink3); }
-.flyout-item { display:block; width:100%; text-align:left; font-size:12px; font-weight:400; color:var(--ink2); padding:5px 8px; border-radius:8px; border:1px solid transparent; background:none; cursor:pointer; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
-.flyout-item:hover { background:var(--surface3); color:var(--ink); }
-.flyout-item.active { background:var(--surface); border-color:var(--border); color:var(--ink); font-weight:500; }
-.flyout-item[aria-disabled="true"] { color:var(--ink3); cursor:default; }
-.flyout-item[aria-disabled="true"]:hover { background:none; color:var(--ink3); }
-.flyout-label { font-size:11px; font-weight:400; color:var(--ink3); padding:12px 6px 4px; white-space:nowrap; }
-.flyout-sp { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--ink2); padding:7px 8px; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
-.flyout-sp .plug { width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; }
+.flyout-h { font-size:13px; font-weight:500; color:#fff; padding:0 6px 10px; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.flyout-h .beta { font-size:11px; font-weight:400; color:rgba(255,255,255,0.5); }
+.flyout-item { display:block; width:100%; text-align:left; font-size:12px; font-weight:400; color:rgba(255,255,255,0.72); padding:6px 9px; border-radius:8px; border:1px solid transparent; background:none; cursor:pointer; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
+.flyout-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
+.flyout-item.active { background:rgba(255,255,255,0.16); color:#fff; font-weight:500; }
+.flyout-item[aria-disabled="true"] { color:rgba(255,255,255,0.4); cursor:default; }
+.flyout-item[aria-disabled="true"]:hover { background:none; color:rgba(255,255,255,0.4); }
+.flyout-label { font-size:11px; font-weight:400; color:rgba(255,255,255,0.45); padding:12px 6px 4px; white-space:nowrap; }
+.flyout-sp { display:flex; align-items:center; gap:7px; font-size:11px; color:rgba(255,255,255,0.7); padding:7px 9px; border:1px solid rgba(255,255,255,0.12); border-radius:8px; background:rgba(255,255,255,0.06); }
+.flyout-sp .plug { width:7px; height:7px; border-radius:50%; background:#30D158; flex-shrink:0; }
 .flyout-foot { margin-top:auto; padding-top:8px; }
-.flyout-collapse { font-size:11px; font-weight:400; color:var(--ink3); cursor:pointer; padding:6px; display:flex; align-items:center; gap:6px; background:none; border:none; font-family:inherit; }
-.flyout-collapse:hover { color:var(--ink2); }
-.rail-menu { position:fixed; bottom:14px; left:64px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); padding:6px; z-index:80; min-width:150px; }
+.flyout-collapse { font-size:11px; font-weight:400; color:rgba(255,255,255,0.5); cursor:pointer; padding:6px; display:flex; align-items:center; gap:6px; background:none; border:none; font-family:inherit; }
+.flyout-collapse:hover { color:rgba(255,255,255,0.85); }
+.rail-menu { position:fixed; bottom:14px; left:76px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); padding:6px; z-index:80; min-width:150px; }
 .rail-menu button { display:block; width:100%; text-align:left; font-size:13px; color:var(--ink); padding:8px 10px; border-radius:7px; border:none; background:none; cursor:pointer; font-family:inherit; }
 .rail-menu button:hover { background:var(--surface2); }
 @media (max-width:900px){
-  body.nav-rail .flyout { position:absolute; left:56px; top:0; bottom:0; z-index:55; box-shadow:var(--shadow-lg); }
+  body.nav-rail .flyout { position:absolute; left:68px; top:0; bottom:0; z-index:55; box-shadow:var(--shadow-lg); }
 }
 
 /* ── EMAIL INBOX PANEL ── */
@@ -14697,7 +14697,7 @@ async function projConfirmEmailToTask(){
     if(!names.length) return '<button class="flyout-item" aria-disabled="true" style="font-size:11px">No people yet</button>';
     return names.map(function(n){
       var ini=n.trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
-      return '<button class="flyout-item" onclick="railNav(\'trackers\')" style="display:flex;align-items:center;gap:7px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:8px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ini+'</span>'+escapeHtml(n)+'</button>';
+      return '<button class="flyout-item" onclick="railNav(\'trackers\')" style="display:flex;align-items:center;gap:7px"><span style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.16);color:#fff;font-size:8px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ini+'</span>'+escapeHtml(n)+'</button>';
     }).join('');
   }
   async function loadRecent(){
