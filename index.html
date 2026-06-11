@@ -404,7 +404,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 
 /* ── LOGIN ── */
 .login-screen { position: fixed; inset: 0; display: flex; z-index: 999; }
-.login-left { width: 50%; background: linear-gradient(160deg, #5B8DB8 0%, #3D6A96 32%, #243F66 68%, #16284A 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 44px 52px; position: relative; overflow: hidden; }
+.login-left { flex: 0 0 50%; max-width: 50%; background: linear-gradient(160deg, #5B8DB8 0%, #3D6A96 32%, #243F66 68%, #16284A 100%); display: flex; flex-direction: column; justify-content: space-between; padding: 40px 48px; position: relative; overflow: hidden; }
 .login-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 15%, rgba(255,255,255,0.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(0,40,80,0.25) 0%, transparent 50%); pointer-events: none; }
 .login-left-logo { display: flex; align-items: center; gap: 12px; position: relative; }
 .login-left-logo-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
@@ -425,63 +425,66 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-left-insta { display: flex; align-items: center; gap: 6px; text-decoration: none; color: rgba(255,255,255,0.45); font-size: 12px; transition: color 0.15s; }
 .login-left-insta:hover { color: rgba(255,255,255,0.8); }
 /* Animated visual panel (left) - layered product scene */
-.lv-orb { position:absolute; border-radius:50%; filter:blur(52px); pointer-events:none; z-index:0; animation: lvFloat 22s ease-in-out infinite; }
-.lv-orb.o1 { width:300px;height:300px; background:rgba(130,185,255,0.40); top:-60px; left:-80px; }
-.lv-orb.o2 { width:250px;height:250px; background:rgba(70,205,185,0.24); bottom:10px; right:-70px; animation-delay:-8s; }
-.lv-orb.o3 { width:210px;height:210px; background:rgba(150,125,255,0.26); top:48%; left:42%; animation-delay:-14s; }
-@keyframes lvFloat { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(34px,-26px) scale(1.1);} 66%{transform:translate(-22px,20px) scale(0.94);} }
+.lv-orb { position:absolute; border-radius:50%; filter:blur(54px); pointer-events:none; z-index:0; }
+.lv-orb.o1 { width:300px;height:300px; background:rgba(130,185,255,0.38); top:-70px; left:-90px; }
+.lv-orb.o2 { width:240px;height:240px; background:rgba(70,205,185,0.22); bottom:30px; right:-70px; }
+.lv-orb.o3 { width:200px;height:200px; background:rgba(150,125,255,0.24); top:50%; left:44%; }
 .lv-hero { position:relative; z-index:2; }
-.lv-title { font-size:33px; font-weight:700; color:#fff; line-height:1.14; letter-spacing:-0.03em; margin-bottom:9px; }
+.lv-title { font-size:30px; font-weight:700; color:#fff; line-height:1.15; letter-spacing:-0.03em; margin-bottom:8px; }
 .lv-title span { background:linear-gradient(90deg,#9bd6ff,#bca8ff); -webkit-background-clip:text; background-clip:text; -webkit-text-fill-color:transparent; }
-.lv-sub { font-size:14px; color:rgba(255,255,255,0.62); line-height:1.6; max-width:360px; }
+.lv-sub { font-size:13.5px; color:rgba(255,255,255,0.6); line-height:1.6; max-width:350px; }
 
-/* Layered floating cards */
-.lv-scene { position:relative; z-index:2; margin-top:30px; height:400px; font-family:inherit; }
-.lv-c { position:absolute; background:#fff; border-radius:13px; box-shadow:0 22px 48px rgba(8,20,45,0.34); border:1px solid rgba(255,255,255,0.7); padding:13px 14px; }
-.lv-c .hd { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+/* Layered cards (static) */
+.lv-scene { position:relative; z-index:2; margin-top:22px; height:336px; font-family:inherit; }
+.lv-c { position:absolute; background:#fff; border-radius:13px; box-shadow:0 20px 44px rgba(8,20,45,0.32); border:1px solid rgba(255,255,255,0.7); padding:12px 13px; }
+.lv-c .hd { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
 .lv-c .hd b { font-size:11px; font-weight:700; color:#0A1628; letter-spacing:-0.01em; }
-.lv-ic2 { width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0066CC;background:#E9F1FB; }
-.lv-ic2 svg { width:13px;height:13px; }
+.lv-eyebrow { font-size:7.5px; font-weight:700; letter-spacing:0.09em; text-transform:uppercase; color:#9aa4b5; }
+.lv-ic2 { width:23px;height:23px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0066CC;background:#E9F1FB; }
+.lv-ic2 svg { width:12px;height:12px; }
 .lv-live { display:inline-flex;align-items:center;gap:4px;font-size:7.5px;font-weight:700;color:#0a7a37;background:#d6f5e1;border-radius:10px;padding:2px 7px;letter-spacing:0.05em;margin-left:auto; }
 .lv-live::before { content:'';width:5px;height:5px;border-radius:50%;background:#16a34a; }
-.lv-c1 { left:0; top:0; width:57%; z-index:1; transform:rotate(-1.5deg); }
-.lv-c2 { right:0; top:134px; width:53%; z-index:2; transform:rotate(1.5deg); }
-.lv-c3 { left:11%; top:244px; width:64%; z-index:3; transform:rotate(-0.6deg); }
+.lv-c1 { left:0; top:0; width:55%; z-index:1; transform:rotate(-1.4deg); }
+.lv-c2 { right:0; top:66px; width:50%; z-index:2; transform:rotate(1.4deg); }
+.lv-c3 { left:9%; top:182px; width:60%; z-index:3; transform:rotate(-0.6deg); }
 
-/* offer letter */
-.lv-bub { font-size:9.5px; border-radius:10px; padding:6px 9px; margin-bottom:6px; max-width:92%; line-height:1.4; }
-.lv-bq { background:#EEF2F7; color:#3A4760; margin-left:auto; border-bottom-right-radius:3px; }
-.lv-ba { background:#0066CC; color:#fff; border-bottom-left-radius:3px; }
-.lv-type::after { content:''; }
-@keyframes lvBlink { 50%{opacity:0;} }
-.lv-letter { background:#F8FAFC; border:1px solid #EDF1F6; border-radius:8px; padding:9px 10px; margin-top:7px; }
-.lv-letter .lt { font-size:9px; font-weight:700; color:#0A1628; margin-bottom:5px; }
-.lv-letter p { font-size:8px; color:#54607A; line-height:1.5; margin:0 0 5px; }
-.lv-letter s { display:block; height:4px; border-radius:2px; background:#E7ECF3; margin-bottom:4px; }
-.lv-send { display:inline-flex; align-items:center; gap:5px; margin-top:5px; background:#0A1628; color:#fff; font-size:8px; font-weight:600; border-radius:6px; padding:4px 11px; }
-.lv-send svg { width:9px;height:9px; }
+/* Offer letter with token fill */
+.lv-letter .lt { font-size:10px; font-weight:700; color:#0A1628; margin:7px 0 7px; }
+.lv-letter p { font-size:9px; color:#3A4760; line-height:1.85; margin:0 0 7px; }
+.lv-letter s { display:block; height:4px; border-radius:2px; background:#EEF2F7; margin-bottom:5px; }
+.tok { position:relative; display:inline-block; }
+.tok .ph { font-size:8.5px; color:#9aa4b5; background:#F3F5F8; border:1px dashed #cdd5e0; border-radius:4px; padding:0 4px; transition:opacity 0.5s; }
+.tok .val { position:absolute; left:0; top:0; white-space:nowrap; color:#0066CC; font-weight:600; background:rgba(0,102,204,0.10); border-radius:4px; padding:0 4px; opacity:0; transform:translate(30px,-46px) rotate(2deg); filter:blur(4px); transition:all 0.9s cubic-bezier(0.22,1,0.36,1); }
+.pB.f1 .t1 .val,.pB.f2 .t2 .val,.pB.f3 .t3 .val,.pB.f4 .t4 .val { opacity:1; transform:none; filter:none; }
+.pB.f1 .t1 .ph,.pB.f2 .t2 .ph,.pB.f3 .t3 .ph,.pB.f4 .t4 .ph { opacity:0; }
+.lv-ready { display:inline-flex; align-items:center; gap:5px; margin-top:6px; background:#0A1628; color:#fff; font-size:8px; font-weight:600; border-radius:6px; padding:4px 11px; opacity:0; transform:translateY(8px); transition:all 0.6s cubic-bezier(0.22,1,0.36,1); }
+.lv-ready svg { width:9px;height:9px; }
+.pB.done .lv-ready { opacity:1; transform:none; }
 
-/* people plan */
-.lv-pr { display:flex; align-items:center; gap:9px; padding:5px 0; }
-.lv-pr .nm { font-size:9px; color:#1A2233; width:74px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lv-pbar { flex:1; height:7px; background:#EEF2F7; border-radius:4px; overflow:hidden; }
-.lv-pbar i { display:block; height:100%; border-radius:4px; background:linear-gradient(90deg,#3b89e0,#0066CC); }
-.lv-pr:nth-child(3) .lv-pbar i{animation-delay:.3s;} .lv-pr:nth-child(4) .lv-pbar i{animation-delay:.6s;} .lv-pr:nth-child(5) .lv-pbar i{animation-delay:.9s;}
-@keyframes lvWiden { from{transform:scaleX(.35);} to{transform:scaleX(1);} }
-.lv-pr .nums { font-size:8px; color:#8A94A6; width:46px; text-align:right; flex-shrink:0; }
-.lv-pr .nums b { color:#0a7a37; font-weight:700; }
+/* HR calendar */
+.lv-ev { display:flex; align-items:center; gap:9px; padding:5px 0; border-top:1px solid #F0F3F7; }
+.lv-ev:first-of-type { border-top:none; }
+.lv-date { width:30px;height:32px;border-radius:7px;background:#EEF4FB;flex-shrink:0;display:flex;flex-direction:column;align-items:center;justify-content:center;line-height:1; }
+.lv-date b { font-size:12px;font-weight:700;color:#0066CC; }
+.lv-date span { font-size:6.5px;font-weight:700;letter-spacing:0.06em;color:#7aa0c8; }
+.lv-ev .eb { flex:1;min-width:0; }
+.lv-ev .eb b { display:block;font-size:9px;font-weight:600;color:#1A2233;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+.lv-ev .eb span { font-size:8px;color:#9aa4b5; }
+.lv-addcal { flex-shrink:0;border:1px solid #d6e0ec;background:#fff;color:#0066CC;font-size:8px;font-weight:600;border-radius:14px;padding:3px 9px;cursor:pointer;font-family:inherit;transition:all 0.15s;white-space:nowrap; }
+.lv-addcal:hover { background:#EEF4FB; }
+.lv-addcal.on { background:#d6f5e1;border-color:#bdebcd;color:#0a7a37;cursor:default; }
 
-/* analytics - svg chart */
-.lv-an-h { display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
-.lv-an-h b { font-size:19px; font-weight:700; color:#0A1628; letter-spacing:-0.03em; line-height:1; }
-.lv-an-h u { font-size:8.5px; font-weight:700; color:#0a7a37; text-decoration:none; }
-.lv-an-h span { font-size:8px; color:#8A94A6; margin-left:auto; }
-.lv-area { width:100%; height:74px; display:block; }
-.lv-xlabels { display:flex; justify-content:space-between; margin-top:5px; }
-.lv-xlabels span { font-size:7px; color:#9aa4b5; }
+/* Analytics */
+.lv-akpis { display:flex; gap:6px; margin-bottom:9px; }
+.lv-akpi { flex:1; background:#F7F9FC; border:1px solid #EDF1F6; border-radius:7px; padding:6px 7px; }
+.lv-akpi b { display:block; font-size:13px; font-weight:700; letter-spacing:-0.03em; line-height:1; }
+.lv-akpi span { font-size:7px; color:#8A94A6; }
+.lv-area { width:100%; height:58px; display:block; }
+.lv-xlabels { display:flex; justify-content:space-between; margin-top:4px; }
+.lv-xlabels span { font-size:6.5px; color:#9aa4b5; }
 
-@media (prefers-reduced-motion: reduce) { .lv-orb,.lv-c,.lv-pbar i { animation:none; } }
-.login-right { flex: 1; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; }
+@media (prefers-reduced-motion: reduce) { .tok .val{transition:none;} .lv-ready{transition:none;} }
+.login-right { flex: 1 1 50%; min-width: 0; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; position: relative; z-index: 1; }
 .login-box { width: 100%; max-width: 380px; }
 .login-box-header { margin-bottom: 32px; }
 .login-box-title { font-size: 24px; font-weight: 700; color: #0A1628; letter-spacing: -0.03em; margin-bottom: 6px; }
@@ -645,39 +648,39 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div class="lv-sub">AI that learns your policies, your tone and your way of doing things - and the tools to run it all.</div>
       <!-- Layered product scene -->
       <div class="lv-scene">
-        <!-- 1. Offer letter -->
-        <div class="lv-c lv-c1">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><b>Offer letter</b></div>
-          <div class="lv-bub lv-bq">Draft an offer letter for Priya Nair</div>
-          <div class="lv-bub lv-ba"><span class="lv-type">Drafted from your template</span></div>
+        <!-- 1. Offer letter with animated field fill -->
+        <div class="lv-c lv-c1 pB" id="lvLetter">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="lv-eyebrow">Documents · from your template</div></div></div>
           <div class="lv-letter">
             <div class="lt">Offer of Employment</div>
-            <p>Dear Priya, we are delighted to offer you the role of Account Executive, starting 1 September 2026...</p>
-            <s style="width:90%"></s><s style="width:72%"></s>
-            <div class="lv-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div>
+            <p>Dear <span class="tok t1"><span class="ph">{first_name}</span><span class="val">Amelia Silva</span></span>, we are delighted to offer you the role of <span class="tok t2"><span class="ph">{role}</span><span class="val">Analyst</span></span>, starting <span class="tok t3"><span class="ph">{start_date}</span><span class="val">1 Sept 2026</span></span> on a salary of <span class="tok t4"><span class="ph">{salary}</span><span class="val">£42,000</span></span>.</p>
+            <s style="width:88%"></s><s style="width:66%"></s>
+            <div class="lv-ready"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Ready to send - your formatting kept</div>
           </div>
         </div>
-        <!-- 2. People plan -->
+        <!-- 2. HR calendar -->
         <div class="lv-c lv-c2">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><b>People plan - 2026</b></div>
-          <div class="lv-pr"><span class="nm">Sales</span><div class="lv-pbar"><i style="width:80%"></i></div><span class="nums">12 / <b>15</b></span></div>
-          <div class="lv-pr"><span class="nm">Engineering</span><div class="lv-pbar"><i style="width:86%"></i></div><span class="nums">24 / <b>28</b></span></div>
-          <div class="lv-pr"><span class="nm">Customer success</span><div class="lv-pbar"><i style="width:73%"></i></div><span class="nums">8 / <b>11</b></span></div>
-          <div class="lv-pr"><span class="nm">Finance</span><div class="lv-pbar"><i style="width:100%"></i></div><span class="nums">6 / <b>6</b></span></div>
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div><b>HR calendar</b></div>
+          <div class="lv-ev"><div class="lv-date"><b>14</b><span>JUL</span></div><div class="eb"><b>Probation review - Tom</b><span>2:00 pm</span></div><button class="lv-addcal" onclick="this.classList.add('on');this.textContent='Added'">+ Add</button></div>
+          <div class="lv-ev"><div class="lv-date"><b>22</b><span>JUL</span></div><div class="eb"><b>Return to work - Sarah</b><span>All day</span></div><button class="lv-addcal" onclick="this.classList.add('on');this.textContent='Added'">+ Add</button></div>
+          <div class="lv-ev"><div class="lv-date"><b>30</b><span>JUL</span></div><div class="eb"><b>Right to work check</b><span>Due</span></div><button class="lv-addcal" onclick="this.classList.add('on');this.textContent='Added'">+ Add</button></div>
         </div>
         <!-- 3. Analytics -->
         <div class="lv-c lv-c3">
           <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><b>Workforce analytics</b><span class="lv-live">LIVE</span></div>
-          <div class="lv-an-h"><b>142</b><u>+8%</u><span>Headcount, last 6 months</span></div>
-          <svg class="lv-area" viewBox="0 0 240 74" preserveAspectRatio="none">
-            <defs><linearGradient id="lvArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0066CC" stop-opacity="0.26"/><stop offset="1" stop-color="#0066CC" stop-opacity="0"/></linearGradient></defs>
-            <line x1="0" y1="18" x2="240" y2="18" stroke="#EEF2F7"/><line x1="0" y1="46" x2="240" y2="46" stroke="#EEF2F7"/>
-            <polygon fill="url(#lvArea)" points="0,58 40,50 80,54 120,36 160,30 200,22 240,14 240,74 0,74"/>
-            <polyline fill="none" stroke="#0066CC" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="0,58 40,50 80,54 120,36 160,30 200,22 240,14"/>
-            <circle cx="240" cy="14" r="3.5" fill="#0066CC"/>
+          <div class="lv-akpis">
+            <div class="lv-akpi"><b style="color:#0066CC;">142</b><span>Headcount</span></div>
+            <div class="lv-akpi"><b style="color:#6B4FBB;">6.2%</b><span>Attrition</span></div>
+            <div class="lv-akpi"><b style="color:#30D158;">4</b><span>Open roles</span></div>
+          </div>
+          <svg class="lv-area" viewBox="0 0 240 64" preserveAspectRatio="none">
+            <defs><linearGradient id="lvArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0066CC" stop-opacity="0.24"/><stop offset="1" stop-color="#0066CC" stop-opacity="0"/></linearGradient></defs>
+            <line x1="0" y1="16" x2="240" y2="16" stroke="#EEF2F7"/><line x1="0" y1="40" x2="240" y2="40" stroke="#EEF2F7"/>
+            <polygon fill="url(#lvArea)" points="0,50 40,44 80,46 120,30 160,26 200,18 240,12 240,64 0,64"/>
+            <polyline fill="none" stroke="#0066CC" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="0,50 40,44 80,46 120,30 160,26 200,18 240,12"/>
+            <circle cx="240" cy="12" r="3.5" fill="#0066CC"/>
           </svg>
           <div class="lv-xlabels"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
-        </div>
         </div>
       </div>
     </div>
@@ -14459,7 +14462,26 @@ async function projConfirmEmailToTask(){
   if(projectActiveId) renderProjectDetail();
 }
 
-
+// Sign-in panel: animate the offer-letter fields filling in (class toggles only)
+(function(){
+  function initLetterAnim(){
+    var p = document.getElementById('lvLetter'); if (!p) return;
+    var steps = ['f1','f2','f3','f4','done'];
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      steps.forEach(function(s){ p.classList.add(s); }); return;
+    }
+    var timers = [];
+    function run(){
+      timers.forEach(clearTimeout); timers = [];
+      steps.forEach(function(s){ p.classList.remove(s); });
+      steps.forEach(function(s,i){ timers.push(setTimeout(function(){ p.classList.add(s); }, 1100 + i*1100)); });
+      timers.push(setTimeout(run, 10500));
+    }
+    run();
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initLetterAnim);
+  else initLetterAnim();
+})();
 
 </script>
 
