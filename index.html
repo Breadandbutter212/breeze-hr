@@ -463,28 +463,31 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-ready svg { width:9px;height:9px; }
 .pB.done .lv-ready { opacity:1; transform:none; }
 
-/* Email -> flag -> tracker flow */
+/* Email -> flag -> tracker flow (two cross-fading views) */
+.lv-c2.flow { height:158px; }
 .lv-av { width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;background:#6B4FBB; }
+.lv-view { position:absolute; inset:12px 13px; transition:opacity 0.55s ease, transform 0.55s ease; }
+.lv-tracker { opacity:0; transform:translateX(14px); pointer-events:none; }
+.flow.g4 .lv-inbox { opacity:0; transform:translateX(-14px); pointer-events:none; }
+.flow.g4 .lv-tracker { opacity:1; transform:none; }
 .lv-email .fr { display:flex; align-items:center; gap:8px; }
 .lv-email .fr b { display:block; font-size:10px; font-weight:600; color:#1A2233; }
 .lv-email .fr span { font-size:8.5px; color:#9aa4b5; }
 .lv-email p { font-size:9px; color:#54607A; line-height:1.5; margin:8px 0 0; }
-.lv-slot { position:relative; margin-top:10px; min-height:58px; }
-.lv-flag, .lv-trk { position:absolute; left:0; right:0; top:0; opacity:0; transform:translateY(10px); transition:all 0.6s cubic-bezier(0.22,1,0.36,1); }
-.lv-flag { display:flex; align-items:center; gap:8px; background:#FFFBEB; border:1px solid #FCD34D; border-radius:9px; padding:9px 11px; }
+.lv-flag { display:flex; align-items:center; gap:8px; margin-top:10px; background:#FFFBEB; border:1px solid #FCD34D; border-radius:9px; padding:9px 11px; opacity:0; transform:translateY(10px); transition:all 0.55s cubic-bezier(0.22,1,0.36,1); }
 .lv-flag .ft { flex:1; font-size:9px; font-weight:600; color:#92400e; }
 .lv-flag .fb { flex-shrink:0; background:#F59E0B; color:#fff; font-size:8px; font-weight:700; border-radius:13px; padding:4px 10px; transition:all 0.3s; }
-.lv-trk .th { display:flex; align-items:center; gap:6px; font-size:8.5px; font-weight:700; color:#0a7a37; margin-bottom:8px; }
-.lv-trk .th svg { width:11px; height:11px; }
-.lv-trk .tr { display:flex; align-items:center; gap:9px; background:#F7F9FC; border:1px solid #EDF1F6; border-radius:9px; padding:8px 10px; }
-.lv-trk .tr .rb { flex:1; min-width:0; }
-.lv-trk .tr .rb b { display:block; font-size:9.5px; font-weight:600; color:#1A2233; }
-.lv-trk .tr .rb span { font-size:8px; color:#9aa4b5; }
-.lv-trk .tr .pill { font-size:8px; font-weight:600; border-radius:20px; padding:2px 9px; background:#d6f5e1; color:#0a7a37; white-space:nowrap; }
-.flow.g2 .lv-flag { opacity:1; transform:none; }
-.flow.g3 .lv-flag { opacity:0; transform:translateY(-8px); }
-.flow.g3 .lv-flag .fb { background:#16a34a; }
-.flow.g3 .lv-trk { opacity:1; transform:none; }
+.flow.g2 .lv-flag, .flow.g3 .lv-flag, .flow.g4 .lv-flag { opacity:1; transform:none; }
+.flow.g3 .lv-flag, .flow.g4 .lv-flag { background:#ECFDF3; border-color:#bdebcd; }
+.flow.g3 .lv-flag .ft, .flow.g4 .lv-flag .ft { color:#0a7a37; }
+.flow.g3 .lv-flag .fb, .flow.g4 .lv-flag .fb { background:#16a34a; }
+.lv-tracker .th { display:flex; align-items:center; gap:6px; font-size:8.5px; font-weight:700; color:#0a7a37; margin-bottom:8px; }
+.lv-tracker .th svg { width:11px; height:11px; }
+.lv-tracker .tr { display:flex; align-items:center; gap:9px; background:#F7F9FC; border:1px solid #EDF1F6; border-radius:9px; padding:7px 10px; margin-bottom:6px; }
+.lv-tracker .tr .rb { flex:1; min-width:0; }
+.lv-tracker .tr .rb b { display:block; font-size:9.5px; font-weight:600; color:#1A2233; }
+.lv-tracker .tr .rb span { font-size:8px; color:#9aa4b5; }
+.lv-tracker .tr .pill { font-size:8px; font-weight:600; border-radius:20px; padding:2px 9px; white-space:nowrap; }
 
 /* Analytics */
 .lv-akpis { display:flex; gap:6px; margin-bottom:9px; }
@@ -504,7 +507,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 @media (prefers-reduced-motion: reduce) {
   .tok .val{transition:none;} .lv-ready{transition:none;} .lv-live::before{animation:none;}
   .lv-area polyline{stroke-dashoffset:0;animation:none;} .lv-area polygon,.lv-area circle{opacity:1;animation:none;}
-  .lv-flag,.lv-trk{transition:none;}
+  .lv-flag,.lv-view{transition:none;}
 }
 .login-right { flex: 1 1 50%; min-width: 0; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; position: relative; z-index: 1; }
 .login-box { width: 100%; max-width: 380px; }
@@ -680,19 +683,23 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
             <div class="lv-ready"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Ready to send - your formatting kept</div>
           </div>
         </div>
-        <!-- 2. Email -> maternity flag -> tracker flow -->
+        <!-- 2. Email -> maternity flag -> switches to tracker -->
         <div class="lv-c lv-c2 flow" id="lvFlow">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg></div><b>Inbox</b></div>
-          <div class="lv-email">
-            <div class="fr"><span class="lv-av">SM</span><div><b>Sarah Mitchell</b><span>My maternity news</span></div></div>
-            <p>Hi, I wanted to let you know I'm expecting - my due date is 14 October...</p>
-          </div>
-          <div class="lv-slot">
-            <div class="lv-flag"><span class="ft">Looks like a maternity email</span><span class="fb">+ Add to tracker</span></div>
-            <div class="lv-trk">
-              <div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added to Family Leave tracker</div>
-              <div class="tr"><span class="lv-av">SM</span><div class="rb"><b>Sarah Mitchell</b><span>Maternity · due 14 Oct</span></div><span class="pill">On track</span></div>
+          <!-- inbox view -->
+          <div class="lv-view lv-inbox">
+            <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg></div><b>Inbox</b></div>
+            <div class="lv-email">
+              <div class="fr"><span class="lv-av">SM</span><div><b>Sarah Mitchell</b><span>My maternity news</span></div></div>
+              <p>Hi, I wanted to let you know I'm expecting - my due date is 14 October...</p>
             </div>
+            <div class="lv-flag"><span class="ft">Looks like a maternity email</span><span class="fb">+ Add to tracker</span></div>
+          </div>
+          <!-- tracker view (card switches to this) -->
+          <div class="lv-view lv-tracker">
+            <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><b>Family Leave tracker</b></div>
+            <div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Sarah Mitchell added</div>
+            <div class="tr"><span class="lv-av">SM</span><div class="rb"><b>Sarah Mitchell</b><span>Maternity · due 14 Oct</span></div><span class="pill" style="background:#d6f5e1;color:#0a7a37;">On track</span></div>
+            <div class="tr"><span class="lv-av" style="background:#0066CC;">JO</span><div class="rb"><b>James Okafor</b><span>Paternity · from 14 Jul</span></div><span class="pill" style="background:#dbeafe;color:#1d4ed8;">2 weeks</span></div>
           </div>
         </div>
         <!-- 3. Analytics -->
@@ -14532,16 +14539,17 @@ async function projConfirmEmailToTask(){
     });
     var flow = document.getElementById('lvFlow');
     if (flow) {
-      if (reduce) { flow.classList.add('g2','g3'); }
+      if (reduce) { flow.classList.add('g2','g3','g4'); }
       else {
-        var fs = ['g1','g2','g3'], ft = [];
+        var fs = ['g1','g2','g3','g4'], ft = [];
         (function runFlow(){
           ft.forEach(clearTimeout); ft = [];
           fs.forEach(function(s){ flow.classList.remove(s); });
-          ft.push(setTimeout(function(){ flow.classList.add('g1'); }, 500));
-          ft.push(setTimeout(function(){ flow.classList.add('g2'); }, 1900));
-          ft.push(setTimeout(function(){ flow.classList.add('g3'); }, 3700));
-          ft.push(setTimeout(runFlow, 8200));
+          ft.push(setTimeout(function(){ flow.classList.add('g1'); }, 500));   // email
+          ft.push(setTimeout(function(){ flow.classList.add('g2'); }, 2000));  // maternity flag
+          ft.push(setTimeout(function(){ flow.classList.add('g3'); }, 3600));  // marked added
+          ft.push(setTimeout(function(){ flow.classList.add('g4'); }, 4600));  // switch to tracker
+          ft.push(setTimeout(runFlow, 9500));                                  // hold, then loop
         })();
       }
     }
