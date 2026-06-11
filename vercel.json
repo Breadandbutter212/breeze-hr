@@ -2,6 +2,7 @@
   "rewrites": [
     { "source": "/app", "destination": "/index.html" },
     { "source": "/app/(.*)", "destination": "/index.html" },
+    { "source": "/templates/offer-letter", "destination": "/offer-letter-template.html" },
     { "source": "/", "destination": "/landing.html" }
   ],
   "functions": {
