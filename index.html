@@ -464,7 +464,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .pB.done .lv-ready { opacity:1; transform:none; }
 
 /* Email -> flag -> tracker flow (two cross-fading views) */
-.lv-c2.flow { height:158px; }
+.lv-c2.flow { height:150px; }
 .lv-av { width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;background:#6B4FBB; }
 .lv-view { position:absolute; inset:12px 13px; transition:opacity 0.55s ease, transform 0.55s ease; }
 .lv-tracker { opacity:0; transform:translateX(14px); pointer-events:none; }
@@ -497,6 +497,12 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-area { width:100%; height:58px; display:block; }
 .lv-xlabels { display:flex; justify-content:space-between; margin-top:4px; }
 .lv-xlabels span { font-size:6.5px; color:#9aa4b5; }
+/* analytics insight pop-up */
+.lv-insight { position:absolute; top:92px; right:14px; display:flex; align-items:center; gap:6px; background:#0A1628; color:#fff; font-size:8.5px; font-weight:600; border-radius:8px; padding:6px 9px; box-shadow:0 10px 24px rgba(8,20,45,0.35); white-space:nowrap; opacity:0; transform:translateY(6px) scale(0.95); animation:lvPop 0.55s cubic-bezier(0.22,1,0.36,1) 2.4s forwards; z-index:2; }
+.lv-insight svg { width:11px; height:11px; color:#34d399; }
+.lv-insight u { color:#34d399; text-decoration:none; font-weight:700; }
+.lv-insight::after { content:''; position:absolute; bottom:-4px; right:20px; width:8px; height:8px; background:#0A1628; transform:rotate(45deg); }
+@keyframes lvPop { to { opacity:1; transform:none; } }
 
 /* analytics chart draws in; calendar rows rise in */
 .lv-area polyline { stroke-dasharray:640; stroke-dashoffset:640; animation:lvDraw 1.6s ease-out 0.3s forwards; }
@@ -507,7 +513,7 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 @media (prefers-reduced-motion: reduce) {
   .tok .val{transition:none;} .lv-ready{transition:none;} .lv-live::before{animation:none;}
   .lv-area polyline{stroke-dashoffset:0;animation:none;} .lv-area polygon,.lv-area circle{opacity:1;animation:none;}
-  .lv-flag,.lv-view{transition:none;}
+  .lv-flag,.lv-view{transition:none;} .lv-insight{opacity:1;transform:none;animation:none;}
 }
 .login-right { flex: 1 1 50%; min-width: 0; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; position: relative; z-index: 1; }
 .login-box { width: 100%; max-width: 380px; }
@@ -697,14 +703,14 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
           <!-- tracker view (card switches to this) -->
           <div class="lv-view lv-tracker">
             <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><b>Family Leave tracker</b></div>
-            <div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Sarah Mitchell added</div>
+            <div class="th"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Added to tracker</div>
             <div class="tr"><span class="lv-av">SM</span><div class="rb"><b>Sarah Mitchell</b><span>Maternity · due 14 Oct</span></div><span class="pill" style="background:#d6f5e1;color:#0a7a37;">On track</span></div>
-            <div class="tr"><span class="lv-av" style="background:#0066CC;">JO</span><div class="rb"><b>James Okafor</b><span>Paternity · from 14 Jul</span></div><span class="pill" style="background:#dbeafe;color:#1d4ed8;">2 weeks</span></div>
           </div>
         </div>
         <!-- 3. Analytics -->
         <div class="lv-c lv-c3">
           <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><b>Workforce analytics</b><span class="lv-live">LIVE</span></div>
+          <div class="lv-insight"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="2 7 8.5 13.5 13.5 8.5 22 17"/><polyline points="16 17 22 17 22 11"/></svg>Attrition <u>down 1.4%</u> vs Q1</div>
           <div class="lv-akpis">
             <div class="lv-akpi"><b class="lv-count" data-to="142" style="color:#0066CC;">0</b><span>Headcount</span></div>
             <div class="lv-akpi"><b class="lv-count" data-to="6.2" data-dec="1" data-suffix="%" style="color:#6B4FBB;">0</b><span>Attrition</span></div>
