@@ -96,9 +96,10 @@ body.nav-rail .app-rail { display:flex; }
 .rail-tip { position:absolute; left:52px; top:50%; transform:translateY(-50%); background:#1D1D1F; color:#fff; font-size:12px; font-weight:400; padding:5px 9px; border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:60; }
 .rail-btn:hover .rail-tip, .rail-avatar:hover .rail-tip, .rail-settings:hover .rail-tip { opacity:1; }
 /* flyout */
-.flyout { display:none; width:184px; flex-shrink:0; background:var(--rail-bg); border-right:1px solid rgba(255,255,255,0.08); flex-direction:column; padding:14px 12px 12px; overflow:hidden; transition:width 0.15s ease-out; }
-body.nav-rail .flyout { display:flex; }
-body.flyout-collapsed .flyout { width:0; padding:0; border-right:none; }
+.flyout { display:none !important; }
+/* Dropdown popover anchored to a rail icon */
+.rail-pop { position:fixed; background:var(--rail-bg); border:1px solid rgba(255,255,255,0.12); border-radius:12px; box-shadow:0 18px 44px rgba(8,20,45,0.45); padding:8px; min-width:194px; max-width:230px; z-index:120; opacity:0; transform:translateX(-6px); transition:opacity 0.15s ease-out, transform 0.15s ease-out; }
+.rail-pop.in { opacity:1; transform:none; }
 .flyout-h { font-size:13px; font-weight:500; color:#fff; padding:0 6px 10px; display:flex; align-items:center; gap:6px; white-space:nowrap; }
 .flyout-h .beta { font-size:11px; font-weight:400; color:rgba(255,255,255,0.5); }
 .flyout-item { display:block; width:100%; text-align:left; font-size:12px; font-weight:400; color:rgba(255,255,255,0.72); padding:6px 9px; border-radius:8px; border:1px solid transparent; background:none; cursor:pointer; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
@@ -14650,47 +14651,58 @@ async function projConfirmEmailToTask(){
   };
   var VIEW2DOMAIN = {};
   Object.keys(DOMAINS).forEach(function(d){ DOMAINS[d].items.forEach(function(it){ if(it.view && !VIEW2DOMAIN[it.view]) VIEW2DOMAIN[it.view]=d; }); });
-  var domain = localStorage.getItem('bz_rail_domain') || 'home';
+  var popDomain = null;
   var recentCache = null;
 
   function curView(){ return localStorage.getItem('bz_view') || 'chat'; }
-  function defaultView(d){ var it=(DOMAINS[d].items||[]).find(function(x){return x.view;}); return it ? it.view : 'chat'; }
 
-  window.railOpen = function(d, opts){
-    opts = opts || {};
-    var expanding = document.body.classList.contains('flyout-collapsed') && d===domain;
-    domain = d; try{ localStorage.setItem('bz_rail_domain', d); }catch(e){}
-    document.body.classList.remove('flyout-collapsed');
-    renderFlyout(d);
-    if(!opts.noNav && !expanding){ var v=defaultView(d); if(v) showView(v); }
-    syncActive();
+  // Open/toggle a dropdown popover anchored to the rail icon
+  window.railOpen = function(d){
+    if(popDomain===d){ closePop(); return; }
+    openPop(d);
   };
-  window.railNav = function(v){ showView(v); };
-  window.railCollapse = function(){ document.body.classList.add('flyout-collapsed'); try{localStorage.setItem('bz_rail_collapsed','1');}catch(e){} };
+  window.railNav = function(v){ closePop(); showView(v); };
+  window.railCollapse = function(){ closePop(); };
 
-  function renderFlyout(d){
-    var c = DOMAINS[d]; if(!c) return;
-    var t=document.getElementById('flyoutTitle'); if(t) t.textContent=c.title;
-    var body=document.getElementById('flyoutBody'); if(!body) return;
+  function closePop(){
+    var p=document.getElementById('railPop'); if(p) p.remove();
+    popDomain=null;
+    document.querySelectorAll('.app-rail .rail-btn[data-domain]').forEach(function(b){ b.removeAttribute('aria-expanded'); });
+  }
+
+  function openPop(d){
+    closePop();
+    var c=DOMAINS[d]; if(!c) return;
+    var btn=document.querySelector('.rail-btn[data-domain="'+d+'"]'); if(!btn) return;
     var cur=curView();
-    var html = c.items.map(function(it){
+    var html='<div class="flyout-h">'+c.title+'</div>';
+    html += c.items.map(function(it){
       if(it.soon) return '<button class="flyout-item" aria-disabled="true">'+it.label+' <span style="font-size:10px">· soon</span></button>';
-      var on = cur===it.view;
+      var on=cur===it.view;
       return '<button class="flyout-item'+(on?' active':'')+'" data-view="'+it.view+'"'+(on?' aria-current="page"':'')+' onclick="railNav(\''+it.view+'\')">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</button>';
     }).join('');
     if(c.recent) html += '<div class="flyout-label">Recent people</div><div id="railRecent"><button class="flyout-item" aria-disabled="true" style="font-size:11px">Loading...</button></div>';
-    body.innerHTML = html;
-    spFooter(d);
+    if(c.sharepoint) html += '<div class="flyout-sp" style="margin-top:8px"><span class="plug"></span> Connected: SharePoint</div>';
+    var pop=document.createElement('div'); pop.id='railPop'; pop.className='rail-pop'; pop.setAttribute('role','menu'); pop.innerHTML=html;
+    document.body.appendChild(pop);
+    popDomain=d; btn.setAttribute('aria-expanded','true');
+    // position to the right of the icon, clamped to viewport
+    var r=btn.getBoundingClientRect();
+    var top=r.top, left=r.right+8;
+    var ph=pop.offsetHeight;
+    if(top+ph>window.innerHeight-10) top=Math.max(10, window.innerHeight-10-ph);
+    pop.style.left=left+'px'; pop.style.top=top+'px';
+    requestAnimationFrame(function(){ pop.classList.add('in'); });
     if(c.recent) loadRecent();
-    syncActive();
+    setTimeout(function(){
+      document.addEventListener('mousedown', onDocDown, true);
+    },0);
   }
-
-  function spFooter(d){
-    var foot=document.querySelector('.flyout-foot'); if(!foot) return;
-    var sp=document.getElementById('railSp');
-    if(d==='library'){
-      if(!sp){ sp=document.createElement('div'); sp.id='railSp'; sp.className='flyout-sp'; sp.style.marginBottom='8px'; sp.innerHTML='<span class="plug"></span> Connected: SharePoint'; foot.insertBefore(sp, foot.firstChild); }
-    } else if(sp){ sp.remove(); }
+  function onDocDown(e){
+    var pop=document.getElementById('railPop');
+    if(pop && !pop.contains(e.target) && !(e.target.closest && e.target.closest('.rail-btn[data-domain]'))){
+      closePop(); document.removeEventListener('mousedown', onDocDown, true);
+    }
   }
 
   function recentHtml(names){
@@ -14716,20 +14728,11 @@ async function projConfirmEmailToTask(){
   }
 
   function syncActive(){
-    var cur=curView();
-    document.querySelectorAll('.app-rail .rail-btn[data-domain]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-domain')===domain); });
-    document.querySelectorAll('#flyoutBody .flyout-item[data-view]').forEach(function(el){
-      var on = el.getAttribute('data-view')===cur;
-      el.classList.toggle('active', on);
-      if(on) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current');
-    });
+    var d = VIEW2DOMAIN[curView()] || 'home';
+    document.querySelectorAll('.app-rail .rail-btn[data-domain]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-domain')===d); });
   }
 
-  window.railOnView = function(v){
-    var d = VIEW2DOMAIN[v];
-    if(d && d!==domain){ domain=d; try{localStorage.setItem('bz_rail_domain',d);}catch(e){} renderFlyout(d); }
-    else syncActive();
-  };
+  window.railOnView = function(v){ syncActive(); };
 
   window.railToggleMenu = function(e){
     e.stopPropagation();
@@ -14766,7 +14769,6 @@ async function projConfirmEmailToTask(){
     }catch(e){}
     if((localStorage.getItem('bz_nav')||'')!=='rail') return; // flag off -> classic sidebar
     document.body.classList.add('nav-rail');
-    if(localStorage.getItem('bz_rail_collapsed')==='1') document.body.classList.add('flyout-collapsed');
     var ra=document.getElementById('railAvatar');
     if(ra && !ra.textContent){ var ini=(document.getElementById('topbarAvatar')||{}).textContent||''; ra.textContent=ini; }
     // keyboard nav on the rail
@@ -14776,9 +14778,8 @@ async function projConfirmEmailToTask(){
       var i=btns.indexOf(document.activeElement);
       if(e.key==='ArrowDown'){ e.preventDefault(); (btns[i+1]||btns[0]).focus(); }
       else if(e.key==='ArrowUp'){ e.preventDefault(); (btns[i-1]||btns[btns.length-1]).focus(); }
-      else if(e.key==='Escape'){ railCollapse(); }
+      else if(e.key==='Escape'){ closePop(); }
     }); }
-    renderFlyout(domain);
     syncActive();
     updateDots();
   }
