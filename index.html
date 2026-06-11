@@ -77,6 +77,48 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 
+/* ===== Two-tier rail + flyout nav (feature-flagged) ===== */
+:root { --rail-bg: #2A5080; }
+.app-rail { display:none; }
+body.nav-rail .sidebar { display:none !important; }
+body.nav-rail .app-rail { display:flex; }
+.app-rail { width:56px; flex-shrink:0; background:var(--rail-bg); flex-direction:column; align-items:center; padding:10px 0; gap:4px; height:100%; }
+.rail-logo { width:28px; height:28px; border-radius:8px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:500; font-size:14px; margin-bottom:12px; flex-shrink:0; }
+.rail-btn { width:36px; height:36px; border-radius:8px; border:none; background:none; color:rgba(255,255,255,0.75); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.12s, color 0.12s; }
+.rail-btn svg { width:18px; height:18px; }
+.rail-btn:hover { color:rgba(255,255,255,0.9); }
+.rail-btn.active { background:rgba(255,255,255,0.16); color:#fff; }
+.rail-btn:focus-visible { outline:2px solid rgba(255,255,255,0.7); outline-offset:1px; }
+.rail-dot { position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%; background:#E66; border:1.5px solid var(--rail-bg); }
+.rail-spacer { flex:1; }
+.rail-settings { color:rgba(255,255,255,0.45); }
+.rail-avatar { width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:500; cursor:pointer; margin-top:4px; border:none; }
+.rail-tip { position:absolute; left:46px; top:50%; transform:translateY(-50%); background:#1D1D1F; color:#fff; font-size:12px; font-weight:400; padding:5px 9px; border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:60; }
+.rail-btn:hover .rail-tip, .rail-avatar:hover .rail-tip, .rail-settings:hover .rail-tip { opacity:1; }
+/* flyout */
+.flyout { display:none; width:168px; flex-shrink:0; background:var(--surface2); border-right:0.5px solid var(--border); flex-direction:column; padding:14px 10px 10px; overflow:hidden; transition:width 0.15s ease-out; }
+body.nav-rail .flyout { display:flex; }
+body.flyout-collapsed .flyout { width:0; padding:0; border-right:none; }
+.flyout-h { font-size:13px; font-weight:500; color:var(--ink); padding:0 6px 10px; display:flex; align-items:center; gap:6px; white-space:nowrap; }
+.flyout-h .beta { font-size:11px; font-weight:400; color:var(--ink3); }
+.flyout-item { display:block; width:100%; text-align:left; font-size:12px; font-weight:400; color:var(--ink2); padding:5px 8px; border-radius:8px; border:1px solid transparent; background:none; cursor:pointer; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
+.flyout-item:hover { background:var(--surface3); color:var(--ink); }
+.flyout-item.active { background:var(--surface); border-color:var(--border); color:var(--ink); font-weight:500; }
+.flyout-item[aria-disabled="true"] { color:var(--ink3); cursor:default; }
+.flyout-item[aria-disabled="true"]:hover { background:none; color:var(--ink3); }
+.flyout-label { font-size:11px; font-weight:400; color:var(--ink3); padding:12px 6px 4px; white-space:nowrap; }
+.flyout-sp { display:flex; align-items:center; gap:7px; font-size:11px; color:var(--ink2); padding:7px 8px; border:1px solid var(--border); border-radius:8px; background:var(--surface); }
+.flyout-sp .plug { width:7px; height:7px; border-radius:50%; background:var(--green); flex-shrink:0; }
+.flyout-foot { margin-top:auto; padding-top:8px; }
+.flyout-collapse { font-size:11px; font-weight:400; color:var(--ink3); cursor:pointer; padding:6px; display:flex; align-items:center; gap:6px; background:none; border:none; font-family:inherit; }
+.flyout-collapse:hover { color:var(--ink2); }
+.rail-menu { position:fixed; bottom:14px; left:64px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); padding:6px; z-index:80; min-width:150px; }
+.rail-menu button { display:block; width:100%; text-align:left; font-size:13px; color:var(--ink); padding:8px 10px; border-radius:7px; border:none; background:none; cursor:pointer; font-family:inherit; }
+.rail-menu button:hover { background:var(--surface2); }
+@media (max-width:900px){
+  body.nav-rail .flyout { position:absolute; left:56px; top:0; bottom:0; z-index:55; box-shadow:var(--shadow-lg); }
+}
+
 /* ── EMAIL INBOX PANEL ── */
 .email-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:800;display:none; }
 .email-overlay.open { display:block; }
@@ -777,6 +819,46 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 <div class="shell" id="appShell" style="display:none;">
 
 <!-- SIDEBAR -->
+<!-- ===== Two-tier rail + flyout nav (feature-flagged via ?nav=rail) ===== -->
+<nav class="app-rail" id="appRail" aria-label="Primary">
+  <div class="rail-logo" aria-hidden="true">B</div>
+  <button class="rail-btn" data-domain="home" aria-label="Home" onclick="railOpen('home')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
+    <span class="rail-tip">Home</span>
+  </button>
+  <button class="rail-btn" data-domain="people" aria-label="People" onclick="railOpen('people')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
+    <span class="rail-tip">People</span>
+  </button>
+  <button class="rail-btn" data-domain="work" aria-label="Work" onclick="railOpen('work')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+    <span class="rail-tip">Work</span>
+  </button>
+  <button class="rail-btn" data-domain="library" aria-label="Library" onclick="railOpen('library')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    <span class="rail-tip">Library</span>
+  </button>
+  <button class="rail-btn" data-domain="insights" aria-label="Insights" onclick="railOpen('insights')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+    <span class="rail-tip">Insights</span>
+  </button>
+  <div class="rail-spacer"></div>
+  <button class="rail-btn rail-settings" aria-label="Settings" onclick="showView('settings')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+    <span class="rail-tip">Settings</span>
+  </button>
+  <button class="rail-avatar" id="railAvatar" aria-label="Account menu" aria-haspopup="true" onclick="railToggleMenu(event)"></button>
+</nav>
+<aside class="flyout" id="flyout" aria-label="Section navigation">
+  <div class="flyout-h" id="flyoutTitle">Home</div>
+  <div id="flyoutBody" style="display:flex;flex-direction:column;overflow-y:auto;flex:1;"></div>
+  <div class="flyout-foot">
+    <button class="flyout-collapse" onclick="railCollapse()" aria-label="Collapse panel">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Collapse
+    </button>
+  </div>
+</aside>
+
 <div class="sidebar">
   <div class="sidebar-logo" style="padding:16px 14px 14px;">
     <div style="width:32px;height:32px;background:#2C2C2E;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
@@ -1742,6 +1824,8 @@ async function onSignedIn(user) {
     // Top bar avatar + greeting
     const avatar = document.getElementById('topbarAvatar');
     if (avatar) avatar.textContent = initials;
+    const railAv = document.getElementById('railAvatar');
+    if (railAv) railAv.textContent = initials;
     const firstName = (profile.full_name || user.email).split(' ')[0];
     const hour = new Date().getHours();
     const greetEl = document.getElementById('appGreeting');
@@ -5764,6 +5848,7 @@ function showView(v,navEl) {
   if(v==='orgchart')initOrgChart();
   if(v==='headcount'){hcRoles=null;loadHCRoles().then(renderHeadcount);}
   if(v==='trackers'){mpRecords=null;_guidanceCache={};wfPolicies=null;wfCases=null;wfActiveCase=null;immigrationRecords=null;customTrackers=null;trackerTab='family-leave';document.querySelectorAll('.tracker-tab-btn').forEach(b=>b.classList.remove('active-tt'));const ftb=document.getElementById('tt-family-leave');if(ftb)ftb.classList.add('active-tt');renderTrackers();}
+  try { if (window.railOnView) window.railOnView(v); } catch(e) {}
 }
 
 // ── BULK MAIL MERGE ──
@@ -14552,6 +14637,153 @@ async function projConfirmEmailToTask(){
   function initAll(){ initLetterAnim(); initExtras(); }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initAll);
   else initAll();
+})();
+
+// ===== Two-tier rail + flyout navigation (feature-flagged) =====
+(function(){
+  var DOMAINS = {
+    home:     { title:'Home',     items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'} ] },
+    people:   { title:'People',   recent:true, items:[ {label:'Directory', soon:true}, {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Headcount planning', view:'headcount'} ] },
+    work:     { title:'Work',     items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
+    library:  { title:'Library',  sharepoint:true, items:[ {label:'Policies', view:'manage'}, {label:'Documents', view:'docs'}, {label:'Letters & templates', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
+    insights: { title:'Insights', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] }
+  };
+  var VIEW2DOMAIN = {};
+  Object.keys(DOMAINS).forEach(function(d){ DOMAINS[d].items.forEach(function(it){ if(it.view && !VIEW2DOMAIN[it.view]) VIEW2DOMAIN[it.view]=d; }); });
+  var domain = localStorage.getItem('bz_rail_domain') || 'home';
+  var recentCache = null;
+
+  function curView(){ return localStorage.getItem('bz_view') || 'chat'; }
+  function defaultView(d){ var it=(DOMAINS[d].items||[]).find(function(x){return x.view;}); return it ? it.view : 'chat'; }
+
+  window.railOpen = function(d, opts){
+    opts = opts || {};
+    var expanding = document.body.classList.contains('flyout-collapsed') && d===domain;
+    domain = d; try{ localStorage.setItem('bz_rail_domain', d); }catch(e){}
+    document.body.classList.remove('flyout-collapsed');
+    renderFlyout(d);
+    if(!opts.noNav && !expanding){ var v=defaultView(d); if(v) showView(v); }
+    syncActive();
+  };
+  window.railNav = function(v){ showView(v); };
+  window.railCollapse = function(){ document.body.classList.add('flyout-collapsed'); try{localStorage.setItem('bz_rail_collapsed','1');}catch(e){} };
+
+  function renderFlyout(d){
+    var c = DOMAINS[d]; if(!c) return;
+    var t=document.getElementById('flyoutTitle'); if(t) t.textContent=c.title;
+    var body=document.getElementById('flyoutBody'); if(!body) return;
+    var cur=curView();
+    var html = c.items.map(function(it){
+      if(it.soon) return '<button class="flyout-item" aria-disabled="true">'+it.label+' <span style="font-size:10px">· soon</span></button>';
+      var on = cur===it.view;
+      return '<button class="flyout-item'+(on?' active':'')+'" data-view="'+it.view+'"'+(on?' aria-current="page"':'')+' onclick="railNav(\''+it.view+'\')">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</button>';
+    }).join('');
+    if(c.recent) html += '<div class="flyout-label">Recent people</div><div id="railRecent"><button class="flyout-item" aria-disabled="true" style="font-size:11px">Loading...</button></div>';
+    body.innerHTML = html;
+    spFooter(d);
+    if(c.recent) loadRecent();
+    syncActive();
+  }
+
+  function spFooter(d){
+    var foot=document.querySelector('.flyout-foot'); if(!foot) return;
+    var sp=document.getElementById('railSp');
+    if(d==='library'){
+      if(!sp){ sp=document.createElement('div'); sp.id='railSp'; sp.className='flyout-sp'; sp.style.marginBottom='8px'; sp.innerHTML='<span class="plug"></span> Connected: SharePoint'; foot.insertBefore(sp, foot.firstChild); }
+    } else if(sp){ sp.remove(); }
+  }
+
+  function recentHtml(names){
+    if(!names.length) return '<button class="flyout-item" aria-disabled="true" style="font-size:11px">No people yet</button>';
+    return names.map(function(n){
+      var ini=n.trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
+      return '<button class="flyout-item" onclick="railNav(\'trackers\')" style="display:flex;align-items:center;gap:7px"><span style="width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:8px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ini+'</span>'+escapeHtml(n)+'</button>';
+    }).join('');
+  }
+  async function loadRecent(){
+    var wrap=document.getElementById('railRecent'); if(!wrap) return;
+    if(recentCache){ wrap.innerHTML=recentHtml(recentCache); return; }
+    var names=[];
+    try{
+      if(typeof currentProfile!=='undefined' && currentProfile){
+        var res=await sb.from('policies').select('name,content').eq('company_id',currentProfile.company_id).in('name',['TRACKER:Workflows','TRACKER:MatPat']);
+        (res.data||[]).forEach(function(row){ try{ var arr=JSON.parse(row.content); (Array.isArray(arr)?arr:[]).forEach(function(r){ var n=r.employeeName||r.name; if(n&&typeof n==='string') names.push(n.trim()); }); }catch(e){} });
+      }
+    }catch(e){}
+    names = names.filter(function(v,i){ return names.indexOf(v)===i; }).slice(-5).reverse();
+    recentCache = names;
+    var w2=document.getElementById('railRecent'); if(w2) w2.innerHTML=recentHtml(names);
+  }
+
+  function syncActive(){
+    var cur=curView();
+    document.querySelectorAll('.app-rail .rail-btn[data-domain]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-domain')===domain); });
+    document.querySelectorAll('#flyoutBody .flyout-item[data-view]').forEach(function(el){
+      var on = el.getAttribute('data-view')===cur;
+      el.classList.toggle('active', on);
+      if(on) el.setAttribute('aria-current','page'); else el.removeAttribute('aria-current');
+    });
+  }
+
+  window.railOnView = function(v){
+    var d = VIEW2DOMAIN[v];
+    if(d && d!==domain){ domain=d; try{localStorage.setItem('bz_rail_domain',d);}catch(e){} renderFlyout(d); }
+    else syncActive();
+  };
+
+  window.railToggleMenu = function(e){
+    e.stopPropagation();
+    if(document.getElementById('railMenu')){ railCloseMenu(); return; }
+    var m=document.createElement('div'); m.id='railMenu'; m.className='rail-menu'; m.setAttribute('role','menu');
+    m.innerHTML = '<button role="menuitem" onclick="showView(\'settings\');railCloseMenu()">Settings</button>'+
+      '<button role="menuitem" onclick="showView(\'privacy\');railCloseMenu()">Privacy</button>'+
+      '<button role="menuitem" onclick="showTermsModal();railCloseMenu()">Terms</button>'+
+      '<button role="menuitem" onclick="showDpaModal();railCloseMenu()">DPA</button>'+
+      '<button role="menuitem" onclick="localStorage.removeItem(\'bz_nav\');location.href=\'/app\'">Classic navigation</button>'+
+      '<button role="menuitem" style="color:var(--red)" onclick="signOut()">Sign out</button>';
+    document.body.appendChild(m);
+    setTimeout(function(){ document.addEventListener('click', railCloseMenu, {once:true}); },0);
+  };
+  window.railCloseMenu = function(){ var m=document.getElementById('railMenu'); if(m) m.remove(); };
+
+  async function updateDots(){
+    try{
+      if(typeof loadProjects==='function'){ if(!window.projectsData) await loadProjects(); }
+      var overdue=0;
+      if(window.projectsData && typeof projOverdueList==='function'){ window.projectsData.forEach(function(p){ overdue += projOverdueList(p).length; }); }
+      var btn=document.querySelector('.rail-btn[data-domain="work"]'); if(!btn) return;
+      var dot=btn.querySelector('.rail-dot');
+      if(overdue>0){ if(!dot){ dot=document.createElement('span'); dot.className='rail-dot'; btn.appendChild(dot); } }
+      else if(dot){ dot.remove(); }
+    }catch(e){}
+  }
+
+  function initRail(){
+    try{
+      var q=new URLSearchParams(location.search);
+      if(q.get('nav')==='rail') localStorage.setItem('bz_nav','rail');
+      if(q.get('nav')==='old') localStorage.removeItem('bz_nav');
+    }catch(e){}
+    if((localStorage.getItem('bz_nav')||'')!=='rail') return; // flag off -> classic sidebar
+    document.body.classList.add('nav-rail');
+    if(localStorage.getItem('bz_rail_collapsed')==='1') document.body.classList.add('flyout-collapsed');
+    var ra=document.getElementById('railAvatar');
+    if(ra && !ra.textContent){ var ini=(document.getElementById('topbarAvatar')||{}).textContent||''; ra.textContent=ini; }
+    // keyboard nav on the rail
+    var rail=document.getElementById('appRail');
+    if(rail){ rail.addEventListener('keydown', function(e){
+      var btns=[].slice.call(rail.querySelectorAll('.rail-btn'));
+      var i=btns.indexOf(document.activeElement);
+      if(e.key==='ArrowDown'){ e.preventDefault(); (btns[i+1]||btns[0]).focus(); }
+      else if(e.key==='ArrowUp'){ e.preventDefault(); (btns[i-1]||btns[btns.length-1]).focus(); }
+      else if(e.key==='Escape'){ railCollapse(); }
+    }); }
+    renderFlyout(domain);
+    syncActive();
+    updateDots();
+  }
+  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', initRail);
+  else initRail();
 })();
 
 </script>
