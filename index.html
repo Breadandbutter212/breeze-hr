@@ -426,9 +426,9 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .login-left-insta:hover { color: rgba(255,255,255,0.8); }
 /* Animated visual panel (left) - layered product scene */
 .lv-orb { position:absolute; border-radius:50%; filter:blur(52px); pointer-events:none; z-index:0; animation: lvFloat 22s ease-in-out infinite; }
-.lv-orb.o1 { width:300px;height:300px; background:rgba(130,185,255,0.42); top:-60px; left:-80px; }
-.lv-orb.o2 { width:250px;height:250px; background:rgba(70,205,185,0.26); bottom:10px; right:-70px; animation-delay:-8s; }
-.lv-orb.o3 { width:210px;height:210px; background:rgba(150,125,255,0.28); top:48%; left:42%; animation-delay:-14s; }
+.lv-orb.o1 { width:300px;height:300px; background:rgba(130,185,255,0.40); top:-60px; left:-80px; }
+.lv-orb.o2 { width:250px;height:250px; background:rgba(70,205,185,0.24); bottom:10px; right:-70px; animation-delay:-8s; }
+.lv-orb.o3 { width:210px;height:210px; background:rgba(150,125,255,0.26); top:48%; left:42%; animation-delay:-14s; }
 @keyframes lvFloat { 0%,100%{transform:translate(0,0) scale(1);} 33%{transform:translate(34px,-26px) scale(1.1);} 66%{transform:translate(-22px,20px) scale(0.94);} }
 .lv-hero { position:relative; z-index:2; }
 .lv-title { font-size:33px; font-weight:700; color:#fff; line-height:1.14; letter-spacing:-0.03em; margin-bottom:9px; }
@@ -436,56 +436,54 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .lv-sub { font-size:14px; color:rgba(255,255,255,0.62); line-height:1.6; max-width:360px; }
 
 /* Layered floating cards */
-.lv-scene { position:relative; z-index:2; margin-top:26px; height:370px; font-family:inherit; }
-.lv-c { position:absolute; background:#fff; border-radius:14px; box-shadow:0 26px 60px rgba(8,20,45,0.4); border:1px solid rgba(255,255,255,0.7); padding:14px 15px; }
-.lv-c .hd { display:flex; align-items:center; gap:8px; margin-bottom:12px; }
-.lv-c .hd b { font-size:11.5px; font-weight:700; color:#0A1628; letter-spacing:-0.01em; }
-.lv-ic2 { width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0; }
-.lv-live { font-size:8px;font-weight:700;color:#0a7a37;background:#d6f5e1;border-radius:10px;padding:2px 7px;letter-spacing:0.04em;margin-left:auto; }
-.lv-c1 { left:0; top:6px; width:64%; z-index:1; animation:lvF1 8s ease-in-out infinite; }
-.lv-c2 { right:0; top:80px; width:58%; z-index:3; animation:lvF2 7s ease-in-out infinite; }
-.lv-c3 { left:5%; bottom:0; width:82%; z-index:2; animation:lvF3 9s ease-in-out infinite; }
-@keyframes lvF1 { 0%,100%{transform:translateY(0) rotate(-1.6deg);} 50%{transform:translateY(-10px) rotate(-1.6deg);} }
-@keyframes lvF2 { 0%,100%{transform:translateY(0) rotate(1.8deg);} 50%{transform:translateY(-13px) rotate(1.8deg);} }
-@keyframes lvF3 { 0%,100%{transform:translateY(0) rotate(0.6deg);} 50%{transform:translateY(8px) rotate(0.6deg);} }
+.lv-scene { position:relative; z-index:2; margin-top:30px; height:330px; font-family:inherit; }
+.lv-c { position:absolute; background:#fff; border-radius:13px; box-shadow:0 22px 48px rgba(8,20,45,0.34); border:1px solid rgba(255,255,255,0.7); padding:13px 14px; }
+.lv-c .hd { display:flex; align-items:center; gap:8px; margin-bottom:11px; }
+.lv-c .hd b { font-size:11px; font-weight:700; color:#0A1628; letter-spacing:-0.01em; }
+.lv-ic2 { width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0066CC;background:#E9F1FB; }
+.lv-ic2 svg { width:13px;height:13px; }
+.lv-live { display:inline-flex;align-items:center;gap:4px;font-size:7.5px;font-weight:700;color:#0a7a37;background:#d6f5e1;border-radius:10px;padding:2px 7px;letter-spacing:0.05em;margin-left:auto; }
+.lv-live::before { content:'';width:5px;height:5px;border-radius:50%;background:#16a34a; }
+.lv-c1 { left:0; top:0; width:54%; z-index:3; animation:lvF1 9s ease-in-out infinite; }
+.lv-c2 { right:0; top:96px; width:52%; z-index:2; animation:lvF2 8s ease-in-out infinite; }
+.lv-c3 { left:9%; bottom:0; width:66%; z-index:4; animation:lvF3 10s ease-in-out infinite; }
+@keyframes lvF1 { 0%,100%{transform:translateY(0) rotate(-1.2deg);} 50%{transform:translateY(-6px) rotate(-1.2deg);} }
+@keyframes lvF2 { 0%,100%{transform:translateY(0) rotate(1.4deg);} 50%{transform:translateY(-8px) rotate(1.4deg);} }
+@keyframes lvF3 { 0%,100%{transform:translateY(0) rotate(0.5deg);} 50%{transform:translateY(6px) rotate(0.5deg);} }
 
-/* KPIs + chart (analytics card) */
-.lv-kpis { display:flex; gap:7px; margin-bottom:11px; }
-.lv-kpi { flex:1; background:#F7F9FC; border:1px solid #EDF1F6; border-radius:8px; padding:7px 8px; }
-.lv-kpi b { display:block; font-size:15px; font-weight:700; letter-spacing:-0.03em; line-height:1; }
-.lv-kpi span { font-size:7.5px; color:#8A94A6; }
-.lv-chart { position:relative; height:78px; }
-.lv-chart .gl { position:absolute; left:0; right:0; height:1px; background:#EEF2F7; }
-.lv-cols { position:absolute; left:0; right:0; top:0; bottom:15px; display:flex; align-items:flex-end; gap:7px; }
-.lv-cols div { flex:1; display:flex; flex-direction:column; justify-content:flex-end; height:100%; position:relative; }
-.lv-cols i { display:block; border-radius:4px 4px 0 0; background:linear-gradient(180deg,#3b89e0,#0066CC); height:14%; animation:lvGrow 3.4s ease-in-out infinite alternate; }
-.lv-cols div:nth-child(2) i{background:linear-gradient(180deg,#8a6df0,#6B4FBB);animation-delay:.3s;} .lv-cols div:nth-child(3) i{animation-delay:.6s;} .lv-cols div:nth-child(4) i{background:linear-gradient(180deg,#8a6df0,#6B4FBB);animation-delay:.9s;} .lv-cols div:nth-child(5) i{animation-delay:1.2s;}
-.lv-cols label { position:absolute; bottom:-14px; left:0; right:0; text-align:center; font-size:7px; color:#9aa4b5; }
-@keyframes lvGrow { from{height:18%;} to{height:var(--h,80%);} }
-
-/* chat + letter (draft card) */
-.lv-bub { font-size:10px; border-radius:11px; padding:6px 9px; margin-bottom:6px; max-width:90%; line-height:1.4; }
+/* offer letter */
+.lv-bub { font-size:9.5px; border-radius:10px; padding:6px 9px; margin-bottom:6px; max-width:92%; line-height:1.4; }
 .lv-bq { background:#EEF2F7; color:#3A4760; margin-left:auto; border-bottom-right-radius:3px; }
 .lv-ba { background:#0066CC; color:#fff; border-bottom-left-radius:3px; }
 .lv-type::after { content:'▋'; margin-left:1px; animation:lvBlink 1s steps(1) infinite; }
 @keyframes lvBlink { 50%{opacity:0;} }
-.lv-letter { background:#F7F9FC; border:1px solid #EDF1F6; border-radius:9px; padding:10px 11px; margin-top:8px; }
-.lv-letter .lt { font-size:9.5px; font-weight:700; color:#0A1628; margin-bottom:6px; }
-.lv-letter p { font-size:8.5px; color:#54607A; line-height:1.5; margin:0 0 5px; }
-.lv-letter s { display:block; height:5px; border-radius:3px; background:#E7ECF3; margin-bottom:5px; }
-.lv-send { display:inline-block; margin-top:4px; background:#30D158; color:#fff; font-size:8.5px; font-weight:600; border-radius:6px; padding:4px 10px; }
+.lv-letter { background:#F8FAFC; border:1px solid #EDF1F6; border-radius:8px; padding:9px 10px; margin-top:7px; }
+.lv-letter .lt { font-size:9px; font-weight:700; color:#0A1628; margin-bottom:5px; }
+.lv-letter p { font-size:8px; color:#54607A; line-height:1.5; margin:0 0 5px; }
+.lv-letter s { display:block; height:4px; border-radius:2px; background:#E7ECF3; margin-bottom:4px; }
+.lv-send { display:inline-flex; align-items:center; gap:5px; margin-top:5px; background:#0A1628; color:#fff; font-size:8px; font-weight:600; border-radius:6px; padding:4px 11px; }
+.lv-send svg { width:9px;height:9px; }
 
-/* tracker rows */
-.lv-row { display:flex; align-items:center; gap:9px; padding:6px 0; border-top:1px solid #F0F3F7; }
-.lv-row:first-of-type { border-top:none; }
-.lv-av { width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff; }
-.lv-nm { flex:1; min-width:0; }
-.lv-nm b { display:block; font-size:10px; font-weight:600; color:#1A2233; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-.lv-nm span { font-size:8px; color:#9aa4b5; }
-.lv-pill { font-size:8px; font-weight:600; border-radius:20px; padding:2px 8px; white-space:nowrap; }
-.lv-dt { font-size:8px; color:#9aa4b5; white-space:nowrap; flex-shrink:0; }
+/* people plan */
+.lv-pr { display:flex; align-items:center; gap:9px; padding:5px 0; }
+.lv-pr .nm { font-size:9px; color:#1A2233; width:74px; flex-shrink:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.lv-pbar { flex:1; height:7px; background:#EEF2F7; border-radius:4px; overflow:hidden; }
+.lv-pbar i { display:block; height:100%; border-radius:4px; background:linear-gradient(90deg,#3b89e0,#0066CC); transform-origin:left; animation:lvWiden 3.4s ease-out infinite alternate; }
+.lv-pr:nth-child(3) .lv-pbar i{animation-delay:.3s;} .lv-pr:nth-child(4) .lv-pbar i{animation-delay:.6s;} .lv-pr:nth-child(5) .lv-pbar i{animation-delay:.9s;}
+@keyframes lvWiden { from{transform:scaleX(.35);} to{transform:scaleX(1);} }
+.lv-pr .nums { font-size:8px; color:#8A94A6; width:46px; text-align:right; flex-shrink:0; }
+.lv-pr .nums b { color:#0a7a37; font-weight:700; }
 
-@media (prefers-reduced-motion: reduce) { .lv-orb,.lv-c,.lv-cols i { animation:none; } }
+/* analytics - svg chart */
+.lv-an-h { display:flex; align-items:baseline; gap:8px; margin-bottom:8px; }
+.lv-an-h b { font-size:19px; font-weight:700; color:#0A1628; letter-spacing:-0.03em; line-height:1; }
+.lv-an-h u { font-size:8.5px; font-weight:700; color:#0a7a37; text-decoration:none; }
+.lv-an-h span { font-size:8px; color:#8A94A6; margin-left:auto; }
+.lv-area { width:100%; height:74px; display:block; }
+.lv-xlabels { display:flex; justify-content:space-between; margin-top:5px; }
+.lv-xlabels span { font-size:7px; color:#9aa4b5; }
+
+@media (prefers-reduced-motion: reduce) { .lv-orb,.lv-c,.lv-pbar i { animation:none; } }
 .login-right { flex: 1; background: white; display: flex; align-items: center; justify-content: center; padding: 48px 40px; }
 .login-box { width: 100%; max-width: 380px; }
 .login-box-header { margin-bottom: 32px; }
@@ -510,8 +508,8 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
   .login-left .lv-title { font-size: 24px; }
   .login-left .lv-sub { display: none; }
   .lv-scene { height: auto; margin-top: 12px; }
-  .lv-c1, .lv-c3 { display: none; }
-  .lv-c2 { position: relative; inset: auto; top: auto; right: auto; width: 100%; animation: none; transform: none; }
+  .lv-c2, .lv-c3 { display: none; }
+  .lv-c1 { position: relative; inset: auto; top: auto; left: auto; width: 100%; animation: none; transform: none; }
   .login-right { flex: 1; width: 100%; padding: 32px 24px; display: flex; align-items: center; justify-content: center; }
   .login-box { width: 100%; max-width: 420px; }
   .login-input { font-size: 16px; }
@@ -650,44 +648,39 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
       <div class="lv-sub">AI that learns your policies, your tone and your way of doing things - and the tools to run it all.</div>
       <!-- Layered product scene -->
       <div class="lv-scene">
-        <!-- Analytics card (back) -->
+        <!-- 1. Offer letter -->
         <div class="lv-c lv-c1">
-          <div class="hd"><div class="lv-ic2" style="background:#E7F0FB;">📊</div><b>People analytics</b><span class="lv-live">● LIVE</span></div>
-          <div class="lv-kpis">
-            <div class="lv-kpi"><b style="color:#0066CC;">142</b><span>Headcount</span></div>
-            <div class="lv-kpi"><b style="color:#6B4FBB;">£58k</b><span>Avg salary</span></div>
-            <div class="lv-kpi"><b style="color:#30D158;">94%</b><span>Retention</span></div>
-          </div>
-          <div class="lv-chart">
-            <div class="gl" style="top:0;"></div><div class="gl" style="top:33%;"></div><div class="gl" style="top:66%;"></div>
-            <div class="lv-cols">
-              <div><i style="--h:62%"></i><label>Sales</label></div>
-              <div><i style="--h:88%"></i><label>Eng</label></div>
-              <div><i style="--h:48%"></i><label>Ops</label></div>
-              <div><i style="--h:74%"></i><label>People</label></div>
-              <div><i style="--h:56%"></i><label>Finance</label></div>
-            </div>
-          </div>
-        </div>
-        <!-- Draft card (front) -->
-        <div class="lv-c lv-c2">
-          <div class="hd"><div class="lv-ic2" style="background:#E7F0FB;">💬</div><b>Draft reply</b></div>
-          <div class="lv-bub lv-bq">Draft a maternity confirmation for Sarah</div>
-          <div class="lv-bub lv-ba"><span class="lv-type">Done - drafted from your policy</span></div>
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><b>Offer letter</b></div>
+          <div class="lv-bub lv-bq">Draft an offer letter for Priya Nair</div>
+          <div class="lv-bub lv-ba"><span class="lv-type">Drafted from your template</span></div>
           <div class="lv-letter">
-            <div class="lt">Maternity Leave Confirmation</div>
-            <p>Dear Sarah, I'm delighted to confirm your maternity leave will begin on 1 September 2026...</p>
-            <s style="width:92%"></s><s style="width:78%"></s>
-            <div class="lv-send">📧 Send via Gmail</div>
+            <div class="lt">Offer of Employment</div>
+            <p>Dear Priya, we are delighted to offer you the role of Account Executive, starting 1 September 2026...</p>
+            <s style="width:90%"></s><s style="width:72%"></s>
+            <div class="lv-send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>Send</div>
           </div>
         </div>
-        <!-- Tracker card -->
+        <!-- 2. People plan -->
+        <div class="lv-c lv-c2">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg></div><b>People plan - 2026</b></div>
+          <div class="lv-pr"><span class="nm">Sales</span><div class="lv-pbar"><i style="width:80%"></i></div><span class="nums">12 / <b>15</b></span></div>
+          <div class="lv-pr"><span class="nm">Engineering</span><div class="lv-pbar"><i style="width:86%"></i></div><span class="nums">24 / <b>28</b></span></div>
+          <div class="lv-pr"><span class="nm">Customer success</span><div class="lv-pbar"><i style="width:73%"></i></div><span class="nums">8 / <b>11</b></span></div>
+          <div class="lv-pr"><span class="nm">Finance</span><div class="lv-pbar"><i style="width:100%"></i></div><span class="nums">6 / <b>6</b></span></div>
+        </div>
+        <!-- 3. Analytics -->
         <div class="lv-c lv-c3">
-          <div class="hd"><div class="lv-ic2" style="background:#EAF7EE;">🗂️</div><b>Leave &amp; absence tracker</b></div>
-          <div class="lv-row"><span class="lv-av" style="background:#0066CC;">SM</span><div class="lv-nm"><b>Sarah Mitchell</b><span>Maternity</span></div><span class="lv-pill" style="background:#d6f5e1;color:#0a7a37;">On leave</span><span class="lv-dt">Returns 12 Aug</span></div>
-          <div class="lv-row"><span class="lv-av" style="background:#6B4FBB;">JO</span><div class="lv-nm"><b>James Okafor</b><span>Paternity</span></div><span class="lv-pill" style="background:#dbeafe;color:#1d4ed8;">2 weeks</span><span class="lv-dt">Starts 14 Jul</span></div>
-          <div class="lv-row"><span class="lv-av" style="background:#F59E0B;">PN</span><div class="lv-nm"><b>Priya Nair</b><span>Flexible working</span></div><span class="lv-pill" style="background:#fef3c7;color:#92400e;">Review</span><span class="lv-dt">Due 30 Jun</span></div>
-          <div class="lv-row"><span class="lv-av" style="background:#64748b;">TB</span><div class="lv-nm"><b>Tom Bradley</b><span>Sickness</span></div><span class="lv-pill" style="background:#e2e8f0;color:#475569;">Week 3</span><span class="lv-dt">OH referral</span></div>
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><b>Workforce analytics</b><span class="lv-live">LIVE</span></div>
+          <div class="lv-an-h"><b>142</b><u>+8%</u><span>Headcount, last 6 months</span></div>
+          <svg class="lv-area" viewBox="0 0 240 74" preserveAspectRatio="none">
+            <defs><linearGradient id="lvArea" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#0066CC" stop-opacity="0.26"/><stop offset="1" stop-color="#0066CC" stop-opacity="0"/></linearGradient></defs>
+            <line x1="0" y1="18" x2="240" y2="18" stroke="#EEF2F7"/><line x1="0" y1="46" x2="240" y2="46" stroke="#EEF2F7"/>
+            <polygon fill="url(#lvArea)" points="0,58 40,50 80,54 120,36 160,30 200,22 240,14 240,74 0,74"/>
+            <polyline fill="none" stroke="#0066CC" stroke-width="2.5" stroke-linejoin="round" stroke-linecap="round" points="0,58 40,50 80,54 120,36 160,30 200,22 240,14"/>
+            <circle cx="240" cy="14" r="3.5" fill="#0066CC"/>
+          </svg>
+          <div class="lv-xlabels"><span>Jan</span><span>Feb</span><span>Mar</span><span>Apr</span><span>May</span><span>Jun</span></div>
+        </div>
         </div>
       </div>
     </div>
