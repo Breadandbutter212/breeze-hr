@@ -131,6 +131,17 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .sp-dot.on { background:#30D158; }
 /* slim mode: hide redundant top-right avatar (account lives bottom-left), push connectors to the right */
 body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !important; }
+/* No-top-bar mode (?top=off): hide topbar, host search + connectors in the sidebar */
+body.no-top .app-topbar { display:none !important; }
+#slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
+#slimSearchSlot { padding:0 10px 6px; }
+body.no-top #slimSearchSlot .topsearch { display:flex; flex:1; max-width:none; margin:0; }
+body.no-top #slimSearchSlot .topsearch input { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.18); color:#fff; }
+body.no-top #slimSearchSlot .topsearch input::placeholder { color:rgba(255,255,255,0.5); }
+body.no-top #slimSearchSlot .topsearch .si { color:rgba(255,255,255,0.5); }
+body.no-top #slimSearchSlot .search-pop { background:var(--surface); }
+#slimConnSlot { padding:0 10px 4px; }
+body.no-top #slimConnSlot .app-topbar-right { display:flex; flex-wrap:wrap; gap:8px; margin:0 0 8px; padding:8px; border-radius:10px; background:rgba(255,255,255,0.06); }
 
 
 /* ── EMAIL INBOX PANEL ── */
@@ -928,7 +939,9 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- Slim sidebar (feature-flagged via ?nav=slim) -->
 <div class="slimbar" id="slimNav">
   <div class="slim-logo"><div class="mk">HR</div><div class="nm">Breeze</div></div>
+  <div id="slimSearchSlot"></div>
   <nav class="slim-nav" id="slimGroups" aria-label="Primary"></nav>
+  <div id="slimConnSlot"></div>
   <div class="slim-sp-wrap">
     <button class="sg-head" onclick="toggleSharePoint()" title="Search your SharePoint documents">
       <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
@@ -15005,6 +15018,13 @@ async function projConfirmEmailToTask(){
 
   function initSlim(){
     document.body.classList.add('nav-slim');
+    // No-top-bar mode: relocate search + connectors into the sidebar
+    try{ var q=new URLSearchParams(location.search); if(q.get('top')==='off') localStorage.setItem('bz_top','off'); if(q.get('top')==='on') localStorage.removeItem('bz_top'); }catch(e){}
+    if(localStorage.getItem('bz_top')==='off'){
+      document.body.classList.add('no-top');
+      var ts=document.querySelector('.topsearch'), ss=document.getElementById('slimSearchSlot'); if(ts&&ss) ss.appendChild(ts);
+      var rt=document.querySelector('.app-topbar-right'), cs=document.getElementById('slimConnSlot'); if(rt&&cs) cs.appendChild(rt);
+    }
     var sav=document.getElementById('slimAv'); if(sav && !sav.textContent){ sav.textContent=(document.getElementById('topbarAvatar')||{}).textContent||''; }
     render();
   }
