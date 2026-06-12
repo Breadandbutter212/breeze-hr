@@ -143,30 +143,32 @@ def build_workbook(title, sheets):
         if chart_type and len(rows) >= 3:
             num_cols = [c for c in range(1, max_cols) if types[c] in ('number', 'currency', 'percent')]
             if num_cols:
+                from openpyxl.chart.label import DataLabelList
                 last_row = len(rows)
                 last_label = str(rows[-1][0]).strip().lower() if rows and rows[-1] and rows[-1][0] is not None else ''
                 if re.match(r'^(total|subtotal|grand total|average|mean)\b', last_label) and len(rows) - 1 >= 3:
                     last_row = len(rows) - 1
 
-                # Detect a time-across-columns matrix (e.g. Department | Jan | Feb | ...): plot months on the
-                # X axis with one series per row, instead of months becoming the series.
+                # Time-across-columns matrix (Department | Jan | Feb | ...): months on the X axis, one line per row
                 hdr = [('' if c is None else str(c)).strip() for c in rows[0]]
                 time_rx = re.compile(r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]|fy|h[12]|20\d\d)', re.I)
                 tcount = sum(1 for h in hdr[1:] if time_rx.match(h))
                 is_time_matrix = (max_cols - 1) >= 3 and tcount >= (max_cols - 1) * 0.6 and len(num_cols) >= 3
 
                 chart = None
+                single_series = False
+                is_pie = False
                 if is_time_matrix:
                     chart = LineChart()
-                    chart.x_axis.delete = False
-                    chart.y_axis.delete = False
                     data = Reference(ws, min_col=1, max_col=max_cols, min_row=2, max_row=last_row)
                     cats = Reference(ws, min_col=2, max_col=max_cols, min_row=1, max_row=1)
                     chart.add_data(data, titles_from_data=True, from_rows=True)
                     chart.set_categories(cats)
                     for ser in chart.series:
                         ser.smooth = False
+                        ser.graphicalProperties.line.width = 28000  # ~2.2pt, crisper lines
                 elif chart_type == 'pie':
+                    is_pie = True
                     chart = PieChart()
                     data = Reference(ws, min_col=num_cols[0] + 1, min_row=1, max_row=last_row)
                     cats = Reference(ws, min_col=1, min_row=2, max_row=last_row)
@@ -178,23 +180,49 @@ def build_workbook(title, sheets):
                     else:
                         chart = BarChart()
                         chart.type = 'bar' if chart_type == 'bar' else 'col'
-                    chart.x_axis.delete = False
-                    chart.y_axis.delete = False
+                        chart.gapWidth = 60
                     data = Reference(ws, min_col=num_cols[0] + 1, max_col=num_cols[-1] + 1, min_row=1, max_row=last_row)
                     cats = Reference(ws, min_col=1, min_row=2, max_row=last_row)
                     chart.add_data(data, titles_from_data=True)
                     chart.set_categories(cats)
+                    single_series = (len(num_cols) == 1)
                     if chart_type == 'line':
                         for ser in chart.series:
                             ser.smooth = False
+                            ser.graphicalProperties.line.width = 28000
+
                 if chart is not None:
                     chart.title = ws.title
-                    chart.height = 8
-                    chart.width = 16
-                    if max_cols <= 6:
-                        anchor = '%s2' % get_column_letter(max_cols + 2)
+                    chart.style = 10
+                    chart.height = 8.5
+                    chart.width = 17
+                    if is_pie:
+                        chart.dataLabels = DataLabelList()
+                        chart.dataLabels.showPercent = True
+                        chart.dataLabels.showCatName = False
+                        if chart.legend:
+                            chart.legend.position = 'r'
                     else:
-                        anchor = 'A%d' % (len(rows) + 2)
+                        chart.x_axis.delete = False
+                        chart.y_axis.delete = False
+                        chart.x_axis.majorTickMark = 'out'
+                        chart.y_axis.majorTickMark = 'out'
+                        chart.x_axis.title = hdr[0] or None
+                        # value-axis number format matched to the data
+                        ctypes = set(types[c] for c in num_cols)
+                        if ctypes == {'percent'}:
+                            chart.y_axis.numFmt = '0%'
+                        elif ctypes == {'currency'}:
+                            chart.y_axis.numFmt = u'"£"#,##0'
+                        else:
+                            chart.y_axis.numFmt = '#,##0'
+                        if single_series and not is_time_matrix:
+                            chart.dataLabels = DataLabelList()
+                            chart.dataLabels.showVal = True
+                            chart.legend = None
+                        elif chart.legend:
+                            chart.legend.position = 'b'
+                    anchor = '%s2' % get_column_letter(max_cols + 2) if max_cols <= 6 else 'A%d' % (len(rows) + 2)
                     ws.add_chart(chart, anchor)
 
     output = io.BytesIO()
