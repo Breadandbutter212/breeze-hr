@@ -1875,7 +1875,7 @@ function showOnboardingTour() {
     { icon:'✨', title:'Welcome to Breeze HR', desc:'A quick tour of what you can do. It takes about a minute and visits the real pages as it goes, so you can see each feature in context. You can skip at any time.', nav:'home' },
     { icon:'≋', title:'It learns how your team works', desc:'Breeze adapts to your business over time. It learns from every conversation, the decisions you make and your writing style and tone, and gets sharper the more your team uses it. Answers start to feel like they came from someone who already knows your company, its policies and its history.', nav:'chat' },
     { icon:'💬', title:'Ask anything, or paste an email', desc:'Ask a policy question, paste an employee email, or request a letter. Breeze answers grounded in your own policies first, points to where the guidance comes from, and can draft a ready-to-send reply in your tone. With your inbox connected, you can send it straight back without leaving the chat.', nav:'chat' },
-    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary and grievance letters, references and more, from a library of over 25 UK templates. Answer a few questions and the document builds live, formatted to your house style and ready to download as Word. You can upload your own templates too and Breeze fills them in for you.', nav:'docs' },
+    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary and grievance letters, references and more, from a library of over 25 UK templates. Answer a few questions and the document builds live, formatted to your house style and ready to download as Word. You can upload your own templates too and Breeze fills them in for you.', nav:'docs', img:'img/tour-contracts.png' },
     { icon:'🧭', title:'Open a role in seconds', desc:'Hiring? Ask Breeze to open a role and it drafts the job description, grounded in your existing JDs and house style. Plan and track vacancies under Your people, Headcount planning, and see the cost and structure impact before you commit.', nav:'headcount' },
     { icon:'📋', title:'Grounded in your policies', desc:'Upload your handbook, policies and templates, or connect SharePoint so Breeze reads your real files directly. It uses them first when answering, so advice reflects your actual rules, your tone and your way of doing things, with clear ACAS and UK employment law backing where it matters.', nav:'manage' },
     { icon:'✉️', title:'From an email to the right tracker', desc:'Reply to an email and Breeze spots maternity, paternity, sickness or a grievance. It offers to add the person to the right tracker, or, if they are already there, works out what the new message is about and offers to log it and tick the matching checklist step for you.', nav:'trackers' },
@@ -1898,15 +1898,24 @@ function showOnboardingTour() {
     const s = steps[step];
     const isLast = step === steps.length - 1;
     if (s.nav) { try { showView(s.nav); } catch(e){} }
+    const head = s.img
+      ? `<div style="background:#EEF3FF;padding:16px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #E2E8F0;">
+           <img src="${s.img}" alt="" style="max-width:100%;max-height:172px;object-fit:contain;display:block;">
+         </div>
+         <div style="padding:20px 30px 0;">
+           <div style="font-size:19px;font-weight:700;color:#0A1628;letter-spacing:-0.02em;">${s.title}</div>
+           <div style="font-size:12px;color:#94A3B8;margin-top:4px;">${step+1} of ${steps.length}</div>
+         </div>`
+      : `<div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:26px 30px 22px;">
+           <div style="font-size:32px;margin-bottom:10px;">${s.icon}</div>
+           <div style="font-size:19px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
+           <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">${step+1} of ${steps.length}</div>
+         </div>`;
     overlay.innerHTML = `
       <div style="background:white;border-radius:16px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,0.35);overflow:hidden;position:relative;">
-        <button onclick="tourEnd()" title="Skip tour" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.14);border:none;color:white;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:1;">×</button>
-        <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:26px 30px 22px;">
-          <div style="font-size:32px;margin-bottom:10px;">${s.icon}</div>
-          <div style="font-size:19px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">${step+1} of ${steps.length}</div>
-        </div>
-        <div style="padding:22px 30px 24px;">
+        <button onclick="tourEnd()" title="Skip tour" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:rgba(15,25,45,0.40);border:none;color:white;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:1;">×</button>
+        ${head}
+        <div style="padding:${s.img?'14px':'22px'} 30px 24px;">
           <div style="font-size:14px;color:#4A5568;line-height:1.72;">${s.desc}</div>
           <div style="display:flex;gap:6px;margin-top:18px;margin-bottom:4px;">
             ${steps.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<=step?'#0A1628':'#E2E8F0'};transition:background 0.2s;"></div>`).join('')}
