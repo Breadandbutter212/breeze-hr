@@ -131,15 +131,11 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .sp-dot.on { background:#30D158; }
 /* slim mode: hide redundant top-right avatar (account lives bottom-left), push connectors to the right */
 body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !important; }
-/* No top bar: the grey global top bar is gone for good; search lives in the sidebar */
+/* Top bar removed for good; connectors sit as a plain icon row in the sidebar (no box) */
 .app-topbar { display:none !important; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
-#slimConnSlot { padding:6px 10px 8px; }
-.slimbar .topsearch { display:flex; flex:1; max-width:none; margin:0; }
-.slimbar .topsearch input { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.18); color:#fff; }
-.slimbar .topsearch input::placeholder { color:rgba(255,255,255,0.5); }
-.slimbar .topsearch .si { color:rgba(255,255,255,0.5); }
-.slimbar .search-pop { background:var(--surface); }
+#slimConnSlot { padding:4px 12px 6px; }
+#slimConnSlot .app-topbar-right { display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin:0; }
 
 
 /* ── EMAIL INBOX PANEL ── */
@@ -15016,10 +15012,9 @@ async function projConfirmEmailToTask(){
 
   function initSlim(){
     document.body.classList.add('nav-slim');
-    // No top bar: hide the grey global bar, move search to the lower sidebar slot.
-    // Connectors are left in the (hidden) top bar for now - to be re-placed later.
-    document.body.classList.add('no-top');
-    var ts=document.querySelector('.topsearch'), cs=document.getElementById('slimConnSlot'); if(ts&&cs) cs.appendChild(ts);
+    // Top bar removed. Global search is dropped (left hidden in the top bar).
+    // Connectors move into the sidebar as a plain icon row above Search SharePoint.
+    var rt=document.querySelector('.app-topbar-right'), cs=document.getElementById('slimConnSlot'); if(rt&&cs) cs.appendChild(rt);
     var sav=document.getElementById('slimAv'); if(sav && !sav.textContent){ sav.textContent=(document.getElementById('topbarAvatar')||{}).textContent||''; }
     render();
   }
