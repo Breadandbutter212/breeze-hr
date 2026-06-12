@@ -5051,7 +5051,9 @@ async function renderManage() {
   if(currentProfile){const{data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','CHAT:%').order('created_at',{ascending:false});if(data)dbPolicies=data;}
 
   const handbook = dbPolicies.find(p=>p.name.startsWith('HANDBOOK:'));
-  const regularDb = dbPolicies.filter(p=>!p.name.startsWith('HANDBOOK:'));
+  // Exclude internal/system records (settings, trackers, meeting notes, style, templates, chats) - only show genuine uploaded policies
+  const INTERNAL_PREFIX = /^(HANDBOOK|TEMPLATE|CHAT|MEETING|SETTING|STYLE|TRACKER):/i;
+  const regularDb = dbPolicies.filter(p=>!INTERNAL_PREFIX.test(p.name));
   const allPolicies=policies.map(p=>{const up=regularDb.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};});
   const uc=allPolicies.filter(p=>p.status==='uploaded').length;
 
