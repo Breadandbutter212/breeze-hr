@@ -4990,6 +4990,7 @@ function htmlToMarkdownText(html) {
 }
 
 async function downloadAsDocx() {
+  if(typeof roiAddDoc==='function') roiAddDoc(1);
   const btn=document.getElementById('dlBtn');
   if(btn){btn.textContent='Generating...';btn.disabled=true;}
   try {
@@ -5026,6 +5027,7 @@ async function downloadAsDocx() {
 }
 
 async function downloadDocx() {
+  if(typeof roiAddDoc==='function') roiAddDoc(1);
   const btn=document.getElementById('dlBtn');btn.textContent='Generating...';btn.disabled=true;
   try {
     const fields={};Object.entries(genVals).forEach(([k,v])=>{fields[k]=v;fields[k.toLowerCase().replace(/\s+/g,'_')]=v;fields[k.toLowerCase().replace(/\s+/g,'')]=v;});
@@ -5992,13 +5994,8 @@ async function homeGather(){
   } catch(e){}
   // Documents / templates available
   try { out.docs = (typeof tmpls!=='undefined' && Array.isArray(tmpls)) ? tmpls.length : 0; } catch(e){}
-  // ROI: drafts created (responses) + meeting notes - cheap count-only queries
-  try {
-    if (currentProfile) {
-      const { count } = await sb.from('responses').select('*', { count:'exact', head:true }).eq('company_id', currentProfile.company_id);
-      out.docsCreated = count || 0;
-    }
-  } catch(e){}
+  // ROI: docs/letters produced (persistent local counter, bumped on create/download) + meeting notes
+  try { out.docsCreated = parseInt(localStorage.getItem('bz_roi_docs')||'0',10) || 0; } catch(e){ out.docsCreated = 0; }
   try {
     if (currentProfile) {
       const { count } = await sb.from('policies').select('*', { count:'exact', head:true }).eq('company_id', currentProfile.company_id).like('name','MEETING:%');
@@ -6035,30 +6032,50 @@ async function homeFill(){
   homePaintBento(d);
 }
 
-// Small ROI strip: real counts + a conservative time-saved estimate. Re-runs on every dashboard visit, so new drafts show up.
+// ROI time estimate (conservative): drafted doc/letter ~25 min, meeting note ~30 min, saved chat ~8 min
+function roiTimeStr(s){
+  const mins = (s.docs||0)*25 + (s.notes||0)*30 + (s.chats||0)*8;
+  const hrs = mins/60;
+  return hrs >= 10 ? Math.round(hrs)+'h' : (hrs>0 ? (Math.round(hrs*10)/10)+'h' : '0h');
+}
+// Small ROI strip: real counts + a conservative time-saved estimate. Re-runs on every dashboard visit.
 function homePaintRoi(d){
   const el = document.getElementById('homeRoi'); if(!el) return;
-  // Demo accounts get a bumped baseline so the ROI looks representative; real drafts still add on top.
+  // Demo accounts get a bumped baseline so the ROI looks representative; real activity adds on top.
   const test = !!window._isTestAccount;
-  const docs = (d.docsCreated||0) + (test?142:0);
-  const notes = (d.meetingNotes||0) + (test?18:0);
-  const chats = (d.chats||0) + (test?63:0);
-  // Conservative per-task time savings: a drafted doc/letter ~25 min, a meeting note ~30 min, a saved chat ~8 min
-  const mins = docs*25 + notes*30 + chats*8;
-  const hrs = mins/60;
-  const hStr = hrs >= 10 ? Math.round(hrs)+'h' : (hrs>0 ? (Math.round(hrs*10)/10)+'h' : '0h');
+  const s = {
+    docs: (d.docsCreated||0) + (test?142:0),
+    notes: (d.meetingNotes||0) + (test?18:0),
+    chats: (d.chats||0) + (test?63:0),
+  };
+  window._roiState = s;
   const tiles = [
-    { val: docs,  label: 'Docs &amp; letters drafted', view:'docs' },
-    { val: notes, label: 'Meeting notes', view:'recorder' },
-    { val: chats, label: 'AI conversations', view:'chats' },
-    { val: hStr,  label: 'Est. time saved', view:null, accent:true },
+    { id:'docs',  val: s.docs,  label: 'Docs &amp; letters drafted', view:'docs' },
+    { id:'notes', val: s.notes, label: 'Meeting notes', view:'recorder' },
+    { id:'chats', val: s.chats, label: 'AI conversations', view:'chats' },
+    { id:'time',  val: roiTimeStr(s), label: 'Est. time saved', view:null, accent:true },
   ];
   el.innerHTML = tiles.map(t=>`
     <div class="home-roi-tile${t.accent?' accent':''}"${t.view?` onclick="homeGo('${t.view}')" style="cursor:pointer"`:''}>
-      <div class="home-roi-val">${t.val}</div>
+      <div class="home-roi-val" id="home-roi-${t.id}">${t.val}</div>
       <div class="home-roi-label">${t.label}</div>
     </div>`).join('') +
     `<div class="home-roi-note">Time saved is an estimate based on typical time per task.</div>`;
+}
+
+// Count a produced doc/letter: persists in localStorage and bumps the tile live. Deduped per artifact.
+function roiAddDoc(n){
+  n = n||1;
+  try { const cur = parseInt(localStorage.getItem('bz_roi_docs')||'0',10)||0; localStorage.setItem('bz_roi_docs', String(cur+n)); } catch(e){}
+  if (window._roiState){
+    window._roiState.docs += n;
+    const v = document.getElementById('home-roi-docs'); if (v) v.textContent = window._roiState.docs;
+    const t = document.getElementById('home-roi-time'); if (t) t.textContent = roiTimeStr(window._roiState);
+  }
+}
+function roiMarkDoc(){
+  if (typeof currentArtifact !== 'undefined' && currentArtifact){ if (currentArtifact._counted) return; currentArtifact._counted = true; }
+  roiAddDoc(1);
 }
 
 function homePaintLegend(segs){
@@ -6921,6 +6938,7 @@ async function copyArtifact() {
 
 async function downloadArtifact() {
   if (!currentArtifact) return;
+  roiMarkDoc();
   const btn = document.querySelector('.artifact-btn.primary');
   if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
   try {
@@ -7114,6 +7132,7 @@ function buildWorkbook(title, sheets) {
 // Server-built rich workbook (openpyxl: native charts + full formatting)
 async function downloadRichXlsx(btn) {
   if (!currentArtifact || !currentArtifact.sheets) return;
+  roiMarkDoc();
   let base = (currentArtifact.title || 'spreadsheet').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').toLowerCase() || 'spreadsheet';
   const label = btn ? btn.textContent : '';
   if (btn) { btn.textContent = 'Building...'; btn.disabled = true; }
@@ -7137,6 +7156,7 @@ async function downloadRichXlsx(btn) {
 
 function downloadXlsx() {
   if (!currentArtifact || !currentArtifact.sheets) return;
+  roiMarkDoc();
   let base = (currentArtifact.title || 'spreadsheet').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').toLowerCase();
   if (!base) base = 'spreadsheet';
   try {
