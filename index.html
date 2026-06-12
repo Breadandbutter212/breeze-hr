@@ -131,15 +131,15 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .sp-dot.on { background:#30D158; }
 /* slim mode: hide redundant top-right avatar (account lives bottom-left), push connectors to the right */
 body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !important; }
-/* No top bar: hide the grey global top bar, host search in the sidebar */
-body.no-top .app-topbar { display:none !important; }
+/* No top bar: the grey global top bar is gone for good; search lives in the sidebar */
+.app-topbar { display:none !important; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:6px 10px 8px; }
-body.no-top .slimbar .topsearch { display:flex; flex:1; max-width:none; margin:0; }
-body.no-top .slimbar .topsearch input { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.18); color:#fff; }
-body.no-top .slimbar .topsearch input::placeholder { color:rgba(255,255,255,0.5); }
-body.no-top .slimbar .topsearch .si { color:rgba(255,255,255,0.5); }
-body.no-top .slimbar .search-pop { background:var(--surface); }
+.slimbar .topsearch { display:flex; flex:1; max-width:none; margin:0; }
+.slimbar .topsearch input { background:rgba(255,255,255,0.10); border-color:rgba(255,255,255,0.18); color:#fff; }
+.slimbar .topsearch input::placeholder { color:rgba(255,255,255,0.5); }
+.slimbar .topsearch .si { color:rgba(255,255,255,0.5); }
+.slimbar .search-pop { background:var(--surface); }
 
 
 /* ── EMAIL INBOX PANEL ── */
