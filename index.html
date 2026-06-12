@@ -6637,7 +6637,7 @@ EMPLOYEE-FACING DRAFT: What HR sends to the employee after verifying facts.
 - BENEFITS EXISTENCE RULE: NEVER assume a company benefit, scheme or policy exists unless it is confirmed in the uploaded company policies or the HR user has stated it in this conversation. If the employee asks about life insurance, a bonus scheme, a gym benefit, enhanced maternity pay, a company car, or any other benefit - and no policy confirms it exists - the draft must NOT imply the benefit exists. Use neutral holding language: "Thank you for your enquiry. I will look into this and come back to you shortly." and add a note in HR Actions to confirm whether the benefit exists before sending.
 - SELF-SERVICE RULE: If the employee is asking for information they can find themselves - payslip figures, pension contribution rates, holiday balance, payroll deductions, P60, P45 - the draft should direct them to the self-service source first (payslip, HR portal, pension provider portal/app) rather than promising to look it up for them. Use: "You can find your [X] on your payslip / in the [portal name] app / at [link]." Include a [link to payslip portal] or [pension provider link] placeholder so HR can insert the actual URL before sending. Only offer to check it yourself if the self-service route genuinely won't have the answer. In HR Actions, alongside the self-service route, also give HR the proactive option: note that HR can confirm the exact figures by checking the pension scheme records, payroll, or the benefits documentation and reply with the specifics directly, if a fuller or more tailored answer is warranted (for example a more senior employee, a sensitive query, or where the portal may not fully answer). Frame it as an option, not a requirement - the self-service route stays the default in the employee draft.
 - SIGN-OFF RULE: Never add "HR Team" or "The HR Team" after the sign-off name. The sign-off should be the HR person's name only, e.g. "Best regards, [Name]" - not "Best regards, [Name], HR Team".
-- REFERENCE LETTER RULE: When an employee requests any type of reference letter (mortgage, rental, employment, visa, general) the draft reply should simply confirm it will be prepared and give a timeframe - nothing else. Do NOT ask the employee about format, template or what to include. HR owns the templates and handles format. In HR Actions: instruct HR to pull the employee's details from HRIS, then say "Paste your standard [type] reference template into this chat and the AI will pre-fill it with the employee's details. If you don't have one, reply 'create one'." If the HR user says "create one", or pastes a template and asks to pre-fill it for a specific employee: output the complete letter using the 📧 DRAFT FOR EMPLOYEE: format so it appears in the right-hand panel where HR can edit and download it as a Word doc. Use [PLACEHOLDER] for any unknown fields. This applies to the completed letter for the employee AND to blank templates - always use the draft panel, never paste letter content into the chat.
+- REFERENCE LETTER RULE: When an employee requests a reference, first check whether they have said WHAT it is for. The purpose (mortgage, rental/landlord, new employer, visa/immigration, or general) materially changes what the reference must contain, so it must be known. If they have NOT said: the draft should confirm it will be prepared, give a timeframe, and ask the one clarifying question that matters - what the reference is for and who it should be addressed to (name/organisation or "to whom it may concern"). Keep it to that one question. If they HAVE already said the type, do not ask - just confirm and give a timeframe. Either way, do NOT ask the employee about format, what to include, or the template - HR owns that. In HR Actions: note whether the requester is a current employee or a leaver (it changes the tone and what can be confirmed - dates only vs full reference, and any restrictions for a former employee), instruct HR to pull the employee's details from HRIS, then say "Paste your standard [type] reference template into this chat and the AI will pre-fill it with the employee's details. If you don't have one, reply 'create one'." If the HR user says "create one", or pastes a template and asks to pre-fill it for a specific employee: output the complete letter using the 📧 DRAFT FOR EMPLOYEE: format so it appears in the right-hand panel where HR can edit and download it as a Word doc. Use [PLACEHOLDER] for any unknown fields. This applies to the completed letter for the employee AND to blank templates - always use the draft panel, never paste letter content into the chat.
 
 HR ACTIONS (not seen by employee): eligibility checks, statutory calculations, what to verify in HRIS, who to escalate to.
 
@@ -6671,6 +6671,15 @@ When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: for
 • [what to check/do]
 (The HR Actions section is internal guidance for HR only - it is never shown or sent to the employee. Label it simply "HR Actions", with no "not for the employee" caption.)
 
+FILES YOU CAN PRODUCE: You can generate real downloadable files - Word documents via the 📧 DRAFT FOR EMPLOYEE format, and Excel spreadsheets via the 📊 SPREADSHEET format below. Never tell the user you can only produce text, or that you cannot create files or spreadsheets.
+
+When the user asks for data as a spreadsheet or in Excel, a report in table form, or a reusable spreadsheet template (for example a headcount or absence summary, a pay or holiday report, a new starter checklist, an audit or tracker template), output it using the 📊 SPREADSHEET format so it appears in the right-hand panel with one-click download to a real .xlsx file. Put the title after the colon, then the table with one row per line and columns separated by | (pipe). The first row is the header. Use [PLACEHOLDER] cells for any figures that must be pulled from HRIS or payroll. Do not wrap it in code fences. Keep the data-protection cautions in HR Actions.
+
+📊 SPREADSHEET: New starter checklist
+Task | Owner | Due | Status
+Issue contract | HR | Day -7 | Not started
+Right to work check | HR | Day 1 | Not started
+
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
 
@@ -6700,6 +6709,23 @@ function formatArtifactContent(text) {
 let currentArtifact = null;
 
 function parseArtifact(text) {
+  // Spreadsheet artifact: 📊 SPREADSHEET: <title> then pipe-delimited rows
+  const sheetMatch = text.match(/\*{0,2}📊\s*SPREADSHEET[^:\n]*:\*{0,2}\s*([^\n]*)\n/i);
+  if (sheetMatch) {
+    const sIdx = text.indexOf(sheetMatch[0]);
+    const sAfter = text.substring(sIdx + sheetMatch[0].length);
+    const sStop = sAfter.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i);
+    const tableBlock = sStop > -1 ? sAfter.substring(0, sStop) : sAfter;
+    const sHr = sStop > -1 ? sAfter.substring(sStop).trim() : '';
+    const rows = tableBlock.split('\n').map(l => l.trim()).filter(l => l.includes('|'))
+      .map(l => l.replace(/^\||\|$/g, '').split('|').map(c => c.trim()))
+      .filter(cells => !cells.every(c => c === '' || /^:?-{2,}:?$/.test(c)));
+    if (rows.length) {
+      const title = (sheetMatch[1] || '').trim() || 'Spreadsheet';
+      const advice = text.substring(0, sIdx).trim();
+      return { type: 'Spreadsheet', title, rows, draft: tableBlock.trim(), advice: [advice, sHr].filter(Boolean).join('\n\n') };
+    }
+  }
   // Match 📧 DRAFT FOR EMPLOYEE: in various formats the AI might use
   const markerMatch = text.match(/\*{0,2}📧\s*(?:DRAFT\s+FOR\s+EMPLOYEE|EMPLOYEE\s+DRAFT|DRAFT\s+EMAIL)[^:\n]*:?\*{0,2}\s*\n/i);
   if (!markerMatch) return null;
@@ -6720,6 +6746,18 @@ function showArtifact(artifact, msgIdx) {
   const head = document.getElementById('artifactHead');
   const body = document.getElementById('artifactBody');
   pane.classList.add('open');
+  if (artifact.type === 'Spreadsheet') {
+    head.innerHTML = `
+      <span class="artifact-type">Spreadsheet</span>
+      <span class="artifact-title">${escapeHtml(artifact.title)}</span>
+      <span style="font-size:10px;color:var(--ink3);">Opens in Excel</span>
+      <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
+      <button class="artifact-btn primary" onclick="downloadXlsx()">⬇ .xlsx</button>
+      <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
+    body.innerHTML = `<div class="artifact-doc" id="artifactDoc">${renderSheetTable(artifact.rows)}</div>`;
+    if (msgIdx !== undefined && currentProfile) saveResponse(null, artifact.draft, artifact.draft);
+    return;
+  }
   const emailProvider = window._emailProvider || null;
   head.innerHTML = `
     <span class="artifact-type">${artifact.type}</span>
@@ -6782,6 +6820,66 @@ async function downloadArtifact() {
     URL.revokeObjectURL(url);
   }
   if (btn) { btn.textContent = '⬇ .docx'; btn.disabled = false; }
+}
+
+// ── SPREADSHEET ARTIFACT ──
+function renderSheetTable(rows) {
+  if (!rows || !rows.length) return '';
+  const head = rows[0] || [];
+  const bodyRows = rows.slice(1);
+  const th = head.map(c => `<th style="text-align:left;padding:6px 10px;border:1px solid var(--border);background:var(--surface2);font-size:12px;font-weight:600;white-space:nowrap;">${escapeHtml(c)}</th>`).join('');
+  const trs = bodyRows.map(r => `<tr>${head.map((_,ci) => `<td style="padding:6px 10px;border:1px solid var(--border);font-size:12px;color:var(--ink);">${escapeHtml(r[ci]||'')}</td>`).join('')}</tr>`).join('');
+  return `<div style="overflow:auto;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`;
+}
+
+// Build a real .xlsx (OOXML) from rows using the bundled PizZip
+function buildXlsx(title, rows) {
+  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  const colLetter = n => { let s=''; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+  let sheetRows = '';
+  rows.forEach((r, ri) => {
+    const cells = (r||[]).map((c, ci) => {
+      const ref = colLetter(ci) + (ri+1);
+      const v = (c==null ? '' : String(c));
+      const isNum = v !== '' && /^-?\d+(\.\d+)?$/.test(v.replace(/,/g,''));
+      if (isNum) return `<c r="${ref}"><v>${esc(v.replace(/,/g,''))}</v></c>`;
+      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
+    }).join('');
+    sheetRows += `<row r="${ri+1}">${cells}</row>`;
+  });
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`;
+  const sheetName = ((title||'Sheet1').replace(/[\\\/\?\*\[\]:]/g,' ').substring(0,31).trim()) || 'Sheet1';
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
+  const wbRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+  const zip = new PizZip();
+  zip.file('[Content_Types].xml', contentTypes);
+  zip.file('_rels/.rels', rootRels);
+  zip.file('xl/workbook.xml', workbook);
+  zip.file('xl/_rels/workbook.xml.rels', wbRels);
+  zip.file('xl/worksheets/sheet1.xml', sheetXml);
+  return zip.generate({ type:'uint8array', compression:'DEFLATE' });
+}
+
+function downloadXlsx() {
+  if (!currentArtifact || !currentArtifact.rows) return;
+  let base = (currentArtifact.title || 'spreadsheet').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').toLowerCase();
+  if (!base) base = 'spreadsheet';
+  try {
+    const bytes = buildXlsx(currentArtifact.title, currentArtifact.rows);
+    const blob = new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download = base + '.xlsx'; a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) {
+    // Fallback to CSV (also opens in Excel)
+    const csv = currentArtifact.rows.map(r => (r||[]).map(c => `"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const blob = new Blob(['﻿'+csv], { type:'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download = base + '.csv'; a.click();
+    URL.revokeObjectURL(url);
+  }
 }
 
 let chatAttachmentText = null;
@@ -6992,7 +7090,8 @@ function renderChatHistory() {
     const artifact = parseArtifact(m.content);
     if (artifact) window._chatArtifacts = window._chatArtifacts || {};
     if (artifact) window._chatArtifacts[i] = artifact;
-    const bubbleText = artifact ? (artifact.advice || 'Draft generated - see panel on the right.') : m.content;
+    const isSheet = artifact && artifact.type === 'Spreadsheet';
+    const bubbleText = artifact ? (artifact.advice || (isSheet ? 'Spreadsheet generated - see the panel on the right.' : 'Draft generated - see panel on the right.')) : m.content;
     // Auto-show artifact for latest AI message
     if (artifact && i === chatMessages.length - 1) setTimeout(() => showArtifact(window._chatArtifacts[i], i), 50);
     return `<div class="chat-msg">
@@ -7001,7 +7100,7 @@ function renderChatHistory() {
         <div class="chat-bubble ai-bubble" id="bubble-${i}" contenteditable="true" spellcheck="true"
           style="outline:none;cursor:text;" title="Click to edit before copying"
           oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent?escapeHtml(m._editedContent).replace(/\n/g,'<br>'):bubbleText)}</div>
-        ${artifact ? `<div style="margin:7px 0 4px 44px;"><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 View draft</button></div>` : ''}
+        ${artifact ? `<div style="margin:7px 0 4px 44px;"><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">${isSheet?'📊 View spreadsheet':'📄 View draft'}</button></div>` : ''}
         ${m._spLinks && m._spLinks.length ? `<div style="margin:8px 0 4px 44px;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${l.path}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${l.path}">📄 ${l.title}${l.ext?' ['+l.ext+']':''}</a>`).join('')}</div>` : ''}
         <div class="chat-actions">
           <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
