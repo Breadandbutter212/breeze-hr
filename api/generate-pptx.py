@@ -58,8 +58,8 @@ def _xl_axis_numfmt(types, cols):
     return '#,##0'
 
 
-def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
-    """One house-styled chart: palette, light gridlines, no border, matched number formats."""
+def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type, base_row=0, base_col=0, anchor=None):
+    """One house-styled chart for a table whose top-left header cell is at (base_row, base_col)."""
     num_cols = [c for c in range(1, max_cols) if types[c] in ('number', 'currency', 'percent')]
     if not num_cols:
         return
@@ -68,7 +68,8 @@ def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
     last_label = str(rows[-1][0]).strip().lower() if rows and rows[-1] and rows[-1][0] is not None else ''
     if re.match(r'^(total|subtotal|grand total|average|mean)\b', last_label) and n - 1 >= 3:
         last = n - 1
-    first_data, last_data = 1, last - 1  # 0-based inclusive data-row range
+    fd, ld = base_row + 1, base_row + last - 1  # absolute data-row range
+    bc = base_col
 
     hdr = [('' if c is None else str(c)).strip() for c in rows[0]]
     time_rx = re.compile(r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]|fy|h[12]|20\d\d)', re.I)
@@ -82,12 +83,12 @@ def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
 
     if is_time_matrix:
         chart = wb.add_chart({'type': 'line'})
-        for i, ri in enumerate(range(first_data, last)):
+        for i, ri in enumerate(range(base_row + 1, base_row + last)):
             color = XL_PALETTE[i % len(XL_PALETTE)]
             chart.add_series({
-                'name': [name, ri, 0],
-                'categories': [name, 0, 1, 0, max_cols - 1],
-                'values': [name, ri, 1, ri, max_cols - 1],
+                'name': [name, ri, bc],
+                'categories': [name, base_row, bc + 1, base_row, bc + max_cols - 1],
+                'values': [name, ri, bc + 1, ri, bc + max_cols - 1],
                 'line': {'color': color, 'width': 2.0},
                 'marker': {'type': 'circle', 'size': 4, 'border': {'color': color}, 'fill': {'color': color}},
             })
@@ -96,11 +97,11 @@ def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
         chart.set_legend({'position': 'bottom', 'font': legend_font})
     elif chart_type == 'pie':
         chart = wb.add_chart({'type': 'pie'})
-        pts = [{'fill': {'color': XL_PALETTE[i % len(XL_PALETTE)]}} for i in range(last_data - first_data + 1)]
+        pts = [{'fill': {'color': XL_PALETTE[i % len(XL_PALETTE)]}} for i in range(ld - fd + 1)]
         chart.add_series({
-            'name': [name, 0, num_cols[0]],
-            'categories': [name, first_data, 0, last_data, 0],
-            'values': [name, first_data, num_cols[0], last_data, num_cols[0]],
+            'name': [name, base_row, bc + num_cols[0]],
+            'categories': [name, fd, bc, ld, bc],
+            'values': [name, fd, bc + num_cols[0], ld, bc + num_cols[0]],
             'points': pts,
             'data_labels': {'percentage': True, 'font': {'name': XL_FONT, 'size': 9, 'color': '#FFFFFF', 'bold': True}},
         })
@@ -112,9 +113,9 @@ def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
         for i, c in enumerate(num_cols):
             color = XL_PALETTE[i % len(XL_PALETTE)]
             ser = {
-                'name': [name, 0, c],
-                'categories': [name, first_data, 0, last_data, 0],
-                'values': [name, first_data, c, last_data, c],
+                'name': [name, base_row, bc + c],
+                'categories': [name, fd, bc, ld, bc],
+                'values': [name, fd, bc + c, ld, bc + c],
             }
             if ctype == 'line':
                 ser['line'] = {'color': color, 'width': 2.0}
@@ -129,15 +130,14 @@ def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
         chart.set_y_axis({'num_format': yfmt, 'num_font': num_font, 'major_gridlines': grid, 'line': {'none': True}})
         chart.set_legend({'none': True} if single else {'position': 'bottom', 'font': legend_font})
 
-    chart.set_title({'name': name, 'name_font': {'name': XL_FONT, 'size': 13, 'bold': True, 'color': '#1A2433'}})
+    chart.set_title({'name': name, 'name_font': {'name': XL_FONT, 'size': 12, 'bold': True, 'color': '#1A2433'}})
     chart.set_chartarea({'border': {'none': True}})
     chart.set_plotarea({'border': {'none': True}})
-    chart.set_size({'width': 580, 'height': 300})
+    chart.set_size({'width': 470, 'height': 280})
 
-    if max_cols <= 6:
-        ws.insert_chart(1, max_cols + 1, chart, {'x_offset': 8, 'y_offset': 2})
-    else:
-        ws.insert_chart(len(rows) + 2, 0, chart)
+    if anchor is None:
+        anchor = (base_row + 1, base_col + max_cols + 1) if max_cols <= 6 else (base_row + len(rows) + 2, base_col)
+    ws.insert_chart(anchor[0], anchor[1], chart, {'x_offset': 8, 'y_offset': 2})
 
 
 def build_workbook(title, sheets):
@@ -166,65 +166,98 @@ def build_workbook(title, sheets):
         used_names.add(n.lower())
         return n
 
-    if not sheets:
-        sheets = [{'name': title or 'Sheet1', 'rows': [['(empty)']], 'chart': None}]
-    if len(sheets) == 1 and (not sheets[0].get('name') or sheets[0].get('name') == 'Sheet1'):
-        sheets[0]['name'] = title or 'Sheet1'
+    def norm(rs):
+        rs = [r if isinstance(r, list) else [r] for r in (rs or [])]
+        return rs if rs else [['']]
 
-    for idx, s in enumerate(sheets):
-        rows = [r if isinstance(r, list) else [r] for r in (s.get('rows') or [])]
-        if not rows:
-            rows = [['']]
-        name = safe_name(s.get('name'), idx)
-        ws = wb.add_worksheet(name)
-        max_cols = max(len(r) for r in rows)
-        types = [_xl_col_type(rows, c) for c in range(max_cols)]
-
-        for c in range(max_cols):
-            longest = 9
-            for r in rows:
-                v = '' if c >= len(r) or r[c] is None else str(r[c])
-                longest = max(longest, len(v) + 2)
-            ws.set_column(c, c, min(max(longest, 9), 60))
-
+    def write_table(ws, rows, types, br, bc):
         for ri, r in enumerate(rows):
-            for c in range(max_cols):
+            for c in range(len(types)):
                 raw = '' if c >= len(r) or r[c] is None else str(r[c])
+                R, C = br + ri, bc + c
                 if ri == 0:
-                    ws.write(ri, c, raw, header_fmt)
+                    ws.write(R, C, raw, header_fmt)
                     continue
                 t = types[c]
                 f = fmt_for.get(t, text_fmt)
                 if _xl_is_formula(raw):
-                    ws.write_formula(ri, c, raw, f)
+                    ws.write_formula(R, C, raw, f)
                 elif raw == '':
-                    ws.write_blank(ri, c, None, text_fmt)
+                    ws.write_blank(R, C, None, text_fmt)
                 elif t == 'currency':
                     try:
-                        ws.write_number(ri, c, float(_xl_clean_num(raw)), cur_fmt)
+                        ws.write_number(R, C, float(_xl_clean_num(raw)), cur_fmt)
                     except ValueError:
-                        ws.write(ri, c, raw, text_fmt)
+                        ws.write(R, C, raw, text_fmt)
                 elif t == 'percent':
                     try:
-                        ws.write_number(ri, c, float(re.sub(r'[%\s,]', '', raw)) / 100.0, pct_fmt)
+                        ws.write_number(R, C, float(re.sub(r'[%\s,]', '', raw)) / 100.0, pct_fmt)
                     except ValueError:
-                        ws.write(ri, c, raw, text_fmt)
+                        ws.write(R, C, raw, text_fmt)
                 elif t == 'number':
                     try:
                         v = _xl_clean_num(raw)
-                        ws.write_number(ri, c, int(v) if re.match(r'^-?\d+$', v) else float(v), num_fmt)
+                        ws.write_number(R, C, int(v) if re.match(r'^-?\d+$', v) else float(v), num_fmt)
                     except ValueError:
-                        ws.write(ri, c, raw, text_fmt)
+                        ws.write(R, C, raw, text_fmt)
                 else:
-                    ws.write(ri, c, raw, text_fmt)
+                    ws.write(R, C, raw, text_fmt)
 
-        ws.freeze_panes(1, 0)
-        if len(rows) > 1:
-            ws.autofilter(0, 0, len(rows) - 1, max_cols - 1)
+    if not sheets:
+        sheets = [{'name': title or 'Sheet1', 'rows': [['(empty)']], 'chart': None}]
+    if len(sheets) == 1 and not sheets[0].get('blocks') and (not sheets[0].get('name') or sheets[0].get('name') == 'Sheet1'):
+        sheets[0]['name'] = title or 'Sheet1'
 
-        chart_type = (s.get('chart') or '').lower()
-        if chart_type and len(rows) >= 3:
-            _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type)
+    for idx, s in enumerate(sheets):
+        name = safe_name(s.get('name'), idx)
+        ws = wb.add_worksheet(name)
+        blocks = s.get('blocks')
+
+        if blocks:
+            # Dashboard: tables stacked down the left, charts in a 2-col grid to the right
+            placed = []
+            cur_row = 0
+            col_w = {}
+            for b in blocks:
+                rows = norm(b.get('rows'))
+                mc = max(len(r) for r in rows)
+                types = [_xl_col_type(rows, c) for c in range(mc)]
+                write_table(ws, rows, types, cur_row, 0)
+                placed.append({'rows': rows, 'types': types, 'mc': mc, 'br': cur_row, 'chart': (b.get('chart') or '').lower()})
+                for c in range(mc):
+                    longest = col_w.get(c, 9)
+                    for r in rows:
+                        v = '' if c >= len(r) or r[c] is None else str(r[c])
+                        longest = max(longest, len(v) + 2)
+                    col_w[c] = longest
+                cur_row += len(rows) + 2
+            table_w = max((p['mc'] for p in placed), default=1)
+            for c, w in col_w.items():
+                ws.set_column(c, c, min(max(w, 9), 60))
+            chart_col = table_w + 1
+            ci = 0
+            for p in placed:
+                if p['chart'] and len(p['rows']) >= 3:
+                    anchor = ((ci // 2) * 16, chart_col + (ci % 2) * 9)
+                    _xl_add_chart(wb, ws, name, p['rows'], p['types'], p['mc'], p['chart'], base_row=p['br'], base_col=0, anchor=anchor)
+                    ci += 1
+        else:
+            rows = norm(s.get('rows'))
+            max_cols = max(len(r) for r in rows)
+            types = [_xl_col_type(rows, c) for c in range(max_cols)]
+            for c in range(max_cols):
+                longest = 9
+                for r in rows:
+                    v = '' if c >= len(r) or r[c] is None else str(r[c])
+                    longest = max(longest, len(v) + 2)
+                ws.set_column(c, c, min(max(longest, 9), 60))
+            write_table(ws, rows, types, 0, 0)
+            ws.freeze_panes(1, 0)
+            if len(rows) > 1:
+                ws.autofilter(0, 0, len(rows) - 1, max_cols - 1)
+            chart_type = (s.get('chart') or '').lower()
+            if chart_type and len(rows) >= 3:
+                _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type)
 
     wb.close()
     return output.getvalue()

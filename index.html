@@ -6741,31 +6741,40 @@ When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: for
 FILES YOU CAN PRODUCE: You can generate real downloadable files - Word documents via the 📧 DRAFT FOR EMPLOYEE format, and Excel spreadsheets via the 📊 SPREADSHEET format below. Never tell the user you can only produce text, or that you cannot create files or spreadsheets.
 
 When the user asks for data as a spreadsheet or in Excel, a report in table form, a board pack, or a reusable spreadsheet template (for example a headcount or absence summary, a pay or holiday report, a new starter checklist, an audit or tracker template), output it using the 📊 SPREADSHEET format so it appears in the right-hand panel with one-click download to a real, formatted .xlsx file. Do not put spreadsheet data in a 📧 draft. Do not wrap it in code fences. Keep the data-protection cautions in HR Actions.
-Structure: a "📊 SPREADSHEET:" line with the workbook title, then one or more TABS. Start each tab with "## Tab name" on its own line, followed by its table (one row per line, columns separated by | (pipe), first row = header). For a multi-part report or board pack, use SEPARATE tabs (for example: Summary, Headcount, Attrition, Leaver reasons, Vacancies, Cost) - this is far better than one giant table. Keep each tab to one clean table.
+Structure: a "📊 SPREADSHEET:" line with the workbook title, then one or more TABS. Start each tab with "## Tab name" on its own line, followed by its table (one row per line, columns separated by | (pipe), first row = header).
+A tab can hold MULTIPLE small tables, each with its own chart, laid out together as a DASHBOARD - to do this, start each section within the tab with "### Section name" on its own line, then that section's small table (and optional CHART:). Use this when the user asks for several charts ON ONE tab, or a one-page board pack: one "## Tab", then several "### Section" blocks. If the user instead wants separate tabs, give each topic its own "## Tab".
 Formatting is automatic - write values like 45000, £45,000 or 12% and they store as proper numbers, currency and percentages; header styling, borders, column widths, a frozen header row and filters are applied for you.
 FORMULAS: write a cell starting with = (for example =SUM(B2:B8), =AVERAGE(B2:B8), =B2*C2, =B2/C2). The header is row 1 and data begins on row 2. Add a Total or summary row with formulas rather than typing totals.
 CHARTS: charts are added and chosen AUTOMATICALLY from the data (the right type - pie, column, bar or line - and placement are worked out for you), so you normally do not need to specify anything. Just make each breakdown tab a clean table with the labels in the first column and the numbers in the following columns. Only add a line "CHART: pie" (or column, bar, line) after a table if you want to force a specific type.
 For figures you cannot verify, put [PLACEHOLDER] in the cell and note in HR Actions to populate from HRIS/payroll.
 
-📊 SPREADSHEET: People board pack H1 2026
-## Summary
-Metric | Value
-Closing headcount | 187
-Attrition rate | 14.4%
-Open roles | 5
-## Attrition by department
-Department | Headcount | Leavers | Attrition %
-Technology | 42 | 10 | 23.8%
-Sales | 35 | 8 | 22.9%
-Operations | 48 | 6 | 12.5%
-Total | =SUM(B2:B4) | =SUM(C2:C4) | =C5/B5
+Example - one dashboard tab with four charts:
+📊 SPREADSHEET: People Board Pack
+## Board dashboard
+### Headcount by department
+Department | Headcount
+Technology | 42
+Sales | 35
+Operations | 48
 CHART: column
-## Leaver reasons
+### Leaver reasons
 Reason | Number
 Better pay | 9
 Progression | 6
 Management | 4
 CHART: pie
+### Attrition by department
+Department | Attrition %
+Technology | 23.8%
+Sales | 22.9%
+Operations | 12.5%
+CHART: bar
+### Headcount trend
+Month | Headcount
+Jan | 194
+Feb | 191
+Mar | 187
+CHART: line
 
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
@@ -6795,30 +6804,48 @@ function formatArtifactContent(text) {
 // ── ARTIFACT PANEL ──
 let currentArtifact = null;
 
-// Parse a spreadsheet block into [{name, rows, chart}] - "## Tab name" starts a tab, "CHART: type" attaches a chart
+// Parse a spreadsheet block. "## Tab" starts a tab; "### Section" (or a blank-line gap) starts another table+chart
+// block within that tab (a dashboard). Returns: single-table => {name,rows,chart}; multi => {name,blocks:[...]}.
 function parseSheetBlock(block) {
   const sheets = [];
-  let cur = null;
+  let cur = null, blk = null, gap = false;
+  function closeSheet(){ if(!cur) return; if(blk && blk.rows.length){ cur.blocks.push(blk); } blk=null; if(cur.blocks.length) sheets.push(cur); cur=null; }
+  function newSheet(name){ closeSheet(); cur = { name:(name||('Sheet'+(sheets.length+1))), blocks: [] }; }
+  function newBlock(title){ if(cur && blk && blk.rows.length) cur.blocks.push(blk); blk = { title:title||'', rows: [], chart: null }; }
   (block||'').split('\n').forEach(raw => {
     const line = raw.trim();
-    if (!line) return;
-    const h = line.match(/^#{1,6}\s+(.+)$/) || (/^\*\*[^|]+\*\*$/.test(line) ? [null, line.replace(/\*/g,'')] : null);
+    if (!line) { gap = true; return; }
+    const hm = line.match(/^(#{1,6})\s+(.+)$/);
+    const boldH = (/^\*\*[^|]+\*\*$/.test(line)) ? line.replace(/\*/g,'').trim() : null;
     const chartM = line.match(/^(?:📈\s*)?CHART\s*:\s*(column|bar|pie|line)\b/i);
-    if (h) {
-      if (cur && cur.rows.length) sheets.push(cur);
-      cur = { name: (h[1]||'Sheet').replace(/[*#]/g,'').trim() || ('Sheet'+(sheets.length+1)), rows: [], chart: null };
+    if (hm) {
+      const level = hm[1].length, title = hm[2].replace(/[*#]/g,'').trim();
+      if (level <= 2) newSheet(title); else { if(!cur) newSheet('Sheet1'); newBlock(title); }
+      gap = false;
+    } else if (boldH) {
+      if(!cur) newSheet('Sheet1'); newBlock(boldH); gap = false;
     } else if (chartM) {
-      if (cur) cur.chart = chartM[1].toLowerCase();
+      if (blk) blk.chart = chartM[1].toLowerCase();
     } else if (line.includes('|')) {
       const cells = line.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
       if (cells.every(c => c === '' || /^:?-{2,}:?$/.test(c))) return; // skip markdown separator row
-      if (!cur) cur = { name: 'Sheet1', rows: [], chart: null };
-      cur.rows.push(cells);
+      if (!cur) newSheet('Sheet1');
+      if (!blk) newBlock('');
+      else if (gap && blk.rows.length) newBlock(''); // blank line between two tables => new block
+      gap = false;
+      blk.rows.push(cells);
     }
   });
-  if (cur && cur.rows.length) sheets.push(cur);
-  sheets.forEach(s => { if (!s.chart) s.chart = autoChartType(s.rows); }); // chart breakdowns even if the model forgot CHART:
-  return sheets.filter(s => s.rows.length);
+  closeSheet();
+  const out = [];
+  sheets.forEach(s => {
+    s.blocks.forEach(b => { if (!b.chart) b.chart = autoChartType(b.rows); });
+    const blocks = s.blocks.filter(b => b.rows.length);
+    if (!blocks.length) return;
+    if (blocks.length === 1) out.push({ name: s.name, rows: blocks[0].rows, chart: blocks[0].chart });
+    else out.push({ name: s.name, blocks: blocks });
+  });
+  return out;
 }
 
 // Work out the best chart for a tab automatically - the user/model never has to specify
@@ -6978,9 +7005,16 @@ function renderOneTable(rows) {
   return `<div style="overflow:auto;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`;
 }
 function renderSheetPreview(sheets) {
-  return (sheets||[]).map(s => `<div style="margin-bottom:16px;">
-    <div style="font-size:12px;font-weight:600;color:var(--ink);margin:0 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:11px;">${escapeHtml(s.name)}</span>${s.chart?`<span style="font-size:10px;color:var(--ink3);">includes ${escapeHtml(s.chart)} chart</span>`:''}</div>
-    ${renderOneTable(s.rows)}</div>`).join('');
+  return (sheets||[]).map(s => {
+    const blocks = s.blocks || [{ rows: s.rows, chart: s.chart, title: '' }];
+    const inner = blocks.map(b => `
+      ${b.title?`<div style="font-size:11px;font-weight:600;color:var(--ink2);margin:10px 0 4px;">${escapeHtml(b.title)}</div>`:''}
+      ${renderOneTable(b.rows)}
+      ${b.chart?`<div style="font-size:10px;color:var(--ink3);margin-top:3px;">includes ${escapeHtml(b.chart)} chart</div>`:''}`).join('');
+    return `<div style="margin-bottom:16px;">
+      <div style="font-size:12px;font-weight:600;color:var(--ink);margin:0 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:11px;">${escapeHtml(s.name)}</span>${blocks.length>1?`<span style="font-size:10px;color:var(--ink3);">dashboard - ${blocks.length} charts</span>`:''}</div>
+      ${inner}</div>`;
+  }).join('');
 }
 
 // Shared helpers for OOXML generation
@@ -7081,7 +7115,16 @@ function _xlDrawingXml(fromCol) {
 
 // Build a complete multi-tab .xlsx with styles and charts
 function buildWorkbook(title, sheets) {
-  sheets = (sheets||[]).filter(s=>s && s.rows && s.rows.length).map(s=>({ name:(s.name||'Sheet'), rows:s.rows, chart:(s.chart||null) }));
+  // Flatten dashboard sheets (multi-block) into stacked tables for the instant build; charts come from Rich Excel.
+  sheets = (sheets||[]).map(s => {
+    if (s && s.blocks && s.blocks.length) {
+      const rows = [];
+      s.blocks.forEach((b,i) => { if (i) rows.push([]); if (b.title) rows.push([b.title]); (b.rows||[]).forEach(r=>rows.push(r)); });
+      return { name: s.name, rows: rows, chart: null };
+    }
+    return s;
+  });
+  sheets = sheets.filter(s=>s && s.rows && s.rows.length).map(s=>({ name:(s.name||'Sheet'), rows:s.rows, chart:(s.chart||null) }));
   if (!sheets.length) sheets = [{ name:(title||'Sheet1'), rows:[['(empty)']], chart:null }];
   if (sheets.length===1 && (!sheets[0].name || sheets[0].name==='Sheet1')) sheets[0].name = (title||'Sheet1');
   // Unique, valid tab names
