@@ -44,28 +44,124 @@ def _xl_col_type(rows, ci):
     return 'text'
 
 
+# House chart palette (navy-led, tasteful)
+XL_PALETTE = ['#2A5080', '#10B981', '#F59E0B', '#8B5CF6', '#EF4444', '#0EA5E9', '#14B8A6', '#6366F1']
+XL_FONT = 'Calibri'
+
+
+def _xl_axis_numfmt(types, cols):
+    ct = set(types[c] for c in cols)
+    if ct == {'percent'}:
+        return '0%'
+    if ct == {'currency'}:
+        return u'£#,##0'
+    return '#,##0'
+
+
+def _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type):
+    """One house-styled chart: palette, light gridlines, no border, matched number formats."""
+    num_cols = [c for c in range(1, max_cols) if types[c] in ('number', 'currency', 'percent')]
+    if not num_cols:
+        return
+    n = len(rows)
+    last = n
+    last_label = str(rows[-1][0]).strip().lower() if rows and rows[-1] and rows[-1][0] is not None else ''
+    if re.match(r'^(total|subtotal|grand total|average|mean)\b', last_label) and n - 1 >= 3:
+        last = n - 1
+    first_data, last_data = 1, last - 1  # 0-based inclusive data-row range
+
+    hdr = [('' if c is None else str(c)).strip() for c in rows[0]]
+    time_rx = re.compile(r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]|fy|h[12]|20\d\d)', re.I)
+    tcount = sum(1 for h in hdr[1:] if time_rx.match(h))
+    is_time_matrix = (max_cols - 1) >= 3 and tcount >= (max_cols - 1) * 0.6 and len(num_cols) >= 3
+
+    grid = {'visible': True, 'line': {'color': '#EDF1F6'}}
+    num_font = {'name': XL_FONT, 'size': 9, 'color': '#64748B'}
+    legend_font = {'name': XL_FONT, 'size': 9}
+    yfmt = _xl_axis_numfmt(types, num_cols)
+
+    if is_time_matrix:
+        chart = wb.add_chart({'type': 'line'})
+        for i, ri in enumerate(range(first_data, last)):
+            color = XL_PALETTE[i % len(XL_PALETTE)]
+            chart.add_series({
+                'name': [name, ri, 0],
+                'categories': [name, 0, 1, 0, max_cols - 1],
+                'values': [name, ri, 1, ri, max_cols - 1],
+                'line': {'color': color, 'width': 2.0},
+                'marker': {'type': 'circle', 'size': 4, 'border': {'color': color}, 'fill': {'color': color}},
+            })
+        chart.set_x_axis({'num_font': num_font, 'line': {'color': '#CBD5E1'}})
+        chart.set_y_axis({'num_format': yfmt, 'num_font': num_font, 'major_gridlines': grid, 'line': {'none': True}})
+        chart.set_legend({'position': 'bottom', 'font': legend_font})
+    elif chart_type == 'pie':
+        chart = wb.add_chart({'type': 'pie'})
+        pts = [{'fill': {'color': XL_PALETTE[i % len(XL_PALETTE)]}} for i in range(last_data - first_data + 1)]
+        chart.add_series({
+            'name': [name, 0, num_cols[0]],
+            'categories': [name, first_data, 0, last_data, 0],
+            'values': [name, first_data, num_cols[0], last_data, num_cols[0]],
+            'points': pts,
+            'data_labels': {'percentage': True, 'font': {'name': XL_FONT, 'size': 9, 'color': '#FFFFFF', 'bold': True}},
+        })
+        chart.set_legend({'position': 'right', 'font': legend_font})
+    else:
+        ctype = 'bar' if chart_type == 'bar' else ('line' if chart_type == 'line' else 'column')
+        chart = wb.add_chart({'type': ctype})
+        single = len(num_cols) == 1
+        for i, c in enumerate(num_cols):
+            color = XL_PALETTE[i % len(XL_PALETTE)]
+            ser = {
+                'name': [name, 0, c],
+                'categories': [name, first_data, 0, last_data, 0],
+                'values': [name, first_data, c, last_data, c],
+            }
+            if ctype == 'line':
+                ser['line'] = {'color': color, 'width': 2.0}
+                ser['marker'] = {'type': 'circle', 'size': 4, 'border': {'color': color}, 'fill': {'color': color}}
+            else:
+                ser['fill'] = {'color': color}
+                ser['border'] = {'none': True}
+            if single:
+                ser['data_labels'] = {'value': True, 'num_format': yfmt, 'font': {'name': XL_FONT, 'size': 9, 'color': '#475569'}}
+            chart.add_series(ser)
+        chart.set_x_axis({'num_font': num_font, 'line': {'color': '#CBD5E1'}})
+        chart.set_y_axis({'num_format': yfmt, 'num_font': num_font, 'major_gridlines': grid, 'line': {'none': True}})
+        chart.set_legend({'none': True} if single else {'position': 'bottom', 'font': legend_font})
+
+    chart.set_title({'name': name, 'name_font': {'name': XL_FONT, 'size': 13, 'bold': True, 'color': '#1A2433'}})
+    chart.set_chartarea({'border': {'none': True}})
+    chart.set_plotarea({'border': {'none': True}})
+    chart.set_size({'width': 580, 'height': 300})
+
+    if max_cols <= 6:
+        ws.insert_chart(1, max_cols + 1, chart, {'x_offset': 8, 'y_offset': 2})
+    else:
+        ws.insert_chart(len(rows) + 2, 0, chart)
+
+
 def build_workbook(title, sheets):
-    from openpyxl import Workbook
-    from openpyxl.styles import Font, PatternFill, Border, Side, Alignment
-    from openpyxl.utils import get_column_letter
-    from openpyxl.chart import BarChart, PieChart, LineChart, Reference
+    import xlsxwriter
 
-    wb = Workbook()
-    wb.remove(wb.active)
+    output = io.BytesIO()
+    wb = xlsxwriter.Workbook(output, {'in_memory': True})
 
-    header_font = Font(bold=True, color='FFFFFF', name='Calibri', size=11)
-    header_fill = PatternFill('solid', fgColor='2A5080')
-    thin = Side(style='thin', color='D7DEEA')
-    border = Border(left=thin, right=thin, top=thin, bottom=thin)
-    left_center = Alignment(horizontal='left', vertical='center')
+    header_fmt = wb.add_format({'bold': True, 'font_color': '#FFFFFF', 'bg_color': '#2A5080', 'font_name': XL_FONT,
+                                'font_size': 11, 'align': 'left', 'valign': 'vcenter', 'border': 1, 'border_color': '#1F3A5F'})
+    base = {'font_name': XL_FONT, 'font_size': 11, 'border': 1, 'border_color': '#E2E8F0'}
+    text_fmt = wb.add_format(base)
+    num_fmt = wb.add_format(dict(base, num_format='#,##0'))
+    cur_fmt = wb.add_format(dict(base, num_format=u'£#,##0'))
+    pct_fmt = wb.add_format(dict(base, num_format='0.0%'))
+    fmt_for = {'currency': cur_fmt, 'percent': pct_fmt, 'number': num_fmt}
 
     used_names = set()
 
     def safe_name(name, idx):
         n = re.sub(r'[\\/?*\[\]:]', ' ', str(name or ('Sheet%d' % (idx + 1)))).strip()[:31] or ('Sheet%d' % (idx + 1))
-        base, k = n[:28], 2
+        base_n, k = n[:28], 2
         while n.lower() in used_names:
-            n = ('%s %d' % (base, k))[:31]
+            n = ('%s %d' % (base_n, k))[:31]
             k += 1
         used_names.add(n.lower())
         return n
@@ -79,154 +175,58 @@ def build_workbook(title, sheets):
         rows = [r if isinstance(r, list) else [r] for r in (s.get('rows') or [])]
         if not rows:
             rows = [['']]
-        ws = wb.create_sheet(safe_name(s.get('name'), idx))
+        name = safe_name(s.get('name'), idx)
+        ws = wb.add_worksheet(name)
         max_cols = max(len(r) for r in rows)
         types = [_xl_col_type(rows, c) for c in range(max_cols)]
 
+        for c in range(max_cols):
+            longest = 9
+            for r in rows:
+                v = '' if c >= len(r) or r[c] is None else str(r[c])
+                longest = max(longest, len(v) + 2)
+            ws.set_column(c, c, min(max(longest, 9), 60))
+
         for ri, r in enumerate(rows):
-            for ci in range(max_cols):
-                raw = '' if ci >= len(r) or r[ci] is None else str(r[ci])
-                cell = ws.cell(row=ri + 1, column=ci + 1)
+            for c in range(max_cols):
+                raw = '' if c >= len(r) or r[c] is None else str(r[c])
                 if ri == 0:
-                    cell.value = raw
-                    cell.font = header_font
-                    cell.fill = header_fill
-                    cell.alignment = left_center
-                    cell.border = border
+                    ws.write(ri, c, raw, header_fmt)
                     continue
-                cell.border = border
-                t = types[ci]
+                t = types[c]
+                f = fmt_for.get(t, text_fmt)
                 if _xl_is_formula(raw):
-                    cell.value = raw
-                    if t == 'currency':
-                        cell.number_format = u'"£"#,##0.00'
-                    elif t == 'percent':
-                        cell.number_format = '0.0%'
-                    elif t == 'number':
-                        cell.number_format = '#,##0'
+                    ws.write_formula(ri, c, raw, f)
                 elif raw == '':
-                    cell.value = None
+                    ws.write_blank(ri, c, None, text_fmt)
                 elif t == 'currency':
                     try:
-                        cell.value = float(_xl_clean_num(raw))
+                        ws.write_number(ri, c, float(_xl_clean_num(raw)), cur_fmt)
                     except ValueError:
-                        cell.value = raw
-                    cell.number_format = u'"£"#,##0.00'
+                        ws.write(ri, c, raw, text_fmt)
                 elif t == 'percent':
                     try:
-                        cell.value = float(re.sub(r'[%\s,]', '', raw)) / 100.0
+                        ws.write_number(ri, c, float(re.sub(r'[%\s,]', '', raw)) / 100.0, pct_fmt)
                     except ValueError:
-                        cell.value = raw
-                    cell.number_format = '0.0%'
+                        ws.write(ri, c, raw, text_fmt)
                 elif t == 'number':
                     try:
                         v = _xl_clean_num(raw)
-                        cell.value = int(v) if re.match(r'^-?\d+$', v) else float(v)
+                        ws.write_number(ri, c, int(v) if re.match(r'^-?\d+$', v) else float(v), num_fmt)
                     except ValueError:
-                        cell.value = raw
-                    cell.number_format = '#,##0'
+                        ws.write(ri, c, raw, text_fmt)
                 else:
-                    cell.value = raw
+                    ws.write(ri, c, raw, text_fmt)
 
-        for ci in range(max_cols):
-            longest = 9
-            for r in rows:
-                v = '' if ci >= len(r) or r[ci] is None else str(r[ci])
-                longest = max(longest, len(v) + 2)
-            ws.column_dimensions[get_column_letter(ci + 1)].width = min(max(longest, 9), 60)
-
-        ws.freeze_panes = 'A2'
+        ws.freeze_panes(1, 0)
         if len(rows) > 1:
-            ws.auto_filter.ref = 'A1:%s%d' % (get_column_letter(max_cols), len(rows))
+            ws.autofilter(0, 0, len(rows) - 1, max_cols - 1)
 
         chart_type = (s.get('chart') or '').lower()
         if chart_type and len(rows) >= 3:
-            num_cols = [c for c in range(1, max_cols) if types[c] in ('number', 'currency', 'percent')]
-            if num_cols:
-                from openpyxl.chart.label import DataLabelList
-                last_row = len(rows)
-                last_label = str(rows[-1][0]).strip().lower() if rows and rows[-1] and rows[-1][0] is not None else ''
-                if re.match(r'^(total|subtotal|grand total|average|mean)\b', last_label) and len(rows) - 1 >= 3:
-                    last_row = len(rows) - 1
+            _xl_add_chart(wb, ws, name, rows, types, max_cols, chart_type)
 
-                # Time-across-columns matrix (Department | Jan | Feb | ...): months on the X axis, one line per row
-                hdr = [('' if c is None else str(c)).strip() for c in rows[0]]
-                time_rx = re.compile(r'^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]|fy|h[12]|20\d\d)', re.I)
-                tcount = sum(1 for h in hdr[1:] if time_rx.match(h))
-                is_time_matrix = (max_cols - 1) >= 3 and tcount >= (max_cols - 1) * 0.6 and len(num_cols) >= 3
-
-                chart = None
-                single_series = False
-                is_pie = False
-                if is_time_matrix:
-                    chart = LineChart()
-                    data = Reference(ws, min_col=1, max_col=max_cols, min_row=2, max_row=last_row)
-                    cats = Reference(ws, min_col=2, max_col=max_cols, min_row=1, max_row=1)
-                    chart.add_data(data, titles_from_data=True, from_rows=True)
-                    chart.set_categories(cats)
-                    for ser in chart.series:
-                        ser.smooth = False
-                        ser.graphicalProperties.line.width = 28000  # ~2.2pt, crisper lines
-                elif chart_type == 'pie':
-                    is_pie = True
-                    chart = PieChart()
-                    data = Reference(ws, min_col=num_cols[0] + 1, min_row=1, max_row=last_row)
-                    cats = Reference(ws, min_col=1, min_row=2, max_row=last_row)
-                    chart.add_data(data, titles_from_data=True)
-                    chart.set_categories(cats)
-                else:
-                    if chart_type == 'line':
-                        chart = LineChart()
-                    else:
-                        chart = BarChart()
-                        chart.type = 'bar' if chart_type == 'bar' else 'col'
-                        chart.gapWidth = 60
-                    data = Reference(ws, min_col=num_cols[0] + 1, max_col=num_cols[-1] + 1, min_row=1, max_row=last_row)
-                    cats = Reference(ws, min_col=1, min_row=2, max_row=last_row)
-                    chart.add_data(data, titles_from_data=True)
-                    chart.set_categories(cats)
-                    single_series = (len(num_cols) == 1)
-                    if chart_type == 'line':
-                        for ser in chart.series:
-                            ser.smooth = False
-                            ser.graphicalProperties.line.width = 28000
-
-                if chart is not None:
-                    chart.title = ws.title
-                    chart.style = 10
-                    chart.height = 8.5
-                    chart.width = 17
-                    if is_pie:
-                        chart.dataLabels = DataLabelList()
-                        chart.dataLabels.showPercent = True
-                        chart.dataLabels.showCatName = False
-                        if chart.legend:
-                            chart.legend.position = 'r'
-                    else:
-                        chart.x_axis.delete = False
-                        chart.y_axis.delete = False
-                        chart.x_axis.majorTickMark = 'out'
-                        chart.y_axis.majorTickMark = 'out'
-                        chart.x_axis.title = hdr[0] or None
-                        # value-axis number format matched to the data
-                        ctypes = set(types[c] for c in num_cols)
-                        if ctypes == {'percent'}:
-                            chart.y_axis.numFmt = '0%'
-                        elif ctypes == {'currency'}:
-                            chart.y_axis.numFmt = u'"£"#,##0'
-                        else:
-                            chart.y_axis.numFmt = '#,##0'
-                        if single_series and not is_time_matrix:
-                            chart.dataLabels = DataLabelList()
-                            chart.dataLabels.showVal = True
-                            chart.legend = None
-                        elif chart.legend:
-                            chart.legend.position = 'b'
-                    anchor = '%s2' % get_column_letter(max_cols + 2) if max_cols <= 6 else 'A%d' % (len(rows) + 2)
-                    ws.add_chart(chart, anchor)
-
-    output = io.BytesIO()
-    wb.save(output)
+    wb.close()
     return output.getvalue()
 
 def clone_slide_with_images(prs, source_idx):
