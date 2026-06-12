@@ -126,6 +126,11 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .search-item:hover, .search-item.sel { background:var(--surface2); }
 .search-item .si2 { width:24px; height:24px; border-radius:6px; background:var(--surface2); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink2); font-size:10px; font-weight:600; }
 .search-empty { font-size:13px; color:var(--ink3); padding:14px 10px; text-align:center; }
+.slim-sp-wrap { padding:4px 10px 8px; }
+.sp-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.25); flex-shrink:0; }
+.sp-dot.on { background:#30D158; }
+/* slim mode: hide redundant top-right avatar (account lives bottom-left), push connectors to the right */
+body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none; }
 
 
 /* ── EMAIL INBOX PANEL ── */
@@ -924,6 +929,13 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 <div class="slimbar" id="slimNav">
   <div class="slim-logo"><div class="mk">HR</div><div class="nm">Breeze</div></div>
   <nav class="slim-nav" id="slimGroups" aria-label="Primary"></nav>
+  <div class="slim-sp-wrap">
+    <button class="sg-head" onclick="toggleSharePoint()" title="Search your SharePoint documents">
+      <svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><path d="M11 8v6M8 11h6"/></svg>
+      <span class="lbl">Search SharePoint</span>
+      <span class="sp-dot" id="slimSpDot"></span>
+    </button>
+  </div>
   <div class="slim-foot">
     <div class="slim-user" id="slimUser" role="button" aria-haspopup="true" onclick="slimMenu(event)">
       <div class="av" id="slimAv"></div>
@@ -1834,6 +1846,7 @@ async function onSignedIn(user) {
     if (outlookEl) outlookEl.classList.toggle('disconnected', !st.outlook);
     if (spEl) spEl.classList.toggle('connected', !!st.sharepoint);
     if (spEl) spEl.classList.toggle('disconnected', !st.sharepoint);
+    const spDot = document.getElementById('slimSpDot'); if (spDot) spDot.classList.toggle('on', !!st.sharepoint);
   }).catch(()=>{});
   // Show onboarding tour on first login
   if (!localStorage.getItem('breeze_tour_done')) showOnboardingTour();
