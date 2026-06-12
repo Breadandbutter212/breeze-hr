@@ -6674,11 +6674,13 @@ When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: for
 FILES YOU CAN PRODUCE: You can generate real downloadable files - Word documents via the 📧 DRAFT FOR EMPLOYEE format, and Excel spreadsheets via the 📊 SPREADSHEET format below. Never tell the user you can only produce text, or that you cannot create files or spreadsheets.
 
 When the user asks for data as a spreadsheet or in Excel, a report in table form, or a reusable spreadsheet template (for example a headcount or absence summary, a pay or holiday report, a new starter checklist, an audit or tracker template), output it using the 📊 SPREADSHEET format so it appears in the right-hand panel with one-click download to a real .xlsx file. Put the title after the colon, then the table with one row per line and columns separated by | (pipe). The first row is the header. Use [PLACEHOLDER] cells for any figures that must be pulled from HRIS or payroll. Do not wrap it in code fences. Keep the data-protection cautions in HR Actions.
+Formatting is automatic - write values like 45000, £45,000 or 12% and they are stored as proper numbers, currency and percentages; the header row, borders and column widths are applied for you. You may use Excel FORMULAS: write a cell starting with = (for example =SUM(B2:B8), =AVERAGE(B2:B8), =B2*C2 or =B2/C2). The header is row 1 and data begins on row 2, so reference cells accordingly. Where it is useful, add a Total or summary row that uses formulas rather than typing the totals.
 
-📊 SPREADSHEET: New starter checklist
-Task | Owner | Due | Status
-Issue contract | HR | Day -7 | Not started
-Right to work check | HR | Day 1 | Not started
+📊 SPREADSHEET: Team headcount and cost
+Team | Headcount | Avg salary | Total cost
+Engineering | 12 | £68,000 | =B2*C2
+Product | 5 | £72,000 | =B3*C3
+Total | =SUM(B2:B3) | | =SUM(D2:D3)
 
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
@@ -6832,32 +6834,70 @@ function renderSheetTable(rows) {
   return `<div style="overflow:auto;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`;
 }
 
-// Build a real .xlsx (OOXML) from rows using the bundled PizZip
+// Build a real, formatted .xlsx (OOXML) from rows using the bundled PizZip
 function buildXlsx(title, rows) {
   const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
   const colLetter = n => { let s=''; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+  rows = (rows||[]).map(r => Array.isArray(r) ? r : [r]);
+  let maxCols = 0; rows.forEach(r => { if (r.length > maxCols) maxCols = r.length; });
+  const isFormula = v => typeof v === 'string' && v.trim().startsWith('=');
+
+  // Infer each column's type from the body so numbers, currency and percentages format correctly
+  function colType(ci) {
+    let cur=false, pct=false, num=true, any=false;
+    for (let ri=1; ri<rows.length; ri++) {
+      const raw = (rows[ri][ci]==null?'':String(rows[ri][ci])).trim();
+      if (!raw || isFormula(raw)) continue;
+      any = true;
+      if (/[£$€]/.test(raw)) cur = true;
+      if (/%$/.test(raw)) pct = true;
+      if (!/^-?[\d,]+(\.\d+)?$/.test(raw.replace(/[£$€%\s]/g,''))) num = false;
+    }
+    if (!any) return 'text';
+    if (pct && num) return 'percent';
+    if (cur && num) return 'currency';
+    if (num) return 'number';
+    return 'text';
+  }
+  const types = []; for (let c=0;c<maxCols;c++) types.push(colType(c));
+  const styleFor = t => t==='currency'?4 : t==='percent'?5 : t==='number'?3 : 2; // matches cellXfs order
+
+  const widths = [];
+  for (let c=0;c<maxCols;c++) { let w=9; for (let r=0;r<rows.length;r++){ const v=(rows[r][c]==null?'':String(rows[r][c])); if (v.length+2>w) w=v.length+2; } widths.push(Math.min(Math.max(w,9),60)); }
+
   let sheetRows = '';
   rows.forEach((r, ri) => {
-    const cells = (r||[]).map((c, ci) => {
+    let cells = '';
+    for (let ci=0; ci<maxCols; ci++) {
       const ref = colLetter(ci) + (ri+1);
-      const v = (c==null ? '' : String(c));
-      const isNum = v !== '' && /^-?\d+(\.\d+)?$/.test(v.replace(/,/g,''));
-      if (isNum) return `<c r="${ref}"><v>${esc(v.replace(/,/g,''))}</v></c>`;
-      return `<c r="${ref}" t="inlineStr"><is><t xml:space="preserve">${esc(v)}</t></is></c>`;
-    }).join('');
+      const raw = (r[ci]==null ? '' : String(r[ci]));
+      if (ri === 0) { cells += `<c r="${ref}" s="1" t="inlineStr"><is><t xml:space="preserve">${esc(raw)}</t></is></c>`; continue; }
+      const t = types[ci];
+      if (isFormula(raw)) cells += `<c r="${ref}" s="${styleFor(t)}"><f>${esc(raw.trim().slice(1))}</f></c>`;
+      else if (raw === '') cells += `<c r="${ref}" s="2"/>`;
+      else if (t === 'currency') cells += `<c r="${ref}" s="4"><v>${esc(raw.replace(/[£$€,\s]/g,''))}</v></c>`;
+      else if (t === 'percent') { const n=parseFloat(raw.replace(/[%\s,]/g,'')); cells += `<c r="${ref}" s="5"><v>${isNaN(n)?0:n/100}</v></c>`; }
+      else if (t === 'number') cells += `<c r="${ref}" s="3"><v>${esc(raw.replace(/,/g,''))}</v></c>`;
+      else cells += `<c r="${ref}" s="2" t="inlineStr"><is><t xml:space="preserve">${esc(raw)}</t></is></c>`;
+    }
     sheetRows += `<row r="${ri+1}">${cells}</row>`;
   });
-  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>${sheetRows}</sheetData></worksheet>`;
+
+  const colsXml = `<cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>`;
+  const viewsXml = `<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>`;
+  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${viewsXml}${colsXml}<sheetData>${sheetRows}</sheetData></worksheet>`;
+  const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="3"><numFmt numFmtId="164" formatCode="&quot;£&quot;#,##0.00"/><numFmt numFmtId="165" formatCode="0.0%"/><numFmt numFmtId="166" formatCode="#,##0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2A5080"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD7DEEA"/></left><right style="thin"><color rgb="FFD7DEEA"/></right><top style="thin"><color rgb="FFD7DEEA"/></top><bottom style="thin"><color rgb="FFD7DEEA"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
   const sheetName = ((title||'Sheet1').replace(/[\\\/\?\*\[\]:]/g,' ').substring(0,31).trim()) || 'Sheet1';
-  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets></workbook>`;
-  const wbRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/></Relationships>`;
-  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/></Types>`;
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`;
+  const wbRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
   const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
   const zip = new PizZip();
   zip.file('[Content_Types].xml', contentTypes);
   zip.file('_rels/.rels', rootRels);
   zip.file('xl/workbook.xml', workbook);
   zip.file('xl/_rels/workbook.xml.rels', wbRels);
+  zip.file('xl/styles.xml', styles);
   zip.file('xl/worksheets/sheet1.xml', sheetXml);
   return zip.generate({ type:'uint8array', compression:'DEFLATE' });
 }
