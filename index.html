@@ -6673,14 +6673,32 @@ When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: for
 
 FILES YOU CAN PRODUCE: You can generate real downloadable files - Word documents via the 📧 DRAFT FOR EMPLOYEE format, and Excel spreadsheets via the 📊 SPREADSHEET format below. Never tell the user you can only produce text, or that you cannot create files or spreadsheets.
 
-When the user asks for data as a spreadsheet or in Excel, a report in table form, or a reusable spreadsheet template (for example a headcount or absence summary, a pay or holiday report, a new starter checklist, an audit or tracker template), output it using the 📊 SPREADSHEET format so it appears in the right-hand panel with one-click download to a real .xlsx file. Put the title after the colon, then the table with one row per line and columns separated by | (pipe). The first row is the header. Use [PLACEHOLDER] cells for any figures that must be pulled from HRIS or payroll. Do not wrap it in code fences. Keep the data-protection cautions in HR Actions.
-Formatting is automatic - write values like 45000, £45,000 or 12% and they are stored as proper numbers, currency and percentages; the header row, borders and column widths are applied for you. You may use Excel FORMULAS: write a cell starting with = (for example =SUM(B2:B8), =AVERAGE(B2:B8), =B2*C2 or =B2/C2). The header is row 1 and data begins on row 2, so reference cells accordingly. Where it is useful, add a Total or summary row that uses formulas rather than typing the totals.
+When the user asks for data as a spreadsheet or in Excel, a report in table form, a board pack, or a reusable spreadsheet template (for example a headcount or absence summary, a pay or holiday report, a new starter checklist, an audit or tracker template), output it using the 📊 SPREADSHEET format so it appears in the right-hand panel with one-click download to a real, formatted .xlsx file. Do not put spreadsheet data in a 📧 draft. Do not wrap it in code fences. Keep the data-protection cautions in HR Actions.
+Structure: a "📊 SPREADSHEET:" line with the workbook title, then one or more TABS. Start each tab with "## Tab name" on its own line, followed by its table (one row per line, columns separated by | (pipe), first row = header). For a multi-part report or board pack, use SEPARATE tabs (for example: Summary, Headcount, Attrition, Leaver reasons, Vacancies, Cost) - this is far better than one giant table. Keep each tab to one clean table.
+Formatting is automatic - write values like 45000, £45,000 or 12% and they store as proper numbers, currency and percentages; header styling, borders, column widths, a frozen header row and filters are applied for you.
+FORMULAS: write a cell starting with = (for example =SUM(B2:B8), =AVERAGE(B2:B8), =B2*C2, =B2/C2). The header is row 1 and data begins on row 2. Add a Total or summary row with formulas rather than typing totals.
+CHARTS: to chart a tab, add a line "CHART: column" (or bar, pie, line) right after that tab's table. The first column is used as the labels and the numeric columns as the values, so order the table accordingly. Add charts to the tabs where a visual helps (a breakdown by department, leaver reasons as a pie, a trend as a line).
+For figures you cannot verify, put [PLACEHOLDER] in the cell and note in HR Actions to populate from HRIS/payroll.
 
-📊 SPREADSHEET: Team headcount and cost
-Team | Headcount | Avg salary | Total cost
-Engineering | 12 | £68,000 | =B2*C2
-Product | 5 | £72,000 | =B3*C3
-Total | =SUM(B2:B3) | | =SUM(D2:D3)
+📊 SPREADSHEET: People board pack H1 2026
+## Summary
+Metric | Value
+Closing headcount | 187
+Attrition rate | 14.4%
+Open roles | 5
+## Attrition by department
+Department | Headcount | Leavers | Attrition %
+Technology | 42 | 10 | 23.8%
+Sales | 35 | 8 | 22.9%
+Operations | 48 | 6 | 12.5%
+Total | =SUM(B2:B4) | =SUM(C2:C4) | =C5/B5
+CHART: column
+## Leaver reasons
+Reason | Number
+Better pay | 9
+Progression | 6
+Management | 4
+CHART: pie
 
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
@@ -6710,22 +6728,45 @@ function formatArtifactContent(text) {
 // ── ARTIFACT PANEL ──
 let currentArtifact = null;
 
+// Parse a spreadsheet block into [{name, rows, chart}] - "## Tab name" starts a tab, "CHART: type" attaches a chart
+function parseSheetBlock(block) {
+  const sheets = [];
+  let cur = null;
+  (block||'').split('\n').forEach(raw => {
+    const line = raw.trim();
+    if (!line) return;
+    const h = line.match(/^#{1,6}\s+(.+)$/) || (/^\*\*[^|]+\*\*$/.test(line) ? [null, line.replace(/\*/g,'')] : null);
+    const chartM = line.match(/^(?:📈\s*)?CHART\s*:\s*(column|bar|pie|line)\b/i);
+    if (h) {
+      if (cur && cur.rows.length) sheets.push(cur);
+      cur = { name: (h[1]||'Sheet').replace(/[*#]/g,'').trim() || ('Sheet'+(sheets.length+1)), rows: [], chart: null };
+    } else if (chartM) {
+      if (cur) cur.chart = chartM[1].toLowerCase();
+    } else if (line.includes('|')) {
+      const cells = line.replace(/^\||\|$/g,'').split('|').map(c=>c.trim());
+      if (cells.every(c => c === '' || /^:?-{2,}:?$/.test(c))) return; // skip markdown separator row
+      if (!cur) cur = { name: 'Sheet1', rows: [], chart: null };
+      cur.rows.push(cells);
+    }
+  });
+  if (cur && cur.rows.length) sheets.push(cur);
+  return sheets.filter(s => s.rows.length);
+}
+
 function parseArtifact(text) {
-  // Spreadsheet artifact: 📊 SPREADSHEET: <title> then pipe-delimited rows
+  // Spreadsheet artifact: 📊 SPREADSHEET: <title>, optional ## Tab sections, each with a table and optional CHART:
   const sheetMatch = text.match(/\*{0,2}📊\s*SPREADSHEET[^:\n]*:\*{0,2}\s*([^\n]*)\n/i);
   if (sheetMatch) {
     const sIdx = text.indexOf(sheetMatch[0]);
     const sAfter = text.substring(sIdx + sheetMatch[0].length);
     const sStop = sAfter.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i);
-    const tableBlock = sStop > -1 ? sAfter.substring(0, sStop) : sAfter;
+    const block = sStop > -1 ? sAfter.substring(0, sStop) : sAfter;
     const sHr = sStop > -1 ? sAfter.substring(sStop).trim() : '';
-    const rows = tableBlock.split('\n').map(l => l.trim()).filter(l => l.includes('|'))
-      .map(l => l.replace(/^\||\|$/g, '').split('|').map(c => c.trim()))
-      .filter(cells => !cells.every(c => c === '' || /^:?-{2,}:?$/.test(c)));
-    if (rows.length) {
+    const sheets = parseSheetBlock(block);
+    if (sheets.length) {
       const title = (sheetMatch[1] || '').trim() || 'Spreadsheet';
       const advice = text.substring(0, sIdx).trim();
-      return { type: 'Spreadsheet', title, rows, draft: tableBlock.trim(), advice: [advice, sHr].filter(Boolean).join('\n\n') };
+      return { type: 'Spreadsheet', title, sheets, draft: block.trim(), advice: [advice, sHr].filter(Boolean).join('\n\n') };
     }
   }
   // Match 📧 DRAFT FOR EMPLOYEE: in various formats the AI might use
@@ -6749,14 +6790,15 @@ function showArtifact(artifact, msgIdx) {
   const body = document.getElementById('artifactBody');
   pane.classList.add('open');
   if (artifact.type === 'Spreadsheet') {
+    const tabs = (artifact.sheets||[]).length;
     head.innerHTML = `
       <span class="artifact-type">Spreadsheet</span>
       <span class="artifact-title">${escapeHtml(artifact.title)}</span>
-      <span style="font-size:10px;color:var(--ink3);">Opens in Excel</span>
+      <span style="font-size:10px;color:var(--ink3);">${tabs} tab${tabs===1?'':'s'} - opens in Excel</span>
       <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
       <button class="artifact-btn primary" onclick="downloadXlsx()">⬇ .xlsx</button>
       <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
-    body.innerHTML = `<div class="artifact-doc" id="artifactDoc">${renderSheetTable(artifact.rows)}</div>`;
+    body.innerHTML = `<div class="artifact-doc" id="artifactDoc">${renderSheetPreview(artifact.sheets)}</div>`;
     if (msgIdx !== undefined && currentProfile) saveResponse(null, artifact.draft, artifact.draft);
     return;
   }
@@ -6824,8 +6866,8 @@ async function downloadArtifact() {
   if (btn) { btn.textContent = '⬇ .docx'; btn.disabled = false; }
 }
 
-// ── SPREADSHEET ARTIFACT ──
-function renderSheetTable(rows) {
+// ── SPREADSHEET ARTIFACT (multi-tab workbook with formatting + charts) ──
+function renderOneTable(rows) {
   if (!rows || !rows.length) return '';
   const head = rows[0] || [];
   const bodyRows = rows.slice(1);
@@ -6833,88 +6875,167 @@ function renderSheetTable(rows) {
   const trs = bodyRows.map(r => `<tr>${head.map((_,ci) => `<td style="padding:6px 10px;border:1px solid var(--border);font-size:12px;color:var(--ink);">${escapeHtml(r[ci]||'')}</td>`).join('')}</tr>`).join('');
   return `<div style="overflow:auto;"><table style="border-collapse:collapse;width:100%;"><thead><tr>${th}</tr></thead><tbody>${trs}</tbody></table></div>`;
 }
+function renderSheetPreview(sheets) {
+  return (sheets||[]).map(s => `<div style="margin-bottom:16px;">
+    <div style="font-size:12px;font-weight:600;color:var(--ink);margin:0 0 6px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;"><span style="background:var(--surface2);border:1px solid var(--border);border-radius:5px;padding:2px 8px;font-size:11px;">${escapeHtml(s.name)}</span>${s.chart?`<span style="font-size:10px;color:var(--ink3);">includes ${escapeHtml(s.chart)} chart</span>`:''}</div>
+    ${renderOneTable(s.rows)}</div>`).join('');
+}
 
-// Build a real, formatted .xlsx (OOXML) from rows using the bundled PizZip
-function buildXlsx(title, rows) {
-  const esc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  const colLetter = n => { let s=''; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+// Shared helpers for OOXML generation
+const _xlEsc = s => String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const _xlCol = n => { let s=''; n++; while(n>0){ const m=(n-1)%26; s=String.fromCharCode(65+m)+s; n=Math.floor((n-1)/26);} return s; };
+const _xlIsFormula = v => typeof v==='string' && v.trim().startsWith('=');
+function _xlColType(rows, ci) {
+  let cur=false, pct=false, num=true, any=false;
+  for (let ri=1; ri<rows.length; ri++) {
+    const raw = (rows[ri][ci]==null?'':String(rows[ri][ci])).trim();
+    if (!raw || _xlIsFormula(raw)) continue;
+    any = true;
+    if (/[£$€]/.test(raw)) cur = true;
+    if (/%$/.test(raw)) pct = true;
+    if (!/^-?[\d,]+(\.\d+)?$/.test(raw.replace(/[£$€%\s]/g,''))) num = false;
+  }
+  if (!any) return 'text';
+  if (pct && num) return 'percent';
+  if (cur && num) return 'currency';
+  if (num) return 'number';
+  return 'text';
+}
+
+// Build a single worksheet's XML (returns {xml, maxCols, types})
+function _xlSheetXml(rows, hasChart) {
   rows = (rows||[]).map(r => Array.isArray(r) ? r : [r]);
   let maxCols = 0; rows.forEach(r => { if (r.length > maxCols) maxCols = r.length; });
-  const isFormula = v => typeof v === 'string' && v.trim().startsWith('=');
-
-  // Infer each column's type from the body so numbers, currency and percentages format correctly
-  function colType(ci) {
-    let cur=false, pct=false, num=true, any=false;
-    for (let ri=1; ri<rows.length; ri++) {
-      const raw = (rows[ri][ci]==null?'':String(rows[ri][ci])).trim();
-      if (!raw || isFormula(raw)) continue;
-      any = true;
-      if (/[£$€]/.test(raw)) cur = true;
-      if (/%$/.test(raw)) pct = true;
-      if (!/^-?[\d,]+(\.\d+)?$/.test(raw.replace(/[£$€%\s]/g,''))) num = false;
-    }
-    if (!any) return 'text';
-    if (pct && num) return 'percent';
-    if (cur && num) return 'currency';
-    if (num) return 'number';
-    return 'text';
-  }
-  const types = []; for (let c=0;c<maxCols;c++) types.push(colType(c));
-  const styleFor = t => t==='currency'?4 : t==='percent'?5 : t==='number'?3 : 2; // matches cellXfs order
-
+  if (!maxCols) { maxCols = 1; rows = [['']]; }
+  const types = []; for (let c=0;c<maxCols;c++) types.push(_xlColType(rows, c));
+  const styleFor = t => t==='currency'?4 : t==='percent'?5 : t==='number'?3 : 2;
   const widths = [];
   for (let c=0;c<maxCols;c++) { let w=9; for (let r=0;r<rows.length;r++){ const v=(rows[r][c]==null?'':String(rows[r][c])); if (v.length+2>w) w=v.length+2; } widths.push(Math.min(Math.max(w,9),60)); }
-
-  let sheetRows = '';
+  let body = '';
   rows.forEach((r, ri) => {
     let cells = '';
     for (let ci=0; ci<maxCols; ci++) {
-      const ref = colLetter(ci) + (ri+1);
+      const ref = _xlCol(ci) + (ri+1);
       const raw = (r[ci]==null ? '' : String(r[ci]));
-      if (ri === 0) { cells += `<c r="${ref}" s="1" t="inlineStr"><is><t xml:space="preserve">${esc(raw)}</t></is></c>`; continue; }
+      if (ri === 0) { cells += `<c r="${ref}" s="1" t="inlineStr"><is><t xml:space="preserve">${_xlEsc(raw)}</t></is></c>`; continue; }
       const t = types[ci];
-      if (isFormula(raw)) cells += `<c r="${ref}" s="${styleFor(t)}"><f>${esc(raw.trim().slice(1))}</f></c>`;
+      if (_xlIsFormula(raw)) cells += `<c r="${ref}" s="${styleFor(t)}"><f>${_xlEsc(raw.trim().slice(1))}</f></c>`;
       else if (raw === '') cells += `<c r="${ref}" s="2"/>`;
-      else if (t === 'currency') cells += `<c r="${ref}" s="4"><v>${esc(raw.replace(/[£$€,\s]/g,''))}</v></c>`;
+      else if (t === 'currency') cells += `<c r="${ref}" s="4"><v>${_xlEsc(raw.replace(/[£$€,\s]/g,''))}</v></c>`;
       else if (t === 'percent') { const n=parseFloat(raw.replace(/[%\s,]/g,'')); cells += `<c r="${ref}" s="5"><v>${isNaN(n)?0:n/100}</v></c>`; }
-      else if (t === 'number') cells += `<c r="${ref}" s="3"><v>${esc(raw.replace(/,/g,''))}</v></c>`;
-      else cells += `<c r="${ref}" s="2" t="inlineStr"><is><t xml:space="preserve">${esc(raw)}</t></is></c>`;
+      else if (t === 'number') cells += `<c r="${ref}" s="3"><v>${_xlEsc(raw.replace(/,/g,''))}</v></c>`;
+      else cells += `<c r="${ref}" s="2" t="inlineStr"><is><t xml:space="preserve">${_xlEsc(raw)}</t></is></c>`;
     }
-    sheetRows += `<row r="${ri+1}">${cells}</row>`;
+    body += `<row r="${ri+1}">${cells}</row>`;
   });
-
+  const lastRef = _xlCol(maxCols-1) + rows.length;
   const colsXml = `<cols>${widths.map((w,i)=>`<col min="${i+1}" max="${i+1}" width="${w}" customWidth="1"/>`).join('')}</cols>`;
   const viewsXml = `<sheetViews><sheetView workbookViewId="0"><pane ySplit="1" topLeftCell="A2" activePane="bottomLeft" state="frozen"/><selection pane="bottomLeft" activeCell="A2" sqref="A2"/></sheetView></sheetViews>`;
-  const sheetXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main">${viewsXml}${colsXml}<sheetData>${sheetRows}</sheetData></worksheet>`;
+  const autoFilter = rows.length>1 ? `<autoFilter ref="A1:${lastRef}"/>` : '';
+  const drawing = hasChart ? `<drawing r:id="rId1"/>` : '';
+  const xml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">${viewsXml}${colsXml}<sheetData>${body}</sheetData>${autoFilter}${drawing}</worksheet>`;
+  return { xml, maxCols, types, nRows: rows.length };
+}
+
+// Build a chart part referencing a sheet's data. Returns null if no numeric series.
+function _xlChartXml(sheetName, rows, types, maxCols, nRows, type) {
+  const q = "'" + String(sheetName).replace(/'/g,"''") + "'";
+  const catRef = `${q}!$A$2:$A$${nRows}`;
+  const numCols = [];
+  for (let c=1;c<maxCols;c++) if (types[c]==='number'||types[c]==='currency'||types[c]==='percent') numCols.push(c);
+  if (!numCols.length || nRows < 2) return null;
+  const isPie = type==='pie';
+  const cols = isPie ? numCols.slice(0,1) : numCols;
+  const series = cols.map((c,si) => {
+    const L = _xlCol(c);
+    return `<c:ser><c:idx val="${si}"/><c:order val="${si}"/>`
+      + `<c:tx><c:strRef><c:f>${q}!$${L}$1</c:f></c:strRef></c:tx>`
+      + `<c:cat><c:strRef><c:f>${catRef}</c:f></c:strRef></c:cat>`
+      + `<c:val><c:numRef><c:f>${q}!$${L}$2:$${L}$${nRows}</c:f></c:numRef></c:val></c:ser>`;
+  }).join('');
+  let plot;
+  if (isPie) {
+    plot = `<c:pieChart><c:varyColors val="1"/>${series}</c:pieChart>`;
+  } else if (type==='line') {
+    plot = `<c:lineChart><c:grouping val="standard"/><c:varyColors val="0"/>${series}<c:marker val="1"/><c:axId val="1"/><c:axId val="2"/></c:lineChart>`
+      + `<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="2"/></c:catAx>`
+      + `<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="1"/></c:valAx>`;
+  } else {
+    const dir = type==='bar' ? 'bar' : 'col';
+    plot = `<c:barChart><c:barDir val="${dir}"/><c:grouping val="clustered"/><c:varyColors val="0"/>${series}<c:axId val="1"/><c:axId val="2"/></c:barChart>`
+      + `<c:catAx><c:axId val="1"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="b"/><c:crossAx val="2"/></c:catAx>`
+      + `<c:valAx><c:axId val="2"/><c:scaling><c:orientation val="minMax"/></c:scaling><c:delete val="0"/><c:axPos val="l"/><c:crossAx val="1"/></c:valAx>`;
+  }
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<c:chartSpace xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><c:chart><c:autoTitleDeleted val="0"/><c:plotArea><c:layout/>${plot}</c:plotArea><c:legend><c:legendPos val="${isPie?'r':'b'}"/><c:overlay val="0"/></c:legend><c:plotVisOnly val="1"/></c:chart></c:chartSpace>`;
+}
+
+function _xlDrawingXml(fromCol) {
+  return `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<xdr:wsDr xmlns:xdr="http://schemas.openxmlformats.org/drawingml/2006/spreadsheetDrawing" xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><xdr:twoCellAnchor editAs="oneCell"><xdr:from><xdr:col>${fromCol}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>1</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:from><xdr:to><xdr:col>${fromCol+8}</xdr:col><xdr:colOff>0</xdr:colOff><xdr:row>19</xdr:row><xdr:rowOff>0</xdr:rowOff></xdr:to><xdr:graphicFrame macro=""><xdr:nvGraphicFramePr><xdr:cNvPr id="2" name="Chart 1"/><xdr:cNvGraphicFramePr/></xdr:nvGraphicFramePr><xdr:xfrm><a:off x="0" y="0"/><a:ext cx="0" cy="0"/></xdr:xfrm><a:graphic><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/chart"><c:chart xmlns:c="http://schemas.openxmlformats.org/drawingml/2006/chart" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships" r:id="rId1"/></a:graphicData></a:graphic></xdr:graphicFrame><xdr:clientData/></xdr:twoCellAnchor></xdr:wsDr>`;
+}
+
+// Build a complete multi-tab .xlsx with styles and charts
+function buildWorkbook(title, sheets) {
+  sheets = (sheets||[]).filter(s=>s && s.rows && s.rows.length).map(s=>({ name:(s.name||'Sheet'), rows:s.rows, chart:(s.chart||null) }));
+  if (!sheets.length) sheets = [{ name:(title||'Sheet1'), rows:[['(empty)']], chart:null }];
+  if (sheets.length===1 && (!sheets[0].name || sheets[0].name==='Sheet1')) sheets[0].name = (title||'Sheet1');
+  // Unique, valid tab names
+  const used = {};
+  sheets.forEach((s,i)=>{ let n=(s.name||('Sheet'+(i+1))).replace(/[\\\/\?\*\[\]:]/g,' ').substring(0,31).trim()||('Sheet'+(i+1)); const base=n.substring(0,28); let k=2; while(used[n.toLowerCase()]){ n=(base+' '+k).substring(0,31); k++; } used[n.toLowerCase()]=1; s.xlName=n; });
+
   const styles = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<styleSheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><numFmts count="3"><numFmt numFmtId="164" formatCode="&quot;£&quot;#,##0.00"/><numFmt numFmtId="165" formatCode="0.0%"/><numFmt numFmtId="166" formatCode="#,##0"/></numFmts><fonts count="2"><font><sz val="11"/><name val="Calibri"/></font><font><b/><sz val="11"/><color rgb="FFFFFFFF"/><name val="Calibri"/></font></fonts><fills count="3"><fill><patternFill patternType="none"/></fill><fill><patternFill patternType="gray125"/></fill><fill><patternFill patternType="solid"><fgColor rgb="FF2A5080"/><bgColor indexed="64"/></patternFill></fill></fills><borders count="2"><border><left/><right/><top/><bottom/><diagonal/></border><border><left style="thin"><color rgb="FFD7DEEA"/></left><right style="thin"><color rgb="FFD7DEEA"/></right><top style="thin"><color rgb="FFD7DEEA"/></top><bottom style="thin"><color rgb="FFD7DEEA"/></bottom><diagonal/></border></borders><cellStyleXfs count="1"><xf numFmtId="0" fontId="0" fillId="0" borderId="0"/></cellStyleXfs><cellXfs count="6"><xf numFmtId="0" fontId="0" fillId="0" borderId="0" xfId="0"/><xf numFmtId="0" fontId="1" fillId="2" borderId="1" xfId="0" applyFont="1" applyFill="1" applyBorder="1" applyAlignment="1"><alignment horizontal="left" vertical="center"/></xf><xf numFmtId="0" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1"/><xf numFmtId="166" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/><xf numFmtId="164" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/><xf numFmtId="165" fontId="0" fillId="0" borderId="1" xfId="0" applyBorder="1" applyNumberFormat="1"/></cellXfs><cellStyles count="1"><cellStyle name="Normal" xfId="0" builtinId="0"/></cellStyles></styleSheet>`;
-  const sheetName = ((title||'Sheet1').replace(/[\\\/\?\*\[\]:]/g,' ').substring(0,31).trim()) || 'Sheet1';
-  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets><sheet name="${esc(sheetName)}" sheetId="1" r:id="rId1"/></sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`;
-  const wbRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet1.xml"/><Relationship Id="rId2" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
-  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/><Override PartName="/xl/worksheets/sheet1.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/><Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/></Types>`;
-  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
+
   const zip = new PizZip();
+  const ctOverrides = ['<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>','<Override PartName="/xl/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml"/>'];
+  const wbSheets = [], wbRels = [];
+
+  sheets.forEach((s, i) => {
+    const k = i + 1;
+    // Decide chart up-front so the worksheet can reference the drawing
+    const probe = _xlSheetXml(s.rows, false);
+    let chartXml = null;
+    if (s.chart) chartXml = _xlChartXml(s.xlName, s.rows.map(r=>Array.isArray(r)?r:[r]), probe.types, probe.maxCols, probe.nRows, s.chart);
+    const sheetBuilt = _xlSheetXml(s.rows, !!chartXml);
+    zip.file(`xl/worksheets/sheet${k}.xml`, sheetBuilt.xml);
+    ctOverrides.push(`<Override PartName="/xl/worksheets/sheet${k}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`);
+    wbSheets.push(`<sheet name="${_xlEsc(s.xlName)}" sheetId="${k}" r:id="rId${k}"/>`);
+    wbRels.push(`<Relationship Id="rId${k}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${k}.xml"/>`);
+    if (chartXml) {
+      zip.file(`xl/charts/chart${k}.xml`, chartXml);
+      zip.file(`xl/drawings/drawing${k}.xml`, _xlDrawingXml(sheetBuilt.maxCols + 1));
+      zip.file(`xl/worksheets/_rels/sheet${k}.xml.rels`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/drawing" Target="../drawings/drawing${k}.xml"/></Relationships>`);
+      zip.file(`xl/drawings/_rels/drawing${k}.xml.rels`, `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/chart" Target="../charts/chart${k}.xml"/></Relationships>`);
+      ctOverrides.push(`<Override PartName="/xl/charts/chart${k}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawingml.chart+xml"/>`);
+      ctOverrides.push(`<Override PartName="/xl/drawings/drawing${k}.xml" ContentType="application/vnd.openxmlformats-officedocument.drawing+xml"/>`);
+    }
+  });
+
+  const stylesRid = sheets.length + 1;
+  wbRels.push(`<Relationship Id="rId${stylesRid}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>`);
+  const workbook = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>${wbSheets.join('')}</sheets><calcPr calcId="0" fullCalcOnLoad="1"/></workbook>`;
+  const wbRelsXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">${wbRels.join('')}</Relationships>`;
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>${ctOverrides.join('')}</Types>`;
+  const rootRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
   zip.file('[Content_Types].xml', contentTypes);
   zip.file('_rels/.rels', rootRels);
   zip.file('xl/workbook.xml', workbook);
-  zip.file('xl/_rels/workbook.xml.rels', wbRels);
+  zip.file('xl/_rels/workbook.xml.rels', wbRelsXml);
   zip.file('xl/styles.xml', styles);
-  zip.file('xl/worksheets/sheet1.xml', sheetXml);
   return zip.generate({ type:'uint8array', compression:'DEFLATE' });
 }
 
 function downloadXlsx() {
-  if (!currentArtifact || !currentArtifact.rows) return;
+  if (!currentArtifact || !currentArtifact.sheets) return;
   let base = (currentArtifact.title || 'spreadsheet').replace(/[^\w\- ]+/g,'').trim().replace(/\s+/g,'-').toLowerCase();
   if (!base) base = 'spreadsheet';
   try {
-    const bytes = buildXlsx(currentArtifact.title, currentArtifact.rows);
+    const bytes = buildWorkbook(currentArtifact.title, currentArtifact.sheets);
     const blob = new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href=url; a.download = base + '.xlsx'; a.click();
     URL.revokeObjectURL(url);
   } catch(e) {
-    // Fallback to CSV (also opens in Excel)
-    const csv = currentArtifact.rows.map(r => (r||[]).map(c => `"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
+    const rows = (currentArtifact.sheets[0] && currentArtifact.sheets[0].rows) || [];
+    const csv = rows.map(r => (r||[]).map(c => `"${String(c==null?'':c).replace(/"/g,'""')}"`).join(',')).join('\n');
     const blob = new Blob(['﻿'+csv], { type:'text/csv' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a'); a.href=url; a.download = base + '.csv'; a.click();
