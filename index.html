@@ -7068,10 +7068,10 @@ async function downloadRichXlsx(btn) {
   const label = btn ? btn.textContent : '';
   if (btn) { btn.textContent = 'Building...'; btn.disabled = true; }
   try {
-    const res = await fetch('/api/generate-xlsx', {
+    const res = await fetch('/api/generate-pptx', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: currentArtifact.title, sheets: currentArtifact.sheets })
+      body: JSON.stringify({ action: 'xlsx', title: currentArtifact.title, sheets: currentArtifact.sheets })
     });
     if (!res.ok) throw new Error('Server error ' + res.status);
     const blob = await res.blob();
