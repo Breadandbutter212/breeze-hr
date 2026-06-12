@@ -14985,26 +14985,27 @@ async function projConfirmEmailToTask(){
 
 // ===== Slim sidebar: search + collapsible groups + avatar menu (?nav=slim) =====
 (function(){
-  var HOME = { label:'Home', view:'chat', icon:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>' };
   var GROUPS = {
-    people:{ label:'People', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Directory', soon:true}, {label:'Org chart', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Headcount', view:'headcount'} ] },
-    work:{ label:'Work', icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
-    library:{ label:'Library', icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', items:[ {label:'Policies', view:'manage'}, {label:'Documents', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
-    insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] }
+    create:{ label:'Create', icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'}, {label:'Documents', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
+    people:{ label:'Your people', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Headcount planning', view:'headcount'} ] },
+    policies:{ label:'Policies', icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', items:[ {label:'Policy library', view:'manage'} ] },
+    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
+    insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] },
+    admin:{ label:'Admin', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 0-.33-1.82"/>', items:[ {label:'Settings', view:'settings'}, {label:'FAQs', view:'faqs'} ] }
   };
   var VIEW2GROUP = {};
-  Object.keys(GROUPS).forEach(function(g){ GROUPS[g].items.forEach(function(it){ if(it.view) VIEW2GROUP[it.view]=g; }); });
+  Object.keys(GROUPS).forEach(function(g){ GROUPS[g].items.forEach(function(it){ if(it.view && !VIEW2GROUP[it.view]) VIEW2GROUP[it.view]=g; }); });
   function curView(){ return localStorage.getItem('bz_view') || 'chat'; }
   function ic(p){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
 
   function render(){
     var box=document.getElementById('slimGroups'); if(!box) return;
-    var cur=curView(), openG=VIEW2GROUP[cur];
-    var html='<button class="sg-head'+(cur==='chat'||cur==='chats'?' active':'')+'" onclick="slimGo(\'chat\')">'+ic(HOME.icon)+'<span class="lbl">Home</span><span class="sg-badge" id="slimHomeBadge" style="display:none">0</span></button>';
+    var cur=curView(), openG=VIEW2GROUP[cur]||'create';
+    var html='';
     Object.keys(GROUPS).forEach(function(g){
       var c=GROUPS[g], isOpen=(openG===g);
       html+='<div class="sg'+(isOpen?' open':'')+'" data-g="'+g+'">';
-      html+='<button class="sg-head'+(isOpen?' active':'')+'" onclick="slimToggle(\''+g+'\')" aria-expanded="'+isOpen+'">'+ic(c.icon)+'<span class="lbl">'+c.label+'</span>'+(g==='work'?'<span class="sg-badge" id="slimWorkBadge" style="display:none">0</span>':'')+'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>';
+      html+='<button class="sg-head'+(isOpen?' active':'')+'" onclick="slimToggle(\''+g+'\')" aria-expanded="'+isOpen+'">'+ic(c.icon)+'<span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>';
       html+='<div class="sg-items">'+c.items.map(function(it){
         if(it.soon) return '<button class="sgi" aria-disabled="true">'+it.label+' <span class="beta">soon</span></button>';
         var on=cur===it.view;
@@ -15029,7 +15030,7 @@ async function projConfirmEmailToTask(){
       if(!pd && typeof loadProjects==='function'){ await loadProjects(); pd=(typeof projectsData!=='undefined')?projectsData:null; }
       var overdue=0;
       if(pd && typeof projOverdueList==='function'){ pd.forEach(function(p){ overdue+=projOverdueList(p).length; }); }
-      [['slimHomeBadge'],['slimWorkBadge']].forEach(function(x){ var b=document.getElementById(x[0]); if(b){ if(overdue>0){ b.textContent=overdue>9?'9+':overdue; b.style.display=''; } else b.style.display='none'; } });
+      var b=document.getElementById('slimActionBadge'); if(b){ if(overdue>0){ b.textContent=overdue>9?'9+':overdue; b.style.display=''; } else b.style.display='none'; }
     }catch(e){}
   }
 
