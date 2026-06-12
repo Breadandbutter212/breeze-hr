@@ -7055,7 +7055,10 @@ function getTestEmails() {
       body: 'Hi,\n\nI would like to formally request a change to my working pattern. I would like to compress my full-time hours into a four-day week (working Monday to Thursday).\n\nI believe this would not affect my output and I am happy to discuss how to manage handovers on Fridays. This is my first flexible working request.\n\nCould you let me know the process and timescales?\n\nMany thanks,\nPriya Nair\nCustomer Success' },
     { id: 'test-5', threadId: 'test-5', from: 'Mark Davies <mark.davies@example.com>', subject: 'Raising a grievance', date: d(5, 11, 20),
       snippet: 'I would like to raise a formal grievance regarding the way a recent project decision was handled by my line manager.',
-      body: 'Dear HR,\n\nI would like to raise a formal grievance regarding the way a recent project decision was handled by my line manager. I feel I was excluded from a decision that directly affects my role and I was spoken to in a way I found unprofessional in front of colleagues.\n\nI would like to understand the formal grievance process and what happens next.\n\nRegards,\nMark Davies\nOperations' }
+      body: 'Dear HR,\n\nI would like to raise a formal grievance regarding the way a recent project decision was handled by my line manager. I feel I was excluded from a decision that directly affects my role and I was spoken to in a way I found unprofessional in front of colleagues.\n\nI would like to understand the formal grievance process and what happens next.\n\nRegards,\nMark Davies\nOperations' },
+    { id: 'test-6', threadId: 'test-6', from: 'Sarah Mitchell <sarah.mitchell@example.com>', subject: 'Question about my workstation now I am pregnant', date: d(0, 10, 30),
+      snippet: 'Thanks for confirming my maternity leave dates. One more thing - should we look at my desk setup and arrange a risk assessment?',
+      body: 'Hi,\n\nThanks for confirming my maternity leave dates last month. One more thing now that I am a bit further along - should we look at my desk setup and workstation? I have been getting some back pain and a colleague mentioned there should be a risk assessment for expectant mothers.\n\nCould we arrange that?\n\nThanks,\nSarah Mitchell\nCustomer Success' }
   ];
 }
 
@@ -7247,27 +7250,111 @@ function selectEmailForChat(idx) {
   detectTrackerSuggestion(email);
 }
 
-function detectTrackerSuggestion(email) {
+async function detectTrackerSuggestion(email) {
+  // Load family-leave data so we can tell a brand-new case from an update to an existing one
+  try { if (typeof mpRecords !== 'undefined' && mpRecords === null && typeof loadMatPatRecords === 'function') await loadMatPatRecords(); } catch(e){}
+  try { if (typeof wfCases !== 'undefined' && wfCases === null && typeof loadWfCases === 'function') await loadWfCases(); } catch(e){}
+
+  const senderName = (email.from || '').replace(/<[^>]+>/, '').replace(/"/g, '').trim();
+  const sLower = senderName.toLowerCase();
   const text = ((email.subject || '') + ' ' + (email.body || email.snippet || '')).toLowerCase();
+  document.getElementById('trackerSuggest')?.remove();
+
+  // Already on the family-leave tracker? Match on full name to avoid first-name clashes.
+  const existing = (mpRecords || []).find(r => (r.employeeName || '').trim().toLowerCase() === sLower);
+  if (existing) {
+    showExistingTrackerSuggest(existing, senderName, detectLeaveSubtopic(text, existing));
+    return;
+  }
+
+  // Not tracked yet - only offer to create a record if this clearly is a family-leave email.
   let type = null;
   if (/paternity|pat leave|spp\b/.test(text)) type = 'Paternity';
   else if (/shared parental|\bspl\b/.test(text)) type = 'Shared Parental';
-  else if (/maternity|mat leave|\bsmp\b|pregnant|pregnancy|parental leave|family leave|due date/.test(text)) type = 'Maternity';
+  else if (/maternity|mat leave|\bsmp\b|pregnant|pregnancy|expecting|parental leave|family leave|due date/.test(text)) type = 'Maternity';
   if (!type) return;
-  const senderName = (email.from || '').replace(/<[^>]+>/, '').replace(/"/g, '').trim();
-  const firstName = senderName.split(/\s+/)[0].toLowerCase();
-  const alreadyTracked = (mpRecords || []).some(r =>
-    (r.employeeName || '').toLowerCase().includes(firstName) && firstName.length > 2
-  );
-  if (alreadyTracked) return;
-  document.getElementById('trackerSuggest')?.remove();
+  showNewTrackerSuggest(senderName, type);
+}
+
+function trackerSuggestShell() {
   const div = document.createElement('div');
   div.id = 'trackerSuggest';
   div.style.cssText = 'margin-bottom:6px;padding:8px 12px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:var(--r-sm);font-size:12px;color:#92400E;display:flex;align-items:center;gap:8px;flex-shrink:0;';
-  div.innerHTML = `<span style="font-size:14px;">📋</span><span style="flex:1;">Looks like a <strong>${type.toLowerCase()}</strong> email${senderName?' from <strong>'+escapeHtml(senderName)+'</strong>':''} - add to tracker?</span><button onclick="openAddMatPatModalPrefilled('${escapeHtml(senderName).replace(/'/g,"\\'")}','${type}')" style="font-size:11px;background:#F59E0B;color:white;border:none;border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;font-weight:600;white-space:nowrap;">+ Add to tracker</button><button onclick="document.getElementById('trackerSuggest').remove()" style="font-size:16px;background:none;border:none;cursor:pointer;color:#B45309;line-height:1;padding:0 4px;flex-shrink:0;">×</button>`;
+  return div;
+}
+function insertTrackerSuggest(div) {
   const area = document.querySelector('.chat-input-area');
   const wrap = document.querySelector('.chat-input-wrap');
   if (area && wrap) area.insertBefore(div, wrap);
+}
+
+// Brand-new family-leave email -> offer to create a tracker record
+function showNewTrackerSuggest(senderName, type) {
+  const div = trackerSuggestShell();
+  div.innerHTML = `<span style="font-size:14px;">📋</span><span style="flex:1;">Looks like a <strong>${type.toLowerCase()}</strong> email${senderName?' from <strong>'+escapeHtml(senderName)+'</strong>':''} - add to tracker?</span><button onclick="openAddMatPatModalPrefilled('${escapeHtml(senderName).replace(/'/g,"\\'")}','${type}')" style="font-size:11px;background:#F59E0B;color:white;border:none;border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;font-weight:600;white-space:nowrap;">+ Add to tracker</button><button onclick="document.getElementById('trackerSuggest').remove()" style="font-size:16px;background:none;border:none;cursor:pointer;color:#B45309;line-height:1;padding:0 4px;flex-shrink:0;">×</button>`;
+  insertTrackerSuggest(div);
+}
+
+// Work out what a follow-up email from a tracked employee is about, and which checklist step it maps to
+function detectLeaveSubtopic(text, rec) {
+  const scId = rec.type === 'Maternity' ? 'maternity-leave' : 'paternity-leave';
+  const sc = (typeof WF_SCENARIOS !== 'undefined' ? WF_SCENARIOS : []).find(s => s.id === scId) || { steps: [] };
+  const map = [
+    { test:/dse|display screen|workstation|risk assessment|expectant mother|health (and|&) safety/, step:/risk assessment|dse/i, label:'DSE / risk assessment' },
+    { test:/matb1|mat b1|midwife|gp form/, step:/matb1/i, label:'MATB1 form' },
+    { test:/kit day|keeping in touch/, step:/kit/i, label:'KIT days' },
+    { test:/\bsmp\b|maternity pay|how.*pay|enhanced pay|pay during|pay will work|statutory.*pay|\bspp\b/, step:/smp|pay|entitlement/i, label:'pay / SMP' },
+    { test:/return date|return to work|coming back|back to work|return early|extend.*leave/, step:/return|dates in writing|confirm.*dates/i, label:'return / leave dates' },
+    { test:/pension|benefit|life (assurance|insurance)|dependant|nominat/, step:/dependant|benefit/i, label:'benefits / dependants' },
+  ];
+  const hit = map.find(m => m.test.test(text));
+  if (!hit) return { label:null, stepId:null, stepTitle:null };
+  const step = (sc.steps || []).find(s => hit.step.test(s.title));
+  return { label:hit.label, stepId: step ? step.id : null, stepTitle: step ? step.title : null };
+}
+
+// Follow-up email from someone already tracked -> offer to log it (and tick the matching step)
+function showExistingTrackerSuggest(rec, senderName, sub) {
+  window._pendingTrackerUpdate = { recId: rec.id, stepId: sub.stepId, label: sub.label || 'a new query about their leave', senderName };
+  const typeLabel = (rec.type || 'leave').toLowerCase();
+  const div = trackerSuggestShell();
+  const lead = sub.label
+    ? `<strong>${escapeHtml(senderName)}</strong> is already on the ${typeLabel} tracker - this looks like a <strong>${escapeHtml(sub.label)}</strong> update.`
+    : `<strong>${escapeHtml(senderName)}</strong> is already on the ${typeLabel} tracker.`;
+  const btnLabel = sub.stepId ? 'Log + tick step' : 'Log on record';
+  div.innerHTML = `<span style="font-size:14px;">📋</span><span style="flex:1;">${lead} Log it on their record?</span><button onclick="logFamilyLeaveUpdate()" style="font-size:11px;background:#F59E0B;color:white;border:none;border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;font-weight:600;white-space:nowrap;">${btnLabel}</button><button onclick="document.getElementById('trackerSuggest').remove()" style="font-size:16px;background:none;border:none;cursor:pointer;color:#B45309;line-height:1;padding:0 4px;flex-shrink:0;">×</button>`;
+  insertTrackerSuggest(div);
+}
+
+async function logFamilyLeaveUpdate() {
+  const p = window._pendingTrackerUpdate; if (!p) return;
+  document.getElementById('trackerSuggest')?.remove();
+  const rec = (mpRecords || []).find(r => r.id === p.recId); if (!rec) return;
+  if (!rec.contactLog) rec.contactLog = [];
+  rec.contactLog.push({ date: new Date().toISOString(), type: 'email', note: `Email received - ${p.label}.` });
+  try { await saveMatPatRecords(); } catch(e){}
+  let extra = '';
+  if (p.stepId != null) {
+    const c = (wfCases || []).find(x => x.id === rec.wfCaseId || x.mpRecordId === rec.id);
+    if (c) {
+      if (!c.checkedSteps) c.checkedSteps = [];
+      if (!c.checkedSteps.includes(p.stepId)) { c.checkedSteps.push(p.stepId); try { await saveWfCases(); } catch(e){} extra = ' and ticked the matching checklist step'; }
+    }
+  }
+  showView('trackers', document.querySelector('.ni[onclick*=trackers]'));
+  if (typeof showTrackerTab === 'function') showTrackerTab('family-leave');
+  setTimeout(() => { try { openMatPatRecord(p.recId); } catch(e){} }, 350);
+  bzToast(`Logged on ${escapeHtml(rec.employeeName)}'s record${extra}.`);
+}
+
+function bzToast(msg) {
+  document.getElementById('bzToast')?.remove();
+  const t = document.createElement('div');
+  t.id = 'bzToast';
+  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1B2D50;color:#fff;padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:500;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90vw;';
+  t.innerHTML = msg;
+  document.body.appendChild(t);
+  setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3400);
 }
 
 function openAddMatPatModalPrefilled(name, type) {
