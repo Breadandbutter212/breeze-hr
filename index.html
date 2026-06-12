@@ -7041,9 +7041,9 @@ let _emailNextPageToken = null;
 function getTestEmails() {
   const d = (daysAgo, h, m) => { const x = new Date(); x.setDate(x.getDate() - daysAgo); x.setHours(h, m, 0, 0); return x.toISOString(); };
   return [
-    { id: 'test-1', threadId: 'test-1', from: 'Sarah Mitchell <sarah.mitchell@example.com>', subject: 'Maternity leave - notifying you of my due date', date: d(0, 9, 12),
+    { id: 'test-1', threadId: 'test-1', from: 'Lucy Park <lucy.park@example.com>', subject: 'Maternity leave - notifying you of my due date', date: d(0, 9, 12),
       snippet: 'Hi, I wanted to let you know that I am expecting and my due date is 14 October. I would like to start my maternity leave two weeks before that.',
-      body: 'Hi,\n\nI wanted to let you know that I am expecting and my baby is due on 14 October. I would like to start my maternity leave two weeks before my due date, so from around 30 September.\n\nCould you let me know what I need to do next, what I am entitled to, and whether I need to fill in any forms? I would also like to understand how my pay will work during leave.\n\nThanks,\nSarah Mitchell\nMarketing Team' },
+      body: 'Hi,\n\nI wanted to let you know that I am expecting and my baby is due on 14 October. I would like to start my maternity leave two weeks before my due date, so from around 30 September.\n\nCould you let me know what I need to do next, what I am entitled to, and whether I need to fill in any forms? I would also like to understand how my pay will work during leave.\n\nThanks,\nLucy Park\nEngineering' },
     { id: 'test-2', threadId: 'test-2', from: 'James Okafor <james.okafor@example.com>', subject: 'Question about pension contributions', date: d(1, 14, 33),
       snippet: 'I have been looking at my payslip and wanted to understand how the company pension scheme works and whether I can increase my contributions.',
       body: 'Hello,\n\nI have been looking at my payslip and I wanted to understand how the company pension scheme works. Specifically:\n\n1. How much does the company contribute on top of my own contributions?\n2. Can I increase my own contribution percentage, and how do I do that?\n3. Is there a maximum the company will match?\n\nThanks in advance,\nJames Okafor\nFinance' },
