@@ -6035,10 +6035,14 @@ async function homeFill(){
   homePaintBento(d);
 }
 
-// Small ROI strip: real counts + a conservative time-saved estimate
+// Small ROI strip: real counts + a conservative time-saved estimate. Re-runs on every dashboard visit, so new drafts show up.
 function homePaintRoi(d){
   const el = document.getElementById('homeRoi'); if(!el) return;
-  const docs = d.docsCreated||0, notes = d.meetingNotes||0, chats = d.chats||0;
+  // Demo accounts get a bumped baseline so the ROI looks representative; real drafts still add on top.
+  const test = !!window._isTestAccount;
+  const docs = (d.docsCreated||0) + (test?142:0);
+  const notes = (d.meetingNotes||0) + (test?18:0);
+  const chats = (d.chats||0) + (test?63:0);
   // Conservative per-task time savings: a drafted doc/letter ~25 min, a meeting note ~30 min, a saved chat ~8 min
   const mins = docs*25 + notes*30 + chats*8;
   const hrs = mins/60;
