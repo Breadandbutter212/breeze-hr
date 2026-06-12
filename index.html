@@ -753,6 +753,15 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-leg-row:hover .home-leg-arrow { opacity:1; transform:none; }
 
 /* bento */
+.home-roi { display:flex; flex-wrap:wrap; align-items:stretch; gap:12px; margin-top:26px; }
+.home-roi-tile { flex:1; min-width:120px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; transition:border-color .15s, transform .15s; }
+.home-roi-tile:hover { border-color:var(--accent-mid); }
+.home-roi-tile.accent { background:linear-gradient(135deg,#0A1628,#143058); border-color:transparent; }
+.home-roi-val { font-size:24px; font-weight:700; letter-spacing:-0.02em; color:var(--ink); line-height:1.1; }
+.home-roi-label { font-size:11.5px; color:var(--ink3); margin-top:4px; font-weight:500; }
+.home-roi-tile.accent .home-roi-val { color:#fff; }
+.home-roi-tile.accent .home-roi-label { color:rgba(255,255,255,0.6); }
+.home-roi-note { flex-basis:100%; font-size:10.5px; color:var(--ink3); opacity:0.75; margin-top:-2px; }
 .home-bento { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:30px; }
 .home-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 22px 20px;
    transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; display:flex; flex-direction:column; }
@@ -5894,6 +5903,7 @@ function renderHome(){
       <div class="home-ring" id="homeRing"></div>
       <div class="home-legend" id="homeLegend"></div>
     </div>
+    <div class="home-roi" id="homeRoi"></div>
     <div class="home-bento" id="homeBento"></div>`;
   homePaintRing([], -1);            // skeleton ring while data loads
   homeFill();
@@ -5982,6 +5992,19 @@ async function homeGather(){
   } catch(e){}
   // Documents / templates available
   try { out.docs = (typeof tmpls!=='undefined' && Array.isArray(tmpls)) ? tmpls.length : 0; } catch(e){}
+  // ROI: drafts created (responses) + meeting notes - cheap count-only queries
+  try {
+    if (currentProfile) {
+      const { count } = await sb.from('responses').select('*', { count:'exact', head:true }).eq('company_id', currentProfile.company_id);
+      out.docsCreated = count || 0;
+    }
+  } catch(e){}
+  try {
+    if (currentProfile) {
+      const { count } = await sb.from('policies').select('*', { count:'exact', head:true }).eq('company_id', currentProfile.company_id).like('name','MEETING:%');
+      out.meetingNotes = count || 0;
+    }
+  } catch(e){}
   return out;
 }
 
@@ -6008,7 +6031,30 @@ async function homeFill(){
   const total = segs.reduce((s,x)=>s+(x.count||0),0);
   homePaintRing(segs, total);
   homePaintLegend(segs);
+  homePaintRoi(d);
   homePaintBento(d);
+}
+
+// Small ROI strip: real counts + a conservative time-saved estimate
+function homePaintRoi(d){
+  const el = document.getElementById('homeRoi'); if(!el) return;
+  const docs = d.docsCreated||0, notes = d.meetingNotes||0, chats = d.chats||0;
+  // Conservative per-task time savings: a drafted doc/letter ~25 min, a meeting note ~30 min, a saved chat ~8 min
+  const mins = docs*25 + notes*30 + chats*8;
+  const hrs = mins/60;
+  const hStr = hrs >= 10 ? Math.round(hrs)+'h' : (hrs>0 ? (Math.round(hrs*10)/10)+'h' : '0h');
+  const tiles = [
+    { val: docs,  label: 'Docs &amp; letters drafted', view:'docs' },
+    { val: notes, label: 'Meeting notes', view:'recorder' },
+    { val: chats, label: 'AI conversations', view:'chats' },
+    { val: hStr,  label: 'Est. time saved', view:null, accent:true },
+  ];
+  el.innerHTML = tiles.map(t=>`
+    <div class="home-roi-tile${t.accent?' accent':''}"${t.view?` onclick="homeGo('${t.view}')" style="cursor:pointer"`:''}>
+      <div class="home-roi-val">${t.val}</div>
+      <div class="home-roi-label">${t.label}</div>
+    </div>`).join('') +
+    `<div class="home-roi-note">Time saved is an estimate based on typical time per task.</div>`;
 }
 
 function homePaintLegend(segs){
