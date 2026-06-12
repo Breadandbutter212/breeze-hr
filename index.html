@@ -7227,6 +7227,7 @@ function selectEmailForChat(idx) {
   window._replyToThreadId = email.threadId || '';
   window._replyToMessageId = email.id || '';
   toggleEmailPanel();
+  showView('chat'); // ensure we're on the chat view (Home/dashboard is the default now)
   const bodyText = (email.body || email.snippet || '').substring(0, 1200);
   const msg = `Draft an HR reply to this email:\n\n${bodyText}`;
   const ta = document.getElementById('chatInput');
@@ -7438,6 +7439,7 @@ async function fetchEmailsForChat() {
   const status = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`).then(r=>r.json()).catch(()=>({}));
   const provider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
   if (!provider) { sendChat('What HR emails do I have? (Note: no email account connected - go to Settings → Integrations to connect Gmail or Outlook)'); return; }
+  showView('chat');
   const ta = document.getElementById('chatInput');
   if (ta) { ta.value = 'Summarise my most recent emails, highlighting anything that needs urgent HR attention'; ta.focus(); }
 }
