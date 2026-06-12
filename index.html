@@ -1872,24 +1872,25 @@ async function onSignedIn(user) {
 function showOnboardingTour() {
   // Each step walks to a real page so the feature is explained in context.
   const steps = [
-    { icon:'✨', title:'Welcome to Breeze HR', desc:'A quick tour of what you can do. It takes about a minute and visits the pages as it goes. You can skip at any time.', nav:'home' },
-    { icon:'≋', title:'It learns how your team works', desc:'Breeze adapts to your business over time. It learns from every conversation, picks up your writing style and tone, and gets sharper the more your team uses it, so answers feel like they came from someone who already knows your company.', nav:'chat' },
-    { icon:'💬', title:'Ask anything, or paste an email', desc:'Ask a policy question, paste an employee email, or request a letter. Breeze answers using your own policies first and can draft a reply in your tone, ready to send.', nav:'chat' },
-    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary letters, references and more. Answer a few questions and the document builds live, formatted and ready to download as a Word file.', nav:'docs' },
-    { icon:'🧭', title:'Open a role in seconds', desc:'Hiring? Ask Breeze to open a role and it drafts the job description, grounded in your existing JDs and house style. Plan and track vacancies here under Your people, Headcount planning.', nav:'headcount' },
-    { icon:'📋', title:'Grounded in your policies', desc:'Upload your handbook, policies and templates under Policies. Breeze uses them first when answering, so advice reflects your actual rules and tone, not generic guidance. Connect SharePoint and it reads your real files too.', nav:'manage' },
-    { icon:'✉️', title:'From an email to the right tracker', desc:'Reply to an email and Breeze spots maternity, paternity, sickness or a grievance. It offers to add the person to the right tracker, or, if they are already there, to log the update and tick the matching checklist step automatically.', nav:'trackers' },
-    { icon:'✅', title:'Trackers with built-in checklists', desc:'Family leave, absence, disciplinary and more. Each case gets a step-by-step checklist grounded in ACAS guidance and UK employment law, with reminders so nothing slips through.', nav:'trackers' },
-    { icon:'📊', title:'See the whole picture', desc:'Insights turns your people data into clear analytics, headcount, pay, diversity and trends, so you can answer questions and spot issues fast.', nav:'analytics' },
-    { icon:'👥', title:'Built for your whole team', desc:'Everyone gets their own secure login with the same policies, documents and history. Consistent answers and tone, whether it is day one or your hundredth.', nav:'home' },
+    { icon:'✨', title:'Welcome to Breeze HR', desc:'A quick tour of what you can do. It takes about a minute and visits the real pages as it goes, so you can see each feature in context. You can skip at any time.', nav:'home' },
+    { icon:'≋', title:'It learns how your team works', desc:'Breeze adapts to your business over time. It learns from every conversation, the decisions you make and your writing style and tone, and gets sharper the more your team uses it. Answers start to feel like they came from someone who already knows your company, its policies and its history.', nav:'chat' },
+    { icon:'💬', title:'Ask anything, or paste an email', desc:'Ask a policy question, paste an employee email, or request a letter. Breeze answers grounded in your own policies first, points to where the guidance comes from, and can draft a ready-to-send reply in your tone. With your inbox connected, you can send it straight back without leaving the chat.', nav:'chat' },
+    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary and grievance letters, references and more, from a library of over 25 UK templates. Answer a few questions and the document builds live, formatted to your house style and ready to download as Word. You can upload your own templates too and Breeze fills them in for you.', nav:'docs' },
+    { icon:'🧭', title:'Open a role in seconds', desc:'Hiring? Ask Breeze to open a role and it drafts the job description, grounded in your existing JDs and house style. Plan and track vacancies under Your people, Headcount planning, and see the cost and structure impact before you commit.', nav:'headcount' },
+    { icon:'📋', title:'Grounded in your policies', desc:'Upload your handbook, policies and templates, or connect SharePoint so Breeze reads your real files directly. It uses them first when answering, so advice reflects your actual rules, your tone and your way of doing things, with clear ACAS and UK employment law backing where it matters.', nav:'manage' },
+    { icon:'✉️', title:'From an email to the right tracker', desc:'Reply to an email and Breeze spots maternity, paternity, sickness or a grievance. It offers to add the person to the right tracker, or, if they are already there, works out what the new message is about and offers to log it and tick the matching checklist step for you.', nav:'trackers' },
+    { icon:'✅', title:'Trackers with built-in checklists', desc:'Family leave, sickness absence, disciplinary, grievances, right to work and more. Each case gets a step-by-step checklist grounded in ACAS guidance and UK employment law, with key dates, reminders and a full contact log, so nothing slips and you always have an audit trail.', nav:'trackers' },
+    { icon:'📊', title:'See the whole picture', desc:'Turn your people data into clear analytics: headcount, pay, diversity, turnover and trends. Ask a question in plain English and Breeze builds the chart, so you can spot issues and answer the board in seconds.', nav:'analytics' },
+    { icon:'💰', title:'Compare comp statements and data', desc:'Cross-check compensation letters against your payroll or HR data. Upload a spreadsheet and a batch of comp letters and Breeze matches each letter to the right employee, reads it whatever the format, and flags any mismatch in salary, bonus or allowances. It can also compare two system exports to validate a migration or audit.', nav:'compare' },
+    { icon:'👥', title:'Built for your whole team', desc:'Everyone gets their own secure login with the same policies, documents and history, kept private to your company. Consistent answers and tone, whether it is day one or your hundredth.', nav:'home' },
   ];
   let step = 0;
 
   document.getElementById('tourOverlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'tourOverlay';
-  // Light scrim so the page stays visible behind the card while each step explains it.
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.34);z-index:2000;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 26px;';
+  // Light scrim so the page stays visible behind the centred card while each step explains it.
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.34);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
 
   function endTour() { overlay.remove(); localStorage.setItem('breeze_tour_done','1'); }
 
