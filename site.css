@@ -209,3 +209,38 @@ img{display:block;max-width:100%}
   .hero h1 .grad{animation:gradShift 7.5s ease-in-out infinite alternate}
   @keyframes gradShift{from{background-position:0% center}to{background-position:100% center}}
 }
+
+/* ===== Hero product demo (bespoke, looping) ===== */
+.demo{background:#fff;border-radius:16px;box-shadow:0 40px 80px rgba(8,18,40,.5);border:1px solid rgba(255,255,255,.18);overflow:hidden}
+.demo-top{display:flex;align-items:center;gap:7px;padding:12px 16px;background:#0F2747}
+.dt-dot{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,.22)}
+.demo-tab{margin-left:10px;display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:700;color:#fff;background:rgba(255,255,255,.09);padding:5px 11px;border-radius:7px}
+.demo-stage{padding:22px;display:flex;flex-direction:column;gap:14px;background:linear-gradient(180deg,#F7FAFE,#fff)}
+.dcard{display:flex;align-items:center;gap:12px;background:#fff;border:1px solid var(--line);border-radius:12px;padding:14px 16px;box-shadow:0 8px 22px rgba(16,32,60,.06)}
+.dc-ic{width:36px;height:36px;border-radius:9px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.dc-ic svg{width:18px;height:18px}
+.ic-mail{background:#EAF1FD;color:#2F6FE0}
+.ic-ok{background:#E7F8EF;color:#16a34a}
+.dc-tx{flex:1;min-width:0}
+.dc-t{font-size:14px;font-weight:700;color:var(--ink)}
+.dc-s{font-size:12.5px;color:var(--ink2);margin-top:2px}
+.dc-tag{font-size:11px;font-weight:700;color:#92400e;background:#FFF3D6;border:1px solid #FCD9A0;border-radius:20px;padding:4px 10px;flex-shrink:0}
+.d-draft{flex-direction:column;align-items:stretch;gap:9px}
+.dc-head{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--accent)}
+.dc-head svg{width:15px;height:15px}
+.dc-ln{height:8px;border-radius:5px;background:#E9EEF6}
+.dc-ln.a{width:92%}.dc-ln.b{width:78%}.dc-ln.c{width:62%}
+@media (prefers-reduced-motion: no-preference){
+  .d-email{animation:seqEmail 12s ease-in-out infinite}
+  .d-draft{animation:seqDraft 12s ease-in-out infinite}
+  .d-track{animation:seqTrack 12s ease-in-out infinite}
+  .dc-ln.a{animation:typA 12s ease-in-out infinite}
+  .dc-ln.b{animation:typB 12s ease-in-out infinite}
+  .dc-ln.c{animation:typC 12s ease-in-out infinite}
+  @keyframes seqEmail{0%{opacity:0;transform:translateY(12px)}5%{opacity:1;transform:none}93%{opacity:1;transform:none}99%{opacity:0}}
+  @keyframes seqDraft{0%,24%{opacity:0;transform:translateY(12px)}30%{opacity:1;transform:none}93%{opacity:1;transform:none}99%{opacity:0}}
+  @keyframes seqTrack{0%,54%{opacity:0;transform:translateY(12px)}60%{opacity:1;transform:none}93%{opacity:1;transform:none}99%{opacity:0}}
+  @keyframes typA{0%,30%{width:0}38%{width:92%}99%{width:92%}}
+  @keyframes typB{0%,38%{width:0}46%{width:78%}99%{width:78%}}
+  @keyframes typC{0%,46%{width:0}54%{width:62%}99%{width:62%}}
+}
