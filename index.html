@@ -6750,7 +6750,25 @@ function parseSheetBlock(block) {
     }
   });
   if (cur && cur.rows.length) sheets.push(cur);
+  sheets.forEach(s => { if (!s.chart) s.chart = autoChartType(s.rows); }); // chart breakdowns even if the model forgot CHART:
   return sheets.filter(s => s.rows.length);
+}
+
+// Decide a sensible chart for a tab when none was specified - only for clean label+number breakdowns
+function autoChartType(rows) {
+  if (!rows || rows.length < 3) return null;
+  const header = rows[0] || [];
+  const h0 = (header[0] || '').toLowerCase();
+  if (/summary|overview|metric|kpi|measure|checklist|action plan/.test(h0)) return null;
+  const maxCols = Math.max.apply(null, rows.map(r => r.length));
+  if (_xlColType(rows, 0) !== 'text') return null; // first column must be labels
+  let numCols = 0;
+  for (let c=1;c<maxCols;c++){ const t=_xlColType(rows,c); if (t==='number'||t==='currency'||t==='percent') numCols++; }
+  if (numCols < 1) return null; // no numbers (e.g. a checklist) - no chart
+  const dataRows = rows.length - 1;
+  if (dataRows < 2 || dataRows > 20) return null;
+  if (/task|status|owner|action|checklist/.test(header.join(' ').toLowerCase()) && numCols < 2) return null;
+  return (numCols === 1 && dataRows <= 7) ? 'pie' : 'column';
 }
 
 function parseArtifact(text) {
