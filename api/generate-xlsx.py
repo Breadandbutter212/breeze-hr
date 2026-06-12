@@ -139,29 +139,38 @@ def build_workbook(title, sheets):
         if chart_type and len(rows) >= 3:
             num_cols = [c for c in range(1, max_cols) if types[c] in ('number', 'currency', 'percent')]
             if num_cols:
+                # Exclude a trailing Total/Average row from the chart range
+                last_row = len(rows)
+                last_label = str(rows[-1][0]).strip().lower() if rows and rows[-1] and rows[-1][0] is not None else ''
+                if re.match(r'^(total|subtotal|grand total|average|mean)\b', last_label) and len(rows) - 1 >= 3:
+                    last_row = len(rows) - 1
                 chart = None
                 if chart_type == 'pie':
                     chart = PieChart()
-                    data = Reference(ws, min_col=num_cols[0] + 1, min_row=1, max_row=len(rows))
-                    cats = Reference(ws, min_col=1, min_row=2, max_row=len(rows))
+                    data = Reference(ws, min_col=num_cols[0] + 1, min_row=1, max_row=last_row)
+                    cats = Reference(ws, min_col=1, min_row=2, max_row=last_row)
                     chart.add_data(data, titles_from_data=True)
                     chart.set_categories(cats)
-                elif chart_type == 'line':
-                    chart = LineChart()
                 else:
-                    chart = BarChart()
-                    chart.type = 'bar' if chart_type == 'bar' else 'col'
-                if chart_type in ('column', 'bar', 'line'):
-                    last = num_cols[-1] + 1
-                    data = Reference(ws, min_col=num_cols[0] + 1, max_col=last, min_row=1, max_row=len(rows))
-                    cats = Reference(ws, min_col=1, min_row=2, max_row=len(rows))
+                    if chart_type == 'line':
+                        chart = LineChart()
+                    else:
+                        chart = BarChart()
+                        chart.type = 'bar' if chart_type == 'bar' else 'col'
+                    data = Reference(ws, min_col=num_cols[0] + 1, max_col=num_cols[-1] + 1, min_row=1, max_row=last_row)
+                    cats = Reference(ws, min_col=1, min_row=2, max_row=last_row)
                     chart.add_data(data, titles_from_data=True)
                     chart.set_categories(cats)
                 if chart is not None:
                     chart.title = ws.title
                     chart.height = 8
                     chart.width = 15
-                    ws.add_chart(chart, '%s2' % get_column_letter(max_cols + 2))
+                    # Place to the right of a narrow table, or below a wide one
+                    if max_cols <= 6:
+                        anchor = '%s2' % get_column_letter(max_cols + 2)
+                    else:
+                        anchor = 'A%d' % (len(rows) + 2)
+                    ws.add_chart(chart, anchor)
 
     output = io.BytesIO()
     wb.save(output)

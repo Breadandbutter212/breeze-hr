@@ -6677,7 +6677,7 @@ When the user asks for data as a spreadsheet or in Excel, a report in table form
 Structure: a "📊 SPREADSHEET:" line with the workbook title, then one or more TABS. Start each tab with "## Tab name" on its own line, followed by its table (one row per line, columns separated by | (pipe), first row = header). For a multi-part report or board pack, use SEPARATE tabs (for example: Summary, Headcount, Attrition, Leaver reasons, Vacancies, Cost) - this is far better than one giant table. Keep each tab to one clean table.
 Formatting is automatic - write values like 45000, £45,000 or 12% and they store as proper numbers, currency and percentages; header styling, borders, column widths, a frozen header row and filters are applied for you.
 FORMULAS: write a cell starting with = (for example =SUM(B2:B8), =AVERAGE(B2:B8), =B2*C2, =B2/C2). The header is row 1 and data begins on row 2. Add a Total or summary row with formulas rather than typing totals.
-CHARTS: to chart a tab, add a line "CHART: column" (or bar, pie, line) right after that tab's table. The first column is used as the labels and the numeric columns as the values, so order the table accordingly. Add charts to the tabs where a visual helps (a breakdown by department, leaver reasons as a pie, a trend as a line).
+CHARTS: charts are added and chosen AUTOMATICALLY from the data (the right type - pie, column, bar or line - and placement are worked out for you), so you normally do not need to specify anything. Just make each breakdown tab a clean table with the labels in the first column and the numbers in the following columns. Only add a line "CHART: pie" (or column, bar, line) after a table if you want to force a specific type.
 For figures you cannot verify, put [PLACEHOLDER] in the cell and note in HR Actions to populate from HRIS/payroll.
 
 📊 SPREADSHEET: People board pack H1 2026
@@ -6754,7 +6754,7 @@ function parseSheetBlock(block) {
   return sheets.filter(s => s.rows.length);
 }
 
-// Decide a sensible chart for a tab when none was specified - only for clean label+number breakdowns
+// Work out the best chart for a tab automatically - the user/model never has to specify
 function autoChartType(rows) {
   if (!rows || rows.length < 3) return null;
   const header = rows[0] || [];
@@ -6762,13 +6762,28 @@ function autoChartType(rows) {
   if (/summary|overview|metric|kpi|measure|checklist|action plan/.test(h0)) return null;
   const maxCols = Math.max.apply(null, rows.map(r => r.length));
   if (_xlColType(rows, 0) !== 'text') return null; // first column must be labels
-  let numCols = 0;
-  for (let c=1;c<maxCols;c++){ const t=_xlColType(rows,c); if (t==='number'||t==='currency'||t==='percent') numCols++; }
-  if (numCols < 1) return null; // no numbers (e.g. a checklist) - no chart
-  const dataRows = rows.length - 1;
-  if (dataRows < 2 || dataRows > 20) return null;
-  if (/task|status|owner|action|checklist/.test(header.join(' ').toLowerCase()) && numCols < 2) return null;
-  return (numCols === 1 && dataRows <= 7) ? 'pie' : 'column';
+  const numCols = [];
+  for (let c=1;c<maxCols;c++){ const t=_xlColType(rows,c); if (t==='number'||t==='currency'||t==='percent') numCols.push(c); }
+  if (!numCols.length) return null; // no numbers (e.g. a checklist) - no chart
+  if (/task|status|owner|action|checklist/.test(header.join(' ').toLowerCase()) && numCols.length < 2) return null;
+
+  // Ignore a trailing Total/Average row when judging the data
+  let labels = rows.slice(1).map(r => (r[0]==null?'':String(r[0])).trim());
+  if (labels.length && /^(total|subtotal|grand total|average|mean)\b/i.test(labels[labels.length-1])) labels = labels.slice(0,-1);
+  const n = labels.length;
+  if (n < 2 || n > 30) return null;
+
+  // Time series (months, quarters, years, dates) -> line
+  const timeRx = /^(jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec|q[1-4]\b|fy|h[12]\b|20\d\d|\d{1,2}[\/-]\d{1,2})/i;
+  if (n >= 3 && labels.filter(l => timeRx.test(l)).length >= Math.ceil(n * 0.6)) return 'line';
+
+  // Single series, few slices -> pie (parts of a whole)
+  if (numCols.length === 1 && n <= 6) return 'pie';
+
+  // Many bars or long labels read better horizontally
+  const longLabels = labels.some(l => l.length > 16);
+  if (n > 8 || longLabels) return 'bar';
+  return 'column';
 }
 
 function parseArtifact(text) {
@@ -6959,10 +6974,14 @@ function _xlSheetXml(rows, hasChart) {
 // Build a chart part referencing a sheet's data. Returns null if no numeric series.
 function _xlChartXml(sheetName, rows, types, maxCols, nRows, type) {
   const q = "'" + String(sheetName).replace(/'/g,"''") + "'";
-  const catRef = `${q}!$A$2:$A$${nRows}`;
+  // Exclude a trailing Total/Average row from the chart
+  let lastRow = nRows;
+  const lastLabel = (rows[nRows-1] && rows[nRows-1][0]!=null) ? String(rows[nRows-1][0]).trim() : '';
+  if (/^(total|subtotal|grand total|average|mean)\b/i.test(lastLabel) && nRows-1 >= 3) lastRow = nRows-1;
+  const catRef = `${q}!$A$2:$A$${lastRow}`;
   const numCols = [];
   for (let c=1;c<maxCols;c++) if (types[c]==='number'||types[c]==='currency'||types[c]==='percent') numCols.push(c);
-  if (!numCols.length || nRows < 2) return null;
+  if (!numCols.length || lastRow < 2) return null;
   const isPie = type==='pie';
   const cols = isPie ? numCols.slice(0,1) : numCols;
   const series = cols.map((c,si) => {
@@ -6970,7 +6989,7 @@ function _xlChartXml(sheetName, rows, types, maxCols, nRows, type) {
     return `<c:ser><c:idx val="${si}"/><c:order val="${si}"/>`
       + `<c:tx><c:strRef><c:f>${q}!$${L}$1</c:f></c:strRef></c:tx>`
       + `<c:cat><c:strRef><c:f>${catRef}</c:f></c:strRef></c:cat>`
-      + `<c:val><c:numRef><c:f>${q}!$${L}$2:$${L}$${nRows}</c:f></c:numRef></c:val></c:ser>`;
+      + `<c:val><c:numRef><c:f>${q}!$${L}$2:$${L}$${lastRow}</c:f></c:numRef></c:val></c:ser>`;
   }).join('');
   let plot;
   if (isPie) {
