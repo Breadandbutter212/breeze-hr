@@ -7,8 +7,9 @@ async function verifyAuth(req) {
   const sbUrl = process.env.SUPABASE_URL;
   const sbKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
   if (!sbUrl || !sbKey) {
-    console.warn('Supabase env vars missing — skipping auth check');
-    return { user: { id: 'unknown' }, error: null }; // degrade gracefully
+    // Fail closed: never authenticate a request when we cannot verify the token
+    console.error('Supabase env vars missing — refusing request');
+    return { user: null, error: 'Auth unavailable' };
   }
 
   try {

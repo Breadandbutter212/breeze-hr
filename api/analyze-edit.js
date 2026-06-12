@@ -36,10 +36,15 @@ export default async function handler(req, res) {
 
   const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
 
+  // Resolve the caller's company from their profile - never trust a client-supplied companyId (prevents cross-tenant access)
+  const { data: prof } = await sb.from('profiles').select('company_id').eq('id', user.id).single();
+  const companyId = prof?.company_id;
+  if (!companyId) return res.status(403).json({ error: 'No company for user' });
+
   // GET ?action=retrieve&query=... — embed query, return top similar approved responses
   if (req.method === 'GET') {
-    const { query, companyId } = req.query;
-    if (!query || !companyId) return res.status(400).json({ error: 'Missing query or companyId' });
+    const { query } = req.query;
+    if (!query) return res.status(400).json({ error: 'Missing query' });
 
     const embedding = await voyageEmbed(query, 'query');
     if (!embedding) return res.status(200).json({ examples: [] }); // no Voyage key = graceful degradation
@@ -56,8 +61,8 @@ export default async function handler(req, res) {
 
   // POST — analyze ai_draft vs hr_sent, store style signals + embedding
   if (req.method === 'POST') {
-    const { responseId, aiDraft, hrSent, query, companyId } = req.body;
-    if (!responseId || !aiDraft || !hrSent || !companyId) {
+    const { responseId, aiDraft, hrSent, query } = req.body;
+    if (!responseId || !aiDraft || !hrSent) {
       return res.status(400).json({ error: 'Missing required fields' });
     }
 

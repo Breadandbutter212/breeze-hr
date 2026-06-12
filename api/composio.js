@@ -1,4 +1,14 @@
+import { createClient } from '@supabase/supabase-js';
+
 const BASE = 'https://backend.composio.dev/api/v3';
+
+async function verifyAuth(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
+  const { data: { user } } = await sb.auth.getUser(token);
+  return user || null;
+}
 
 const AUTH_CONFIGS = {
   gmail:      process.env.COMPOSIO_GMAIL_AUTH_CONFIG_ID      || 'ac_c2wnUZ4TgV8S',
@@ -15,8 +25,12 @@ const APP_SLUG = {
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Require an authenticated caller, and only ever act on their own user_id
+  const user = await verifyAuth(req);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
   const apiKey = process.env.COMPOSIO_API_KEY;
 
@@ -24,6 +38,7 @@ export default async function handler(req, res) {
   if (req.method === 'GET') {
     const { userId } = req.query;
     if (!userId) return res.status(400).json({ error: 'Missing userId' });
+    if (userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
     if (!apiKey) return res.status(200).json({ gmail: false, outlook: false, sharepoint: false });
     const user_id = 'user_' + userId.replace(/-/g, '');
     try {
@@ -52,6 +67,7 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
   const { userId, app, action } = req.body;
   if (!userId) return res.status(400).json({ error: 'Missing userId' });
+  if (userId !== user.id) return res.status(403).json({ error: 'Forbidden' });
   if (!apiKey) return res.status(500).json({ error: 'COMPOSIO_API_KEY not set' });
   const user_id = 'user_' + userId.replace(/-/g, '');
   const origin = req.headers.origin || 'https://breeze-hr.vercel.app';

@@ -1846,7 +1846,7 @@ async function onSignedIn(user) {
   loadChatList();
   renderChatHistory();
   // Check email connection and show chip + topbar icons if connected
-  fetch(`/api/composio?userId=${encodeURIComponent(user.id)}`).then(r=>r.json()).then(st=>{
+  fetch(`/api/composio?userId=${encodeURIComponent(user.id)}`, { headers: await _authH() }).then(r=>r.json()).then(st=>{
     window._gmailConnected = !!st.gmail;
     window._outlookConnected = !!st.outlook;
     window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
@@ -4741,7 +4741,7 @@ function updatePreview() {
   const body=document.getElementById('dpBody');if(!body)return;
   const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const t=selTmpl;const vals=genVals;
-  const ph=(f)=>vals[f]?`<span class="filled">${vals[f]}</span>`:`<span class="ph">[${f.replace(/_/g,' ')}]</span>`;
+  const ph=(f)=>vals[f]?`<span class="filled">${escapeHtml(vals[f])}</span>`:`<span class="ph">[${f.replace(/_/g,' ')}]</span>`;
   const co=()=>ph('company_name');
 
   if(t.isCustom&&t.content){
@@ -4751,7 +4751,7 @@ function updatePreview() {
     const isHtml = rendered.trim().startsWith('<');
     Object.keys(vals).forEach(f => {
       const esc = f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      rendered = rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'), `<span class="filled">${vals[f]}</span>`);
+      rendered = rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'), () => `<span class="filled">${escapeHtml(vals[f])}</span>`);
     });
     rendered = rendered.replace(/\{([^}]{1,60})\}/g,'<span class="ph">[$1]</span>');
     const notice = `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
@@ -4769,7 +4769,7 @@ function updatePreview() {
   const salutation=(name='employee_name')=>`<br><p style="margin-bottom:16px;font-size:13px;">Dear ${ph(name)},</p>`;
   const sign=(mgr='manager_name')=>`<div class="doc-sig"><div style="margin-top:32px;font-size:12px;color:var(--ink3);">Signed:</div><div class="doc-sig-name">${ph(mgr)}</div><div style="font-size:12px;color:var(--ink3);margin-top:4px;">On behalf of ${co()}</div><div style="margin-top:28px;border-top:1px solid var(--border);padding-top:8px;font-size:11px;color:var(--ink3);">I acknowledge receipt of this letter:<br><br>Signature: _______________________&nbsp;&nbsp;&nbsp; Date: _______________</div></div>`;
   // Derive first name from a filled value, or fall back to placeholder
-  const firstName=(f='employee_name')=>{const v=vals[f];if(!v)return `<span class="ph">[first name]</span>`;return `<span class="filled">${v.trim().split(/\s+/)[0]}</span>`;};
+  const firstName=(f='employee_name')=>{const v=vals[f];if(!v)return `<span class="ph">[first name]</span>`;return `<span class="filled">${escapeHtml(v.trim().split(/\s+/)[0])}</span>`;};
   // Letter header: company name + rule + date + employee address block + salutation, opens doc-body-text
   const ltrTop=(f='employee_name')=>`${header(false)}<div class="doc-body-text"><p>${ph(f)}<br><strong>Private and Confidential</strong></p><br><p>Dear ${firstName(f)},</p><br>`;
   // Simple letter sign-off: closes doc-body-text, no acknowledgement box
@@ -6351,7 +6351,7 @@ async function runBulkGenerate() {
 // ── SHAREPOINT PANEL ──
 let spIsConnected = false;
 
-function toggleSharePoint() {
+async function toggleSharePoint() {
   const panel = document.getElementById('spPanel');
   const overlay = document.getElementById('spOverlay');
   const isOpen = panel.classList.contains('open');
@@ -6359,7 +6359,7 @@ function toggleSharePoint() {
   overlay.classList.toggle('open', !isOpen);
   if (!isOpen) {
     // Check SharePoint connection status and update panel
-    fetch(`/api/composio?userId=${encodeURIComponent(currentUser?.id||'')}`)
+    fetch(`/api/composio?userId=${encodeURIComponent(currentUser?.id||'')}`, { headers: await _authH() })
       .then(r=>r.json()).then(st=>{
         const results = document.getElementById('spResults');
         if (!results) return;
@@ -6381,7 +6381,7 @@ async function connectSharePointFromPanel() {
   try {
     const res = await fetch('/api/composio', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _authH({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ userId: currentUser.id, app: 'sharepoint' })
     });
     const data = await res.json();
@@ -6536,6 +6536,10 @@ let chatMessages = [], chatSystemPrompt = null, chatLoading = false, currentChat
 async function getAuthToken() {
   const { data: { session } } = await sb.auth.getSession();
   return session?.access_token || '';
+}
+// Build request headers carrying the user's auth token (for endpoints that now require it)
+async function _authH(extra) {
+  return Object.assign({ 'Authorization': 'Bearer ' + (await getAuthToken()) }, extra || {});
 }
 
 async function callClaude(messages, systemPrompt) {
@@ -7452,7 +7456,7 @@ function renderChatHistory() {
           ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatSheetDownload(${i})">⬇ .xlsx</button><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="chatSheetRich(${i},this)" title="Charts and full formatting">✦ Rich Excel</button>`
           : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 View draft</button>`
         }</div>` : ''}
-        ${m._spLinks && m._spLinks.length ? `<div style="margin:8px 0 4px 44px;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${l.path}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${l.path}">📄 ${l.title}${l.ext?' ['+l.ext+']':''}</a>`).join('')}</div>` : ''}
+        ${m._spLinks && m._spLinks.length ? `<div style="margin:8px 0 4px 44px;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${escapeHtml(/^https?:\/\//i.test(l.path||'')?l.path:'#')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${escapeHtml(l.path||'')}">📄 ${escapeHtml(l.title||'')}${l.ext?' ['+escapeHtml(l.ext)+']':''}</a>`).join('')}</div>` : ''}
         <div class="chat-actions">
           <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
           <button class="chat-action-btn${m._ratingUp?' rated-up':''}" id="rate-up-${i}" onclick="rateChatMsg(${i},1)">👍</button>
@@ -7580,7 +7584,7 @@ async function loadEmailInbox(pageToken = null) {
 
   // Always re-check connection status so reconnected accounts are picked up immediately
   try {
-    const st = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`).then(r => r.json());
+    const st = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`, { headers: await _authH() }).then(r => r.json());
     window._gmailConnected = !!st.gmail;
     window._outlookConnected = !!st.outlook;
     if (!window._emailProvider) window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
@@ -8032,7 +8036,7 @@ async function submitSendEmail(provider) {
 
 async function fetchEmailsForChat() {
   if (!currentUser) return;
-  const status = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`).then(r=>r.json()).catch(()=>({}));
+  const status = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`, { headers: await _authH() }).then(r=>r.json()).catch(()=>({}));
   const provider = status.gmail ? 'gmail' : status.outlook ? 'outlook' : null;
   if (!provider) { sendChat('What HR emails do I have? (Note: no email account connected - go to Settings → Integrations to connect Gmail or Outlook)'); return; }
   showView('chat');
@@ -8046,7 +8050,7 @@ async function loadIntegrations() {
   el.innerHTML = '<div style="font-size:11px;color:var(--ink3);">Checking connections...</div>';
   let status = { gmail: false, outlook: false };
   try {
-    const res = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`);
+    const res = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`, { headers: await _authH() });
     if (res.ok) {
       status = await res.json();
       // Store provider globally so artifact panel can show Send button
@@ -8095,7 +8099,7 @@ async function connectIntegration(app) {
   try {
     const res = await fetch('/api/composio', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _authH({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ userId: currentUser.id, app })
     });
     const data = await res.json();
@@ -8109,7 +8113,7 @@ async function connectIntegration(app) {
       const poll = setInterval(async () => {
         attempts++;
         try {
-          const sr = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`);
+          const sr = await fetch(`/api/composio?userId=${encodeURIComponent(currentUser.id)}`, { headers: await _authH() });
           if (sr.ok) {
             const st = await sr.json();
             if (st[app]) { clearInterval(poll); loadIntegrations(); return; }
@@ -8132,7 +8136,7 @@ async function disconnectIntegration(app, connectedAccountId) {
   try {
     await fetch('/api/composio', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: await _authH({ 'Content-Type': 'application/json' }),
       body: JSON.stringify({ userId: currentUser.id, app, action: 'disconnect', connectedAccountId })
     });
   } catch(e) {}

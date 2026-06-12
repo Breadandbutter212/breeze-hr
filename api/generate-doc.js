@@ -1,7 +1,18 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
+import { createClient } from '@supabase/supabase-js';
 
 const enc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+async function verifyAuth(req) {
+  const token = req.headers.authorization?.replace('Bearer ', '');
+  if (!token) return null;
+  try {
+    const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
+    const { data: { user } } = await sb.auth.getUser(token);
+    return user || null;
+  } catch(e) { return null; }
+}
 
 function parseInlineRuns(line) {
   const parts = line.split(/\*\*(.*?)\*\*/g);
@@ -153,8 +164,9 @@ function textToDocxBuffer(text) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  // Transcription action — uses Groq Whisper
+  // Transcription action — uses Groq Whisper (server key), so require an authenticated caller
   if (req.body?.action === 'transcribe') {
+    if (!(await verifyAuth(req))) return res.status(401).json({ error: 'Unauthorized' });
     const { audio, mimeType = 'audio/webm' } = req.body;
     if (!audio) return res.status(400).json({ error: 'No audio data' });
     const apiKey = process.env.GROQ_API_KEY;

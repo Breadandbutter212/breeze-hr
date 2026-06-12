@@ -5,6 +5,26 @@ import io
 import copy
 import os
 import re
+import urllib.request
+
+
+def _verify_supabase_user(headers):
+    """Validate a Supabase JWT via the auth REST endpoint. Returns True if the token is a valid user."""
+    auth = headers.get('Authorization') or headers.get('authorization') or ''
+    token = auth[7:].strip() if auth[:7].lower() == 'bearer ' else ''
+    if not token:
+        return False
+    sb_url = (os.environ.get('SUPABASE_URL') or '').rstrip('/')
+    key = os.environ.get('SUPABASE_SERVICE_KEY') or os.environ.get('SUPABASE_ANON_KEY') or ''
+    if not sb_url or not key:
+        return False
+    try:
+        req = urllib.request.Request(sb_url + '/auth/v1/user',
+                                     headers={'Authorization': 'Bearer ' + token, 'apikey': key})
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            return resp.status == 200
+    except Exception:
+        return False
 
 R_EMBED = '{http://schemas.openxmlformats.org/officeDocument/2006/relationships}embed'
 R_IMAGE = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/image'
@@ -910,6 +930,10 @@ class handler(BaseHTTPRequestHandler):
                 else:
                     prs = generate_deck(slides, accent, dark, prs_title)
             elif action == 'generate_ai':
+                # Spends the server's Anthropic key, so require an authenticated caller
+                if not _verify_supabase_user(self.headers):
+                    self._error(401, 'Unauthorized')
+                    return
                 # Use Anthropic pptx Agent Skill for high-quality generation
                 topic        = data.get('topic', '')
                 instructions = data.get('instructions')

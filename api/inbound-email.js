@@ -10,6 +10,14 @@ module.exports = async function handler(req, res) {
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
+  // Webhook authenticity: require a shared secret (configure the provider's webhook URL as ?key=<secret>).
+  // Fail closed so anonymous callers cannot inject forged messages.
+  const secret = process.env.INBOUND_EMAIL_SECRET;
+  const provided = req.query.key || req.headers['x-webhook-secret'];
+  if (!secret || provided !== secret) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
   try {
     const email = req.body;
 
