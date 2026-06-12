@@ -1870,51 +1870,66 @@ async function onSignedIn(user) {
 }
 
 function showOnboardingTour() {
+  // Each step walks to a real page so the feature is explained in context.
   const steps = [
-    { icon:'≋', title:'It learns how your team works', desc:'Breeze HR adapts to your business over time. It learns from every conversation, picks up your writing style and tone, and gets sharper the more your team uses it - so responses feel like they came from someone who already knows your company.', nav:'chat' },
-    { icon:'🗂️', title:'Connected to your documents', desc:'Connect SharePoint and Breeze HR reads your actual files - job descriptions, policies, contracts, handbooks. Ask it to create a new JD and it finds your existing ones first, then matches your format and structure automatically.', nav:'chat' },
-    { icon:'📄', title:'Contracts, letters and documents', desc:'Draft offer letters, contracts, disciplinary letters, references and more in seconds. Answer a few questions and the document builds live - formatted, ready to download as a Word file and matched to how your company writes.', nav:'docs' },
-    { icon:'📋', title:'Knows your business, not just the rules', desc:'Upload your HR policies, handbook and templates. Breeze HR uses them first when answering questions - so advice reflects your actual policies, your tone and your way of doing things, not generic guidance.', nav:'manage' },
-    { icon:'👥', title:'Built for your whole team', desc:'Every team member gets their own secure login with access to the same policies, documents and history. Consistent answers, consistent tone, consistent output - whether it\'s your first day using it or your hundredth.', nav:null },
+    { icon:'✨', title:'Welcome to Breeze HR', desc:'A quick tour of what you can do. It takes about a minute and visits the pages as it goes. You can skip at any time.', nav:'home' },
+    { icon:'≋', title:'It learns how your team works', desc:'Breeze adapts to your business over time. It learns from every conversation, picks up your writing style and tone, and gets sharper the more your team uses it, so answers feel like they came from someone who already knows your company.', nav:'chat' },
+    { icon:'💬', title:'Ask anything, or paste an email', desc:'Ask a policy question, paste an employee email, or request a letter. Breeze answers using your own policies first and can draft a reply in your tone, ready to send.', nav:'chat' },
+    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary letters, references and more. Answer a few questions and the document builds live, formatted and ready to download as a Word file.', nav:'docs' },
+    { icon:'🧭', title:'Open a role in seconds', desc:'Hiring? Ask Breeze to open a role and it drafts the job description, grounded in your existing JDs and house style. Plan and track vacancies here under Your people, Headcount planning.', nav:'headcount' },
+    { icon:'📋', title:'Grounded in your policies', desc:'Upload your handbook, policies and templates under Policies. Breeze uses them first when answering, so advice reflects your actual rules and tone, not generic guidance. Connect SharePoint and it reads your real files too.', nav:'manage' },
+    { icon:'✉️', title:'From an email to the right tracker', desc:'Reply to an email and Breeze spots maternity, paternity, sickness or a grievance. It offers to add the person to the right tracker, or, if they are already there, to log the update and tick the matching checklist step automatically.', nav:'trackers' },
+    { icon:'✅', title:'Trackers with built-in checklists', desc:'Family leave, absence, disciplinary and more. Each case gets a step-by-step checklist grounded in ACAS guidance and UK employment law, with reminders so nothing slips through.', nav:'trackers' },
+    { icon:'📊', title:'See the whole picture', desc:'Insights turns your people data into clear analytics, headcount, pay, diversity and trends, so you can answer questions and spot issues fast.', nav:'analytics' },
+    { icon:'👥', title:'Built for your whole team', desc:'Everyone gets their own secure login with the same policies, documents and history. Consistent answers and tone, whether it is day one or your hundredth.', nav:'home' },
   ];
   let step = 0;
 
+  document.getElementById('tourOverlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'tourOverlay';
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.72);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(4px);';
+  // Light scrim so the page stays visible behind the card while each step explains it.
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.34);z-index:2000;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 26px;';
+
+  function endTour() { overlay.remove(); localStorage.setItem('breeze_tour_done','1'); }
 
   function render() {
     const s = steps[step];
     const isLast = step === steps.length - 1;
-    if (s.nav) showView(s.nav);
+    if (s.nav) { try { showView(s.nav); } catch(e){} }
     overlay.innerHTML = `
-      <div style="background:white;border-radius:16px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(0,0,0,0.3);overflow:hidden;">
-        <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:32px 32px 24px;">
-          <div style="font-size:36px;margin-bottom:12px;">${s.icon}</div>
-          <div style="font-size:20px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
+      <div style="background:white;border-radius:16px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,0.35);overflow:hidden;position:relative;">
+        <button onclick="tourEnd()" title="Skip tour" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.14);border:none;color:white;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:1;">×</button>
+        <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:26px 30px 22px;">
+          <div style="font-size:32px;margin-bottom:10px;">${s.icon}</div>
+          <div style="font-size:19px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
           <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">${step+1} of ${steps.length}</div>
         </div>
-        <div style="padding:24px 32px;">
-          <div style="font-size:14px;color:#4A5568;line-height:1.75;">${s.desc}</div>
-          <div style="display:flex;gap:6px;margin-top:20px;margin-bottom:4px;">
+        <div style="padding:22px 30px 24px;">
+          <div style="font-size:14px;color:#4A5568;line-height:1.72;">${s.desc}</div>
+          <div style="display:flex;gap:6px;margin-top:18px;margin-bottom:4px;">
             ${steps.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<=step?'#0A1628':'#E2E8F0'};transition:background 0.2s;"></div>`).join('')}
           </div>
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:20px;">
-            <button onclick="document.getElementById('tourOverlay').remove();localStorage.setItem('breeze_tour_done','1')" style="font-size:12px;color:#8A94A6;background:none;border:none;cursor:pointer;font-family:inherit;">Skip</button>
-            <button onclick="tourNext()" style="background:#0A1628;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">${isLast?'Get started':'Next'}</button>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;">
+            <button onclick="tourEnd()" style="font-size:12.5px;color:#8A94A6;background:none;border:none;cursor:pointer;font-family:inherit;font-weight:500;">Skip tour</button>
+            <div style="display:flex;gap:8px;">
+              ${step>0?`<button onclick="tourBack()" style="background:#EDF1F6;color:#475569;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Back</button>`:''}
+              <button onclick="tourNext()" style="background:#0A1628;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">${isLast?'Get started':'Next'}</button>
+            </div>
           </div>
         </div>
       </div>`;
   }
 
-  window.tourNext = function() {
-    if (step < steps.length - 1) { step++; render(); }
-    else { overlay.remove(); localStorage.setItem('breeze_tour_done','1'); }
-  };
+  window.tourNext = function() { if (step < steps.length - 1) { step++; render(); } else { endTour(); } };
+  window.tourBack = function() { if (step > 0) { step--; render(); } };
+  window.tourEnd = endTour;
 
   render();
   document.body.appendChild(overlay);
 }
+// Replayable from the console or a settings link
+window.showOnboardingTour = showOnboardingTour;
 
 async function signOut() {
   await sb.auth.signOut();
