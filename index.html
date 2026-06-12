@@ -85,7 +85,7 @@ body.nav-slim .slimbar { display:flex; }
 .slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
 .slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
-.slim-nav { flex:1; overflow-y:auto; padding:6px 10px; }
+.slim-nav { flex:1; overflow-y:auto; padding:6px 10px; display:flex; flex-direction:column; justify-content:center; }
 .sg { margin-bottom:1px; }
 .sg-head { display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:none; background:none; color:rgba(255,255,255,0.85); font-size:13px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; }
 .sg-head:hover { background:rgba(255,255,255,0.07); }
@@ -15000,8 +15000,8 @@ async function projConfirmEmailToTask(){
 
   function render(){
     var box=document.getElementById('slimGroups'); if(!box) return;
-    var cur=curView(), openG=VIEW2GROUP[cur]||'create';
-    var html='';
+    var cur=curView(), openG=VIEW2GROUP[cur];
+    var html='<button class="sg-head'+(cur==='home'?' active':'')+'" onclick="slimGo(\'home\')"'+(cur==='home'?' aria-current="page"':'')+'>'+ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>')+'<span class="lbl">Dashboard</span></button>';
     Object.keys(GROUPS).forEach(function(g){
       var c=GROUPS[g], isOpen=(openG===g);
       html+='<div class="sg'+(isOpen?' open':'')+'" data-g="'+g+'">';
