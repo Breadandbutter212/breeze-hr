@@ -77,48 +77,54 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
 @keyframes pulse { 0%,100%{opacity:1}50%{opacity:0.4} }
 
-/* ===== Two-tier rail + flyout nav (feature-flagged) ===== */
-:root { --rail-bg: #2A5080; }
-.app-rail { display:none; }
-body.nav-rail .sidebar { display:none !important; }
-body.nav-rail .app-rail { display:flex; }
-.app-rail { width:68px; flex-shrink:0; background:var(--rail-bg); flex-direction:column; align-items:center; padding:12px 0; gap:5px; height:100%; }
-.rail-logo { width:28px; height:28px; border-radius:8px; background:rgba(255,255,255,0.12); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:500; font-size:14px; margin-bottom:12px; flex-shrink:0; }
-.rail-btn { width:40px; height:40px; border-radius:9px; border:none; background:none; color:rgba(255,255,255,0.75); display:flex; align-items:center; justify-content:center; cursor:pointer; position:relative; transition:background 0.12s, color 0.12s; }
-.rail-btn svg { width:18px; height:18px; }
-.rail-btn:hover { color:rgba(255,255,255,0.9); }
-.rail-btn.active { background:rgba(255,255,255,0.16); color:#fff; }
-.rail-btn:focus-visible { outline:2px solid rgba(255,255,255,0.7); outline-offset:1px; }
-.rail-dot { position:absolute; top:4px; right:4px; width:7px; height:7px; border-radius:50%; background:#E66; border:1.5px solid var(--rail-bg); }
-.rail-spacer { flex:1; }
-.rail-settings { color:rgba(255,255,255,0.45); }
-.rail-avatar { width:26px; height:26px; border-radius:50%; background:var(--accent); color:#fff; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:500; cursor:pointer; margin-top:4px; border:none; }
-.rail-tip { position:absolute; left:52px; top:50%; transform:translateY(-50%); background:#1D1D1F; color:#fff; font-size:12px; font-weight:400; padding:5px 9px; border-radius:6px; white-space:nowrap; pointer-events:none; opacity:0; transition:opacity 0.1s; z-index:60; }
-.rail-btn:hover .rail-tip, .rail-avatar:hover .rail-tip, .rail-settings:hover .rail-tip { opacity:1; }
-/* flyout */
-.flyout { display:none !important; }
-/* Dropdown popover anchored to a rail icon */
-.rail-pop { position:fixed; background:var(--rail-bg); border:1px solid rgba(255,255,255,0.12); border-radius:12px; box-shadow:0 18px 44px rgba(8,20,45,0.45); padding:8px; min-width:194px; max-width:230px; z-index:120; opacity:0; transform:translateX(-6px); transition:opacity 0.15s ease-out, transform 0.15s ease-out; }
-.rail-pop.in { opacity:1; transform:none; }
-.flyout-h { font-size:13px; font-weight:500; color:#fff; padding:0 6px 10px; display:flex; align-items:center; gap:6px; white-space:nowrap; }
-.flyout-h .beta { font-size:11px; font-weight:400; color:rgba(255,255,255,0.5); }
-.flyout-item { display:block; width:100%; text-align:left; font-size:12px; font-weight:400; color:rgba(255,255,255,0.72); padding:6px 9px; border-radius:8px; border:1px solid transparent; background:none; cursor:pointer; font-family:inherit; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:1px; }
-.flyout-item:hover { background:rgba(255,255,255,0.08); color:#fff; }
-.flyout-item.active { background:rgba(255,255,255,0.16); color:#fff; font-weight:500; }
-.flyout-item[aria-disabled="true"] { color:rgba(255,255,255,0.4); cursor:default; }
-.flyout-item[aria-disabled="true"]:hover { background:none; color:rgba(255,255,255,0.4); }
-.flyout-label { font-size:11px; font-weight:400; color:rgba(255,255,255,0.45); padding:12px 6px 4px; white-space:nowrap; }
-.flyout-sp { display:flex; align-items:center; gap:7px; font-size:11px; color:rgba(255,255,255,0.7); padding:7px 9px; border:1px solid rgba(255,255,255,0.12); border-radius:8px; background:rgba(255,255,255,0.06); }
-.flyout-sp .plug { width:7px; height:7px; border-radius:50%; background:#30D158; flex-shrink:0; }
-.flyout-foot { margin-top:auto; padding-top:8px; }
-.flyout-collapse { font-size:11px; font-weight:400; color:rgba(255,255,255,0.5); cursor:pointer; padding:6px; display:flex; align-items:center; gap:6px; background:none; border:none; font-family:inherit; }
-.flyout-collapse:hover { color:rgba(255,255,255,0.85); }
-.rail-menu { position:fixed; bottom:14px; left:76px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); padding:6px; z-index:80; min-width:150px; }
-.rail-menu button { display:block; width:100%; text-align:left; font-size:13px; color:var(--ink); padding:8px 10px; border-radius:7px; border:none; background:none; cursor:pointer; font-family:inherit; }
-.rail-menu button:hover { background:var(--surface2); }
-@media (max-width:900px){
-  body.nav-rail .flyout { position:absolute; left:68px; top:0; bottom:0; z-index:55; box-shadow:var(--shadow-lg); }
-}
+/* ===== Slim sidebar (feature-flagged via ?nav=slim) ===== */
+.slimbar { display:none; }
+body.nav-slim .sidebar { display:none !important; }
+body.nav-slim .slimbar { display:flex; }
+.slimbar { width:208px; flex-shrink:0; background:#2A5080; flex-direction:column; height:100%; }
+.slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
+.slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
+.slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
+.slim-nav { flex:1; overflow-y:auto; padding:6px 10px; }
+.sg { margin-bottom:1px; }
+.sg-head { display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:none; background:none; color:rgba(255,255,255,0.85); font-size:13px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; }
+.sg-head:hover { background:rgba(255,255,255,0.07); }
+.sg-head.active { background:rgba(255,255,255,0.14); color:#fff; }
+.sg-head svg.ic { width:17px; height:17px; flex-shrink:0; opacity:0.85; }
+.sg-head .lbl { flex:1; text-align:left; }
+.sg-head .chev { width:12px; height:12px; opacity:0.5; transition:transform 0.15s; }
+.sg.open .sg-head .chev { transform:rotate(90deg); }
+.sg-badge { min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.sg-items { max-height:0; overflow:hidden; transition:max-height 0.18s ease-out; }
+.sg.open .sg-items { max-height:340px; }
+.sgi { display:block; width:100%; text-align:left; padding:6px 10px 6px 37px; border:none; background:none; color:rgba(255,255,255,0.62); font-size:12px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sgi:hover { background:rgba(255,255,255,0.07); color:#fff; }
+.sgi.active { color:#fff; font-weight:500; }
+.sgi .beta { font-size:10px; color:rgba(255,255,255,0.45); margin-left:2px; }
+.sgi[aria-disabled="true"] { color:rgba(255,255,255,0.38); cursor:default; }
+.slim-foot { padding:8px 10px; border-top:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
+.slim-user { display:flex; align-items:center; gap:9px; padding:7px 8px; border-radius:8px; cursor:pointer; }
+.slim-user:hover { background:rgba(255,255,255,0.07); }
+.slim-user .av { width:28px; height:28px; border-radius:50%; background:var(--accent); color:#fff; font-size:11px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.slim-user .nm { font-size:12px; color:#fff; font-weight:500; line-height:1.25; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.slim-user .nm small { display:block; font-size:10px; color:rgba(255,255,255,0.4); font-weight:400; }
+.slim-menu { position:fixed; bottom:56px; left:14px; background:var(--surface); border:1px solid var(--border); border-radius:10px; box-shadow:var(--shadow-lg); padding:6px; z-index:130; min-width:160px; }
+.slim-menu button { display:block; width:100%; text-align:left; font-size:13px; color:var(--ink); padding:8px 10px; border-radius:7px; border:none; background:none; cursor:pointer; font-family:inherit; }
+.slim-menu button:hover { background:var(--surface2); }
+/* topbar global search */
+.topsearch { display:none; position:relative; flex:1; max-width:440px; margin:0 16px; }
+body.nav-slim .topsearch { display:flex; }
+.topsearch input { width:100%; border:1px solid var(--border); border-radius:9px; padding:8px 12px 8px 32px; font-size:13px; font-family:inherit; background:var(--surface2); outline:none; color:var(--ink); }
+.topsearch input:focus { border-color:var(--accent-mid); background:#fff; }
+.topsearch .si { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink3); pointer-events:none; display:flex; }
+.topsearch .si svg { width:15px; height:15px; }
+.search-pop { position:absolute; top:42px; left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-lg); padding:6px; max-height:360px; overflow-y:auto; z-index:120; }
+.search-cat { font-size:10px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:8px 8px 4px; }
+.search-item { display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--ink); }
+.search-item:hover, .search-item.sel { background:var(--surface2); }
+.search-item .si2 { width:24px; height:24px; border-radius:6px; background:var(--surface2); display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--ink2); font-size:10px; font-weight:600; }
+.search-empty { font-size:13px; color:var(--ink3); padding:14px 10px; text-align:center; }
+
 
 /* ── EMAIL INBOX PANEL ── */
 .email-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:800;display:none; }
@@ -820,45 +826,18 @@ body.nav-rail .app-rail { display:flex; }
 <div class="shell" id="appShell" style="display:none;">
 
 <!-- SIDEBAR -->
-<!-- ===== Two-tier rail + flyout nav (feature-flagged via ?nav=rail) ===== -->
-<nav class="app-rail" id="appRail" aria-label="Primary">
-  <div class="rail-logo" aria-hidden="true">B</div>
-  <button class="rail-btn" data-domain="home" aria-label="Home" onclick="railOpen('home')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/></svg>
-    <span class="rail-tip">Home</span>
-  </button>
-  <button class="rail-btn" data-domain="people" aria-label="People" onclick="railOpen('people')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg>
-    <span class="rail-tip">People</span>
-  </button>
-  <button class="rail-btn" data-domain="work" aria-label="Work" onclick="railOpen('work')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
-    <span class="rail-tip">Work</span>
-  </button>
-  <button class="rail-btn" data-domain="library" aria-label="Library" onclick="railOpen('library')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
-    <span class="rail-tip">Library</span>
-  </button>
-  <button class="rail-btn" data-domain="insights" aria-label="Insights" onclick="railOpen('insights')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
-    <span class="rail-tip">Insights</span>
-  </button>
-  <div class="rail-spacer"></div>
-  <button class="rail-btn rail-settings" aria-label="Settings" onclick="showView('settings')">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
-    <span class="rail-tip">Settings</span>
-  </button>
-  <button class="rail-avatar" id="railAvatar" aria-label="Account menu" aria-haspopup="true" onclick="railToggleMenu(event)"></button>
-</nav>
-<aside class="flyout" id="flyout" aria-label="Section navigation">
-  <div class="flyout-h" id="flyoutTitle">Home</div>
-  <div id="flyoutBody" style="display:flex;flex-direction:column;overflow-y:auto;flex:1;"></div>
-  <div class="flyout-foot">
-    <button class="flyout-collapse" onclick="railCollapse()" aria-label="Collapse panel">
-      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"/></svg> Collapse
-    </button>
+
+<!-- Slim sidebar (feature-flagged via ?nav=slim) -->
+<div class="slimbar" id="slimNav">
+  <div class="slim-logo"><div class="mk">HR</div><div class="nm">Breeze</div></div>
+  <nav class="slim-nav" id="slimGroups" aria-label="Primary"></nav>
+  <div class="slim-foot">
+    <div class="slim-user" id="slimUser" role="button" aria-haspopup="true" onclick="slimMenu(event)">
+      <div class="av" id="slimAv"></div>
+      <div class="nm" id="slimName">You<small id="slimCo"></small></div>
+    </div>
   </div>
-</aside>
+</div>
 
 <div class="sidebar">
   <div class="sidebar-logo" style="padding:16px 14px 14px;">
@@ -978,6 +957,10 @@ body.nav-rail .app-rail { display:flex; }
 <!-- GLOBAL TOP BAR -->
 <div class="app-topbar" id="appTopbar">
   <div class="app-topbar-greeting" id="appGreeting"></div>
+  <div class="topsearch">
+    <span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+    <input id="globalSearch" type="text" autocomplete="off" placeholder="Search people, chats, documents..." oninput="slimSearch(this.value)" onfocus="slimSearch(this.value)" onkeydown="slimSearchKey(event)">
+  </div>
   <div class="app-topbar-right">
     <!-- Gmail -->
     <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail')" style="cursor:pointer;">
@@ -1825,8 +1808,9 @@ async function onSignedIn(user) {
     // Top bar avatar + greeting
     const avatar = document.getElementById('topbarAvatar');
     if (avatar) avatar.textContent = initials;
-    const railAv = document.getElementById('railAvatar');
-    if (railAv) railAv.textContent = initials;
+    const sAv = document.getElementById('slimAv'); if (sAv) sAv.textContent = initials;
+    const sNm = document.getElementById('slimName'); if (sNm && sNm.childNodes[0]) sNm.childNodes[0].nodeValue = (profile.full_name || user.email).split(' ')[0];
+    const sCo = document.getElementById('slimCo'); if (sCo) sCo.textContent = profile.company_name || '';
     const firstName = (profile.full_name || user.email).split(' ')[0];
     const hour = new Date().getHours();
     const greetEl = document.getElementById('appGreeting');
@@ -5849,7 +5833,7 @@ function showView(v,navEl) {
   if(v==='orgchart')initOrgChart();
   if(v==='headcount'){hcRoles=null;loadHCRoles().then(renderHeadcount);}
   if(v==='trackers'){mpRecords=null;_guidanceCache={};wfPolicies=null;wfCases=null;wfActiveCase=null;immigrationRecords=null;customTrackers=null;trackerTab='family-leave';document.querySelectorAll('.tracker-tab-btn').forEach(b=>b.classList.remove('active-tt'));const ftb=document.getElementById('tt-family-leave');if(ftb)ftb.classList.add('active-tt');renderTrackers();}
-  try { if (window.railOnView) window.railOnView(v); } catch(e) {}
+  try { if (window.slimOnView) window.slimOnView(v); } catch(e) {}
 }
 
 // ── BULK MAIL MERGE ──
@@ -14640,151 +14624,132 @@ async function projConfirmEmailToTask(){
   else initAll();
 })();
 
-// ===== Two-tier rail + flyout navigation (feature-flagged) =====
+// ===== Slim sidebar: search + collapsible groups + avatar menu (?nav=slim) =====
 (function(){
-  var DOMAINS = {
-    home:     { title:'Home',     items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'} ] },
-    people:   { title:'People',   recent:true, items:[ {label:'Directory', soon:true}, {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Headcount planning', view:'headcount'} ] },
-    work:     { title:'Work',     items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
-    library:  { title:'Library',  sharepoint:true, items:[ {label:'Policies', view:'manage'}, {label:'Documents', view:'docs'}, {label:'Letters & templates', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
-    insights: { title:'Insights', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] }
+  var HOME = { label:'Home', view:'chat', icon:'<path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/>' };
+  var GROUPS = {
+    people:{ label:'People', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Directory', soon:true}, {label:'Org chart', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Headcount', view:'headcount'} ] },
+    work:{ label:'Work', icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
+    library:{ label:'Library', icon:'<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>', items:[ {label:'Policies', view:'manage'}, {label:'Documents', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
+    insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] }
   };
-  var VIEW2DOMAIN = {};
-  Object.keys(DOMAINS).forEach(function(d){ DOMAINS[d].items.forEach(function(it){ if(it.view && !VIEW2DOMAIN[it.view]) VIEW2DOMAIN[it.view]=d; }); });
-  var popDomain = null;
-  var recentCache = null;
-
+  var VIEW2GROUP = {};
+  Object.keys(GROUPS).forEach(function(g){ GROUPS[g].items.forEach(function(it){ if(it.view) VIEW2GROUP[it.view]=g; }); });
   function curView(){ return localStorage.getItem('bz_view') || 'chat'; }
+  function ic(p){ return '<svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>'; }
 
-  // Open/toggle a dropdown popover anchored to the rail icon
-  window.railOpen = function(d){
-    if(popDomain===d){ closePop(); return; }
-    openPop(d);
+  function render(){
+    var box=document.getElementById('slimGroups'); if(!box) return;
+    var cur=curView(), openG=VIEW2GROUP[cur];
+    var html='<button class="sg-head'+(cur==='chat'||cur==='chats'?' active':'')+'" onclick="slimGo(\'chat\')">'+ic(HOME.icon)+'<span class="lbl">Home</span><span class="sg-badge" id="slimHomeBadge" style="display:none">0</span></button>';
+    Object.keys(GROUPS).forEach(function(g){
+      var c=GROUPS[g], isOpen=(openG===g);
+      html+='<div class="sg'+(isOpen?' open':'')+'" data-g="'+g+'">';
+      html+='<button class="sg-head'+(isOpen?' active':'')+'" onclick="slimToggle(\''+g+'\')" aria-expanded="'+isOpen+'">'+ic(c.icon)+'<span class="lbl">'+c.label+'</span>'+(g==='work'?'<span class="sg-badge" id="slimWorkBadge" style="display:none">0</span>':'')+'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>';
+      html+='<div class="sg-items">'+c.items.map(function(it){
+        if(it.soon) return '<button class="sgi" aria-disabled="true">'+it.label+' <span class="beta">soon</span></button>';
+        var on=cur===it.view;
+        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</button>';
+      }).join('')+'</div></div>';
+    });
+    box.innerHTML=html;
+    updateBadges();
+  }
+  window.slimToggle=function(g){
+    var el=document.querySelector('.sg[data-g="'+g+'"]'); if(!el) return;
+    var willOpen=!el.classList.contains('open');
+    document.querySelectorAll('.slimbar .sg').forEach(function(s){ s.classList.remove('open'); s.querySelector('.sg-head').setAttribute('aria-expanded','false'); });
+    if(willOpen){ el.classList.add('open'); el.querySelector('.sg-head').setAttribute('aria-expanded','true'); }
   };
-  window.railNav = function(v){ closePop(); showView(v); };
-  window.railCollapse = function(){ closePop(); };
+  window.slimGo=function(v){ showView(v); };
+  window.slimOnView=function(v){ render(); };
 
-  function closePop(){
-    var p=document.getElementById('railPop'); if(p) p.remove();
-    popDomain=null;
-    document.querySelectorAll('.app-rail .rail-btn[data-domain]').forEach(function(b){ b.removeAttribute('aria-expanded'); });
-  }
-
-  function openPop(d){
-    closePop();
-    var c=DOMAINS[d]; if(!c) return;
-    var btn=document.querySelector('.rail-btn[data-domain="'+d+'"]'); if(!btn) return;
-    var cur=curView();
-    var html='<div class="flyout-h">'+c.title+'</div>';
-    html += c.items.map(function(it){
-      if(it.soon) return '<button class="flyout-item" aria-disabled="true">'+it.label+' <span style="font-size:10px">· soon</span></button>';
-      var on=cur===it.view;
-      return '<button class="flyout-item'+(on?' active':'')+'" data-view="'+it.view+'"'+(on?' aria-current="page"':'')+' onclick="railNav(\''+it.view+'\')">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</button>';
-    }).join('');
-    if(c.recent) html += '<div class="flyout-label">Recent people</div><div id="railRecent"><button class="flyout-item" aria-disabled="true" style="font-size:11px">Loading...</button></div>';
-    if(c.sharepoint) html += '<div class="flyout-sp" style="margin-top:8px"><span class="plug"></span> Connected: SharePoint</div>';
-    var pop=document.createElement('div'); pop.id='railPop'; pop.className='rail-pop'; pop.setAttribute('role','menu'); pop.innerHTML=html;
-    document.body.appendChild(pop);
-    popDomain=d; btn.setAttribute('aria-expanded','true');
-    // position to the right of the icon, clamped to viewport
-    var r=btn.getBoundingClientRect();
-    var top=r.top, left=r.right+8;
-    var ph=pop.offsetHeight;
-    if(top+ph>window.innerHeight-10) top=Math.max(10, window.innerHeight-10-ph);
-    pop.style.left=left+'px'; pop.style.top=top+'px';
-    requestAnimationFrame(function(){ pop.classList.add('in'); });
-    if(c.recent) loadRecent();
-    setTimeout(function(){
-      document.addEventListener('mousedown', onDocDown, true);
-    },0);
-  }
-  function onDocDown(e){
-    var pop=document.getElementById('railPop');
-    if(pop && !pop.contains(e.target) && !(e.target.closest && e.target.closest('.rail-btn[data-domain]'))){
-      closePop(); document.removeEventListener('mousedown', onDocDown, true);
-    }
-  }
-
-  function recentHtml(names){
-    if(!names.length) return '<button class="flyout-item" aria-disabled="true" style="font-size:11px">No people yet</button>';
-    return names.map(function(n){
-      var ini=n.trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase();
-      return '<button class="flyout-item" onclick="railNav(\'trackers\')" style="display:flex;align-items:center;gap:7px"><span style="width:18px;height:18px;border-radius:50%;background:rgba(255,255,255,0.16);color:#fff;font-size:8px;font-weight:500;display:flex;align-items:center;justify-content:center;flex-shrink:0">'+ini+'</span>'+escapeHtml(n)+'</button>';
-    }).join('');
-  }
-  async function loadRecent(){
-    var wrap=document.getElementById('railRecent'); if(!wrap) return;
-    if(recentCache){ wrap.innerHTML=recentHtml(recentCache); return; }
-    var names=[];
+  async function updateBadges(){
     try{
-      if(typeof currentProfile!=='undefined' && currentProfile){
-        var res=await sb.from('policies').select('name,content').eq('company_id',currentProfile.company_id).in('name',['TRACKER:Workflows','TRACKER:MatPat']);
-        (res.data||[]).forEach(function(row){ try{ var arr=JSON.parse(row.content); (Array.isArray(arr)?arr:[]).forEach(function(r){ var n=r.employeeName||r.name; if(n&&typeof n==='string') names.push(n.trim()); }); }catch(e){} });
-      }
+      var pd=(typeof projectsData!=='undefined')?projectsData:null;
+      if(!pd && typeof loadProjects==='function'){ await loadProjects(); pd=(typeof projectsData!=='undefined')?projectsData:null; }
+      var overdue=0;
+      if(pd && typeof projOverdueList==='function'){ pd.forEach(function(p){ overdue+=projOverdueList(p).length; }); }
+      [['slimHomeBadge'],['slimWorkBadge']].forEach(function(x){ var b=document.getElementById(x[0]); if(b){ if(overdue>0){ b.textContent=overdue>9?'9+':overdue; b.style.display=''; } else b.style.display='none'; } });
     }catch(e){}
-    names = names.filter(function(v,i){ return names.indexOf(v)===i; }).slice(-5).reverse();
-    recentCache = names;
-    var w2=document.getElementById('railRecent'); if(w2) w2.innerHTML=recentHtml(names);
   }
 
-  function syncActive(){
-    var d = VIEW2DOMAIN[curView()] || 'home';
-    document.querySelectorAll('.app-rail .rail-btn[data-domain]').forEach(function(b){ b.classList.toggle('active', b.getAttribute('data-domain')===d); });
+  // ---- global search ----
+  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Library'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
+  var _peopleCache=null, _selIdx=-1;
+  async function peopleNames(){
+    if(_peopleCache) return _peopleCache;
+    var names=[];
+    try{ if(typeof currentProfile!=='undefined' && currentProfile){
+      var r=await sb.from('policies').select('content').eq('company_id',currentProfile.company_id).in('name',['TRACKER:Workflows','TRACKER:MatPat']);
+      (r.data||[]).forEach(function(row){ try{ var a=JSON.parse(row.content); (Array.isArray(a)?a:[]).forEach(function(x){ var n=x.employeeName||x.name; if(n&&typeof n==='string') names.push(n.trim()); }); }catch(e){} });
+    }}catch(e){}
+    _peopleCache=names.filter(function(v,i){return names.indexOf(v)===i;});
+    return _peopleCache;
   }
+  window.slimSearch=async function(q){
+    var pop=document.getElementById('searchPop');
+    if(!pop){ pop=document.createElement('div'); pop.id='searchPop'; pop.className='search-pop'; document.querySelector('.topsearch').appendChild(pop); }
+    q=(q||'').trim().toLowerCase(); _selIdx=-1;
+    var pages=DEST.filter(function(d){ return d.l.toLowerCase().indexOf(q)>=0; });
+    var allChats=(typeof chatList!=='undefined' && chatList)?chatList:[];
+    var chats=allChats.filter(function(c){ return (c.title||'').toLowerCase().indexOf(q)>=0; }).slice(0,5);
+    var ppl=(await peopleNames()).filter(function(n){ return q && n.toLowerCase().indexOf(q)>=0; }).slice(0,5);
+    if(!q){ pages=DEST.slice(0,6); chats=allChats.slice(0,3); ppl=[]; }
+    var html='';
+    function esc(s){ return (window.escapeHtml?escapeHtml(s):s); }
+    if(ppl.length){ html+='<div class="search-cat">People</div>'+ppl.map(function(n){ var i=esc(n.trim().split(/\s+/).map(function(w){return w[0];}).join('').slice(0,2).toUpperCase()); return '<div class="search-item" data-act="trackers"><span class="si2">'+i+'</span>'+esc(n)+'</div>'; }).join(''); }
+    if(pages.length){ html+='<div class="search-cat">Go to</div>'+pages.map(function(d){ return '<div class="search-item" data-view="'+d.v+'"><span class="si2">→</span>'+esc(d.l)+' <span style="color:var(--ink3);font-size:11px;margin-left:auto">'+d.k+'</span></div>'; }).join(''); }
+    if(chats.length){ html+='<div class="search-cat">Recent chats</div>'+chats.map(function(c){ return '<div class="search-item" data-chat="'+c.id+'"><span class="si2">💬</span>'+esc(c.title||'Chat')+'</div>'; }).join(''); }
+    pop.innerHTML = html || '<div class="search-empty">No matches</div>';
+    pop.querySelectorAll('.search-item').forEach(function(el){ el.onclick=function(){ slimSearchPick(el); }; });
+    setTimeout(function(){ document.addEventListener('mousedown', slimSearchOut, true); },0);
+  };
+  function slimSearchPick(el){
+    var v=el.getAttribute('data-view'), ch=el.getAttribute('data-chat'), act=el.getAttribute('data-act');
+    slimSearchClose();
+    var inp=document.getElementById('globalSearch'); if(inp){ inp.value=''; inp.blur(); }
+    if(v) showView(v);
+    else if(ch && typeof openChatHistory==='function'){ showView('chat'); openChatHistory(ch); }
+    else if(act) showView(act);
+  }
+  function slimSearchClose(){ var p=document.getElementById('searchPop'); if(p) p.remove(); document.removeEventListener('mousedown', slimSearchOut, true); }
+  function slimSearchOut(e){ if(!e.target.closest || !e.target.closest('.topsearch')) slimSearchClose(); }
+  window.slimSearchKey=function(e){
+    var pop=document.getElementById('searchPop'); if(!pop) return;
+    var items=[].slice.call(pop.querySelectorAll('.search-item'));
+    if(e.key==='ArrowDown'){ e.preventDefault(); _selIdx=Math.min(items.length-1,_selIdx+1); }
+    else if(e.key==='ArrowUp'){ e.preventDefault(); _selIdx=Math.max(0,_selIdx-1); }
+    else if(e.key==='Enter'){ if(items[_selIdx]) slimSearchPick(items[_selIdx]); return; }
+    else if(e.key==='Escape'){ slimSearchClose(); return; }
+    items.forEach(function(el,i){ el.classList.toggle('sel', i===_selIdx); });
+  };
 
-  window.railOnView = function(v){ syncActive(); };
-
-  window.railToggleMenu = function(e){
+  // ---- avatar menu ----
+  window.slimMenu=function(e){
     e.stopPropagation();
-    if(document.getElementById('railMenu')){ railCloseMenu(); return; }
-    var m=document.createElement('div'); m.id='railMenu'; m.className='rail-menu'; m.setAttribute('role','menu');
-    m.innerHTML = '<button role="menuitem" onclick="showView(\'settings\');railCloseMenu()">Settings</button>'+
-      '<button role="menuitem" onclick="showView(\'privacy\');railCloseMenu()">Privacy</button>'+
-      '<button role="menuitem" onclick="showTermsModal();railCloseMenu()">Terms</button>'+
-      '<button role="menuitem" onclick="showDpaModal();railCloseMenu()">DPA</button>'+
+    if(document.getElementById('slimMenuEl')){ slimMenuClose(); return; }
+    var m=document.createElement('div'); m.id='slimMenuEl'; m.className='slim-menu'; m.setAttribute('role','menu');
+    m.innerHTML='<button role="menuitem" onclick="showView(\'settings\');slimMenuClose()">Settings</button>'+
+      '<button role="menuitem" onclick="showView(\'privacy\');slimMenuClose()">Privacy</button>'+
+      '<button role="menuitem" onclick="showTermsModal();slimMenuClose()">Terms</button>'+
+      '<button role="menuitem" onclick="showDpaModal();slimMenuClose()">DPA</button>'+
       '<button role="menuitem" onclick="localStorage.removeItem(\'bz_nav\');location.href=\'/app\'">Classic navigation</button>'+
       '<button role="menuitem" style="color:var(--red)" onclick="signOut()">Sign out</button>';
     document.body.appendChild(m);
-    setTimeout(function(){ document.addEventListener('click', railCloseMenu, {once:true}); },0);
+    setTimeout(function(){ document.addEventListener('click', slimMenuClose, {once:true}); },0);
   };
-  window.railCloseMenu = function(){ var m=document.getElementById('railMenu'); if(m) m.remove(); };
+  window.slimMenuClose=function(){ var m=document.getElementById('slimMenuEl'); if(m) m.remove(); };
 
-  async function updateDots(){
-    try{
-      if(typeof loadProjects==='function'){ if(!window.projectsData) await loadProjects(); }
-      var overdue=0;
-      if(window.projectsData && typeof projOverdueList==='function'){ window.projectsData.forEach(function(p){ overdue += projOverdueList(p).length; }); }
-      var btn=document.querySelector('.rail-btn[data-domain="work"]'); if(!btn) return;
-      var dot=btn.querySelector('.rail-dot');
-      if(overdue>0){ if(!dot){ dot=document.createElement('span'); dot.className='rail-dot'; btn.appendChild(dot); } }
-      else if(dot){ dot.remove(); }
-    }catch(e){}
+  function initSlim(){
+    try{ var q=new URLSearchParams(location.search); if(q.get('nav')==='slim') localStorage.setItem('bz_nav','slim'); if(q.get('nav')==='old') localStorage.removeItem('bz_nav'); }catch(e){}
+    if((localStorage.getItem('bz_nav')||'')!=='slim') return;
+    document.body.classList.add('nav-slim');
+    var sav=document.getElementById('slimAv'); if(sav && !sav.textContent){ sav.textContent=(document.getElementById('topbarAvatar')||{}).textContent||''; }
+    render();
   }
-
-  function initRail(){
-    try{
-      var q=new URLSearchParams(location.search);
-      if(q.get('nav')==='rail') localStorage.setItem('bz_nav','rail');
-      if(q.get('nav')==='old') localStorage.removeItem('bz_nav');
-    }catch(e){}
-    if((localStorage.getItem('bz_nav')||'')!=='rail') return; // flag off -> classic sidebar
-    document.body.classList.add('nav-rail');
-    var ra=document.getElementById('railAvatar');
-    if(ra && !ra.textContent){ var ini=(document.getElementById('topbarAvatar')||{}).textContent||''; ra.textContent=ini; }
-    // keyboard nav on the rail
-    var rail=document.getElementById('appRail');
-    if(rail){ rail.addEventListener('keydown', function(e){
-      var btns=[].slice.call(rail.querySelectorAll('.rail-btn'));
-      var i=btns.indexOf(document.activeElement);
-      if(e.key==='ArrowDown'){ e.preventDefault(); (btns[i+1]||btns[0]).focus(); }
-      else if(e.key==='ArrowUp'){ e.preventDefault(); (btns[i-1]||btns[btns.length-1]).focus(); }
-      else if(e.key==='Escape'){ closePop(); }
-    }); }
-    syncActive();
-    updateDots();
-  }
-  if (document.readyState==='loading') document.addEventListener('DOMContentLoaded', initRail);
-  else initRail();
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initSlim);
+  else initSlim();
 })();
 
 </script>
