@@ -31,7 +31,11 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized', detail: authError });
   }
 
-  const { messages, system } = req.body;
+  const { messages, system, max_tokens } = req.body;
+
+  // Allow callers to request a larger budget (e.g. the Talent suite), capped server-side.
+  const reqTokens = Number(max_tokens);
+  const safeTokens = Number.isFinite(reqTokens) ? Math.min(Math.max(reqTokens, 256), 8192) : 2048;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -43,7 +47,7 @@ export default async function handler(req, res) {
       },
       body: JSON.stringify({
         model: 'claude-sonnet-4-6',
-        max_tokens: 2048,
+        max_tokens: safeTokens,
         system: system,
         messages: messages
       })
