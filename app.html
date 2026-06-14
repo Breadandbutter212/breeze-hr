@@ -1539,7 +1539,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- TALENT REVIEW (9-box, succession, flight-risk, actions, CHRO summary) -->
 <div class="view manage-view" id="view-talent">
   <div class="manage-topbar">
-    <div><div class="manage-title">Talent review</div><div class="manage-sub">Drop in your talent data — AI builds an editable 9-box, succession map, flight-risk view and CHRO summary. <strong>Session only: nothing is saved.</strong></div></div>
+    <div><div class="manage-title">Talent review</div><div class="manage-sub">Upload a performance review export. AI works out the 9-box, drafts succession cover and writes a leadership summary. <strong>Session only: nothing is saved.</strong></div></div>
     <div id="talentTopActions"></div>
   </div>
   <div class="manage-body" id="talentBody" style="padding:0;overflow:hidden;flex:1;min-height:0;display:flex;flex-direction:column;"></div>
@@ -15626,7 +15626,7 @@ async function projConfirmEmailToTask(){
 })();
 
 // ===================================================================
-// TALENT REVIEW — 9-box grid, succession, flight-risk, actions, CHRO summary
+// TALENT REVIEW: 9-box grid, succession, development plans, CHRO summary
 // Session-only. talentState lives in memory and is wiped on reload; nothing
 // touches Supabase or localStorage.
 // ===================================================================
@@ -15636,11 +15636,23 @@ async function projConfirmEmailToTask(){
   #view-talent .manage-topbar{align-items:flex-start;}
   .tl-wrap{display:flex;flex-direction:column;flex:1;min-height:0;}
   .tl-empty{flex:1;display:flex;align-items:center;justify-content:center;padding:32px;}
-  .tl-card-drop{max-width:560px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:40px 34px;box-shadow:var(--shadow);}
-  .tl-drop{border:2px dashed var(--border2);border-radius:var(--r);padding:30px 20px;margin:22px 0 14px;cursor:pointer;transition:.18s;background:var(--surface2);}
-  .tl-drop.drag{border-color:var(--accent);background:var(--accent-bg);}
-  .tl-drop .big{font-size:14px;font-weight:600;color:var(--ink);}
-  .tl-drop .small{font-size:12px;color:var(--ink2);margin-top:4px;}
+  .tl-card-drop{max-width:600px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:44px 40px;box-shadow:var(--shadow);}
+  .tl-upicon{width:52px;height:52px;margin:0 auto 18px;border-radius:13px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;}
+  .tl-upicon svg{width:26px;height:26px;}
+  .tl-uptitle{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.02em;}
+  .tl-upsub{font-size:13px;color:var(--ink2);margin:9px auto 0;line-height:1.6;max-width:470px;}
+  .tl-drop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:26px 20px;margin:24px 0 16px;cursor:pointer;transition:.18s;background:var(--surface2);}
+  .tl-drop:hover,.tl-drop.drag{border-color:var(--accent);background:var(--accent-bg);}
+  .tl-drop-ic{width:38px;height:38px;margin:0 auto 10px;color:var(--ink3);transition:.18s;}
+  .tl-drop-ic svg{width:38px;height:38px;}
+  .tl-drop:hover .tl-drop-ic,.tl-drop.drag .tl-drop-ic{color:var(--accent);}
+  .tl-drop .big{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .tl-drop .small{font-size:12px;color:var(--ink3);margin-top:4px;}
+  .tl-upbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
+  .tl-cols{margin-top:22px;text-align:left;font-size:11.5px;color:var(--ink2);line-height:1.6;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
+  .tl-cols .h{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:5px;}
+  .tl-priv{display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:11px;color:var(--ink3);line-height:1.5;text-align:left;}
+  .tl-priv svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;}
   .tl-tabs{display:flex;gap:4px;padding:10px 18px 0;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;}
   .tl-tab{padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0;}
   .tl-tab:hover{color:var(--ink);background:var(--surface2);}
@@ -15677,7 +15689,7 @@ async function projConfirmEmailToTask(){
   .tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .tl-dot.fr-h{background:#E5484D;box-shadow:0 0 0 3px rgba(229,72,77,.13);}
   .tl-dot.fr-m{background:#E8A317;box-shadow:0 0 0 3px rgba(232,163,23,.13);}
-  .tl-key{color:#E0A100;font-size:10px;margin-left:4px;}
+  .tl-key{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8A6D00;background:#FBF3DA;border:1px solid #ECDFB0;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;line-height:1.5;}
   .tl-tray{background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);padding:10px;margin-top:14px;max-width:1080px;}
   .tl-tray .h{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:8px;}
   .tl-tray .row{display:flex;gap:8px;flex-wrap:wrap;}
@@ -15758,23 +15770,24 @@ async function projConfirmEmailToTask(){
     dept:['department','dept','team','function','business unit'],
     manager:['manager','line manager','reports to','reporting to'],
     tenure:['tenure','tenure (years)','years','years of service','length of service','service'],
-    perf:['performance','perf','performance rating','rating','review score','performance score'],
-    pot:['potential','pot','potential rating','potential score'],
-    flight:['flight risk','flight-risk','flightrisk','attrition risk','retention risk','risk of leaving'],
-    key:['key role','key','key person','critical role','business critical','is key'],
-    notes:['notes','note','comments','comment','context','remarks']
+    reviewLatest:['latest review rating','overall rating','overall review rating','review rating','performance rating','rating','review score','overall performance','appraisal rating','latest rating','current rating','performance review'],
+    reviewPrev:['previous review rating','prior review rating','last review rating','previous rating','prior rating','previous review','last review','last year rating'],
+    goals:['goal achievement','goals rating','objectives rating','goal attainment','objectives met','goals','objectives','goal','kpi'],
+    competency:['leadership / competency','leadership competency','leadership','competency','competencies','values','behaviours','behaviors','capability','competency rating','potential indicator'],
+    comments:['manager comments','manager comment','manager feedback','comments','comment','feedback','notes','remarks','context'],
+    key:['key role','key','key person','critical role','business critical','is key']
   };
 
   // box = (pot-1)*3 + perf, perf/pot in 1..3
   var BOX_META={
-    9:{name:'Star',                 tone:'star', desc:'High perf · high potential. Future leaders — stretch & retain.'},
-    8:{name:'High Potential',       tone:'good', desc:'High potential · solid perf. Accelerate development.'},
-    7:{name:'Potential Gem',        tone:'watch',desc:'High potential · not yet performing. Invest & coach.'},
-    6:{name:'High Performer',       tone:'good', desc:'High perf · steady potential. Reward & retain.'},
-    5:{name:'Core Player',          tone:'core', desc:'Reliable backbone. Engage & develop.'},
-    4:{name:'Inconsistent Player',  tone:'watch',desc:'Some potential · under-delivering. Diagnose blockers.'},
-    3:{name:'Trusted Professional', tone:'core', desc:'High perf · lower potential. Value the expertise.'},
-    2:{name:'Effective',            tone:'core', desc:'Solid in role. Maintain & motivate.'},
+    9:{name:'Star',                 tone:'star', desc:'High performance and high potential. Future leaders to stretch and retain.'},
+    8:{name:'High Potential',       tone:'good', desc:'High potential with solid performance. Accelerate their development.'},
+    7:{name:'Potential Gem',        tone:'watch',desc:'High potential, not yet performing. Invest and coach.'},
+    6:{name:'High Performer',       tone:'good', desc:'High performance with steady potential. Reward and retain.'},
+    5:{name:'Core Player',          tone:'core', desc:'The reliable backbone. Engage and develop.'},
+    4:{name:'Inconsistent Player',  tone:'watch',desc:'Some potential but under delivering. Diagnose the blockers.'},
+    3:{name:'Trusted Professional', tone:'core', desc:'High performance, lower potential. Value the expertise.'},
+    2:{name:'Effective',            tone:'core', desc:'Solid in role. Maintain and motivate.'},
     1:{name:'Under-performer',      tone:'risk', desc:'Low on both. Performance plan or managed exit.'}
   };
   function boxOf(perf,pot){ return (pot-1)*3+perf; }
@@ -15795,22 +15808,23 @@ async function projConfirmEmailToTask(){
   }
   function risk(v){ var s=norm(v); if(!s)return null; if(s[0]==='h')return 'High'; if(s[0]==='m')return 'Medium'; if(s[0]==='l')return 'Low'; return null; }
   function yes(v){ var s=norm(v); return s==='yes'||s==='y'||s==='true'||s==='1'||s==='key'||s==='critical'; }
-  function rlabel(n){ return n===3?'High':n===2?'Medium':n===1?'Low':'—'; }
+  function rlabel(n){ return n===3?'High':n===2?'Medium':n===1?'Low':'Unrated'; }
 
   // ---------- template download ----------
   window.talentDownloadTemplate=function(){
-    var headers=['Name','Role','Department','Manager','Tenure (years)','Performance','Potential','Flight risk','Key role','Notes'];
+    var headers=['Name','Job title','Department','Manager','Tenure (years)','Latest review rating','Previous review rating','Goal achievement','Leadership / competency','Manager comments'];
     var rows=[
       headers,
-      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6','High','High','Low','Yes','Ready for director role; high engagement.'],
-      ['Tom Reilly','Software Engineer','Engineering','Aisha Khan','2','Medium','High','Medium','No','Fast learner, wants more scope.'],
-      ['Grace Owusu','Customer Support Lead','Operations','Aisha Khan','4','High','Medium','Low','Yes','Deep product knowledge, retention priority.'],
-      ['Leave Performance / Potential blank to let AI infer them','','','','','','','','','']
+      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6','Outstanding','Exceeds','95%','Strong','Trusted by the board, ready for a wider remit.'],
+      ['Tom Reilly','Software Engineer','Engineering','Aisha Khan','2','Exceeds','Meets','90%','Developing','Fast growth this year, keen for more scope.'],
+      ['Grace Owusu','Customer Support Lead','Operations','Aisha Khan','4','Exceeds','Exceeds','88%','Strong','Deep product knowledge, very steady.'],
+      ['Daniel Foster','Operations Analyst','Operations','Grace Owusu','3','Meets','Meets','75%','Solid','Dependable, not currently seeking more.'],
+      ['Emma Clarke','Warehouse Supervisor','Operations','Grace Owusu','5','Below','Developing','55%','Limited','Quality issues raised, needs close support.']
     ];
     var ws=XLSX.utils.aoa_to_sheet(rows);
-    ws['!cols']=headers.map(function(){return {wch:20};});
-    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Talent');
-    XLSX.writeFile(wb,'Breeze-talent-template.xlsx');
+    ws['!cols']=headers.map(function(){return {wch:22};});
+    var wb=XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb,ws,'Performance reviews');
+    XLSX.writeFile(wb,'Breeze-performance-review-template.xlsx');
   };
 
   // ---------- file parse ----------
@@ -15825,10 +15839,10 @@ async function projConfirmEmailToTask(){
         var sheet=wb.Sheets[wb.SheetNames[0]];
         var rows=XLSX.utils.sheet_to_json(sheet,{header:1,blankrows:false,defval:''});
         var parsed=talentMapRows(rows);
-        if(parsed.error){ bzToast('⚠️ '+parsed.error); return; }
-        if(!parsed.people.length){ bzToast('⚠️ No people found in that file.'); return; }
+        if(parsed.error){ bzToast(parsed.error); return; }
+        if(!parsed.people.length){ bzToast('No people found in that file.'); return; }
         talentInferAndBuild(parsed.people);
-      }catch(err){ console.error('[talent parse]',err); bzToast('⚠️ Could not read that file. Use .xlsx or .csv.'); }
+      }catch(err){ console.error('[talent parse]',err); bzToast('Could not read that file. Use .xlsx or .csv.'); }
     };
     reader.readAsArrayBuffer(file);
   }
@@ -15840,9 +15854,12 @@ async function projConfirmEmailToTask(){
       // loose contains match
       for(var j=0;j<header.length;j++){ for(var k=0;k<keys.length;k++){ if(header[j].indexOf(keys[k])>=0) return j; } } return -1; }
     var idx={ name:findCol(COL_ALIASES.name), role:findCol(COL_ALIASES.role), dept:findCol(COL_ALIASES.dept),
-      manager:findCol(COL_ALIASES.manager), tenure:findCol(COL_ALIASES.tenure), perf:findCol(COL_ALIASES.perf),
-      pot:findCol(COL_ALIASES.pot), flight:findCol(COL_ALIASES.flight), key:findCol(COL_ALIASES.key), notes:findCol(COL_ALIASES.notes) };
-    if(idx.name<0) return {error:'Couldn’t find a "Name" column. Download the template for the right format.'};
+      manager:findCol(COL_ALIASES.manager), tenure:findCol(COL_ALIASES.tenure),
+      reviewLatest:findCol(COL_ALIASES.reviewLatest), reviewPrev:findCol(COL_ALIASES.reviewPrev),
+      goals:findCol(COL_ALIASES.goals), competency:findCol(COL_ALIASES.competency),
+      comments:findCol(COL_ALIASES.comments), key:findCol(COL_ALIASES.key) };
+    if(idx.name<0) return {error:'Could not find a Name column. Download the template for the expected format.'};
+    if(idx.reviewLatest<0 && idx.goals<0 && idx.competency<0) return {error:'No review rating columns found. Upload a performance review export, or download the template.'};
     var people=[], id=0;
     for(var r=1;r<rows.length;r++){
       var row=rows[r]; if(!row) continue;
@@ -15851,16 +15868,17 @@ async function projConfirmEmailToTask(){
       people.push({
         id:'p'+(id++),
         name:name,
-        role:get(idx.role)||'—',
+        role:get(idx.role),
         dept:get(idx.dept),
         manager:get(idx.manager),
         tenure:get(idx.tenure),
-        perf:rate(get(idx.perf)),
-        pot:rate(get(idx.pot)),
-        flightRisk:risk(get(idx.flight)),
+        reviewLatest:get(idx.reviewLatest),
+        reviewPrev:get(idx.reviewPrev),
+        goals:get(idx.goals),
+        competency:get(idx.competency),
+        notes:get(idx.comments),
         keyRole:idx.key>=0?yes(get(idx.key)):false,
-        notes:get(idx.notes),
-        confidence:null, rationale:'', action:''
+        perf:null, pot:null, confidence:null, rationale:''
       });
     }
     return {people:people};
@@ -15874,21 +15892,23 @@ async function projConfirmEmailToTask(){
     showView('talent'); talentRenderLoading(people.length);
 
     var slim=people.map(function(p){ return {id:p.id,name:p.name,role:p.role,dept:p.dept,manager:p.manager,
-      tenure:p.tenure,performance:p.perf,potential:p.pot,flightRisk:p.flightRisk,keyRole:p.keyRole,notes:p.notes}; });
+      tenure:p.tenure,latestReview:p.reviewLatest,previousReview:p.reviewPrev,goalAchievement:p.goals,
+      competency:p.competency,managerComments:p.notes,keyRole:p.keyRole}; });
 
-    var sys='You are a panel of senior HR strategy directors and HRBPs with deep experience in talent management, 9-box calibration and succession planning. You are precise, commercially minded and honest about risk. You output ONLY valid minified JSON — no markdown, no commentary.';
-    var prompt='Below is a talent dataset (JSON). Build a complete talent review.\n\n'+
-      'For EVERY person return performance and potential on a 1-3 scale (1=low,2=medium,3=high). '+
-      'If the input already has performance/potential, KEEP those values. Otherwise INFER them from role seniority, tenure, flight risk and notes, and mark a lower confidence. '+
-      'Also infer flightRisk ("Low"/"Medium"/"High") if missing.\n\n'+
+    var sys='You are a panel of senior HR strategy directors and HRBPs with deep experience in talent management, 9-box calibration and succession planning. You are precise, commercially minded and honest about risk. You output ONLY valid minified JSON, no markdown, no commentary.';
+    var prompt='Below is a performance review export (JSON). Each person has review ratings, NOT a 9-box position. Your job is to work out where each person sits on a 9-box talent grid.\n\n'+
+      'For EVERY person derive performance (1-3) and potential (1-3), where 1=low, 2=medium, 3=high:\n'+
+      '- performance reflects recent results: read it from the latest review rating and goal achievement.\n'+
+      '- potential reflects capacity to take on more in future (not current results): read it from the trajectory between the previous and latest review, leadership and competency signals, manager comments, role level and tenure.\n'+
+      'Map any rating scale sensibly. For a five-band scale (for example Outstanding, Exceeds, Meets, Developing, Below) the top two bands map to 3, the middle to 2, and the bottom two to 1. Do the same proportionally for numeric or percentage scales.\n'+
+      'Give each person a confidence of high, medium or low, and a one-line rationale that cites the actual ratings you used.\n\n'+
       'Then produce:\n'+
-      '- For each person: a one-line "action" (the single most valuable development or retention move for them).\n'+
-      '- A "succession" array for the business-critical roles (those marked keyRole, plus any senior leadership roles you spot). For each: {role, incumbent, successors:[{name, readiness}], gap}. '+
-      'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "emergency" (emergency cover only). successors are names from the dataset; if none suitable, return [] and set gap=true with a short gapNote. '+
+      '- A "succession" array for the senior or business-critical roles you can identify from job titles (plus any marked keyRole). For each: {role, incumbent, successors:[{name, readiness}], gap, gapNote}. '+
+      'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "emergency" (emergency cover only). successors are names from the dataset; if none are suitable, return [] and set gap=true with a short gapNote. '+
       'Set gap=true when there is no ready-now internal successor.\n'+
-      '- A "summary": a concise CHRO-ready narrative (120-200 words) on overall bench strength, key risks, retention priorities and 3 recommended actions.\n\n'+
+      '- A "summary": a concise CHRO-ready narrative (120-200 words) on overall bench strength, key risks, retention priorities and three recommended actions.\n\n'+
       'Return EXACTLY this JSON shape and nothing else:\n'+
-      '{"people":[{"id":"p0","performance":1,"potential":2,"flightRisk":"Low","confidence":"high|medium|low","rationale":"short why","action":"short action"}],'+
+      '{"people":[{"id":"p0","performance":1,"potential":2,"confidence":"high","rationale":"short why citing the ratings"}],'+
       '"succession":[{"role":"","incumbent":"","successors":[{"name":"","readiness":"ready"}],"gap":false,"gapNote":""}],'+
       '"summary":""}\n\n'+
       'DATASET:\n'+JSON.stringify(slim);
@@ -15918,17 +15938,16 @@ async function projConfirmEmailToTask(){
     var byId={}; (ai.people||[]).forEach(function(a){ byId[a.id]=a; });
     people.forEach(function(p){
       var a=byId[p.id]||{};
-      if(p.perf==null) p.perf=rate(a.performance)|| (a.performance>=1&&a.performance<=3?a.performance:null);
-      if(p.pot==null)  p.pot =rate(a.potential) || (a.potential>=1&&a.potential<=3?a.potential:null);
-      if(!p.flightRisk) p.flightRisk=risk(a.flightRisk)||null;
-      p.confidence=a.confidence||(p.perf!=null?'given':'low');
-      p.rationale=a.rationale||p.rationale||'';
-      p.action=a.action||p.action||'';
+      var ap=parseInt(a.performance,10), apo=parseInt(a.potential,10);
+      p.perf=(ap>=1&&ap<=3)?ap:null;
+      p.pot=(apo>=1&&apo<=3)?apo:null;
+      p.confidence=a.confidence||'low';
+      p.rationale=a.rationale||'';
     });
     talentState={ people:people, succession:(ai.succession||[]), summary:(ai.summary||''), truncatedAt:truncatedAt };
     talentTab='grid'; talentSelPlanId=null;
-    if(failed) bzToast('⚠️ AI was unavailable — placed people from your ratings. You can drag the rest in.');
-    else bzToast('✅ Talent review built — drag cards to recalibrate. Nothing is saved.');
+    if(failed) bzToast('The AI was unavailable. Drag people onto the grid to place them, or re-upload to try again.');
+    else bzToast('Talent review built. Drag cards to recalibrate. Nothing is saved.');
     talentRender();
   }
 
@@ -15941,15 +15960,18 @@ async function projConfirmEmailToTask(){
       body.innerHTML=
         '<input type="file" id="talentFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="talentOnFile(this)">'+
         '<div class="tl-empty"><div class="tl-card-drop">'+
-          '<div style="font-size:30px;margin-bottom:6px;">🗂️</div>'+
-          '<div style="font-size:18px;font-weight:700;color:var(--ink);">Build your 9-box from a spreadsheet</div>'+
-          '<div style="font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5;">Drop in an Excel or CSV of your people. AI places everyone on the grid, drafts succession cover, flags flight risk and writes a CHRO summary. Then drag, edit and override as a leadership team.</div>'+
-          '<div class="tl-drop" id="talentDrop" onclick="talentPickFile()"><div class="big">Click to upload &middot; or drag a file here</div><div class="small">.xlsx, .xls or .csv</div></div>'+
-          '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'+
-            '<button class="btn btn-primary btn-sm" onclick="talentLoadSample()">✨ See it with sample data</button>'+
-            '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">⬇ Download starter template</button>'+
+          '<div class="tl-upicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div>'+
+          '<div class="tl-uptitle">Build a 9-box from your performance reviews</div>'+
+          '<div class="tl-upsub">Upload a performance review export with each person\'s review ratings. The AI reads the ratings, works out where everyone sits on the 9-box for performance and potential, drafts succession cover and writes a leadership summary. You can then adjust everything by hand.</div>'+
+          '<div class="tl-drop" id="talentDrop" onclick="talentPickFile()">'+
+            '<div class="tl-drop-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg></div>'+
+            '<div class="big">Click to upload, or drag a file here</div><div class="small">Excel or CSV (.xlsx, .xls, .csv)</div></div>'+
+          '<div class="tl-upbtns">'+
+            '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">Download template</button>'+
+            '<button class="btn btn-ghost btn-sm" onclick="talentLoadSample()">See it with sample data</button>'+
           '</div>'+
-          '<div style="font-size:11px;color:var(--ink3);margin-top:16px;line-height:1.5;">🔒 Session only — your talent data stays in this browser tab, is sent to the AI only to build the review, and is never saved. Refreshing clears it.</div>'+
+          '<div class="tl-cols"><span class="h">Expected columns</span>Name, Job title, Department, Manager, Tenure, Latest review rating, Previous review rating, Goal achievement, Leadership / competency, Manager comments. Only a name and one review rating are required; column names are matched flexibly.</div>'+
+          '<div class="tl-priv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Private. Your data stays in this browser tab, is sent to the AI only to build the review, and is never saved. Refreshing clears it.</span></div>'+
         '</div></div>';
       var drop=document.getElementById('talentDrop');
       if(drop){
@@ -15959,7 +15981,7 @@ async function projConfirmEmailToTask(){
       }
       return;
     }
-    actions.innerHTML='<div style="display:flex;gap:8px;"><button class="btn btn-secondary btn-sm" onclick="talentExport()">⬇ Export</button><button class="btn btn-ghost btn-sm" onclick="talentReset()">Start over</button></div>';
+    actions.innerHTML='<div style="display:flex;gap:8px;"><button class="btn btn-secondary btn-sm" onclick="talentExport()">Export</button><button class="btn btn-ghost btn-sm" onclick="talentReset()">Start over</button></div>';
     body.innerHTML=
       '<div class="tl-wrap">'+
         '<div class="tl-tabs">'+
@@ -16018,14 +16040,14 @@ async function projConfirmEmailToTask(){
     }
     html+='</div><div class="tl-axis-x">Performance →</div></div></div>';
     if(unplaced.length){
-      html+='<div class="tl-tray" ondragover="talentDragOver(event,this)" ondragleave="this.classList.remove(\'over\')" ondrop="talentDropTray(event,this)"><div class="h">Unplaced — drag onto the grid ('+unplaced.length+')</div><div class="row">'+unplaced.map(empCard).join('')+'</div></div>';
+      html+='<div class="tl-tray" ondragover="talentDragOver(event,this)" ondragleave="this.classList.remove(\'over\')" ondrop="talentDropTray(event,this)"><div class="h">Unplaced, drag onto the grid ('+unplaced.length+')</div><div class="row">'+unplaced.map(empCard).join('')+'</div></div>';
     }
     panel.innerHTML=html;
   }
   function empCard(p){
-    var star=p.keyRole?'<span class="tl-key" title="Key role">★</span>':'';
+    var star=p.keyRole?'<span class="tl-key" title="Key role">Key</span>':'';
     var low=p.confidence==='low';
-    return '<div class="tl-emp'+(low?' lowconf':'')+'" draggable="true" data-id="'+p.id+'"'+(low?' title="AI-inferred — review placement"':'')+' ondragstart="talentDragStart(event,\''+p.id+'\')" ondragend="talentDragEnd(this)" onclick="talentEditCard(\''+p.id+'\')">'+
+    return '<div class="tl-emp'+(low?' lowconf':'')+'" draggable="true" data-id="'+p.id+'"'+(low?' title="AI inferred, review placement"':'')+' ondragstart="talentDragStart(event,\''+p.id+'\')" ondragend="talentDragEnd(this)" onclick="talentEditCard(\''+p.id+'\')">'+
       '<div class="who"><div class="n">'+esc(p.name)+star+'</div><div class="r">'+esc(p.role||'')+'</div></div></div>';
   }
   window.talentDragStart=function(e,id){ _dragId=id; e.dataTransfer.effectAllowed='move'; var el=e.target.closest('.tl-emp'); if(el)el.classList.add('dragging'); };
@@ -16047,8 +16069,8 @@ async function projConfirmEmailToTask(){
       '<div class="tl-modal-b">'+
         '<div class="tl-fld"><label>Name</label><input class="tl-input" id="tlmName" value="'+esc(p.name)+'"></div>'+
         '<div class="tl-fld"><label>Role</label><input class="tl-input" id="tlmRole" value="'+esc(p.role||'')+'"></div>'+
-        '<div style="display:flex;gap:10px;"><div class="tl-fld" style="flex:1"><label>Performance</label><select class="tl-input" id="tlmPerf"><option value="">—</option>'+sel(p.perf,1)+sel(p.perf,2)+sel(p.perf,3)+'</select></div>'+
-          '<div class="tl-fld" style="flex:1"><label>Potential</label><select class="tl-input" id="tlmPot"><option value="">—</option>'+sel(p.pot,1)+sel(p.pot,2)+sel(p.pot,3)+'</select></div></div>'+
+        '<div style="display:flex;gap:10px;"><div class="tl-fld" style="flex:1"><label>Performance</label><select class="tl-input" id="tlmPerf"><option value="">Unrated</option>'+sel(p.perf,1)+sel(p.perf,2)+sel(p.perf,3)+'</select></div>'+
+          '<div class="tl-fld" style="flex:1"><label>Potential</label><select class="tl-input" id="tlmPot"><option value="">Unrated</option>'+sel(p.pot,1)+sel(p.pot,2)+sel(p.pot,3)+'</select></div></div>'+
         '<div class="tl-fld"><label>Key role</label><select class="tl-input" id="tlmKey"><option value="no"'+(!p.keyRole?' selected':'')+'>No</option><option value="yes"'+(p.keyRole?' selected':'')+'>Yes</option></select></div>'+
         '<div class="tl-fld"><label>Recommended action</label><input class="tl-input" id="tlmAction" value="'+esc(p.action||'')+'"></div>'+
         '<div class="tl-fld"><label>Notes</label><textarea class="tl-input tl-ta" id="tlmNotes">'+esc(p.notes||'')+'</textarea></div>'+
@@ -16077,7 +16099,7 @@ async function projConfirmEmailToTask(){
   };
 
   // ---------- SUCCESSION ----------
-  var READY={ready:'Ready now','1to2':'1–2 years',emergency:'Emergency cover'};
+  var READY={ready:'Ready now','1to2':'1-2 years',emergency:'Emergency cover'};
   function talentRenderSuccession(){
     var panel=document.getElementById('talentPanel'); if(!panel)return;
     var html='<div class="tl-bar"><div style="font-size:12.5px;color:var(--ink2);">Succession cover for business-critical roles. Edit readiness, add a successor, or flag a gap.</div><button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="talentAddSuccession()">+ Add role</button></div>';
@@ -16113,13 +16135,13 @@ async function projConfirmEmailToTask(){
   window.talentAddSuccession=function(){ talentState.succession.push({role:'',incumbent:'',successors:[],gap:true,gapNote:''}); renderTalent(); };
 
   // ---------- DEVELOPMENT PLANS (AI) ----------
-  var TALENT_PLAN_SYS='You are a panel of senior HR development directors, executive coaches and HRBPs with decades of experience writing individual development plans (IDPs). You write specific, practical, role-aware plans — never generic filler. You output ONLY valid minified JSON.';
+  var TALENT_PLAN_SYS='You are a panel of senior HR development directors, executive coaches and HRBPs with decades of experience writing individual development plans (IDPs). You write specific, practical, role-aware plans, never generic filler. You output ONLY valid minified JSON.';
   function talentPlanPrompt(p){
     var box=(p.perf&&p.pot)?BOX_META[boxOf(p.perf,p.pot)].name:'Unrated';
     var ctx={ name:p.name, role:p.role, department:p.dept, manager:p.manager, tenure:p.tenure,
       nineBox:box, performance:rlabel(p.perf), potential:rlabel(p.pot), keyRole:p.keyRole, notes:p.notes };
     return 'Write a development plan for this employee, tailored to their role, level and 9-box position ('+box+'). '+
-      'Be concrete and specific to them — reference their function and seniority. No platitudes.\n\n'+
+      'Be concrete and specific to them, referencing their function and seniority. No platitudes.\n\n'+
       'Return ONLY minified JSON of EXACTLY this shape:\n'+
       '{"headline":"one sentence: where they are now and the development goal",'+
       '"strengths":["3 specific strengths"],'+
@@ -16146,23 +16168,23 @@ async function projConfirmEmailToTask(){
   window.talentGenPlan=function(id){
     var p=talentFind(id); if(!p)return; p._gen=true; talentRenderPlanDetail();
     talentGenOne(p).then(function(){ p._gen=false; talentRenderPlanDetail(); talentRenderPlanList(); })
-      .catch(function(e){ console.error('[talent plan]',e); p._gen=false; bzToast('⚠️ Could not generate that plan.'); talentRenderPlanDetail(); });
+      .catch(function(e){ console.error('[talent plan]',e); p._gen=false; bzToast('Could not generate that plan.'); talentRenderPlanDetail(); });
   };
   window.talentGenAllPlans=async function(){
     var ppl=talentState.people, done=0;
     var btn=document.getElementById('tlGenAllBtn'); if(btn){ btn.disabled=true; }
     for(var i=0;i<ppl.length;i++){ try{ await talentGenOne(ppl[i]); }catch(e){} done++;
       if(btn) btn.textContent='Generating… '+done+'/'+ppl.length; talentRenderPlanList(); if(ppl[i].id===talentSelPlanId) talentRenderPlanDetail(); }
-    if(btn){ btn.disabled=false; btn.textContent='✨ Regenerate all'; }
-    bzToast('✅ Development plans ready.');
+    if(btn){ btn.disabled=false; btn.textContent='Regenerate all'; }
+    bzToast('Development plans ready.');
   };
 
   function talentRenderPlans(){
     var panel=document.getElementById('talentPanel'); if(!panel)return;
     if((!talentSelPlanId||!talentFind(talentSelPlanId))&&talentState.people.length) talentSelPlanId=talentState.people[0].id;
     var anyPlans=talentState.people.some(function(p){return p.plan;});
-    var bar='<div class="tl-bar"><div style="font-size:12px;color:var(--ink3)">AI development plans — tailored to each person’s role, level and 9-box position.</div>'+
-      '<button class="btn btn-primary btn-sm" id="tlGenAllBtn" style="margin-left:auto" onclick="talentGenAllPlans()">'+(anyPlans?'✨ Regenerate all':'✨ Generate all')+'</button></div>';
+    var bar='<div class="tl-bar"><div style="font-size:12px;color:var(--ink3)">AI development plans, tailored to each person’s role, level and 9-box position.</div>'+
+      '<button class="btn btn-primary btn-sm" id="tlGenAllBtn" style="margin-left:auto" onclick="talentGenAllPlans()">'+(anyPlans?'Regenerate all':'Generate all')+'</button></div>';
     panel.innerHTML=bar+'<div class="tl-plans"><div class="tl-plist" id="tlPlanList"></div><div class="tl-pdetail" id="tlPlanDetail"></div></div>';
     talentRenderPlanList(); talentRenderPlanDetail();
   }
@@ -16170,8 +16192,8 @@ async function projConfirmEmailToTask(){
     var host=document.getElementById('tlPlanList'); if(!host)return;
     host.innerHTML=talentState.people.map(function(p){
       return '<div class="tl-pi'+(p.id===talentSelPlanId?' active':'')+'" onclick="talentSelectPlan(\''+p.id+'\')">'+
-        '<div class="who"><div class="n">'+esc(p.name)+(p.keyRole?' <span class="tl-key">★</span>':'')+'</div><div class="r">'+esc(p.role||'')+'</div></div>'+
-        (p.plan?'<span class="tl-ok" title="Plan ready">✓</span>':'')+'</div>';
+        '<div class="who"><div class="n">'+esc(p.name)+(p.keyRole?' <span class="tl-key">Key</span>':'')+'</div><div class="r">'+esc(p.role||'')+'</div></div>'+
+        (p.plan?'<span class="tl-ok" title="Plan ready">Ready</span>':'')+'</div>';
     }).join('');
   }
   window.talentSelectPlan=function(id){ talentSelPlanId=id; talentRenderPlanList(); talentRenderPlanDetail(); };
@@ -16182,14 +16204,14 @@ async function projConfirmEmailToTask(){
     var meta=(p.perf&&p.pot)?BOX_META[boxOf(p.perf,p.pot)]:null;
     var chip=meta?'<span class="tl-chip tone-'+meta.tone+'" style="background:var(--surface3)">'+esc(meta.name)+'</span>':'';
     var metaLine=[p.role,p.dept,p.tenure?(p.tenure+' yrs'):''].filter(Boolean).map(esc).join(' &middot; ');
-    var head='<div class="tl-pd-head"><div style="flex:1;min-width:0"><div class="nm">'+esc(p.name)+(p.keyRole?' <span class="tl-key">★</span>':'')+'</div><div class="meta">'+metaLine+'</div>'+(chip?'<div style="margin-top:8px">'+chip+'</div>':'')+'</div>'+
-      (p.plan&&!p._gen?'<div style="display:flex;gap:8px;flex-shrink:0"><button class="btn btn-secondary btn-sm" onclick="talentGenPlan(\''+p.id+'\')">↻ Regenerate</button><button class="btn btn-secondary btn-sm" onclick="talentCopyPlan(\''+p.id+'\')">Copy</button></div>':'')+
+    var head='<div class="tl-pd-head"><div style="flex:1;min-width:0"><div class="nm">'+esc(p.name)+(p.keyRole?' <span class="tl-key">Key</span>':'')+'</div><div class="meta">'+metaLine+'</div>'+(chip?'<div style="margin-top:8px">'+chip+'</div>':'')+'</div>'+
+      (p.plan&&!p._gen?'<div style="display:flex;gap:8px;flex-shrink:0"><button class="btn btn-secondary btn-sm" onclick="talentGenPlan(\''+p.id+'\')">Regenerate</button><button class="btn btn-secondary btn-sm" onclick="talentCopyPlan(\''+p.id+'\')">Copy</button></div>':'')+
     '</div>';
     if(p._gen){ host.innerHTML=head+'<div class="tl-loading" style="min-height:220px"><div class="tl-spin"></div><div style="font-size:13px;color:var(--ink2)">Drafting a tailored development plan…</div></div>'; return; }
     if(!p.plan){
       host.innerHTML=head+'<div class="tl-pd-empty"><div style="font-size:14.5px;font-weight:600;color:var(--ink)">No development plan yet</div>'+
-        '<div style="font-size:12.5px;color:var(--ink2);margin:7px 0 18px;line-height:1.55;max-width:440px">A tailored plan for '+esc(p.name.split(' ')[0])+' — strengths, honest growth areas, objectives with timeframes, stretch experiences, learning and how to measure success.</div>'+
-        '<button class="btn btn-primary btn-sm" onclick="talentGenPlan(\''+p.id+'\')">✨ Generate development plan</button></div>';
+        '<div style="font-size:12.5px;color:var(--ink2);margin:7px 0 18px;line-height:1.55;max-width:440px">A tailored plan for '+esc(p.name.split(' ')[0])+': strengths, honest growth areas, objectives with timeframes, stretch experiences, learning and how to measure success.</div>'+
+        '<button class="btn btn-primary btn-sm" onclick="talentGenPlan(\''+p.id+'\')">Generate development plan</button></div>';
       return;
     }
     var pl=p.plan, arr=function(x){return Array.isArray(x)?x:[];};
@@ -16210,7 +16232,7 @@ async function projConfirmEmailToTask(){
   }
   window.talentCopyPlan=function(id){
     var p=talentFind(id); if(!p||!p.plan)return; var pl=p.plan, L=[];
-    L.push('DEVELOPMENT PLAN — '+p.name+(p.role?' ('+p.role+')':'')); L.push('');
+    L.push('DEVELOPMENT PLAN: '+p.name+(p.role?' ('+p.role+')':'')); L.push('');
     if(pl.headline){ L.push(pl.headline); L.push(''); }
     var sec=function(t,a){ if(a&&a.length){ L.push(t.toUpperCase()); a.forEach(function(x){L.push('  • '+x);}); L.push(''); } };
     sec('Strengths',pl.strengths); sec('Growth areas',pl.growthAreas);
@@ -16219,7 +16241,7 @@ async function projConfirmEmailToTask(){
     if(pl.support){ L.push('SUPPORT'); L.push('  '+pl.support); L.push(''); }
     sec('Success measures',pl.measures);
     if(pl.retention){ L.push('RETENTION & ENGAGEMENT'); L.push('  '+pl.retention); }
-    navigator.clipboard.writeText(L.join('\n')).then(function(){ bzToast('✅ Plan copied'); });
+    navigator.clipboard.writeText(L.join('\n')).then(function(){ bzToast('Plan copied'); });
   };
 
   // ---------- CHRO SUMMARY ----------
@@ -16230,7 +16252,7 @@ async function projConfirmEmailToTask(){
       '<textarea class="tl-input" id="talentSummaryTA" oninput="talentState.summary=this.value">'+esc(talentState.summary||'')+'</textarea></div>';
     panel.innerHTML=html;
   }
-  window.talentCopySummary=function(){ var t=document.getElementById('talentSummaryTA'); if(t){ navigator.clipboard.writeText(t.value).then(function(){ bzToast('✅ Summary copied'); }); } };
+  window.talentCopySummary=function(){ var t=document.getElementById('talentSummaryTA'); if(t){ navigator.clipboard.writeText(t.value).then(function(){ bzToast('Summary copied'); }); } };
 
   // ---------- export ----------
   window.talentExport=function(){
@@ -16259,8 +16281,8 @@ async function projConfirmEmailToTask(){
   window.talentLoadSample=function(){
     var raw=[
       // name, role, dept, manager, tenure, perf, pot, flight, key, action, notes
-      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6',3,3,'Low',true,'Sponsor for FD development — give board exposure this year.','Strong leader, highly engaged.'],
-      ['Raj Patel','Finance Analyst','Finance','Priya Sharma','3',3,3,'High',true,'Critical retention — comp review + named successor plan to FD.','Top talent, being approached externally.'],
+      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6',3,3,'Low',true,'Sponsor for FD development, give board exposure this year.','Strong leader, highly engaged.'],
+      ['Raj Patel','Finance Analyst','Finance','Priya Sharma','3',3,3,'High',true,'Critical retention, comp review and a named successor plan to FD.','Top talent, being approached externally.'],
       ['Aisha Khan','Engineering Manager','Engineering','Dougie Gordon','4',2,3,'Medium',true,'Stretch project + leadership coaching to build readiness.','Ready for bigger remit.'],
       ['Marcus Bell','Sales Director','Sales','Dougie Gordon','7',3,2,'Medium',true,'Retention conversation; refresh long-term incentive.','Consistent over-performer, watch engagement.'],
       ['Grace Owusu','Customer Support Lead','Operations','Aisha Khan','4',3,2,'Low',true,'Retain and expand remit into onboarding.','Deep product knowledge.'],
@@ -16278,14 +16300,14 @@ async function projConfirmEmailToTask(){
       perf:r[5], pot:r[6], flightRisk:r[7], keyRole:r[8], action:r[9], notes:r[10], confidence:'given', rationale:'' }; });
     var succession=[
       {role:'Head of Finance',incumbent:'Priya Sharma',successors:[{name:'Raj Patel',readiness:'1to2'}],gap:false,gapNote:''},
-      {role:'Sales Director',incumbent:'Marcus Bell',successors:[{name:'James Whitaker',readiness:'emergency'}],gap:true,gapNote:'No ready-now successor — build an internal pipeline or plan a future external hire.'},
+      {role:'Sales Director',incumbent:'Marcus Bell',successors:[{name:'James Whitaker',readiness:'emergency'}],gap:true,gapNote:'No ready-now successor. Build an internal pipeline or plan a future external hire.'},
       {role:'Engineering Manager',incumbent:'Aisha Khan',successors:[{name:'Tom Reilly',readiness:'1to2'},{name:'Oliver Grant',readiness:'emergency'}],gap:false,gapNote:''},
-      {role:'Head of Operations',incumbent:'(vacant — covered by Grace Owusu)',successors:[{name:'Grace Owusu',readiness:'ready'},{name:'Daniel Foster',readiness:'emergency'}],gap:false,gapNote:''}
+      {role:'Head of Operations',incumbent:'(vacant, covered by Grace Owusu)',successors:[{name:'Grace Owusu',readiness:'ready'},{name:'Daniel Foster',readiness:'emergency'}],gap:false,gapNote:''}
     ];
-    var summary='Bench strength is broadly healthy: 2 Stars, a strong High-Potential pipeline in Engineering and Finance, and a dependable Core. The headline risk is concentration — our two highest-value people (Raj Patel, Tom Reilly) both carry High flight risk, and Raj is the only credible successor to the Head of Finance. Sales succession is the weakest spot: no ready-now cover for the Sales Director, so a single departure would expose revenue. Engagement is softening in the middle of the grid (Marketing, BizDev). Three priority actions for the next quarter: (1) lock in Raj and Tom with comp reviews and explicit growth paths; (2) build a Sales successor pipeline rather than relying on emergency cover; (3) move Emma Clarke onto a clear performance plan with a 60-day review. Overall: invest to retain the top-right, fix the Sales gap, and act decisively on the bottom-left.';
+    var summary='Bench strength is broadly healthy: 2 Stars, a strong High-Potential pipeline in Engineering and Finance, and a dependable Core. The headline risk is concentration: our two highest-value people (Raj Patel, Tom Reilly) both carry High flight risk, and Raj is the only credible successor to the Head of Finance. Sales succession is the weakest spot: no ready-now cover for the Sales Director, so a single departure would expose revenue. Engagement is softening in the middle of the grid (Marketing, BizDev). Three priority actions for the next quarter: (1) lock in Raj and Tom with comp reviews and explicit growth paths; (2) build a Sales successor pipeline rather than relying on emergency cover; (3) move Emma Clarke onto a clear performance plan with a 60-day review. Overall: invest to retain the top-right, fix the Sales gap, and act decisively on the bottom-left.';
     talentState={ people:people, succession:succession, summary:summary, truncatedAt:null };
     talentTab='grid'; talentSelPlanId=null;
-    bzToast('✨ Sample talent review loaded — drag, edit, switch tabs. Nothing is saved.');
+    bzToast('Sample talent review loaded. Drag, edit and switch tabs. Nothing is saved.');
     renderTalent();
   };
 })();
