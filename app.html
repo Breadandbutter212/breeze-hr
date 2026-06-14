@@ -15905,7 +15905,10 @@ async function projConfirmEmailToTask(){
           '<div style="font-size:18px;font-weight:700;color:var(--ink);">Build your 9-box from a spreadsheet</div>'+
           '<div style="font-size:13px;color:var(--ink2);margin-top:6px;line-height:1.5;">Drop in an Excel or CSV of your people. AI places everyone on the grid, drafts succession cover, flags flight risk and writes a CHRO summary. Then drag, edit and override as a leadership team.</div>'+
           '<div class="tl-drop" id="talentDrop" onclick="talentPickFile()"><div class="big">Click to upload &middot; or drag a file here</div><div class="small">.xlsx, .xls or .csv</div></div>'+
-          '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">⬇ Download starter template</button>'+
+          '<div style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">'+
+            '<button class="btn btn-primary btn-sm" onclick="talentLoadSample()">✨ See it with sample data</button>'+
+            '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">⬇ Download starter template</button>'+
+          '</div>'+
           '<div style="font-size:11px;color:var(--ink3);margin-top:16px;line-height:1.5;">🔒 Session only — your talent data stays in this browser tab, is sent to the AI only to build the review, and is never saved. Refreshing clears it.</div>'+
         '</div></div>';
       var drop=document.getElementById('talentDrop');
@@ -16152,6 +16155,40 @@ async function projConfirmEmailToTask(){
   };
 
   window.talentReset=function(){ if(talentState&&!confirm('Clear this talent review? Nothing was saved, so this cannot be undone.'))return; talentState=null; talentTab='grid'; renderTalent(); };
+
+  // ---------- sample / demo data (no upload, no AI call) ----------
+  window.talentLoadSample=function(){
+    var raw=[
+      // name, role, dept, manager, tenure, perf, pot, flight, key, action, notes
+      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6',3,3,'Low',true,'Sponsor for FD development — give board exposure this year.','Strong leader, highly engaged.'],
+      ['Raj Patel','Finance Analyst','Finance','Priya Sharma','3',3,3,'High',true,'Critical retention — comp review + named successor plan to FD.','Top talent, being approached externally.'],
+      ['Aisha Khan','Engineering Manager','Engineering','Dougie Gordon','4',2,3,'Medium',true,'Stretch project + leadership coaching to build readiness.','Ready for bigger remit.'],
+      ['Marcus Bell','Sales Director','Sales','Dougie Gordon','7',3,2,'Medium',true,'Retention conversation; refresh long-term incentive.','Consistent over-performer, watch engagement.'],
+      ['Grace Owusu','Customer Support Lead','Operations','Aisha Khan','4',3,2,'Low',true,'Retain and expand remit into onboarding.','Deep product knowledge.'],
+      ['Tom Reilly','Software Engineer','Engineering','Aisha Khan','2',2,3,'High',false,'Fast-track: mentor + a clear, written growth path (flight risk).','Fast learner, wants more scope.'],
+      ['Oliver Grant','Junior Developer','Engineering','Aisha Khan','1',1,3,'Medium',false,'Invest: structured onboarding and a senior mentor.','Raw potential, early in role.'],
+      ['James Whitaker','Account Executive','Sales','Marcus Bell','9',3,1,'Low',false,'Recognise expertise; offer a specialist/IC track.','Reliable closer, not seeking management.'],
+      ['Daniel Foster','Operations Analyst','Operations','Grace Owusu','3',2,2,'Low',false,'Cross-train to broaden cover.','Solid, dependable.'],
+      ['Sofia Marino','Marketing Manager','Marketing','Dougie Gordon','5',2,2,'Medium',false,'Re-engage with a visible new challenge.','Capable but plateauing.'],
+      ['Liam Murphy','Business Dev Manager','Sales','Marcus Bell','2',2,2,'Low',false,'Develop commercial negotiation skills.','Coming up well.'],
+      ['Hannah Lewis','HR Advisor','People','Dougie Gordon','3',2,1,'Low',false,'Maintain; support CIPD progression.','Steady contributor.'],
+      ['Chloe Bennett','Project Coordinator','Operations','Grace Owusu','2',1,2,'Low',false,'Diagnose blockers; set clearer objectives.','Underdelivering vs potential.'],
+      ['Emma Clarke','Warehouse Supervisor','Operations','Grace Owusu','5',1,1,'Low',false,'Structured performance plan; 60-day review.','Performance concerns raised by manager.']
+    ];
+    var people=raw.map(function(r,i){ return { id:'p'+i, name:r[0], role:r[1], dept:r[2], manager:r[3], tenure:r[4],
+      perf:r[5], pot:r[6], flightRisk:r[7], keyRole:r[8], action:r[9], notes:r[10], confidence:'given', rationale:'' }; });
+    var succession=[
+      {role:'Head of Finance',incumbent:'Priya Sharma',successors:[{name:'Raj Patel',readiness:'1to2'}],gap:false,gapNote:''},
+      {role:'Sales Director',incumbent:'Marcus Bell',successors:[{name:'James Whitaker',readiness:'emergency'}],gap:true,gapNote:'No ready-now successor — build an internal pipeline or plan a future external hire.'},
+      {role:'Engineering Manager',incumbent:'Aisha Khan',successors:[{name:'Tom Reilly',readiness:'1to2'},{name:'Oliver Grant',readiness:'emergency'}],gap:false,gapNote:''},
+      {role:'Head of Operations',incumbent:'(vacant — covered by Grace Owusu)',successors:[{name:'Grace Owusu',readiness:'ready'},{name:'Daniel Foster',readiness:'emergency'}],gap:false,gapNote:''}
+    ];
+    var summary='Bench strength is broadly healthy: 2 Stars, a strong High-Potential pipeline in Engineering and Finance, and a dependable Core. The headline risk is concentration — our two highest-value people (Raj Patel, Tom Reilly) both carry High flight risk, and Raj is the only credible successor to the Head of Finance. Sales succession is the weakest spot: no ready-now cover for the Sales Director, so a single departure would expose revenue. Engagement is softening in the middle of the grid (Marketing, BizDev). Three priority actions for the next quarter: (1) lock in Raj and Tom with comp reviews and explicit growth paths; (2) build a Sales successor pipeline rather than relying on emergency cover; (3) move Emma Clarke onto a clear performance plan with a 60-day review. Overall: invest to retain the top-right, fix the Sales gap, and act decisively on the bottom-left.';
+    talentState={ people:people, succession:succession, summary:summary, truncatedAt:null };
+    talentTab='grid';
+    bzToast('✨ Sample talent review loaded — drag, edit, switch tabs. Nothing is saved.');
+    renderTalent();
+  };
 })();
 
 </script>
