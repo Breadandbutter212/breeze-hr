@@ -15654,9 +15654,11 @@ async function projConfirmEmailToTask(){
   .tl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .tl-cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);min-height:150px;display:flex;flex-direction:column;transition:.15s;}
   .tl-cell.over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-mid) inset;}
-  .tl-cell-h{padding:8px 10px;border-bottom:1px solid var(--border);}
+  .tl-cell-h{padding:7px 9px 7px 11px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:6px;}
   .tl-cell-h .nm{font-size:12px;font-weight:700;color:var(--ink);}
-  .tl-cell-h .ds{font-size:10.5px;color:var(--ink3);line-height:1.35;margin-top:2px;}
+  .tl-i{display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;border-radius:50%;border:1px solid var(--border2);color:var(--ink3);font-size:9px;font-weight:700;font-style:normal;font-family:Georgia,'Times New Roman',serif;cursor:help;flex-shrink:0;line-height:1;}
+  .tl-i:hover{color:var(--accent);border-color:var(--accent);}
+  .tl-ct{margin-left:auto;font-size:11px;font-weight:700;color:var(--ink2);background:var(--surface2);border-radius:20px;min-width:18px;text-align:center;padding:1px 6px;}
   .tl-cell-b{padding:8px;display:flex;flex-direction:column;gap:6px;flex:1;}
   .tl-pip{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle;}
   .tone-star .tl-cell-h{background:linear-gradient(180deg,#EEF6FF,transparent);} .tone-star .nm{color:#1D4ED8;}
@@ -15970,7 +15972,7 @@ async function projConfirmEmailToTask(){
     });
     var html='';
     if(talentState.truncatedAt) html+='<div class="tl-note">Showing the first '+TALENT_CAP+' of '+talentState.truncatedAt+' people from your file (kept responsive). Split larger lists by department.</div>';
-    html+='<div class="tl-bar"><div style="font-size:12.5px;color:var(--ink2);">Drag a card to move it. Click a card to edit ratings, flight risk or notes.</div>'+
+    html+='<div class="tl-bar"><div style="font-size:12px;color:var(--ink3);">Drag to move · click to edit</div>'+
       '<button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="talentAddPerson()">+ Add person</button></div>';
     html+='<div class="tl-gridwrap"><div class="tl-axis-y">Potential →</div><div>';
     html+='<div class="tl-grid">';
@@ -15979,7 +15981,7 @@ async function projConfirmEmailToTask(){
       for(var perf=1;perf<=3;perf++){
         var bx=boxOf(perf,pot), meta=BOX_META[bx];
         html+='<div class="tl-cell tone-'+meta.tone+'" data-box="'+bx+'" ondragover="talentDragOver(event,this)" ondragleave="this.classList.remove(\'over\')" ondrop="talentDrop(event,'+bx+',this)">'+
-          '<div class="tl-cell-h"><div class="nm"><span class="tl-pip" style="background:currentColor"></span>'+meta.name+' &middot; '+placed[bx].length+'</div><div class="ds">'+meta.desc+'</div></div>'+
+          '<div class="tl-cell-h"><span class="nm">'+meta.name+'</span><span class="tl-i" title="'+esc(meta.desc)+'">i</span><span class="tl-ct">'+placed[bx].length+'</span></div>'+
           '<div class="tl-cell-b">'+placed[bx].map(empCard).join('')+'</div>'+
         '</div>';
       }
