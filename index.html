@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://api.fontshare.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap">
-<link rel="stylesheet" href="/site.css?v=30">
+<link rel="stylesheet" href="/site.css?v=31">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Breeze HR","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"AI HR operations platform for UK businesses - drafting, policies, trackers and analytics in one place.","offers":{"@type":"Offer","priceCurrency":"GBP"},"url":"https://getbreeze.co.uk","creator":{"@type":"Organization","name":"Breeze HR","url":"https://getbreeze.co.uk"}}
 </script>
@@ -155,18 +155,23 @@
         <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
         <h3>Spot your stars.</h3>
         <p>A 9-box, built straight from your performance reviews.</p>
-        <div class="m9">
-          <div class="c"><span class="nm">Raj P.</span></div>
-          <div class="c"><span class="nm">Jess R.</span></div>
-          <div class="c star"><span class="nm">Sarah O.</span></div>
-          <div class="c"></div>
-          <div class="c"><span class="nm">Tom M.</span></div>
-          <div class="c"><span class="nm">Leo W.</span></div>
-          <div class="c risk"><span class="nm">Dan K.</span></div>
-          <div class="c"></div>
-          <div class="c star"><span class="nm">Mia N.</span></div>
+        <div class="m9-wrap">
+          <span class="m9-yaxis">Potential →</span>
+          <div>
+            <div class="m9">
+              <div class="c"><span class="nm">Raj P.</span></div>
+              <div class="c"><span class="nm">Jess R.</span></div>
+              <div class="c star"><span class="nm">Sarah O.</span></div>
+              <div class="c"></div>
+              <div class="c"><span class="nm">Tom M.</span></div>
+              <div class="c"><span class="nm">Leo W.</span></div>
+              <div class="c risk"><span class="nm">Dan K.</span></div>
+              <div class="c"></div>
+              <div class="c star"><span class="nm">Mia N.</span></div>
+            </div>
+            <div class="m9-axis"><span>Performance →</span><span class="hi">Stars</span></div>
+          </div>
         </div>
-        <div class="m9-axis"><span>Performance →</span><span class="hi">Stars</span></div>
         <div class="ai-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/></svg>3 stars ready for a succession plan<span class="go">Add →</span></div>
       </div>
       <!-- case tracker (real component) -->
@@ -187,13 +192,14 @@
         <h3>Performance reviews, turned into insight.</h3>
         <div class="mstat">
           <div class="s"><div class="v" data-count="142">0</div><div class="l">Reviews analysed</div></div>
-          <div class="s dark"><div class="v">9-box</div><div class="l">Talent mapped automatically</div></div>
+          <div class="s dark bell">
+            <svg class="bellcurve" viewBox="0 0 80 30"><path class="fill" d="M4,27 C20,27 24,5 40,5 C56,5 60,27 76,27 L76,30 L4,30 Z"/><path class="line" d="M4,27 C20,27 24,5 40,5 C56,5 60,27 76,27"/></svg>
+            <div class="l">Scores on a calibrated curve</div>
+          </div>
           <div class="s"><div class="v" data-count="18">0</div><div class="l">High-potential, flagged</div></div>
           <div class="s"><div class="v" data-count="93" data-suffix="%">0</div><div class="l">Reviews in on time</div></div>
         </div>
-        <div class="rev-bar"><span style="width:16%;background:#CBD5E1"></span><span style="width:60%;background:#3BA7FF"></span><span style="width:24%;background:#1E5FD0"></span></div>
-        <div class="rev-key"><span><i style="background:#CBD5E1"></i>Needs support</span><span><i style="background:#3BA7FF"></i>On track</span><span><i style="background:#1E5FD0"></i>Exceeding</span></div>
-        <div class="ai-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/></svg>Review scores dipped in your Leeds office<span class="go">See why →</span></div>
+        <div class="ai-hint"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9z"/></svg>Review scores dipped in your London office<span class="go">See why →</span></div>
       </div>
       <!-- icon cells -->
       <div class="bcell b-coral col2 reveal pop d1">
@@ -340,7 +346,7 @@
 <section class="section alt" id="why">
   <div class="wrap split">
     <div class="reveal pop">
-      <div class="photo-shot"><img src="/img/team-planning.jpg" alt="An HR team at work" loading="lazy"></div>
+      <div class="photo-shot"><img src="/img/office-1.jpg" alt="A modern, secure workplace" loading="lazy"></div>
     </div>
     <div class="split-text reveal pop d2">
       <span class="sticker">Security &amp; privacy</span>
