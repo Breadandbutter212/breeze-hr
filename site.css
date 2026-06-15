@@ -835,14 +835,14 @@ body{background:#fff;color:#1c1d22}
 
 /* ===== NEW HERO (Humaans split: bold type + product shot) ===== */
 .hero-v2{background:var(--tint);border-bottom:1px solid var(--hair)}
-.hero2.hero-split{display:grid;grid-template-columns:.82fr 1.28fr;gap:44px;align-items:center;text-align:left;padding:74px 32px 84px}
+.hero2.hero-split{display:grid;grid-template-columns:.72fr 1.42fr;gap:36px;align-items:center;text-align:left;padding:74px 32px 84px}
 .hero-copy2 .eyebrow2{margin-bottom:20px}
 .hero2 h1{font-family:var(--font-display);font-weight:800;font-size:66px;line-height:1.02;letter-spacing:-.04em;color:var(--ink-x);margin:0 0 20px}
 .hero-copy2 p{font-size:19px;color:#54555a;line-height:1.6;max-width:520px;margin:0 0 28px}
 .hero-btns2{display:flex;gap:13px;flex-wrap:wrap}
 .hero-sub2{margin-top:18px;font-size:13px;color:#8a8d94}
 .hero-shot{position:relative}
-.hero-shot-panel{background:var(--panel);border-radius:26px;padding:26px 26px 0;overflow:hidden;box-shadow:var(--softsh)}
+.hero-shot-panel{background:var(--panel);border-radius:26px;padding:18px 18px 0;overflow:hidden;box-shadow:var(--softsh)}
 .hero-shot-panel img{display:block;width:100%;border-radius:12px 12px 0 0;box-shadow:0 -1px 0 rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.06);border-bottom:none}
 @media (max-width:880px){
   .hero2.hero-split{grid-template-columns:1fr;gap:36px;padding:56px 24px 60px;text-align:center}
@@ -860,11 +860,11 @@ body{background:#fff;color:#1c1d22}
 .hcard .ic svg{width:15px;height:15px}
 .hcard b{display:block;font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:-.01em;color:var(--ink-x);line-height:1.1}
 .hcard span{display:block;font-size:10px;color:#6b7280;font-weight:600;margin-top:2px}
-.hcard-a{top:34px;right:-26px}
-.hcard-b{top:47%;left:-30px}
-.hcard-c{bottom:30px;right:-16px}
-@media (max-width:980px){.hcard-a{right:-6px}.hcard-b{left:-6px}.hcard-c{right:-6px}}
-@media (max-width:880px){.hcard-a{right:0}.hcard-b{left:0;top:40%}.hcard-c{right:0}}
+.hcard-a{top:22px;right:18px}
+.hcard-b{top:46%;left:-16px}
+.hcard-c{bottom:22px;right:-12px}
+@media (max-width:980px){.hcard-a{right:14px}.hcard-b{left:-8px}.hcard-c{right:-8px}}
+@media (max-width:880px){.hcard-a{top:16px;right:12px}.hcard-b{left:6px;top:42%}.hcard-c{right:8px;bottom:16px}}
 @media (max-width:560px){.hcard{display:none}}
 
 /* people / stock photo cards in body sections */
