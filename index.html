@@ -54,35 +54,65 @@
       <div class="hero-sub">No card required · EU-hosted · Your data never trains any AI model</div>
     </div>
     <div class="hero-art reveal in d2">
-      <!-- Animated workflow: upload CSV -> AI scores it -> 9-box builds itself -->
+      <!-- 5-card animated collage: AI agent, talent upload->9-box, file reconcile, doc, tracker -->
       <span class="lv-orb o1"></span><span class="lv-orb o2"></span><span class="lv-orb o3"></span>
-      <div class="lv-scene" id="lvWf">
-        <!-- Step 1: upload your people data -->
-        <div class="lv-c wf-up">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><b>Upload your people data</b></div>
-          <div class="wf-file">
-            <span class="wf-fic">CSV</span>
-            <div class="wf-fmeta"><b>team_review.csv</b><span>142 employees · 6 columns</span></div>
-            <span class="wf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
+      <div class="lv-scene">
+        <!-- A. AI assistant: question -> typing -> grounded answer -->
+        <div class="lv-c wf-a chat" id="lvChat">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><b>AI assistant</b></div>
+          <div class="cq">Can we decline annual leave in our busy period?</div>
+          <div class="ca">
+            <span class="lv-av ai">B</span>
+            <div class="cb">
+              <div class="dots"><i></i><i></i><i></i></div>
+              <div class="ans">
+                <p>Yes - give counter-notice at least as long as the leave requested (WTR 1998).</p>
+                <span class="cite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Your Leave Policy · §4.2</span>
+              </div>
+            </div>
           </div>
-          <div class="wf-prog"><span></span></div>
         </div>
-        <!-- Step 2: AI scores performance & potential -->
-        <div class="wf-ai">
-          <svg class="sp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.5"/></svg>
-          <svg class="ck" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-          <b class="t-run">Scoring performance &amp; potential…</b>
-          <b class="t-done">9-box built from 142 employees</b>
-        </div>
-        <!-- Step 3: the 9-box grid builds -->
-        <div class="lv-c wf-grid">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><b>Talent review · 9-box</b><span class="lv-live">BUILT</span></div>
-          <div class="nb-grid">
-            <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5;transition-delay:.45s">RP</span></div><div class="nb-cell"><span class="nb-dot" style="background:#6B4FBB;transition-delay:.25s">JR</span></div><div class="nb-cell hot"><span class="nb-dot" style="background:#16a34a;transition-delay:0s">AS</span></div>
-            <div class="nb-cell"></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC;transition-delay:.15s">TM</span></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC;transition-delay:.3s">LW</span></div>
-            <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5;transition-delay:.5s">DK</span></div><div class="nb-cell"></div><div class="nb-cell"></div>
+        <!-- B. Talent: upload csv, then the same card builds the 9-box -->
+        <div class="lv-c wf-b talent" id="lvTalent">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><b>Talent review</b><span class="lv-live">9-BOX</span></div>
+          <div class="tv tv-up">
+            <div class="wf-file"><span class="wf-fic">CSV</span><div class="wf-fmeta"><b>talent_review.csv</b><span>142 employees</span></div></div>
+            <div class="wf-prog"><span></span></div>
+            <div class="tv-status"><svg class="sp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.5"/></svg>Scoring performance &amp; potential…</div>
           </div>
-          <div class="nb-axis"><span>Performance →</span><span>Stars</span></div>
+          <div class="tv tv-grid">
+            <div class="nb-grid">
+              <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5;transition-delay:.4s">RP</span></div><div class="nb-cell"><span class="nb-dot" style="background:#6B4FBB;transition-delay:.2s">JR</span></div><div class="nb-cell hot"><span class="nb-dot" style="background:#16a34a">AS</span></div>
+              <div class="nb-cell"></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC;transition-delay:.12s">TM</span></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC;transition-delay:.28s">LW</span></div>
+              <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5;transition-delay:.46s">DK</span></div><div class="nb-cell"></div><div class="nb-cell"></div>
+            </div>
+            <div class="nb-axis"><span>Performance →</span><span>Stars</span></div>
+          </div>
+        </div>
+        <!-- C. Reconcile two spreadsheets -> surface mismatches -->
+        <div class="lv-c wf-c compare" id="lvCompare">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 3h5v5"/><path d="M8 21H3v-5"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg></div><b>Reconcile data</b><span class="cstat"><span class="c-run">Scanning…</span><span class="c-done">3 issues</span></span></div>
+          <div class="cmp-files"><span class="cmp-f">payroll.xlsx</span><span class="cmp-vs">vs</span><span class="cmp-f">hris.xlsx</span></div>
+          <div class="cmp-rows">
+            <div class="cmp-row diff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Salary differs - 3 rows</div>
+            <div class="cmp-row warn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M10.29 3.86 1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/></svg>Missing in HRIS - 2 people</div>
+            <div class="cmp-row ok"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>137 records match</div>
+          </div>
+        </div>
+        <!-- D. Offer letter (fixed) -->
+        <div class="lv-c wf-d">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><b>Offer letter</b></div>
+          <div class="doc-lt">Offer of Employment</div>
+          <div class="doc-lines"><s style="width:96%"></s><s style="width:88%"></s><s style="width:70%"></s></div>
+          <span class="doc-ready"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg>Drafted in your tone</span>
+        </div>
+        <!-- E. Case tracker (fixed) -->
+        <div class="lv-c wf-e">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><b>Maternity - Sarah M.</b></div>
+          <div class="ts">Next steps · due 14 Oct</div>
+          <div class="lv-step done"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>Leave request logged</div>
+          <div class="lv-step done"><span class="bx"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>MATB1 received</div>
+          <div class="lv-step"><span class="bx"></span>Risk assessment</div>
         </div>
       </div>
     </div>

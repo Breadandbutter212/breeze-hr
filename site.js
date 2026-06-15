@@ -32,21 +32,31 @@
     }
   }
 
-  // Hero workflow: upload CSV -> AI scores it -> 9-box builds (looping stages)
+  // Hero collage: independent looping cards (chat answers, talent builds 9-box, files reconcile)
   (function(){
-    var wf=document.getElementById('lvWf'); if(!wf) return;
-    var stages=['s1','s2','s3','s4'];
-    if(reduce){ wf.classList.add('s1','s2','s3','s4'); return; }
-    var t=[];
-    (function run(){
-      t.forEach(clearTimeout); t=[];
-      stages.forEach(function(s){ wf.classList.remove(s); });
-      t.push(setTimeout(function(){ wf.classList.add('s1'); }, 400));   // upload: progress fills
-      t.push(setTimeout(function(){ wf.classList.add('s2'); }, 1900));  // uploaded: green check
-      t.push(setTimeout(function(){ wf.classList.add('s3'); }, 2300));  // AI scoring
-      t.push(setTimeout(function(){ wf.classList.add('s4'); }, 3900));  // 9-box builds
-      t.push(setTimeout(run, 8200));                                    // hold, then loop
-    })();
+    var chat=document.getElementById('lvChat');
+    var talent=document.getElementById('lvTalent');
+    var compare=document.getElementById('lvCompare');
+    // each step: {c: className, at: ms}; classes are removed at the start of every cycle
+    function loop(el, steps, period){
+      if(!el) return;
+      var t=[];
+      (function run(){
+        t.forEach(clearTimeout); t=[];
+        steps.forEach(function(s){ el.classList.remove(s.c); });
+        steps.forEach(function(s){ t.push(setTimeout(function(){ el.classList.add(s.c); }, s.at)); });
+        t.push(setTimeout(run, period));
+      })();
+    }
+    if(reduce){
+      if(chat) chat.classList.add('answered');
+      if(talent) talent.classList.add('scan','built');
+      if(compare) compare.classList.add('done');
+      return;
+    }
+    loop(chat, [{c:'answered',at:1500}], 6000);
+    loop(talent, [{c:'scan',at:500},{c:'built',at:2400}], 7000);
+    loop(compare, [{c:'done',at:1800}], 6500);
   })();
 
   // Copy template
