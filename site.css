@@ -49,6 +49,81 @@ img{display:block;max-width:100%}
 .hero-chip.c1{left:-26px;top:38px}
 .hero-chip.c2{right:-22px;bottom:54px}
 
+/* ===== Animated product collage (mirrors the app sign-in scene) ===== */
+.hero-art{overflow:visible}
+.lv-orb{position:absolute;border-radius:50%;filter:blur(54px);pointer-events:none;z-index:0}
+.lv-orb.o1{width:300px;height:300px;background:rgba(130,185,255,.38);top:-90px;left:-70px}
+.lv-orb.o2{width:240px;height:240px;background:rgba(70,205,185,.22);bottom:-40px;right:-60px}
+.lv-orb.o3{width:200px;height:200px;background:rgba(150,125,255,.24);top:46%;left:42%}
+.lv-scene{position:relative;z-index:2;height:336px;font-family:inherit}
+.lv-c{position:absolute;background:#fff;border-radius:13px;box-shadow:0 20px 44px rgba(8,20,45,.32);border:1px solid rgba(255,255,255,.7);padding:12px 13px;transition:transform .3s cubic-bezier(.22,1,.36,1),box-shadow .3s}
+.lv-c:hover{box-shadow:0 28px 60px rgba(8,20,45,.42)}
+.lv-c .hd{display:flex;align-items:center;gap:8px;margin-bottom:10px}
+.lv-c .hd b{font-size:11px;font-weight:700;color:#0A1628;letter-spacing:-.01em}
+.lv-eyebrow{font-size:7.5px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:#9aa4b5}
+.lv-ic2{width:23px;height:23px;border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#0066CC;background:#E9F1FB}
+.lv-ic2 svg{width:12px;height:12px}
+.lv-live{display:inline-flex;align-items:center;gap:4px;font-size:7.5px;font-weight:700;color:#0a7a37;background:#d6f5e1;border-radius:10px;padding:2px 7px;letter-spacing:.05em;margin-left:auto}
+.lv-live::before{content:'';width:5px;height:5px;border-radius:50%;background:#16a34a}
+.lv-c1{left:0;top:0;width:55%;z-index:1;transform:rotate(-1.4deg)}
+.lv-c1:hover{transform:rotate(-1.4deg) translateY(-3px)}
+.lv-c2{right:0;top:44px;width:50%;z-index:2;transform:rotate(1.4deg)}
+.lv-c2:hover{transform:rotate(1.4deg) translateY(-3px)}
+.lv-c3{left:9%;top:182px;width:60%;z-index:3;transform:rotate(-.6deg)}
+.lv-c3:hover{transform:rotate(-.6deg) translateY(-3px)}
+.lv-letter .lt{font-size:10px;font-weight:700;color:#0A1628;margin:7px 0 7px}
+.lv-letter p{font-size:9px;color:#3A4760;line-height:1.85;margin:0 0 7px}
+.lv-letter s{display:block;height:4px;border-radius:2px;background:#EEF2F7;margin-bottom:5px}
+.tok{position:relative;display:inline-block;vertical-align:baseline}
+.tok .szr{visibility:hidden;white-space:nowrap;font-weight:600;padding:0 4px}
+.tok .ph{position:absolute;left:0;top:0;white-space:nowrap;box-sizing:border-box;font-size:8.5px;color:#9aa4b5;background:#F3F5F8;border:1px dashed #cdd5e0;border-radius:4px;padding:0 4px;transition:opacity .5s}
+.tok .val{position:absolute;left:0;top:0;white-space:nowrap;color:#0066CC;font-weight:600;background:rgba(0,102,204,.10);border-radius:4px;padding:0 4px;opacity:0;transform:translate(30px,-46px) rotate(2deg);filter:blur(4px);transition:all .85s cubic-bezier(.22,1,.36,1)}
+.pB.f1 .t1 .val,.pB.f2 .t2 .val,.pB.f3 .t3 .val,.pB.f4 .t4 .val{opacity:1;transform:none;filter:none}
+.pB.f1 .t1 .ph,.pB.f2 .t2 .ph,.pB.f3 .t3 .ph,.pB.f4 .t4 .ph{opacity:0}
+.lv-ready{display:inline-flex;align-items:center;gap:5px;margin-top:6px;background:#0A1628;color:#fff;font-size:8px;font-weight:600;border-radius:6px;padding:4px 11px;opacity:0;transform:translateY(8px);transition:all .6s cubic-bezier(.22,1,.36,1)}
+.lv-ready svg{width:9px;height:9px}
+.pB.done .lv-ready{opacity:1;transform:none}
+.lv-c2.flow{height:172px}
+.lv-av{width:24px;height:24px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:8.5px;font-weight:700;color:#fff;background:#6B4FBB}
+.lv-view{position:absolute;inset:12px 13px;transition:opacity .55s ease,transform .55s ease}
+.lv-tracker{opacity:0;transform:translateX(14px);pointer-events:none}
+.flow.g4 .lv-inbox{opacity:0;transform:translateX(-14px);pointer-events:none}
+.flow.g4 .lv-tracker{opacity:1;transform:none}
+.lv-email .fr{display:flex;align-items:center;gap:8px}
+.lv-email .fr b{display:block;font-size:10px;font-weight:600;color:#1A2233}
+.lv-email .fr span{font-size:8.5px;color:#9aa4b5}
+.lv-email p{font-size:9px;color:#54607A;line-height:1.5;margin:8px 0 0}
+.lv-flag{display:flex;align-items:center;gap:6px;margin-top:9px;background:#FFFBEB;border:1px solid #FCD34D;border-radius:8px;padding:6px 8px;opacity:0;transform:translateY(8px);transition:all .45s cubic-bezier(.22,1,.36,1)}
+.lv-flag .ft{flex:1;font-size:8px;font-weight:600;color:#92400e;line-height:1.3}
+.lv-flag .fb{flex-shrink:0;background:#F59E0B;color:#fff;font-size:7.5px;font-weight:700;border-radius:11px;padding:3px 8px;transition:all .3s;white-space:nowrap}
+.flow.g2 .lv-flag,.flow.g3 .lv-flag,.flow.g4 .lv-flag{opacity:1;transform:none}
+.flow.g3 .lv-flag,.flow.g4 .lv-flag{background:#ECFDF3;border-color:#bdebcd}
+.flow.g3 .lv-flag .ft,.flow.g4 .lv-flag .ft{color:#0a7a37}
+.flow.g3 .lv-flag .fb,.flow.g4 .lv-flag .fb{background:#16a34a}
+.lv-tracker .ts{font-size:8px;color:#9aa4b5;margin:0 0 7px}
+.lv-step{display:flex;align-items:center;gap:7px;font-size:9px;color:#54607A;padding:3px 0}
+.lv-step .bx{width:13px;height:13px;border-radius:4px;border:1.5px solid #cdd5e0;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+.lv-step .bx svg{width:8px;height:8px;color:#fff;opacity:0}
+.lv-step.done{color:#1A2233}
+.lv-step.done .bx{background:#16a34a;border-color:#16a34a}
+.lv-step.done .bx svg{opacity:1}
+.lv-akpis{display:flex;gap:6px;margin-bottom:9px}
+.lv-akpi{flex:1;background:#F7F9FC;border:1px solid #EDF1F6;border-radius:7px;padding:6px 7px}
+.lv-akpi b{display:block;font-size:13px;font-weight:700;letter-spacing:-.03em;line-height:1}
+.lv-akpi span{font-size:7px;color:#8A94A6}
+.lv-area{width:100%;height:58px;display:block}
+.lv-xlabels{display:flex;justify-content:space-between;margin-top:4px}
+.lv-xlabels span{font-size:6.5px;color:#9aa4b5}
+@media (prefers-reduced-motion: no-preference){
+  .lv-live::before{animation:lvPulse 1.8s ease-in-out infinite}
+  .lv-area polyline{stroke-dasharray:640;stroke-dashoffset:640;animation:lvDraw 1.6s ease-out .3s forwards}
+  .lv-area polygon{opacity:0;animation:lvFadeIn 1.1s ease-out .9s forwards}
+  .lv-area circle{opacity:0;animation:lvFadeIn .5s ease-out 1.7s forwards}
+}
+@keyframes lvPulse{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.6);opacity:.45}}
+@keyframes lvDraw{to{stroke-dashoffset:0}}
+@keyframes lvFadeIn{to{opacity:1}}
+
 /* hero app composite (real product screenshots) */
 .app-stage{position:relative;width:100%;max-width:600px;margin:36px 0 36px auto}
 .app-shot{display:block;border-radius:14px;background:#fff}
