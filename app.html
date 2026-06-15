@@ -1116,7 +1116,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- AUTOMATIONS -->
 <div class="view manage-view" id="view-automations">
   <div class="manage-topbar">
-    <div><div class="manage-title">Automations</div><div class="manage-sub">Build your own HR workflows — assign tasks, generate documents and draft emails.</div></div>
+    <div><div class="manage-title">Automations</div><div class="manage-sub">Build your own HR workflows - assign tasks, generate documents and draft emails.</div></div>
   </div>
   <div class="manage-body" id="automationsBody"></div>
 </div>
@@ -5985,7 +5985,7 @@ function homeCountUp(node, to){
 
 async function homeGather(){
   const out = { ppSoon:0, ppList:[], projActive:0, projOverdue:0, projAttn:0, chats:0, lastChat:null, docs:0 };
-  // Projects (cheap: single row) — count active + overdue + attention
+  // Projects (cheap: single row) - count active + overdue + attention
   try {
     if (typeof loadProjects==='function' && !Array.isArray(projectsData)) await loadProjects();
     const ps = Array.isArray(projectsData) ? projectsData : [];
@@ -5995,7 +5995,7 @@ async function homeGather(){
       if (typeof projComputeRag==='function' && projComputeRag(p)!=='green') out.projAttn++;
     });
   } catch(e){}
-  // People plan — upcoming events (next 60 days)
+  // People plan - upcoming events (next 60 days)
   try {
     if (typeof loadPeoplePlan==='function' && !ppPlan) await loadPeoplePlan();
     const yr = (ppPlan && ppPlan.year) || new Date().getFullYear();
@@ -6034,7 +6034,7 @@ async function homeFill(){
   const sub = document.getElementById('homeSub');
   if (sub) sub.innerHTML = attention>0
     ? `You've got <b>${attention}</b> thing${attention>1?'s':''} on the horizon. Here's where they sit.`
-    : `You're all caught up — nothing overdue. Here's your workspace at a glance.`;
+    : `You're all caught up - nothing overdue. Here's your workspace at a glance.`;
 
   const segs = [
     { key:'people',  color:'#3B82F6', name:'People plan', count:d.ppSoon,
@@ -6126,7 +6126,7 @@ function homePaintBento(d){
   };
   const svg = (p,stroke='currentColor')=>`<svg viewBox="0 0 24 24" fill="none" stroke="${stroke}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" width="16" height="16">${p}</svg>`;
 
-  // 1 — Pick up where you left off
+  // 1 - Pick up where you left off
   let resume;
   if (d.lastChats && d.lastChats.length) {
     resume = d.lastChats.map(ch=>`
@@ -6138,7 +6138,7 @@ function homePaintBento(d){
         </div>
       </div>`).join('');
   } else {
-    resume = `<div class="home-empty">No conversations yet. Ask a question, paste an email, or request a letter — Breeze picks up your tone as you go.</div>`;
+    resume = `<div class="home-empty">No conversations yet. Ask a question, paste an email, or request a letter - Breeze picks up your tone as you go.</div>`;
   }
   const card1 = `
     <div class="home-card span2">
@@ -6148,7 +6148,7 @@ function homePaintBento(d){
       <button class="home-cta" onclick="homeGo('chat')">Start a new chat</button>
     </div>`;
 
-  // 2 — Launch
+  // 2 - Launch
   const launch = [
     { p:ic.chat,  c:'#3B82F6', bg:'rgba(59,130,246,0.10)', t:'Ask a question',   d:'Policy, process or guidance', v:'chat' },
     { p:ic.doc,   c:'#10B981', bg:'rgba(16,185,129,0.10)', t:'Draft a document', d:'Letters, contracts, offers',  v:'docs' },
@@ -6166,7 +6166,7 @@ function homePaintBento(d){
         </div>`).join('')}
     </div>`;
 
-  // 3 — Your week (people plan)
+  // 3 - Your week (people plan)
   let week;
   if (d.ppList && d.ppList.length) {
     week = d.ppList.slice(0,4).map(ev=>`
@@ -6190,7 +6190,7 @@ function homePaintBento(d){
       ${(!d.ppList||!d.ppList.length)?`<button class="home-cta" onclick="homeGo('peopleplan')">Build your people plan</button>`:`<div class="home-spacer"></div><button class="home-cta" style="background:none;border-color:var(--border);color:var(--ink2);" onclick="homeGo('peopleplan')">Open people plan →</button>`}
     </div>`;
 
-  // 4 — Your people
+  // 4 - Your people
   const card4 = `
     <div class="home-card">
       <div class="home-card-eyebrow">${svg(ic.people)} Your people</div>
@@ -10875,7 +10875,7 @@ async function confirmSaveCustomTracker(btn) {
   showTrackerTab('custom:'+tracker.id);
 }
 
-// ════════════ AUTOMATIONS — build-your-own workflows (separate from Trackers) ════════════
+// ════════════ AUTOMATIONS - build-your-own workflows (separate from Trackers) ════════════
 let automations = null;        // [{id,label,icon,steps,createdAt}]
 let _wfBuilder = null;         // { id, label, icon, steps:[], editing }
 let _wfTemplateOpts = [];      // [{id,name,emoji}] available templates for doc steps
@@ -10981,7 +10981,7 @@ function wfbRender(){
     <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:14px;">
       <button onclick="wfbPickIcon()" title="Change icon" style="width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;font-size:24px;flex-shrink:0;">${b.icon}</button>
       <div style="flex:1;min-width:0;">
-        <input id="wfb-name" value="${escapeHtml(b.label)}" placeholder="Workflow name — e.g. New starter onboarding" style="width:100%;background:transparent;border:none;outline:none;color:white;font-size:16px;font-weight:700;font-family:inherit;" />
+        <input id="wfb-name" value="${escapeHtml(b.label)}" placeholder="Workflow name - e.g. New starter onboarding" style="width:100%;background:transparent;border:none;outline:none;color:white;font-size:16px;font-weight:700;font-family:inherit;" />
         <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">${b.editing?'Editing workflow':'Build your own workflow'} · ${b.steps.length} step${b.steps.length===1?'':'s'}</div>
       </div>
       <button onclick="document.getElementById('wfBuilderModal').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
@@ -11028,7 +11028,7 @@ function wfbStepEditor(idx){
       </div>
       <div><label class="wfb-lab">Action <span style="font-weight:400;color:var(--ink3);">(optional automation)</span></label>
         <select id="wfbs-acttype" style="${inp}" onchange="wfbToggleActionFields(this.value)">
-          <option value="none" ${actType==='none'?'selected':''}>None — just a task to tick off</option>
+          <option value="none" ${actType==='none'?'selected':''}>None - just a task to tick off</option>
           <option value="doc" ${actType==='doc'?'selected':''}>📄 Generate a document from a template</option>
           <option value="email" ${actType==='email'?'selected':''}>✉️ Draft an email</option>
         </select>
@@ -11040,7 +11040,7 @@ function wfbStepEditor(idx){
         <div><label class="wfb-lab">To</label><input id="wfbs-eto" value="${escapeHtml(s.action?.email?.to||'')}" placeholder="e.g. it@company.com or {employee}" style="${inp}"></div>
         <div><label class="wfb-lab">Subject</label><input id="wfbs-esub" value="${escapeHtml(s.action?.email?.subject||'')}" placeholder="e.g. Welcome to the team, {employee}!" style="${inp}"></div>
         <div><label class="wfb-lab">Body</label><textarea id="wfbs-ebody" rows="4" placeholder="Use {employee} to insert the person's name." style="${inp}resize:vertical;min-height:90px;">${escapeHtml(s.action?.email?.body||'')}</textarea></div>
-        <div style="font-size:11px;color:var(--ink3);">Draft only — opens a pre-filled email you review and send from your own inbox.</div>
+        <div style="font-size:11px;color:var(--ink3);">Draft only - opens a pre-filled email you review and send from your own inbox.</div>
       </div>
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:white;">
@@ -11111,7 +11111,7 @@ Generate 6-9 steps.`;
     if(parsed.icon) _wfBuilder.icon=parsed.icon;
     (parsed.steps||[]).forEach(s=>_wfBuilder.steps.push({id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action:null}));
     wfbRender();
-  }catch(e){ btn.textContent=orig; btn.disabled=false; showBreezeToast('AI draft failed — try again or add steps manually'); }
+  }catch(e){ btn.textContent=orig; btn.disabled=false; showBreezeToast('AI draft failed - try again or add steps manually'); }
 }
 
 async function wfbSave(btn){
@@ -11149,10 +11149,8 @@ async function renderAutomations(){
   el.innerHTML='<div style="padding:24px;color:var(--ink3);font-size:13px;">Loading…</div>';
   try{ await Promise.all([loadAutomations(), loadWfCases()]); }catch(e){ automations=automations||[]; wfCases=wfCases||[]; }
   const list=automations||[];
-  const intro=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
-    <div style="max-width:560px;">
-      <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Build your own repeatable HR processes — onboarding, probation, leaver checklists and more. Add the steps yourself, assign an owner to each, and attach an action: <strong>generate a document</strong> from one of your templates or <strong>draft an email</strong>. Then run a workflow for any employee and tick it off as you go.</div>
-    </div>
+  const intro=`<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+    <div style="font-size:14px;font-weight:700;color:var(--ink);">Your workflows</div>
     <button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)" style="flex-shrink:0;">+ New workflow</button>
   </div>`;
 
@@ -11160,7 +11158,7 @@ async function renderAutomations(){
     el.innerHTML=intro+`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-lg);padding:48px 24px;text-align:center;">
       <div style="font-size:34px;margin-bottom:12px;">⚡</div>
       <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;">No workflows yet</div>
-      <div style="font-size:13px;color:var(--ink3);max-width:380px;margin:0 auto 20px;line-height:1.7;">Create your first automation — for example a <strong>New starter onboarding</strong> with contract, IT setup and a welcome email.</div>
+      <div style="font-size:13px;color:var(--ink3);max-width:380px;margin:0 auto 20px;line-height:1.7;">Create your first automation - for example a <strong>New starter onboarding</strong> with contract, IT setup and a welcome email.</div>
       <button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)">+ New workflow</button>
     </div>`;
     return;
@@ -14446,7 +14444,7 @@ async function wfOpenDoc(docId) {
   let tmpl = tmpls.find(t=>t.id===docId);
   if (!tmpl) { try { await wfLoadTemplateOptions(); } catch(e){} tmpl = tmpls.find(t=>t.id===docId); }
   if (tmpl) { showView('docs',document.querySelector('.ni[onclick*=docs]')); setTimeout(()=>openTmpl(tmpl),120); }
-  else showBreezeToast('Template not found — it may have been deleted from Documents');
+  else showBreezeToast('Template not found - it may have been deleted from Documents');
 }
 
 // Draft an email for a workflow step (draft-only: opens a pre-filled email to review and send).
@@ -14463,7 +14461,7 @@ function wfOpenEmailDraft(caseId, stepId) {
   ov.id='wfEmailDraft';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
-    <div style="background:#047857;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">✉️ Draft email</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">Review, then send from your own inbox — nothing sends automatically.</div></div>
+    <div style="background:#047857;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">✉️ Draft email</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">Review, then send from your own inbox - nothing sends automatically.</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">To</label><input id="wfe-to" value="${escapeHtml(to)}" style="${inp}"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Subject</label><input id="wfe-sub" value="${escapeHtml(subject)}" style="${inp}"></div>
