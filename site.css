@@ -855,10 +855,11 @@ body{background:#fff;color:#1c1d22}
 /* floating functionality cards overlaid on the hero screenshot (Humaans) */
 .hcard{position:absolute;z-index:4;display:flex;align-items:center;gap:11px;background:#fff;
   border:1px solid var(--hair);border-radius:16px;padding:12px 15px;box-shadow:var(--softsh)}
-.hcard .ic{width:36px;height:36px;border-radius:11px;background:var(--brand-soft);color:#1f2937;display:flex;align-items:center;justify-content:center;flex-shrink:0}
-.hcard .ic svg{width:18px;height:18px}
-.hcard b{display:block;font-family:var(--font-display);font-weight:800;font-size:19px;letter-spacing:-.02em;color:var(--ink-x);line-height:1}
-.hcard span{display:block;font-size:11.5px;color:#6b7280;font-weight:600;margin-top:3px}
+.hcard{padding:10px 13px;gap:9px}
+.hcard .ic{width:30px;height:30px;border-radius:9px;background:var(--brand-soft);color:#1f2937;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.hcard .ic svg{width:15px;height:15px}
+.hcard b{display:block;font-family:var(--font-display);font-weight:800;font-size:13px;letter-spacing:-.01em;color:var(--ink-x);line-height:1.1}
+.hcard span{display:block;font-size:10px;color:#6b7280;font-weight:600;margin-top:2px}
 .hcard-a{top:34px;right:-26px}
 .hcard-b{top:47%;left:-30px}
 .hcard-c{bottom:30px;right:-16px}
