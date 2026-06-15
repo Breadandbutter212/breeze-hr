@@ -32,31 +32,33 @@
     }
   }
 
-  // Hero collage: independent looping cards (chat answers, talent builds 9-box, files reconcile)
+  // Hero collage: the 3 animated cards play in sequence (1 -> 2 -> 3), then the chain restarts
   (function(){
     var chat=document.getElementById('lvChat');
     var talent=document.getElementById('lvTalent');
     var compare=document.getElementById('lvCompare');
-    // each step: {c: className, at: ms}; classes are removed at the start of every cycle
-    function loop(el, steps, period){
-      if(!el) return;
-      var t=[];
-      (function run(){
-        t.forEach(clearTimeout); t=[];
-        steps.forEach(function(s){ el.classList.remove(s.c); });
-        steps.forEach(function(s){ t.push(setTimeout(function(){ el.classList.add(s.c); }, s.at)); });
-        t.push(setTimeout(run, period));
-      })();
-    }
     if(reduce){
       if(chat) chat.classList.add('answered');
       if(talent) talent.classList.add('scan','built');
       if(compare) compare.classList.add('done');
       return;
     }
-    loop(chat, [{c:'answered',at:1500}], 6000);
-    loop(talent, [{c:'scan',at:500},{c:'built',at:2400}], 7000);
-    loop(compare, [{c:'done',at:1800}], 6500);
+    var t=[];
+    (function chain(){
+      t.forEach(clearTimeout); t=[];
+      if(chat) chat.classList.remove('answered');
+      if(talent) talent.classList.remove('scan','built');
+      if(compare) compare.classList.remove('done');
+      // 1) AI assistant answers
+      if(chat) t.push(setTimeout(function(){ chat.classList.add('answered'); }, 900));
+      // 2) Talent: upload, then build the 9-box
+      if(talent){ t.push(setTimeout(function(){ talent.classList.add('scan'); }, 3300));
+                  t.push(setTimeout(function(){ talent.classList.add('built'); }, 5000)); }
+      // 3) Reconcile surfaces the mismatches
+      if(compare) t.push(setTimeout(function(){ compare.classList.add('done'); }, 7700));
+      // hold, then restart the chain
+      t.push(setTimeout(chain, 12000));
+    })();
   })();
 
   // Copy template
