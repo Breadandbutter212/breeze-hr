@@ -1567,7 +1567,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
       <button onclick="showTrackerTab('immigration-wf')" id="tt-immigration-wf" class="tracker-tab-btn">Immigration</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
       <div id="trackerCustomTabs" style="display:contents;"></div>
-      <button onclick="openCreateTrackerModal()" class="tracker-tab-btn" style="color:var(--accent);font-weight:600;" title="Create AI-powered custom tracker">+ Custom</button>
+      <button onclick="openCreateTrackerModal()" class="tracker-tab-btn" style="color:var(--accent);font-weight:600;" title="Build your own workflow — steps, tasks, documents and emails">+ New workflow</button>
     </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;flex:1;min-height:0;position:relative;"></div>
@@ -10737,7 +10737,6 @@ function downloadPeoplePlanPPT() {
 let mpRecords = null; // null = not loaded yet
 let trackerTab = 'family-leave';
 let customTrackers = null;
-let _pendingCustomTracker = null;
 
 async function loadCustomTrackers() {
   if (customTrackers !== null) return;
@@ -10767,103 +10766,260 @@ function renderTrackerCustomTabs() {
     wrap.appendChild(btn);
   });
 }
-function openCreateTrackerModal() {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
-  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
-  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
-      <div style="font-size:15px;font-weight:700;color:white;">Create custom tracker</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">AI generates a tailored checklist based on your description</div>
-    </div>
-    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
-      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
-        <span style="font-size:15px;flex-shrink:0;">ℹ️</span>
-        <div style="font-size:12px;color:#1e40af;line-height:1.6;">
-          <strong>Custom trackers are for following individual employees through a process</strong> - e.g. a TUPE transfer, flexible working request, long-term OH referral, or redundancy consultation.<br>
-          They're not designed for tracking open roles or recruitment pipelines (e.g. "HR Director vacancy" with candidate stages, comp, and agency info).<br>
-          <span style="color:#3b82f6;">Generation can take up to 1 minute.</span><br><br>
-          Need something more complex? <a href="mailto:hello@getbreeze.co.uk?subject=Custom tracker request" style="color:#1d4ed8;font-weight:600;text-decoration:underline;">Get in touch</a> and we can build one for you.
-        </div>
-      </div>
-      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Tracker name</label>
-        <input id="ct-name" placeholder="e.g. TUPE transfer, Flexible working, Long-term absence, Redundancy..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
-      </div>
-      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">What should this tracker cover? <span style="font-weight:400;color:var(--ink3);">(optional - helps AI generate better steps)</span></label>
-        <textarea id="ct-desc" rows="2" placeholder="e.g. Managing an employee through a collective redundancy process, including consultation, selection and notice..." style="${inp}resize:vertical;min-height:60px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
-      </div>
-      <div id="ct-error" style="display:none;color:var(--red);font-size:12px;"></div>
-    </div>
-    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
-      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
-      <button class="btn btn-primary btn-sm" id="ct-submit" onclick="submitCreateTracker(this)">✨ Generate with AI</button>
-    </div>
-  </div>`;
-  document.body.appendChild(ov);
-  ov.onclick = e => { if(e.target===ov) ov.remove(); };
-  setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
-}
-async function submitCreateTracker(btn) {
-  const name = document.getElementById('ct-name')?.value?.trim();
-  const errEl = document.getElementById('ct-error');
-  if (!name) { document.getElementById('ct-name').style.borderColor='var(--red)'; return; }
-  const desc = document.getElementById('ct-desc')?.value?.trim() || '';
-  btn.textContent = '⏳ Generating - up to 1 min...'; btn.disabled = true;
-  if (errEl) errEl.style.display = 'none';
-  try {
-    const token = await getAuthToken();
-    const userPrompt = `Generate a practical HR process checklist for tracking: "${name}".${desc?' Context: '+desc:''}
+// ── WORKFLOW BUILDER (build-your-own automations) ──
+let _wfBuilder = null;        // { id, label, icon, steps:[], editing }
+let _wfTemplateOpts = [];     // [{id,name,emoji}] available templates for doc steps
 
-Return ONLY a valid JSON object, no markdown fences, no explanation:
-{"icon":"<one emoji>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance.","timeframe":"When to do it","tag":"legal"},…]}
+function openCreateTrackerModal(){ openWorkflowBuilder(null); }
+function editCustomTracker(id){ openWorkflowBuilder(id); }
 
-Generate 7-10 steps. tag must be one of: legal, recommended, best-practice.`;
-    const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
-    const d = await res.json();
-    const raw = d.content?.[0]?.text || '';
-    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
-    const parsed = JSON.parse(jsonStr);
-    const tracker = {id:'ct_'+Date.now(), label:name, icon:parsed.icon||'📋', cat:'Custom', steps:(parsed.steps||[]).map((s,i)=>({...s,id:i+1})), createdAt:new Date().toISOString()};
-    _pendingCustomTracker = tracker;
-    btn.closest('div[style*=fixed]').remove();
-    showTrackerPreviewModal(tracker);
-  } catch(e) {
-    btn.textContent = '✨ Generate with AI'; btn.disabled = false;
-    if (errEl) { errEl.textContent = 'Generation failed - please try again.'; errEl.style.display = 'block'; }
+// Load templates (built-in + uploaded) for the document-action picker, and make sure
+// uploaded ones are present in `tmpls` so wfOpenDoc can find them later.
+async function wfLoadTemplateOptions(){
+  const opts = tmpls.filter(t=>!t.isCustom).map(t=>({id:t.id,name:t.name,emoji:t.emoji||'📄'}));
+  if(currentProfile){
+    try{
+      const {data}=await sb.from('policies').select('*').eq('company_id',currentProfile.company_id).like('name','TEMPLATE:%').order('created_at',{ascending:false});
+      (data||[]).forEach(d=>{
+        const name=d.name.replace('TEMPLATE: ','').replace('TEMPLATE:','').trim();
+        const id='t_db_'+d.id;
+        if(!tmpls.find(t=>t.id===id)){
+          const hasDocx=d.content&&d.content.startsWith('DOCX_BASE64:');
+          const hasText=d.content&&d.content.startsWith('TEMPLATE_TEXT:');
+          let base64=null,textContent=d.content;
+          if(hasDocx){const parts=d.content.split('|||TEXT:');base64=parts[0].replace('DOCX_BASE64:','');textContent=parts[1]||'';}
+          else if(hasText){textContent=d.content.replace('TEMPLATE_TEXT:','');}
+          tmpls.unshift({id,name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx:hasDocx||hasText,base64:base64||'',content:textContent,flow:detectTemplateFields(textContent,name)});
+        }
+        opts.push({id,name,emoji:'📄'});
+      });
+    }catch(e){}
   }
+  _wfTemplateOpts = opts;
+  return opts;
 }
-function showTrackerPreviewModal(tracker) {
-  const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
-  const stepsHtml = (tracker.steps||[]).map((s,i)=>`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div><div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${escapeHtml(s.title)}</div><div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(s.desc)}</div></div></div>`).join('');
-  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:86vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
-      <div style="font-size:28px;">${tracker.icon}</div>
-      <div><div style="font-size:15px;font-weight:700;color:white;">${escapeHtml(tracker.label)}</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tracker.steps.length} AI-generated steps - review before saving</div></div>
-    </div>
-    <div style="overflow-y:auto;padding:0 24px;flex:1;">${stepsHtml}</div>
-    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-shrink:0;">
-      <button class="btn btn-ghost btn-sm" onclick="this.closest('div[style*=fixed]').remove();openCreateTrackerModal()">← Regenerate</button>
-      <div style="display:flex;gap:8px;">
-        <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
-        <button class="btn btn-primary btn-sm" onclick="confirmSaveCustomTracker(this)">Save tracker</button>
+
+async function openWorkflowBuilder(existingId){
+  await wfLoadTemplateOptions();
+  if(existingId){
+    if(!customTrackers) await loadCustomTrackers();
+    const ct=(customTrackers||[]).find(c=>c.id===existingId);
+    _wfBuilder = ct ? {id:ct.id,label:ct.label,icon:ct.icon||'📋',steps:(ct.steps||[]).map(s=>({...s})),editing:true}
+                    : {id:null,label:'',icon:'📋',steps:[],editing:false};
+  } else {
+    _wfBuilder = {id:null,label:'',icon:'📋',steps:[],editing:false};
+  }
+  document.getElementById('wfBuilderModal')?.remove();
+  const ov=document.createElement('div');
+  ov.id='wfBuilderModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:950;display:flex;align-items:stretch;justify-content:flex-end;';
+  const inner=document.createElement('div');
+  inner.style.cssText='width:680px;max-width:96vw;background:var(--bg);height:100%;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,0.25);';
+  ov.appendChild(inner);
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  wfbRender();
+}
+
+function wfbRender(){
+  const b=_wfBuilder; if(!b) return;
+  const modal=document.getElementById('wfBuilderModal'); if(!modal) return;
+  const inner=modal.firstChild;
+  const stepsHtml = b.steps.length ? b.steps.map((s,i)=>{
+    let actBadge='';
+    if(s.action?.type==='doc'){const t=_wfTemplateOpts.find(o=>o.id===s.action.docId);actBadge=`<span class="wfb-chip" style="background:#EFF6FF;color:#1D4ED8;">📄 ${escapeHtml(t?t.name:'Document')}</span>`;}
+    else if(s.action?.type==='email'){actBadge=`<span class="wfb-chip" style="background:#ECFDF5;color:#047857;">✉️ ${escapeHtml(s.action.email?.subject||'Email')}</span>`;}
+    const ownerBadge=s.owner?`<span class="wfb-chip" style="background:var(--surface2);color:var(--ink2);">👤 ${escapeHtml(s.owner)}</span>`:'';
+    const timeBadge=s.timeframe?`<span class="wfb-chip" style="background:var(--surface2);color:var(--ink3);">⏱ ${escapeHtml(s.timeframe)}</span>`:'';
+    return `<div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;display:flex;gap:12px;align-items:flex-start;">
+      <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;padding-top:2px;">
+        <button onclick="wfbMoveStep(${i},-1)" ${i===0?'disabled':''} style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);opacity:${i===0?0.25:1};">▲</button>
+        <div style="width:22px;height:22px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i+1}</div>
+        <button onclick="wfbMoveStep(${i},1)" ${i===b.steps.length-1?'disabled':''} style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);opacity:${i===b.steps.length-1?0.25:1};">▼</button>
       </div>
+      <div style="flex:1;min-width:0;cursor:pointer;" onclick="wfbEditStep(${i})">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px;">${escapeHtml(s.title)}</div>
+        ${s.desc?`<div style="font-size:11px;color:var(--ink3);line-height:1.5;margin-bottom:6px;">${escapeHtml(s.desc)}</div>`:''}
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${timeBadge}${ownerBadge}${actBadge}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
+        <button onclick="wfbEditStep(${i})" title="Edit" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:26px;height:26px;cursor:pointer;font-size:12px;color:var(--ink3);">✏</button>
+        <button onclick="wfbDeleteStep(${i})" title="Delete" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:26px;height:26px;cursor:pointer;font-size:12px;color:var(--red);">✕</button>
+      </div>
+    </div>`;
+  }).join('') : `<div style="text-align:center;padding:40px 20px;color:var(--ink3);border:1px dashed var(--border);border-radius:var(--r-lg);background:white;">
+      <div style="font-size:28px;margin-bottom:8px;">🧩</div>
+      <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:4px;">No steps yet</div>
+      <div style="font-size:12px;line-height:1.6;max-width:340px;margin:0 auto;">Add steps one by one, or let AI draft a first version you can edit. Each step can assign a task, generate a document, or draft an email.</div>
+    </div>`;
+
+  inner.innerHTML = `
+    <style>.wfb-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap;}</style>
+    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:14px;">
+      <button onclick="wfbPickIcon()" title="Change icon" style="width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;font-size:24px;flex-shrink:0;">${b.icon}</button>
+      <div style="flex:1;min-width:0;">
+        <input id="wfb-name" value="${escapeHtml(b.label)}" placeholder="Workflow name — e.g. New starter onboarding" style="width:100%;background:transparent;border:none;outline:none;color:white;font-size:16px;font-weight:700;font-family:inherit;" />
+        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">${b.editing?'Editing workflow':'Build your own workflow'} · ${b.steps.length} step${b.steps.length===1?'':'s'}</div>
+      </div>
+      <button onclick="document.getElementById('wfBuilderModal').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:8px;">
+      ${stepsHtml}
+    </div>
+    <div style="flex-shrink:0;padding:14px 22px;border-top:1px solid var(--border);background:white;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+      <button onclick="wfbAddStep()" class="btn btn-secondary btn-sm">+ Add step</button>
+      <button onclick="wfbGenerateAI(this)" class="btn btn-secondary btn-sm" style="color:var(--accent);">✨ Draft with AI</button>
+      <div style="flex:1;"></div>
+      <button onclick="document.getElementById('wfBuilderModal').remove()" class="btn btn-ghost btn-sm">Cancel</button>
+      <button onclick="wfbSave(this)" class="btn btn-primary btn-sm">${b.editing?'Save changes':'Create workflow'}</button>
+    </div>`;
+  const nameEl=document.getElementById('wfb-name');
+  if(nameEl) nameEl.oninput=()=>{ _wfBuilder.label=nameEl.value; };
+  if(!b.label && !b.steps.length) setTimeout(()=>nameEl?.focus(),60);
+}
+
+function wfbPickIcon(){
+  const icons=['📋','👋','🚪','📉','⚖️','🤱','👶','👪','🏥','💼','🎯','🧩','🗂️','✅','🔄','🏆','📦','🧭','🛠️','📨'];
+  _wfBuilder.icon=icons[(icons.indexOf(_wfBuilder.icon)+1)%icons.length];
+  wfbRender();
+}
+
+function wfbStepEditor(idx){
+  const editing = idx!=null;
+  const s = editing ? _wfBuilder.steps[idx] : {title:'',desc:'',timeframe:'',owner:'',tag:'recommended',action:null};
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const actType = s.action?.type||'none';
+  const tmplOpts = _wfTemplateOpts.map(o=>`<option value="${o.id}" ${s.action?.docId===o.id?'selected':''}>${escapeHtml(o.name)}</option>`).join('');
+  const ov=document.createElement('div');
+  ov.id='wfbStepEditor';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
+    <style>.wfb-lab{font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;}</style>
+    <div style="background:#1B2D50;padding:15px 20px;position:sticky;top:0;z-index:1;"><div style="font-size:14px;font-weight:700;color:white;">${editing?'Edit step':'Add step'}</div></div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:13px;">
+      <div><label class="wfb-lab">Step title *</label><input id="wfbs-title" value="${escapeHtml(s.title)}" placeholder="e.g. Send welcome email" style="${inp}"></div>
+      <div><label class="wfb-lab">Guidance <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><textarea id="wfbs-desc" rows="2" style="${inp}resize:vertical;min-height:54px;">${escapeHtml(s.desc||'')}</textarea></div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label class="wfb-lab">Timeframe</label><input id="wfbs-time" value="${escapeHtml(s.timeframe||'')}" placeholder="e.g. Day 1" style="${inp}"></div>
+        <div style="flex:1;"><label class="wfb-lab">Assign to (owner)</label><input id="wfbs-owner" value="${escapeHtml(s.owner||'')}" placeholder="e.g. IT, Line manager" style="${inp}"></div>
+      </div>
+      <div><label class="wfb-lab">Action <span style="font-weight:400;color:var(--ink3);">(optional automation)</span></label>
+        <select id="wfbs-acttype" style="${inp}" onchange="wfbToggleActionFields(this.value)">
+          <option value="none" ${actType==='none'?'selected':''}>None — just a task to tick off</option>
+          <option value="doc" ${actType==='doc'?'selected':''}>📄 Generate a document from a template</option>
+          <option value="email" ${actType==='email'?'selected':''}>✉️ Draft an email</option>
+        </select>
+      </div>
+      <div id="wfbs-doc-fields" style="display:${actType==='doc'?'block':'none'};">
+        ${_wfTemplateOpts.length?`<label class="wfb-lab">Template</label><select id="wfbs-docid" style="${inp}">${tmplOpts}</select>`:`<div style="font-size:12px;color:var(--ink3);background:var(--surface2);padding:10px 12px;border-radius:var(--r-sm);">No templates yet. Upload one in <strong>Documents</strong> first, then it'll appear here.</div>`}
+      </div>
+      <div id="wfbs-email-fields" style="display:${actType==='email'?'flex':'none'};flex-direction:column;gap:10px;">
+        <div><label class="wfb-lab">To</label><input id="wfbs-eto" value="${escapeHtml(s.action?.email?.to||'')}" placeholder="e.g. it@company.com or {employee}" style="${inp}"></div>
+        <div><label class="wfb-lab">Subject</label><input id="wfbs-esub" value="${escapeHtml(s.action?.email?.subject||'')}" placeholder="e.g. Welcome to the team, {employee}!" style="${inp}"></div>
+        <div><label class="wfb-lab">Body</label><textarea id="wfbs-ebody" rows="4" placeholder="Use {employee} to insert the person's name." style="${inp}resize:vertical;min-height:90px;">${escapeHtml(s.action?.email?.body||'')}</textarea></div>
+        <div style="font-size:11px;color:var(--ink3);">Draft only — opens a pre-filled email you review and send from your own inbox.</div>
+      </div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;position:sticky;bottom:0;background:white;">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfbStepEditor').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="wfbSaveStep(${editing?idx:'null'})">${editing?'Save step':'Add step'}</button>
     </div>
   </div>`;
   document.body.appendChild(ov);
-  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  setTimeout(()=>document.getElementById('wfbs-title')?.focus(),60);
 }
-async function confirmSaveCustomTracker(btn) {
-  const tracker = _pendingCustomTracker; if (!tracker) return;
-  btn.textContent = 'Saving...'; btn.disabled = true;
-  if (!customTrackers) await loadCustomTrackers();
-  customTrackers.push(tracker);
-  WF_SCENARIOS.push({id:tracker.id,cat:'Custom',icon:tracker.icon,label:tracker.label,steps:tracker.steps});
-  await saveCustomTrackers();
-  _pendingCustomTracker = null;
-  btn.closest('div[style*=fixed]').remove();
-  renderTrackerCustomTabs();
-  showTrackerTab('custom:'+tracker.id);
+function wfbToggleActionFields(v){
+  const dF=document.getElementById('wfbs-doc-fields'); if(dF) dF.style.display = v==='doc'?'block':'none';
+  const eF=document.getElementById('wfbs-email-fields'); if(eF) eF.style.display = v==='email'?'flex':'none';
+}
+function wfbAddStep(){ wfbStepEditor(null); }
+function wfbEditStep(idx){ wfbStepEditor(idx); }
+function wfbSaveStep(idx){
+  const titleEl=document.getElementById('wfbs-title');
+  const title=titleEl?.value?.trim();
+  if(!title){ if(titleEl) titleEl.style.borderColor='var(--red)'; return; }
+  const at=document.getElementById('wfbs-acttype')?.value||'none';
+  let action=null;
+  if(at==='doc'){
+    const docId=document.getElementById('wfbs-docid')?.value;
+    if(docId){ const t=_wfTemplateOpts.find(o=>o.id===docId); action={type:'doc',docId,label:'Generate '+(t?t.name:'document')}; }
+  } else if(at==='email'){
+    action={type:'email',label:'Draft email',email:{
+      to:document.getElementById('wfbs-eto')?.value?.trim()||'',
+      subject:document.getElementById('wfbs-esub')?.value?.trim()||'',
+      body:document.getElementById('wfbs-ebody')?.value||''
+    }};
+  }
+  const step={
+    title,
+    desc:document.getElementById('wfbs-desc')?.value?.trim()||'',
+    timeframe:document.getElementById('wfbs-time')?.value?.trim()||'',
+    owner:document.getElementById('wfbs-owner')?.value?.trim()||'',
+    tag:(idx!=null&&_wfBuilder.steps[idx]?.tag)||'recommended',
+    action
+  };
+  if(idx===null||idx===undefined){ step.id=wfbNextId(); _wfBuilder.steps.push(step); }
+  else { step.id=_wfBuilder.steps[idx].id||wfbNextId(); _wfBuilder.steps[idx]=step; }
+  document.getElementById('wfbStepEditor')?.remove();
+  wfbRender();
+}
+function wfbNextId(){ return Math.max(0,..._wfBuilder.steps.map(s=>typeof s.id==='number'?s.id:0))+1; }
+function wfbDeleteStep(idx){ _wfBuilder.steps.splice(idx,1); wfbRender(); }
+function wfbMoveStep(idx,dir){ const j=idx+dir; if(j<0||j>=_wfBuilder.steps.length) return; const a=_wfBuilder.steps; [a[idx],a[j]]=[a[j],a[idx]]; wfbRender(); }
+
+async function wfbGenerateAI(btn){
+  const nameEl=document.getElementById('wfb-name');
+  const name=(nameEl?.value||_wfBuilder.label||'').trim();
+  if(!name){ if(nameEl){nameEl.style.borderColor='rgba(239,68,68,0.7)';nameEl.focus();} return; }
+  _wfBuilder.label=name;
+  const orig=btn.textContent; btn.textContent='⏳ Drafting…'; btn.disabled=true;
+  try{
+    const token=await getAuthToken();
+    const userPrompt=`Generate a practical HR process checklist for a workflow called: "${name}".
+Return ONLY valid JSON, no markdown fences, no explanation:
+{"icon":"<one emoji>","steps":[{"title":"Short action title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","owner":"Who typically does it (e.g. HR, Line manager, IT)"}]}
+Generate 6-9 steps.`;
+    const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
+    const d=await res.json();
+    const raw=d.content?.[0]?.text||'';
+    const jsonStr=raw.match(/\{[\s\S]*\}/)?.[0]; if(!jsonStr) throw new Error('No JSON');
+    const parsed=JSON.parse(jsonStr);
+    if(parsed.icon) _wfBuilder.icon=parsed.icon;
+    (parsed.steps||[]).forEach(s=>_wfBuilder.steps.push({id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action:null}));
+    wfbRender();
+  }catch(e){ btn.textContent=orig; btn.disabled=false; showBreezeToast('AI draft failed — try again or add steps manually'); }
+}
+
+async function wfbSave(btn){
+  const nameEl=document.getElementById('wfb-name');
+  const name=(nameEl?.value||'').trim();
+  if(!name){ if(nameEl){nameEl.style.borderColor='rgba(239,68,68,0.7)';nameEl.focus();} return; }
+  if(!_wfBuilder.steps.length){ showBreezeToast('Add at least one step first'); return; }
+  btn.textContent='Saving…'; btn.disabled=true;
+  if(!customTrackers) await loadCustomTrackers();
+  const steps=_wfBuilder.steps.map((s,i)=>({...s,id:i+1}));
+  if(_wfBuilder.editing && _wfBuilder.id){
+    const ct=(customTrackers||[]).find(c=>c.id===_wfBuilder.id);
+    if(ct){ ct.label=name; ct.icon=_wfBuilder.icon; ct.steps=steps; }
+    const sc=WF_SCENARIOS.find(s=>s.id===_wfBuilder.id);
+    if(sc){ sc.label=name; sc.icon=_wfBuilder.icon; sc.steps=steps; }
+    await saveCustomTrackers();
+    document.getElementById('wfBuilderModal')?.remove();
+    renderTrackerCustomTabs();
+    showTrackerTab('custom:'+_wfBuilder.id);
+    showBreezeToast('Workflow updated');
+  } else {
+    const id='ct_'+Date.now();
+    const tracker={id,label:name,icon:_wfBuilder.icon,cat:'Custom',steps,createdAt:new Date().toISOString()};
+    customTrackers.push(tracker);
+    WF_SCENARIOS.push({id,cat:'Custom',icon:tracker.icon,label:name,steps});
+    await saveCustomTrackers();
+    document.getElementById('wfBuilderModal')?.remove();
+    renderTrackerCustomTabs();
+    showTrackerTab('custom:'+id);
+    showBreezeToast('Workflow created');
+  }
 }
 async function deleteCustomTracker(id) {
   if (!confirm('Delete this custom tracker? The cases logged against it will remain but the tracker tab will be removed.')) return;
@@ -13324,6 +13480,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
       <div style="display:flex;gap:8px;align-items:center;">
         <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         ${!opts.noGuidance?`<button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>`:''}
+        ${opts.customTrackerId?`<button onclick="editCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">✏ Edit workflow</button>`:''}
         ${opts.customTrackerId?`<button onclick="deleteCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">🗑 Delete tracker</button>`:''}
         <button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm">+ New case</button>
       </div>
@@ -13603,9 +13760,11 @@ function wfRenderCase(c) {
     const policyBadge = policy?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);white-space:nowrap;">📋 ${policy.name}</span>`:'';
     let actionBtn = '';
     if (step.action) {
-      if (step.action.type==='doc') actionBtn=`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${step.action.label} →</button>`;
+      if (step.action.type==='doc') actionBtn=`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">${escapeHtml(step.action.label||'Generate document')} →</button>`;
+      else if (step.action.type==='email') actionBtn=`<button onclick="event.stopPropagation();wfOpenEmailDraft('${c.id}',${step.id})" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:#047857;">✉️ ${escapeHtml(step.action.label||'Draft email')} →</button>`;
       // tab-type actions removed - user is already in the tracker
     }
+    const ownerBadge = step.owner ? `<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(step.owner)}</span>` : '';
     const isMeetingStep = /meeting|interview|hearing|panel|review|discussion|welfare|invite|induction|accompan/i.test(step.title+' '+step.desc);
     const calBtn = isMeetingStep ? `<button onclick="event.stopPropagation();wfStepCalendarInvite('${c.id}',${step.id})" title="Add to calendar" style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r-sm);padding:2px 7px;font-size:11px;cursor:pointer;color:#1D4ED8;">📅</button>` : '';
     return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${c.id}',${step.id})">
@@ -13613,7 +13772,7 @@ function wfRenderCase(c) {
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
           <div class="wf-step-title" style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;${isDone?'text-decoration:line-through;':''}">${step.title}</div>
-          ${wfTagBadge(step.tag)} ${policyBadge}${step.custom?'<span style="font-size:9px;background:var(--accent-bg);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:600;">custom</span>':''}
+          ${wfTagBadge(step.tag)} ${policyBadge}${ownerBadge}${step.custom?'<span style="font-size:9px;background:var(--accent-bg);color:var(--accent);padding:1px 6px;border-radius:8px;font-weight:600;">custom</span>':''}
         </div>
         <div style="font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:${(actionBtn||calBtn)?'10px':'0'};">${step.desc}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
@@ -14076,9 +14235,64 @@ async function openTrackerGuidance(topic) {
   }
 }
 
-function wfOpenDoc(docId) {
-  const tmpl = tmpls.find(t=>t.id===docId);
-  if (tmpl) { showView('docs',document.querySelector('.ni[onclick*=docs]')); setTimeout(()=>openTmpl(tmpl),100); }
+async function wfOpenDoc(docId) {
+  let tmpl = tmpls.find(t=>t.id===docId);
+  if (!tmpl) { try { await wfLoadTemplateOptions(); } catch(e){} tmpl = tmpls.find(t=>t.id===docId); }
+  if (tmpl) { showView('docs',document.querySelector('.ni[onclick*=docs]')); setTimeout(()=>openTmpl(tmpl),120); }
+  else showBreezeToast('Template not found — it may have been deleted from Documents');
+}
+
+// Draft an email for a workflow step (draft-only: opens a pre-filled email to review and send).
+function wfOpenEmailDraft(caseId, stepId) {
+  const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
+  const step = wfGetSteps(c).find(s=>s.id===stepId); if (!step || step.action?.type!=='email') return;
+  const sub = v => (v||'').replace(/\{employee\}/gi, c.employeeName||'').replace(/\{name\}/gi, c.employeeName||'');
+  const to = sub(step.action.email?.to);
+  const subject = sub(step.action.email?.subject);
+  const body = sub(step.action.email?.body);
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  document.getElementById('wfEmailDraft')?.remove();
+  const ov=document.createElement('div');
+  ov.id='wfEmailDraft';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
+    <div style="background:#047857;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">✉️ Draft email</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">Review, then send from your own inbox — nothing sends automatically.</div></div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">To</label><input id="wfe-to" value="${escapeHtml(to)}" style="${inp}"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Subject</label><input id="wfe-sub" value="${escapeHtml(subject)}" style="${inp}"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Body</label><textarea id="wfe-body" rows="7" style="${inp}resize:vertical;min-height:140px;">${escapeHtml(body)}</textarea></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="wfEmailCopy()">📋 Copy</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfEmailDraft').remove()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="wfEmailOpenAndLog('${caseId}')" style="background:#047857;border-color:#047857;">Open in email app</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+function wfEmailCopy(){
+  const to=document.getElementById('wfe-to')?.value||'';
+  const sub=document.getElementById('wfe-sub')?.value||'';
+  const body=document.getElementById('wfe-body')?.value||'';
+  const text=`To: ${to}\nSubject: ${sub}\n\n${body}`;
+  navigator.clipboard?.writeText(text).then(()=>showBreezeToast('Email copied to clipboard'),()=>showBreezeToast('Copy failed'));
+}
+async function wfEmailOpenAndLog(caseId){
+  const to=encodeURIComponent(document.getElementById('wfe-to')?.value||'');
+  const sub=encodeURIComponent(document.getElementById('wfe-sub')?.value||'');
+  const body=encodeURIComponent(document.getElementById('wfe-body')?.value||'');
+  window.open(`mailto:${to}?subject=${sub}&body=${body}`,'_blank');
+  const c=(wfCases||[]).find(x=>x.id===caseId);
+  if(c){
+    if(!c.contactLog) c.contactLog=[];
+    c.contactLog.push({date:new Date().toISOString(),type:'email',note:'Drafted email: '+(decodeURIComponent(sub)||'(no subject)')});
+    try{ await saveWfCases(); }catch(e){}
+  }
+  document.getElementById('wfEmailDraft')?.remove();
+  showBreezeToast('Opened in your email app · logged to contact log');
 }
 
 // ── WORKFLOW DOCUMENT UPLOAD ──
