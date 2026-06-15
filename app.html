@@ -10387,8 +10387,7 @@ function renderPPTimeline() {
 
   body.innerHTML = `
     <div class="pp-timeline">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div style="font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${ppPlan.year} People Plan${currentProfile?.company_name?' - '+currentProfile.company_name:''}</div>
+      <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
         <div style="display:flex;align-items:center;gap:8px;">
           <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
             <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Calendar</button>
