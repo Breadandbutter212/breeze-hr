@@ -650,3 +650,98 @@ html:not(.js) .reveal{opacity:1!important;transform:none!important}
 .cta .btn-light{position:relative;border:1.5px solid var(--ink-x);box-shadow:3px 3px 0 var(--ink-x)}
 .cta .btn-light:hover{transform:translateY(-2px);box-shadow:5px 6px 0 var(--ink-x)}
 @media (max-width:560px){.cta h2{font-size:30px}}
+
+/* ============================================================
+   ===== v3: TIGHTER PALETTE (sky + ink + coral) + NEW HERO ===
+   Last in cascade — overrides earlier decorative colour.
+   mint/coral kept ONLY as semantic product-status colours.
+   ============================================================ */
+:root{
+  /* remap legacy tokens so every page (pricing/templates/articles) shifts cohesively */
+  --accent:#3BA7FF; --accent2:#3BA7FF; --navy:#171717;
+  --ink:#171717; --ink2:#54555a; --ink3:#8a8d94; --line:#ECE6DA; --bg2:#F7F2E9;
+  /* collapse decorative grape & sun onto the core palette */
+  --grape:#3BA7FF; --grape-bg:#EAF5FF; --sun:#FF6B5B; --sun-bg:#FFEDEA;
+}
+/* all section headings get the display face site-wide */
+.s-head h2{font-family:var(--font-display);letter-spacing:-.03em}
+/* decorative highlighters collapse to sky / coral only */
+.hl-mint{--hl:#B7E2FF}.hl-grape{--hl:#B7E2FF}.hl-sun{--hl:#FFC4BC}
+/* decorative mint sticker reads as sky */
+.sticker.s-mint{background:var(--sky-bg);border-color:var(--sky);box-shadow:3px 3px 0 var(--sky);color:#0a5da8}
+/* stat band: sky / coral / sky / ink */
+.sb.c2{box-shadow:7px 7px 0 var(--coral)}.sb.c2 .n{color:#c23b2c}
+.sb.c3{box-shadow:7px 7px 0 var(--sky)}.sb.c3 .n{color:#0a5da8}
+.sb.c4{box-shadow:7px 7px 0 var(--ink-x)}.sb.c4 .n{color:var(--ink-x)}
+/* decorative blobs: sky + coral only */
+.blob-mint{background:var(--coral)}.blob-grape{background:var(--sky)}
+/* integrations icons: alternate sky / coral only */
+.int-pill svg,.int-pill:nth-child(3) svg{color:var(--sky)}
+.int-pill:nth-child(2) svg,.int-pill:nth-child(4) svg,.int-pill:nth-child(5) svg{color:var(--coral)}
+/* how-it-works step accents: sky / coral / sky */
+.steps .step:nth-child(2){box-shadow:6px 6px 0 var(--coral)}
+.steps .step:nth-child(2)::before{box-shadow:3px 3px 0 var(--coral)}
+.steps .step:nth-child(3){box-shadow:6px 6px 0 var(--sky)}
+.steps .step:nth-child(3)::before{box-shadow:3px 3px 0 var(--sky)}
+/* inbox "detected" pill: sky, not purple */
+.flow .detect{color:#0a5da8;background:var(--sky-bg);border-color:var(--sky)}
+/* safe section: ticks + card icons on sky/coral (mint stays only as product status elsewhere) */
+.safe-tick svg{color:#7cc4ff}
+.safe-head .hl{background-image:linear-gradient(180deg,transparent 56%,rgba(59,167,255,.45) 56%)}
+.safe-card:nth-child(1) .si{background:rgba(59,167,255,.16);color:#7cc4ff}
+.safe-card:nth-child(2) .si{background:rgba(255,107,91,.16);color:#ff9d92}
+.safe-card:nth-child(3) .si{background:rgba(59,167,255,.16);color:#7cc4ff}
+.safe-card:nth-child(4) .si{background:rgba(255,107,91,.16);color:#ff9d92}
+/* CTA mesh: sky -> coral (drop the purple midpoint) */
+.cta{background:linear-gradient(125deg,#3BA7FF 0%,#5fb6ff 45%,#FF6B5B 115%)}
+/* bento default icon + dark-cell icon */
+.bcell .bc-ic{background:var(--sky-bg);color:#0a5da8}
+.b-coral .bc-ic{background:var(--coral-bg);color:#c23b2c}
+.b-ink .bc-ic{background:rgba(59,167,255,.18);color:#9bd2ff}
+
+/* ============================================================
+   ===== NEW HERO: big type + floating components (paper) =====
+   ============================================================ */
+.hero-v2{position:relative;overflow:hidden;background:var(--paper);color:var(--ink-x);border-bottom:1.5px solid #ECE6DA}
+.hero-v2 .blob{opacity:.42}
+.hero2{position:relative;z-index:2;max-width:1180px;margin:0 auto;padding:74px 32px 92px;text-align:center}
+.hero2 .eyebrow2{display:inline-flex;margin-bottom:18px}
+.hero2 h1{font-family:var(--font-display);font-weight:700;font-size:78px;line-height:.96;letter-spacing:-.035em;color:var(--ink-x);margin:0 0 20px}
+.hero2 p{font-size:19px;color:var(--ink-soft);line-height:1.62;max-width:560px;margin:0 auto 28px}
+.hero-btns2{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
+.hero2 .btn-ghost{background:#fff;border:1.5px solid var(--ink-x);color:var(--ink-x);box-shadow:3px 3px 0 var(--ink-x)}
+.hero2 .btn-ghost:hover{transform:translateY(-2px);box-shadow:5px 6px 0 var(--ink-x)}
+.hero-sub2{margin-top:18px;font-size:13px;color:var(--ink-soft)}
+
+/* floating product collage under the headline */
+.hero-collage{display:flex;flex-wrap:wrap;justify-content:center;align-items:flex-start;gap:22px;margin-top:60px}
+.hfloat{background:#fff;border:1.5px solid var(--ink-x);border-radius:20px;padding:15px 16px;box-shadow:7px 8px 0 var(--ink-x);transition:transform .25s cubic-bezier(.34,1.56,.64,1),box-shadow .25s}
+.hfloat:hover{transform:rotate(0deg) translateY(-5px)!important}
+.hfloat .hf-h{display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:11.5px;font-weight:800;color:var(--ink-x)}
+.hfloat .hf-h .ic{width:24px;height:24px;border-radius:7px;display:flex;align-items:center;justify-content:center;background:var(--sky-bg);color:#0a5da8;flex-shrink:0}
+.hfloat .hf-h .ic svg{width:13px;height:13px}
+.hfloat .hf-h .live{margin-left:auto;display:inline-flex;align-items:center;gap:5px;font-size:9px;font-weight:800;letter-spacing:.05em;color:#06794f;background:var(--mint-bg);border-radius:var(--r-pill);padding:2px 8px}
+.hfloat .hf-h .live::before{content:'';width:5px;height:5px;border-radius:50%;background:var(--mint)}
+.hf-chat{width:308px;transform:rotate(-2deg);box-shadow:7px 8px 0 var(--sky)}
+.hf-9box{width:216px;transform:rotate(2.2deg);box-shadow:7px 8px 0 var(--coral)}
+.hf-9box .hf-h .ic{background:var(--coral-bg);color:#c23b2c}
+.hf-trk{width:330px;transform:rotate(-1.4deg)}
+.hf-stat{width:178px;transform:rotate(2.6deg);box-shadow:7px 8px 0 var(--sky);text-align:left}
+.hf-stat .v{font-family:var(--font-display);font-size:40px;font-weight:700;letter-spacing:-.03em;line-height:1;color:#0a5da8;margin-top:4px}
+.hf-stat .l{font-size:11.5px;color:var(--ink-soft);font-weight:600;margin-top:6px;line-height:1.3}
+.hf-chat .mc{margin-top:2px}
+.hf-9box .m9{margin-top:2px}.hf-9box .m9-axis{margin-top:6px}
+.hf-trk .mtrk{margin-top:2px;border:none}.hf-trk .mtrk-h{border-radius:10px 10px 0 0}
+
+@media (max-width:980px){.hero2 h1{font-size:60px}.hf-chat,.hf-trk{width:300px}}
+@media (max-width:560px){
+  .hero2{padding:54px 20px 64px}
+  .hero2 h1{font-size:42px}
+  .hero2 p{font-size:16px}
+  .hero-collage{gap:26px;margin-top:44px}
+  .hfloat{transform:none!important;width:100%!important;max-width:340px;box-shadow:5px 5px 0 var(--ink-x)!important}
+}
+
+/* template article pages: match the system */
+.article h1{font-family:var(--font-display);letter-spacing:-.03em}
+.ai-cta{background:linear-gradient(125deg,#3BA7FF,#FF6B5B);border:1.5px solid var(--ink-x);box-shadow:8px 9px 0 var(--ink-x)}
