@@ -707,7 +707,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
    radial-gradient(900px 420px at 14% -8%, rgba(59,130,246,0.07), transparent 60%),
    radial-gradient(760px 380px at 96% 0%, rgba(16,185,129,0.06), transparent 55%),
    var(--bg); }
-.home { max-width:1180px; margin:0 auto; padding:44px 46px 72px; }
+.home { max-width:1180px; margin:0 auto; padding:22px 46px 72px; }
 .home > * { opacity:0; transform:translateY(14px); animation:homeIn .62s cubic-bezier(.16,.84,.3,1) forwards; }
 .home > *:nth-child(2){ animation-delay:.07s; }
 .home > *:nth-child(3){ animation-delay:.14s; }
@@ -5906,7 +5906,7 @@ function homePaintRing(segs, total){
   else if (total === 0) {
     num = `<svg viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>`;
     label='All clear'; cap="Nothing needs you right now";
-  } else { num='0'; label='in play'; cap='live items across your workspace'; }
+  } else { num='0'; label='active'; cap='items across your workspace'; }
   ring.innerHTML = homeRingSVG(segs, total) +
     `<div class="home-ring-center">
        <div class="home-ring-num" id="homeRingNum">${num}</div>
@@ -5978,14 +5978,14 @@ async function homeFill(){
   const attention = (d.projOverdue||0) + (d.ppSoon||0);
   const sub = document.getElementById('homeSub');
   if (sub) sub.innerHTML = attention>0
-    ? `You've got <b>${attention}</b> thing${attention>1?'s':''} on the horizon. Here's where they sit.`
+    ? `You've got <b>${attention}</b> thing${attention>1?'s':''} that need a look. Here's where they are.`
     : `You're all caught up - nothing overdue. Here's your workspace at a glance.`;
 
   const segs = [
     { key:'people',  color:'#3B82F6', name:'People plan', count:d.ppSoon,
       desc: d.ppSoon ? `${d.ppSoon} event${d.ppSoon>1?'s':''} in the next 60 days` : 'No events coming up', view:'peopleplan' },
     { key:'projects',color:'#F59E0B', name:'Projects', count:d.projActive,
-      desc: d.projActive ? `${d.projActive} active` : 'Nothing in flight', view:'projects',
+      desc: d.projActive ? `${d.projActive} active` : 'Nothing on right now', view:'projects',
       flag: d.projOverdue ? `${d.projOverdue} overdue` : '' },
     { key:'docs',    color:'#10B981', name:'Documents', count:d.docs,
       desc: d.docs ? `${d.docs} template${d.docs>1?'s':''} ready to use` : 'No templates yet', view:'docs' },
