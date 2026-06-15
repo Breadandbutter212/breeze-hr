@@ -1113,6 +1113,14 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   <div class="manage-body" id="processMapsBody"></div>
 </div>
 
+<!-- AUTOMATIONS -->
+<div class="view manage-view" id="view-automations">
+  <div class="manage-topbar">
+    <div><div class="manage-title">Automations</div><div class="manage-sub">Build your own HR workflows — assign tasks, generate documents and draft emails.</div></div>
+  </div>
+  <div class="manage-body" id="automationsBody"></div>
+</div>
+
 <!-- ANALYTICS -->
 <div class="view manage-view" id="view-analytics">
   <div class="manage-topbar">
@@ -1567,7 +1575,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
       <button onclick="showTrackerTab('immigration-wf')" id="tt-immigration-wf" class="tracker-tab-btn">Immigration</button>
       <button onclick="showTrackerTab('careers')" id="tt-careers" class="tracker-tab-btn">Promotions &amp; Careers</button>
       <div id="trackerCustomTabs" style="display:contents;"></div>
-      <button onclick="openCreateTrackerModal()" class="tracker-tab-btn" style="color:var(--accent);font-weight:600;" title="Build your own workflow — steps, tasks, documents and emails">+ New workflow</button>
+      <button onclick="openCreateTrackerModal()" class="tracker-tab-btn" style="color:var(--accent);font-weight:600;" title="Create AI-powered custom tracker">+ Custom</button>
     </div>
   </div>
   <div class="manage-body" id="trackersBody" style="padding:0;overflow:hidden;flex:1;min-height:0;position:relative;"></div>
@@ -5882,6 +5890,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
+  if(v==='automations'){automations=null;wfCases=null;wfActiveCase=null;renderAutomations();}
   if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;_projDismissedAttn={};_projFilter={q:'',cat:'',owner:'',sort:'newest'};loadProjects().then(renderProjects);}
   if(v==='settings') { try { renderSettings(); } catch(e) { console.error('[Settings]',e); const b=document.getElementById('settingsBody'); if(b) b.innerHTML='<div style="padding:20px;color:red;">'+String(e)+'</div>'; } }
   if(v==='chat')renderChatHistory();
@@ -10766,12 +10775,126 @@ function renderTrackerCustomTabs() {
     wrap.appendChild(btn);
   });
 }
-// ── WORKFLOW BUILDER (build-your-own automations) ──
-let _wfBuilder = null;        // { id, label, icon, steps:[], editing }
-let _wfTemplateOpts = [];     // [{id,name,emoji}] available templates for doc steps
+let _pendingCustomTracker = null;
+function openCreateTrackerModal() {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
+      <div style="font-size:15px;font-weight:700;color:white;">Create custom tracker</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">AI generates a tailored checklist based on your description</div>
+    </div>
+    <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
+      <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
+        <span style="font-size:15px;flex-shrink:0;">ℹ️</span>
+        <div style="font-size:12px;color:#1e40af;line-height:1.6;">
+          <strong>Custom trackers are for following individual employees through a process</strong> - e.g. a TUPE transfer, flexible working request, long-term OH referral, or redundancy consultation.<br>
+          They're not designed for tracking open roles or recruitment pipelines (e.g. "HR Director vacancy" with candidate stages, comp, and agency info).<br>
+          <span style="color:#3b82f6;">Generation can take up to 1 minute.</span><br><br>
+          Need something more complex? <a href="mailto:hello@getbreeze.co.uk?subject=Custom tracker request" style="color:#1d4ed8;font-weight:600;text-decoration:underline;">Get in touch</a> and we can build one for you.
+        </div>
+      </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Tracker name</label>
+        <input id="ct-name" placeholder="e.g. TUPE transfer, Flexible working, Long-term absence, Redundancy..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">What should this tracker cover? <span style="font-weight:400;color:var(--ink3);">(optional - helps AI generate better steps)</span></label>
+        <textarea id="ct-desc" rows="2" placeholder="e.g. Managing an employee through a collective redundancy process, including consultation, selection and notice..." style="${inp}resize:vertical;min-height:60px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea>
+      </div>
+      <div id="ct-error" style="display:none;color:var(--red);font-size:12px;"></div>
+    </div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;flex-shrink:0;">
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" id="ct-submit" onclick="submitCreateTracker(this)">✨ Generate with AI</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+  setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
+}
+async function submitCreateTracker(btn) {
+  const name = document.getElementById('ct-name')?.value?.trim();
+  const errEl = document.getElementById('ct-error');
+  if (!name) { document.getElementById('ct-name').style.borderColor='var(--red)'; return; }
+  const desc = document.getElementById('ct-desc')?.value?.trim() || '';
+  btn.textContent = '⏳ Generating - up to 1 min...'; btn.disabled = true;
+  if (errEl) errEl.style.display = 'none';
+  try {
+    const token = await getAuthToken();
+    const userPrompt = `Generate a practical HR process checklist for tracking: "${name}".${desc?' Context: '+desc:''}
 
-function openCreateTrackerModal(){ openWorkflowBuilder(null); }
-function editCustomTracker(id){ openWorkflowBuilder(id); }
+Return ONLY a valid JSON object, no markdown fences, no explanation:
+{"icon":"<one emoji>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance.","timeframe":"When to do it","tag":"legal"},…]}
+
+Generate 7-10 steps. tag must be one of: legal, recommended, best-practice.`;
+    const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
+    const d = await res.json();
+    const raw = d.content?.[0]?.text || '';
+    const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
+    const parsed = JSON.parse(jsonStr);
+    const tracker = {id:'ct_'+Date.now(), label:name, icon:parsed.icon||'📋', cat:'Custom', steps:(parsed.steps||[]).map((s,i)=>({...s,id:i+1})), createdAt:new Date().toISOString()};
+    _pendingCustomTracker = tracker;
+    btn.closest('div[style*=fixed]').remove();
+    showTrackerPreviewModal(tracker);
+  } catch(e) {
+    btn.textContent = '✨ Generate with AI'; btn.disabled = false;
+    if (errEl) { errEl.textContent = 'Generation failed - please try again.'; errEl.style.display = 'block'; }
+  }
+}
+function showTrackerPreviewModal(tracker) {
+  const ov = document.createElement('div');
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const stepsHtml = (tracker.steps||[]).map((s,i)=>`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div><div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${escapeHtml(s.title)}</div><div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(s.desc)}</div></div></div>`).join('');
+  ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:86vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="font-size:28px;">${tracker.icon}</div>
+      <div><div style="font-size:15px;font-weight:700;color:white;">${escapeHtml(tracker.label)}</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tracker.steps.length} AI-generated steps - review before saving</div></div>
+    </div>
+    <div style="overflow-y:auto;padding:0 24px;flex:1;">${stepsHtml}</div>
+    <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-shrink:0;">
+      <button class="btn btn-ghost btn-sm" onclick="this.closest('div[style*=fixed]').remove();openCreateTrackerModal()">← Regenerate</button>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="confirmSaveCustomTracker(this)">Save tracker</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick = e => { if(e.target===ov) ov.remove(); };
+}
+async function confirmSaveCustomTracker(btn) {
+  const tracker = _pendingCustomTracker; if (!tracker) return;
+  btn.textContent = 'Saving...'; btn.disabled = true;
+  if (!customTrackers) await loadCustomTrackers();
+  customTrackers.push(tracker);
+  WF_SCENARIOS.push({id:tracker.id,cat:'Custom',icon:tracker.icon,label:tracker.label,steps:tracker.steps});
+  await saveCustomTrackers();
+  _pendingCustomTracker = null;
+  btn.closest('div[style*=fixed]').remove();
+  renderTrackerCustomTabs();
+  showTrackerTab('custom:'+tracker.id);
+}
+
+// ════════════ AUTOMATIONS — build-your-own workflows (separate from Trackers) ════════════
+let automations = null;        // [{id,label,icon,steps,createdAt}]
+let _wfBuilder = null;         // { id, label, icon, steps:[], editing }
+let _wfTemplateOpts = [];      // [{id,name,emoji}] available templates for doc steps
+
+async function loadAutomations(){
+  if(automations!==null) return;
+  if(!currentProfile){ automations=[]; return; }
+  const {data}=await sb.from('policies').select('content').eq('company_id',currentProfile.company_id).eq('name','SETTING:Automations').maybeSingle();
+  try{ automations=data?.content?JSON.parse(data.content):[]; }catch(e){ automations=[]; }
+  // Register each automation as a scenario so the case engine (checklist/doc/email) works.
+  automations.forEach(a=>{ if(!WF_SCENARIOS.find(s=>s.id===a.id)) WF_SCENARIOS.push({id:a.id,cat:'Automation',icon:a.icon||'⚡',label:a.label,steps:a.steps||[]}); });
+}
+async function saveAutomations(){
+  if(!currentProfile) return;
+  const json=JSON.stringify(automations);
+  const {data:ex}=await sb.from('policies').select('id').eq('company_id',currentProfile.company_id).eq('name','SETTING:Automations').maybeSingle();
+  if(ex) await sb.from('policies').update({content:json}).eq('id',ex.id);
+  else await sb.from('policies').insert({company_id:currentProfile.company_id,name:'SETTING:Automations',content:json});
+}
 
 // Load templates (built-in + uploaded) for the document-action picker, and make sure
 // uploaded ones are present in `tmpls` so wfOpenDoc can find them later.
@@ -10802,12 +10925,12 @@ async function wfLoadTemplateOptions(){
 async function openWorkflowBuilder(existingId){
   await wfLoadTemplateOptions();
   if(existingId){
-    if(!customTrackers) await loadCustomTrackers();
-    const ct=(customTrackers||[]).find(c=>c.id===existingId);
-    _wfBuilder = ct ? {id:ct.id,label:ct.label,icon:ct.icon||'📋',steps:(ct.steps||[]).map(s=>({...s})),editing:true}
-                    : {id:null,label:'',icon:'📋',steps:[],editing:false};
+    if(!automations) await loadAutomations();
+    const a=(automations||[]).find(x=>x.id===existingId);
+    _wfBuilder = a ? {id:a.id,label:a.label,icon:a.icon||'⚡',steps:(a.steps||[]).map(s=>({...s})),editing:true}
+                   : {id:null,label:'',icon:'⚡',steps:[],editing:false};
   } else {
-    _wfBuilder = {id:null,label:'',icon:'📋',steps:[],editing:false};
+    _wfBuilder = {id:null,label:'',icon:'⚡',steps:[],editing:false};
   }
   document.getElementById('wfBuilderModal')?.remove();
   const ov=document.createElement('div');
@@ -10997,29 +11120,114 @@ async function wfbSave(btn){
   if(!name){ if(nameEl){nameEl.style.borderColor='rgba(239,68,68,0.7)';nameEl.focus();} return; }
   if(!_wfBuilder.steps.length){ showBreezeToast('Add at least one step first'); return; }
   btn.textContent='Saving…'; btn.disabled=true;
-  if(!customTrackers) await loadCustomTrackers();
+  if(!automations) await loadAutomations();
   const steps=_wfBuilder.steps.map((s,i)=>({...s,id:i+1}));
   if(_wfBuilder.editing && _wfBuilder.id){
-    const ct=(customTrackers||[]).find(c=>c.id===_wfBuilder.id);
-    if(ct){ ct.label=name; ct.icon=_wfBuilder.icon; ct.steps=steps; }
+    const a=(automations||[]).find(x=>x.id===_wfBuilder.id);
+    if(a){ a.label=name; a.icon=_wfBuilder.icon; a.steps=steps; }
     const sc=WF_SCENARIOS.find(s=>s.id===_wfBuilder.id);
     if(sc){ sc.label=name; sc.icon=_wfBuilder.icon; sc.steps=steps; }
-    await saveCustomTrackers();
+    await saveAutomations();
     document.getElementById('wfBuilderModal')?.remove();
-    renderTrackerCustomTabs();
-    showTrackerTab('custom:'+_wfBuilder.id);
+    renderAutomations();
     showBreezeToast('Workflow updated');
   } else {
-    const id='ct_'+Date.now();
-    const tracker={id,label:name,icon:_wfBuilder.icon,cat:'Custom',steps,createdAt:new Date().toISOString()};
-    customTrackers.push(tracker);
-    WF_SCENARIOS.push({id,cat:'Custom',icon:tracker.icon,label:name,steps});
-    await saveCustomTrackers();
+    const id='auto_'+Date.now();
+    const wf={id,label:name,icon:_wfBuilder.icon,cat:'Automation',steps,createdAt:new Date().toISOString()};
+    automations.push(wf);
+    WF_SCENARIOS.push({id,cat:'Automation',icon:wf.icon,label:name,steps});
+    await saveAutomations();
     document.getElementById('wfBuilderModal')?.remove();
-    renderTrackerCustomTabs();
-    showTrackerTab('custom:'+id);
+    renderAutomations();
     showBreezeToast('Workflow created');
   }
+}
+
+// ── Automations view ──
+async function renderAutomations(){
+  const el=document.getElementById('automationsBody'); if(!el) return;
+  el.innerHTML='<div style="padding:24px;color:var(--ink3);font-size:13px;">Loading…</div>';
+  try{ await Promise.all([loadAutomations(), loadWfCases()]); }catch(e){ automations=automations||[]; wfCases=wfCases||[]; }
+  const list=automations||[];
+  const intro=`<div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:20px;">
+    <div style="max-width:560px;">
+      <div style="font-size:13px;color:var(--ink2);line-height:1.6;">Build your own repeatable HR processes — onboarding, probation, leaver checklists and more. Add the steps yourself, assign an owner to each, and attach an action: <strong>generate a document</strong> from one of your templates or <strong>draft an email</strong>. Then run a workflow for any employee and tick it off as you go.</div>
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)" style="flex-shrink:0;">+ New workflow</button>
+  </div>`;
+
+  if(!list.length){
+    el.innerHTML=intro+`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-lg);padding:48px 24px;text-align:center;">
+      <div style="font-size:34px;margin-bottom:12px;">⚡</div>
+      <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;">No workflows yet</div>
+      <div style="font-size:13px;color:var(--ink3);max-width:380px;margin:0 auto 20px;line-height:1.7;">Create your first automation — for example a <strong>New starter onboarding</strong> with contract, IT setup and a welcome email.</div>
+      <button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)">+ New workflow</button>
+    </div>`;
+    return;
+  }
+
+  const cards=list.map(a=>{
+    const runs=(wfCases||[]).filter(c=>c.scenarioId===a.id);
+    const active=runs.filter(c=>c.status!=='closed');
+    const stepPreview=(a.steps||[]).slice(0,4).map(s=>{
+      let ic='○';
+      if(s.action?.type==='doc') ic='📄';
+      else if(s.action?.type==='email') ic='✉️';
+      else if(s.owner) ic='👤';
+      return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);padding:3px 0;"><span style="width:16px;text-align:center;flex-shrink:0;">${ic}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(s.title)}</span></div>`;
+    }).join('');
+    const more=(a.steps||[]).length>4?`<div style="font-size:11px;color:var(--ink3);padding-top:4px;">+${a.steps.length-4} more</div>`:'';
+    const runsHtml=active.length?`<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:6px;">
+        ${active.slice(0,4).map(c=>{
+          const total=(a.steps||[]).length||1; const pct=Math.round(((c.checkedSteps||[]).length/total)*100);
+          return `<div onclick="openWfCasePanel('${c.id}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+            <div style="flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.employeeName)}</div>
+            <div style="width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};"></div></div>
+            <span style="font-size:11px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink2)'};width:34px;text-align:right;">${pct}%</span>
+          </div>`;
+        }).join('')}
+      </div>`:'';
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
+        <div style="width:42px;height:42px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${a.icon||'⚡'}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:14px;font-weight:700;color:var(--ink);">${escapeHtml(a.label)}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${(a.steps||[]).length} step${(a.steps||[]).length===1?'':'s'}${active.length?` · ${active.length} active`:''}</div>
+        </div>
+      </div>
+      <div style="flex:1;">${stepPreview}${more}</div>
+      ${runsHtml}
+      <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" style="font-size:11px;flex:1;" onclick="autoStartRun('${a.id}')">▶ Start for someone</button>
+        <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')">✏ Edit</button>
+        <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+
+  el.innerHTML=intro+`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">${cards}</div>`;
+}
+
+async function autoStartRun(autoId){
+  if(!automations) await loadAutomations();
+  const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
+  const name=prompt(`Run "${a.label}" for which employee?\n\nEnter their name:`,'');
+  if(!name||!name.trim()) return;
+  if(!wfCases) await loadWfCases();
+  const newCase={ id:'wfc_'+Date.now(), employeeName:name.trim(), scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
+  wfCases.push(newCase);
+  await saveWfCases();
+  renderAutomations();
+  setTimeout(()=>openWfCasePanel(newCase.id),150);
+}
+
+async function deleteAutomation(id){
+  if(!confirm('Delete this workflow? Runs already started for employees will remain but the workflow will be removed.')) return;
+  if(!automations) await loadAutomations();
+  automations=(automations||[]).filter(a=>a.id!==id);
+  await saveAutomations();
+  const idx=WF_SCENARIOS.findIndex(s=>s.id===id); if(idx>-1) WF_SCENARIOS.splice(idx,1);
+  renderAutomations();
 }
 async function deleteCustomTracker(id) {
   if (!confirm('Delete this custom tracker? The cases logged against it will remain but the tracker tab will be removed.')) return;
@@ -13480,7 +13688,6 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
       <div style="display:flex;gap:8px;align-items:center;">
         <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         ${!opts.noGuidance?`<button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>`:''}
-        ${opts.customTrackerId?`<button onclick="editCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">✏ Edit workflow</button>`:''}
         ${opts.customTrackerId?`<button onclick="deleteCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">🗑 Delete tracker</button>`:''}
         <button onclick="wfNewCaseForTab()" class="btn btn-primary btn-sm">+ New case</button>
       </div>
@@ -15738,7 +15945,7 @@ async function projConfirmEmailToTask(){
     create:{ label:'Create', icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'}, {label:'Documents', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
     people:{ label:'Your people', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Talent review', view:'talent', beta:true}, {label:'Headcount planning', view:'headcount'} ] },
     policies:{ label:'Policies', icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', items:[ {label:'Policy library', view:'manage'} ] },
-    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
+    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Automations', view:'automations'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
     insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] },
     admin:{ label:'Admin', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 0-.33-1.82"/>', items:[ {label:'Settings', view:'settings'}, {label:'FAQs', view:'faqs'} ] }
   };
@@ -15784,7 +15991,7 @@ async function projConfirmEmailToTask(){
   }
 
   // ---- global search ----
-  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Talent review',v:'talent',k:'People'},{l:'9-box grid',v:'talent',k:'People'},{l:'Succession planning',v:'talent',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Library'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
+  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Talent review',v:'talent',k:'People'},{l:'9-box grid',v:'talent',k:'People'},{l:'Succession planning',v:'talent',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Automations',v:'automations',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Library'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
   var _peopleCache=null, _selIdx=-1;
   async function peopleNames(){
     if(_peopleCache) return _peopleCache;
