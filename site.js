@@ -32,9 +32,9 @@
     }
   }
 
-  // Hero product collage: looping letter fill + email->tracker flow + KPI count-up
+  // Hero product collage: KPI count-up + AI chat typing->answer loop
   (function(){
-    var letter=document.getElementById('lvLetter'), flow=document.getElementById('lvFlow');
+    var chat=document.getElementById('lvChat');
     var kpis=[].slice.call(document.querySelectorAll('.lv-count'));
     function kpiUp(el){
       var to=parseFloat(el.getAttribute('data-to'))||0, dec=parseInt(el.getAttribute('data-dec')||'0',10);
@@ -44,31 +44,18 @@
       requestAnimationFrame(tick);
     }
     if(reduce){
-      if(letter) ['f1','f2','f3','f4','done'].forEach(function(s){ letter.classList.add(s); });
-      if(flow) flow.classList.add('g2','g3','g4');
+      if(chat) chat.classList.add('answered');
       kpis.forEach(function(el){ el.textContent=(parseFloat(el.getAttribute('data-to'))||0).toFixed(parseInt(el.getAttribute('data-dec')||'0',10))+(el.getAttribute('data-suffix')||''); });
       return;
     }
     kpis.forEach(function(el){ setTimeout(function(){ kpiUp(el); }, 500); });
-    if(letter){
-      var ls=['f1','f2','f3','f4','done'], lt=[];
-      (function runLetter(){
-        lt.forEach(clearTimeout); lt=[];
-        ls.forEach(function(s){ letter.classList.remove(s); });
-        ls.forEach(function(s,i){ lt.push(setTimeout(function(){ letter.classList.add(s); }, 900+i*1000)); });
-        lt.push(setTimeout(runLetter, 9500));
-      })();
-    }
-    if(flow){
-      var fs=['g1','g2','g3','g4'], ft=[];
-      (function runFlow(){
-        ft.forEach(clearTimeout); ft=[];
-        fs.forEach(function(s){ flow.classList.remove(s); });
-        ft.push(setTimeout(function(){ flow.classList.add('g1'); }, 500));
-        ft.push(setTimeout(function(){ flow.classList.add('g2'); }, 2000));
-        ft.push(setTimeout(function(){ flow.classList.add('g3'); }, 3600));
-        ft.push(setTimeout(function(){ flow.classList.add('g4'); }, 4600));
-        ft.push(setTimeout(runFlow, 9500));
+    if(chat){
+      var ct=[];
+      (function runChat(){
+        ct.forEach(clearTimeout); ct=[];
+        chat.classList.remove('answered');
+        ct.push(setTimeout(function(){ chat.classList.add('answered'); }, 1800)); // typing, then reply
+        ct.push(setTimeout(runChat, 7000));                                       // hold, then loop
       })();
     }
   })();
