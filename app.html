@@ -16109,8 +16109,8 @@ async function projConfirmEmailToTask(){
   var css = `
   #view-talent .manage-topbar{align-items:flex-start;}
   .tl-wrap{display:flex;flex-direction:column;flex:1;min-height:0;}
-  .tl-empty{flex:1;display:flex;align-items:center;justify-content:center;padding:32px;}
-  .tl-card-drop{max-width:600px;width:100%;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:44px 40px;box-shadow:var(--shadow);}
+  .tl-empty{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px;overflow-y:auto;}
+  .tl-card-drop{max-width:600px;width:100%;margin:auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:44px 40px;box-shadow:var(--shadow);}
   .tl-upicon{width:52px;height:52px;margin:0 auto 18px;border-radius:13px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;}
   .tl-upicon svg{width:26px;height:26px;}
   .tl-uptitle{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.02em;}
@@ -16210,9 +16210,9 @@ async function projConfirmEmailToTask(){
   .tl-pd-head .nm{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.02em;}
   .tl-pd-head .meta{font-size:12.5px;color:var(--ink2);margin-top:3px;}
   .tl-pd-empty{border:1px dashed var(--border2);border-radius:14px;padding:40px 32px;text-align:center;background:var(--surface2);}
-  .tl-lead{font-size:15px;line-height:1.6;color:var(--ink);font-weight:500;max-width:740px;margin-bottom:22px;}
-  .tl-two{display:grid;grid-template-columns:1fr 1fr;gap:24px;max-width:740px;margin-bottom:8px;}
-  .tl-sec{margin-bottom:20px;max-width:740px;}
+  .tl-lead{font-size:15px;line-height:1.6;color:var(--ink);font-weight:500;margin-bottom:22px;}
+  .tl-two{display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-bottom:8px;}
+  .tl-sec{margin-bottom:20px;}
   .tl-sec-h{font-size:10.5px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--ink3);margin-bottom:10px;}
   .tl-blist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:8px;}
   .tl-blist li{font-size:13px;line-height:1.5;color:var(--ink);padding-left:18px;position:relative;}
@@ -16225,8 +16225,8 @@ async function projConfirmEmailToTask(){
   .tl-hz{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;padding:3px 9px;border-radius:20px;background:var(--accent-bg);color:var(--accent);white-space:nowrap;flex-shrink:0;}
   .tl-chips{display:flex;flex-wrap:wrap;gap:8px;}
   .tl-chips .c{font-size:12.5px;background:var(--surface);border:1px solid var(--border);border-radius:9px;padding:8px 12px;color:var(--ink);line-height:1.4;}
-  .tl-ptext{font-size:13px;line-height:1.55;color:var(--ink);max-width:740px;}
-  .tl-callout{background:linear-gradient(180deg,#FFFBF0,#FFF8E8);border:1px solid #F2E2B8;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.55;color:#6B5418;max-width:740px;}
+  .tl-ptext{font-size:13px;line-height:1.55;color:var(--ink);}
+  .tl-callout{background:linear-gradient(180deg,#FFFBF0,#FFF8E8);border:1px solid #F2E2B8;border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.55;color:#6B5418;}
   @media (max-width:760px){ .tl-plans{grid-template-columns:1fr;} .tl-plist{position:static;flex-direction:row;overflow-x:auto;} .tl-two{grid-template-columns:1fr;gap:8px;} }
   `;
   var st=document.createElement('style'); st.textContent=css; document.head.appendChild(st);
@@ -16684,7 +16684,7 @@ async function projConfirmEmailToTask(){
     if(p._gen){ host.innerHTML=head+'<div class="tl-loading" style="min-height:220px"><div class="tl-spin"></div><div style="font-size:13px;color:var(--ink2)">Drafting a tailored development plan…</div></div>'; return; }
     if(!p.plan){
       host.innerHTML=head+'<div class="tl-pd-empty"><div style="font-size:14.5px;font-weight:600;color:var(--ink)">No development plan yet</div>'+
-        '<div style="font-size:12.5px;color:var(--ink2);margin:7px 0 18px;line-height:1.55;max-width:440px">A tailored plan for '+esc(p.name.split(' ')[0])+': strengths, honest growth areas, objectives with timeframes, stretch experiences, learning and how to measure success.</div>'+
+        '<div style="font-size:12.5px;color:var(--ink2);margin:7px auto 18px;line-height:1.55;max-width:560px">A tailored plan for '+esc(p.name.split(' ')[0])+': strengths, honest growth areas, objectives with timeframes, stretch experiences, learning and how to measure success.</div>'+
         '<button class="btn btn-primary btn-sm" onclick="talentGenPlan(\''+p.id+'\')">Generate development plan</button></div>';
       return;
     }
