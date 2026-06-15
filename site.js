@@ -32,32 +32,21 @@
     }
   }
 
-  // Hero product collage: KPI count-up + AI chat typing->answer loop
+  // Hero workflow: upload CSV -> AI scores it -> 9-box builds (looping stages)
   (function(){
-    var chat=document.getElementById('lvChat');
-    var kpis=[].slice.call(document.querySelectorAll('.lv-count'));
-    function kpiUp(el){
-      var to=parseFloat(el.getAttribute('data-to'))||0, dec=parseInt(el.getAttribute('data-dec')||'0',10);
-      var suf=el.getAttribute('data-suffix')||'', dur=1300, t0=null;
-      function tick(now){ if(t0===null)t0=now; var p=Math.min(1,(now-t0)/dur); var e=1-Math.pow(1-p,3);
-        el.textContent=(to*e).toFixed(dec)+suf; if(p<1)requestAnimationFrame(tick); else el.textContent=to.toFixed(dec)+suf; }
-      requestAnimationFrame(tick);
-    }
-    if(reduce){
-      if(chat) chat.classList.add('answered');
-      kpis.forEach(function(el){ el.textContent=(parseFloat(el.getAttribute('data-to'))||0).toFixed(parseInt(el.getAttribute('data-dec')||'0',10))+(el.getAttribute('data-suffix')||''); });
-      return;
-    }
-    kpis.forEach(function(el){ setTimeout(function(){ kpiUp(el); }, 500); });
-    if(chat){
-      var ct=[];
-      (function runChat(){
-        ct.forEach(clearTimeout); ct=[];
-        chat.classList.remove('answered');
-        ct.push(setTimeout(function(){ chat.classList.add('answered'); }, 1800)); // typing, then reply
-        ct.push(setTimeout(runChat, 7000));                                       // hold, then loop
-      })();
-    }
+    var wf=document.getElementById('lvWf'); if(!wf) return;
+    var stages=['s1','s2','s3','s4'];
+    if(reduce){ wf.classList.add('s1','s2','s3','s4'); return; }
+    var t=[];
+    (function run(){
+      t.forEach(clearTimeout); t=[];
+      stages.forEach(function(s){ wf.classList.remove(s); });
+      t.push(setTimeout(function(){ wf.classList.add('s1'); }, 400));   // upload: progress fills
+      t.push(setTimeout(function(){ wf.classList.add('s2'); }, 1900));  // uploaded: green check
+      t.push(setTimeout(function(){ wf.classList.add('s3'); }, 2300));  // AI scoring
+      t.push(setTimeout(function(){ wf.classList.add('s4'); }, 3900));  // 9-box builds
+      t.push(setTimeout(run, 8200));                                    // hold, then loop
+    })();
   })();
 
   // Copy template

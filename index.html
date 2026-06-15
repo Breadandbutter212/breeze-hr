@@ -54,44 +54,35 @@
       <div class="hero-sub">No card required · EU-hosted · Your data never trains any AI model</div>
     </div>
     <div class="hero-art reveal in d2">
-      <!-- Animated product collage (app functionality, sign-in styling) -->
+      <!-- Animated workflow: upload CSV -> AI scores it -> 9-box builds itself -->
       <span class="lv-orb o1"></span><span class="lv-orb o2"></span><span class="lv-orb o3"></span>
-      <div class="lv-scene">
-        <!-- 1. AI assistant: question -> typing -> grounded answer + citation -->
-        <div class="lv-c lv-c1 chat" id="lvChat">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><b>AI assistant</b></div>
-          <div class="cq">Can we decline annual leave during our busy period?</div>
-          <div class="ca">
-            <span class="lv-av ai">B</span>
-            <div class="cb">
-              <div class="dots"><i></i><i></i><i></i></div>
-              <div class="ans">
-                <p>Yes - you can refuse a specific request if you give counter-notice at least as long as the leave asked for, under the Working Time Regulations 1998.</p>
-                <span class="cite"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Your Leave Policy · §4.2</span>
-              </div>
-            </div>
+      <div class="lv-scene" id="lvWf">
+        <!-- Step 1: upload your people data -->
+        <div class="lv-c wf-up">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg></div><b>Upload your people data</b></div>
+          <div class="wf-file">
+            <span class="wf-fic">CSV</span>
+            <div class="wf-fmeta"><b>team_review.csv</b><span>142 employees · 6 columns</span></div>
+            <span class="wf-check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><polyline points="20 6 9 17 4 12"/></svg></span>
           </div>
+          <div class="wf-prog"><span></span></div>
         </div>
-        <!-- 2. Headcount analytics: bars grow + KPI count-up -->
-        <div class="lv-c lv-c2">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><b>Headcount by team</b><span class="lv-live">LIVE</span></div>
-          <div class="lv-akpis">
-            <div class="lv-akpi"><b class="lv-count" data-to="142" style="color:#0066CC;">0</b><span>People</span></div>
-            <div class="lv-akpi"><b class="lv-count" data-to="9" style="color:#6B4FBB;">0</b><span>Teams</span></div>
-            <div class="lv-akpi"><b class="lv-count" data-to="4" style="color:#30D158;">0</b><span>Open roles</span></div>
-          </div>
-          <div class="lv-bars"><span style="--h:48%"></span><span style="--h:78%"></span><span style="--h:60%"></span><span style="--h:92%"></span><span style="--h:70%"></span></div>
-          <div class="lv-blabels"><span>Eng</span><span>Sales</span><span>Ops</span><span>CS</span><span>G&amp;A</span></div>
+        <!-- Step 2: AI scores performance & potential -->
+        <div class="wf-ai">
+          <svg class="sp" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.5"/></svg>
+          <svg class="ck" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <b class="t-run">Scoring performance &amp; potential…</b>
+          <b class="t-done">9-box built from 142 employees</b>
         </div>
-        <!-- 3. Talent review: 9-box grid with an avatar dropping into "stars" -->
-        <div class="lv-c lv-c3">
-          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><b>Talent review · 9-box</b></div>
+        <!-- Step 3: the 9-box grid builds -->
+        <div class="lv-c wf-grid">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div><b>Talent review · 9-box</b><span class="lv-live">BUILT</span></div>
           <div class="nb-grid">
-            <div class="nb-cell"></div><div class="nb-cell"><span class="nb-dot" style="background:#6B4FBB">JR</span></div><div class="nb-cell hot"><span class="nb-dot drop" style="background:#16a34a">AS</span></div>
-            <div class="nb-cell"></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC">TM</span></div><div class="nb-cell"></div>
-            <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5">DK</span></div><div class="nb-cell"></div><div class="nb-cell"></div>
+            <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5;transition-delay:.45s">RP</span></div><div class="nb-cell"><span class="nb-dot" style="background:#6B4FBB;transition-delay:.25s">JR</span></div><div class="nb-cell hot"><span class="nb-dot" style="background:#16a34a;transition-delay:0s">AS</span></div>
+            <div class="nb-cell"></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC;transition-delay:.15s">TM</span></div><div class="nb-cell"><span class="nb-dot" style="background:#0066CC;transition-delay:.3s">LW</span></div>
+            <div class="nb-cell"><span class="nb-dot" style="background:#9aa4b5;transition-delay:.5s">DK</span></div><div class="nb-cell"></div><div class="nb-cell"></div>
           </div>
-          <div class="nb-axis"><span>Performance</span><span>Stars</span></div>
+          <div class="nb-axis"><span>Performance →</span><span>Stars</span></div>
         </div>
       </div>
     </div>
