@@ -7739,23 +7739,38 @@ function selectEmailForChat(idx) {
 }
 
 async function detectTrackerSuggestion(email) {
-  // Load family-leave data so we can tell a brand-new case from an update to an existing one
+  // Load every tracker's data so we can match an email against any existing record
   try { if (typeof mpRecords !== 'undefined' && mpRecords === null && typeof loadMatPatRecords === 'function') await loadMatPatRecords(); } catch(e){}
   try { if (typeof wfCases !== 'undefined' && wfCases === null && typeof loadWfCases === 'function') await loadWfCases(); } catch(e){}
+  try { if (typeof immigrationRecords !== 'undefined' && immigrationRecords === null && typeof loadImmigrationRecords === 'function') await loadImmigrationRecords(); } catch(e){}
 
   const senderName = (email.from || '').replace(/<[^>]+>/, '').replace(/"/g, '').trim();
   const sLower = senderName.toLowerCase();
   const text = ((email.subject || '') + ' ' + (email.body || email.snippet || '')).toLowerCase();
   document.getElementById('trackerSuggest')?.remove();
 
-  // Already on the family-leave tracker? Match on full name to avoid first-name clashes.
+  // 1. Sender already on the family-leave tracker? (richest handling - maps to a checklist step)
+  // Match on full name to avoid first-name clashes.
   const existing = (mpRecords || []).find(r => (r.employeeName || '').trim().toLowerCase() === sLower);
   if (existing) {
     showExistingTrackerSuggest(existing, senderName, detectLeaveSubtopic(text, existing));
     return;
   }
 
-  // Not tracked yet - only offer to create a record if this clearly is a family-leave email.
+  // 2. Sender already on another tracker (conduct, performance, immigration, etc.)?
+  const senderOther = findOtherTrackerMatch(sLower);
+  if (senderOther) { showOtherTrackerSuggest(senderOther, senderName); return; }
+
+  // 3. Sender not tracked - does the email mention a tracked employee by full name?
+  //    (e.g. a manager emailing about someone on a tracker)
+  const mentioned = findMentionedTrackedPerson(text);
+  if (mentioned) {
+    if (mentioned.kind === 'mp') showExistingTrackerSuggest(mentioned.rec, mentioned.rec.employeeName, detectLeaveSubtopic(text, mentioned.rec));
+    else showOtherTrackerSuggest(mentioned.match, mentioned.match.employeeName);
+    return;
+  }
+
+  // 4. Nobody tracked yet - only offer to create a record if this clearly is a family-leave email.
   let type = null;
   if (/paternity|pat leave|spp\b/.test(text)) type = 'Paternity';
   else if (/shared parental|\bspl\b/.test(text)) type = 'Shared Parental';
@@ -7763,6 +7778,34 @@ async function detectTrackerSuggestion(email) {
   else if (/maternity|mat leave|\bsmp\b|pregnant|pregnancy|expecting|parental leave|family leave|due date/.test(text)) type = 'Maternity';
   if (!type) return;
   showNewTrackerSuggest(senderName, type);
+}
+
+// Match an exact full name (lowercased) against the conduct / performance / immigration trackers
+function findOtherTrackerMatch(nameLower) {
+  if (!nameLower) return null;
+  const wf = (typeof wfCases !== 'undefined' ? (wfCases || []) : []).find(c => (c.employeeName || '').trim().toLowerCase() === nameLower && c.status !== 'closed');
+  if (wf) {
+    const sc = (typeof WF_SCENARIOS !== 'undefined' ? WF_SCENARIOS : []).find(s => s.id === wf.scenarioId) || { label: 'case' };
+    return { kind: 'wf', id: wf.id, employeeName: wf.employeeName, label: sc.label || 'case' };
+  }
+  const imm = (typeof immigrationRecords !== 'undefined' ? (immigrationRecords || []) : []).find(r => (r.employeeName || '').trim().toLowerCase() === nameLower);
+  if (imm) return { kind: 'imm', id: imm.id, employeeName: imm.employeeName, label: 'immigration' };
+  return null;
+}
+
+// Find a tracked employee whose full name (first + surname) is mentioned anywhere in the email text
+function findMentionedTrackedPerson(text) {
+  const mentions = n => { n = (n || '').trim().toLowerCase(); return n && n.split(/\s+/).length >= 2 && text.includes(n); };
+  const mp = (typeof mpRecords !== 'undefined' ? (mpRecords || []) : []).find(r => mentions(r.employeeName));
+  if (mp) return { kind: 'mp', rec: mp };
+  const wf = (typeof wfCases !== 'undefined' ? (wfCases || []) : []).find(c => c.status !== 'closed' && mentions(c.employeeName));
+  if (wf) {
+    const sc = (typeof WF_SCENARIOS !== 'undefined' ? WF_SCENARIOS : []).find(s => s.id === wf.scenarioId) || { label: 'case' };
+    return { kind: 'wf', match: { kind: 'wf', id: wf.id, employeeName: wf.employeeName, label: sc.label || 'case' } };
+  }
+  const imm = (typeof immigrationRecords !== 'undefined' ? (immigrationRecords || []) : []).find(r => mentions(r.employeeName));
+  if (imm) return { kind: 'imm', match: { kind: 'imm', id: imm.id, employeeName: imm.employeeName, label: 'immigration' } };
+  return null;
 }
 
 function trackerSuggestShell() {
@@ -7835,6 +7878,35 @@ async function logFamilyLeaveUpdate() {
   if (typeof showTrackerTab === 'function') showTrackerTab('family-leave');
   setTimeout(() => { try { openMatPatRecord(p.recId); } catch(e){} }, 350);
   bzToast(`Logged on ${escapeHtml(rec.employeeName)}'s record${extra}.`);
+}
+
+// Email matches someone on the conduct / performance / immigration tracker -> offer to log it
+function showOtherTrackerSuggest(match, displayName) {
+  window._pendingOtherTracker = match;
+  const div = trackerSuggestShell();
+  const name = displayName || match.employeeName;
+  div.innerHTML = `<span style="font-size:14px;">📋</span><span style="flex:1;"><strong>${escapeHtml(name)}</strong> is on the <strong>${escapeHtml((match.label || 'case').toLowerCase())}</strong> tracker. Log this email on their record?</span><button onclick="logOtherTrackerUpdate()" style="font-size:11px;background:#F59E0B;color:white;border:none;border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;font-weight:600;white-space:nowrap;">Log on record</button><button onclick="document.getElementById('trackerSuggest').remove()" style="font-size:16px;background:none;border:none;cursor:pointer;color:#B45309;line-height:1;padding:0 4px;flex-shrink:0;">×</button>`;
+  insertTrackerSuggest(div);
+}
+
+async function logOtherTrackerUpdate() {
+  const m = window._pendingOtherTracker; if (!m) return;
+  document.getElementById('trackerSuggest')?.remove();
+  const entry = { date: new Date().toISOString(), type: 'email', note: 'Email received and logged.' };
+  if (m.kind === 'wf') {
+    const c = (wfCases || []).find(x => x.id === m.id); if (!c) return;
+    if (!c.contactLog) c.contactLog = [];
+    c.contactLog.push(entry);
+    try { await saveWfCases(); } catch(e){}
+    setTimeout(() => { try { openWfCasePanel(m.id); } catch(e){} }, 100);
+  } else if (m.kind === 'imm') {
+    const r = (immigrationRecords || []).find(x => x.id === m.id); if (!r) return;
+    if (!r.contactLog) r.contactLog = [];
+    r.contactLog.push(entry);
+    try { await saveImmigrationRecords(); } catch(e){}
+    setTimeout(() => { try { openImmigrationRecord(m.id); } catch(e){} }, 100);
+  }
+  bzToast(`Logged on ${escapeHtml(m.employeeName)}'s record.`);
 }
 
 function bzToast(msg) {
