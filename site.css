@@ -624,7 +624,7 @@ html:not(.js) .reveal{opacity:1!important;transform:none!important}
 .safe-ticks{display:flex;gap:14px;justify-content:center;flex-wrap:wrap;margin:22px 0 44px}
 .safe-tick{display:inline-flex;align-items:center;gap:9px;font-size:14px;font-weight:600;color:#fff;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.16);border-radius:var(--r-pill);padding:9px 16px}
 .safe-tick svg{width:17px;height:17px;color:var(--mint);flex-shrink:0}
-.safe-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:18px}
+.safe-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:18px}
 .safe-card{background:rgba(255,255,255,.05);border:1.5px solid rgba(255,255,255,.14);border-radius:var(--r-lg2);padding:22px;transition:transform .2s,border-color .2s}
 .safe-card:hover{transform:translateY(-5px);border-color:rgba(255,255,255,.3)}
 .safe-card .si{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:14px}
@@ -989,12 +989,18 @@ body{background:#fff;color:#1c1d22}
 @media (max-width:880px){.hero-cta-row{margin-top:10px}}
 @media (max-width:560px){.hero-cta-row .btn{padding:15px 28px;font-size:15.5px}}
 
-/* ===== v7: 2-card hero scene — bigger + all blue ===== */
+/* ===== v7: 3-card hero scene — bigger + all blue ===== */
 .hero-shot{min-height:470px}
-.hero-shot .lv-scene{max-width:600px;height:420px}
-.lv-c2{left:0;top:10px;width:66%;z-index:2;transform:rotate(-1.2deg)}
-.lv-c2.flow{height:236px}
-.lv-c3{right:0;top:208px;width:66%;z-index:3;transform:rotate(1deg)}
+.hero-shot .lv-scene{max-width:600px;height:430px}
+.lv-c1{left:0;top:0;width:57%;z-index:1;transform:rotate(-1.3deg)}
+.lv-c2{right:0;top:40px;width:50%;z-index:2;transform:rotate(1.3deg)}
+.lv-c2.flow{height:190px}
+.lv-c3{left:8%;top:206px;width:62%;z-index:3;transform:rotate(-.6deg)}
+/* offer letter (bigger, blue tokens) */
+.hero-shot .lv-letter .lt{font-size:11px}
+.hero-shot .lv-letter p{font-size:10px;line-height:1.8}
+.hero-shot .lv-ready{font-size:8.5px;padding:5px 12px}
+.hero-shot .tok .ph{font-size:9px}
 .hero-shot .lv-c{padding:15px 16px}
 .hero-shot .lv-c .hd{margin-bottom:12px}
 .hero-shot .lv-c .hd b{font-size:13px}

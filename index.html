@@ -20,7 +20,7 @@
 <link rel="preconnect" href="https://api.fontshare.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
 <link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap">
-<link rel="stylesheet" href="/site.css?v=20">
+<link rel="stylesheet" href="/site.css?v=22">
 <script type="application/ld+json">
 {"@context":"https://schema.org","@type":"SoftwareApplication","name":"Breeze HR","applicationCategory":"BusinessApplication","operatingSystem":"Web","description":"AI HR operations platform for UK businesses - drafting, policies, trackers and analytics in one place.","offers":{"@type":"Offer","priceCurrency":"GBP"},"url":"https://getbreeze.co.uk","creator":{"@type":"Organization","name":"Breeze HR","url":"https://getbreeze.co.uk"}}
 </script>
@@ -49,11 +49,21 @@
     <div class="hero-copy2 reveal in">
       <span class="eyebrow2 sticker">AI HR operations platform</span>
       <h1>Less admin.<br>More HR.</h1>
-      <p>Breeze isn't just another HR AI tool. It learns your policies, your tone and how your team works - then drafts the letters, tracks the cases and surfaces the insights. Built for UK employment law.</p>
+      <p>Breeze isn't just another HR AI tool. It learns how your company works and quietly takes the busywork off your plate - so you can spend your time on people, not admin.</p>
     </div>
     <div class="hero-shot reveal in d2">
       <span class="lv-orb o1"></span><span class="lv-orb o2"></span><span class="lv-orb o3"></span>
       <div class="lv-scene">
+        <!-- Offer letter: fields fill themselves -->
+        <div class="lv-c lv-c1 pB" id="lvLetter">
+          <div class="hd"><div class="lv-ic2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><div><div class="lv-eyebrow">Documents · from your template</div></div></div>
+          <div class="lv-letter">
+            <div class="lt">Offer of Employment</div>
+            <p>Dear <span class="tok t1"><span class="szr">Amelia Silva</span><span class="ph">{first_name}</span><span class="val">Amelia Silva</span></span>, we are delighted to offer you the role of <span class="tok t2"><span class="szr">Analyst</span><span class="ph">{role}</span><span class="val">Analyst</span></span>, starting <span class="tok t3"><span class="szr">1 Sept 2026</span><span class="ph">{start_date}</span><span class="val">1 Sept 2026</span></span> on a salary of <span class="tok t4"><span class="szr">£42,000</span><span class="ph">{salary}</span><span class="val">£42,000</span></span>.</p>
+            <s style="width:88%"></s><s style="width:66%"></s>
+            <div class="lv-ready"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg>Ready to send - your formatting kept</div>
+          </div>
+        </div>
         <!-- Email -> maternity flag -> switches to tracker -->
         <div class="lv-c lv-c2 flow" id="lvFlow">
           <div class="lv-view lv-inbox">
@@ -106,12 +116,10 @@
 <div class="logos">
   <div class="wrap"><p>Built for UK HR teams</p></div>
   <div class="marquee"><div class="marquee-row">
-    <span class="mq-pill"><span class="dot"></span>UK employment law</span>
     <span class="mq-pill"><span class="dot"></span>ACAS guidance</span>
     <span class="mq-pill"><span class="dot"></span>GDPR ready</span>
     <span class="mq-pill"><span class="dot"></span>EU-hosted</span>
     <span class="mq-pill"><span class="dot"></span>Zero data retention</span>
-    <span class="mq-pill"><span class="dot"></span>UK employment law</span>
     <span class="mq-pill"><span class="dot"></span>ACAS guidance</span>
     <span class="mq-pill"><span class="dot"></span>GDPR ready</span>
     <span class="mq-pill"><span class="dot"></span>EU-hosted</span>
@@ -132,10 +140,10 @@
       <div class="bcell b-sky col4 row2 reveal pop">
         <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
         <h3>Ask anything. Get an answer you can act on.</h3>
-        <p>Grounded in your policies and UK employment law - never a guess.</p>
+        <p>Grounded in your own policies and data - never a guess.</p>
         <div class="mc">
-          <div class="mc-row me"><div class="mc-av me">You</div><div class="mc-bub me">How much notice do we owe Tom if we make him redundant?</div></div>
-          <div class="mc-row"><div class="mc-av ai">BZ</div><div class="mc-bub ai">With 3 years' service, Tom is owed 3 weeks' statutory notice - your contract gives a month, so the month applies.<a class="mc-cite" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Tom's contract · clause 11</a></div></div>
+          <div class="mc-row me"><div class="mc-av me">You</div><div class="mc-bub me">What's our notice period for a new starter still in probation?</div></div>
+          <div class="mc-row"><div class="mc-av ai">BZ</div><div class="mc-bub ai">One week during probation, per your standard contract - rising to one month once they pass.<a class="mc-cite" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Your contract template</a></div></div>
         </div>
       </div>
       <!-- 9-box talent grid (real component) -->
@@ -204,7 +212,7 @@
     <div class="split-text reveal pop">
       <span class="sticker s-coral">Drafting</span>
       <h2 class="dh" style="margin-top:16px">Letters drafted in <span class="hl hl-coral">your voice</span>.</h2>
-      <p>Breeze learns how your team writes from every edit and rating, then drafts in that style - grounded in your policies and UK employment law.</p>
+      <p>Breeze learns how your team writes from every edit and rating, then drafts in that style - grounded in your own policies and templates.</p>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Compliant replies to employee emails in seconds</div>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 25+ ready-to-use letter and contract templates</div>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Download as Word or PDF, or send straight from your inbox</div>
@@ -258,7 +266,7 @@
     <div class="statband">
       <div class="sb c1 reveal pop d1"><div class="n" data-count="25" data-suffix="+">0</div><div class="l">Built-in letter templates</div></div>
       <div class="sb c2 reveal pop d2"><div class="n" data-count="8">0</div><div class="l">HR tools in one place</div></div>
-      <div class="sb c3 reveal pop d3"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">Built for UK employment law</div></div>
+      <div class="sb c3 reveal pop d3"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">Grounded in your own policies</div></div>
       <div class="sb c4 reveal pop d4"><div class="n">EU</div><div class="l">Hosted · GDPR ready</div></div>
     </div>
   </div>
@@ -349,8 +357,7 @@
     <div class="safe-grid">
       <div class="safe-card reveal pop d1"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Zero data retention</h3><p>Queries are processed in real time and not stored or used to train any AI model.</p></div>
       <div class="safe-card reveal pop d2"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>EU-hosted</h3><p>Data is stored in the EU with encryption in transit and at rest.</p></div>
-      <div class="safe-card reveal pop d3"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></div><h3>Isolated by company</h3><p>Row-level security means one company's data can never be seen by another.</p></div>
-      <div class="safe-card reveal pop d4"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>GDPR ready</h3><p>You are the controller, we are the processor, with a full DPA in place.</p></div>
+      <div class="safe-card reveal pop d3"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>GDPR ready</h3><p>You are the controller, we are the processor, with a full DPA in place.</p></div>
     </div>
   </div>
 </section>
@@ -392,7 +399,7 @@
     </div>
     <div class="foot-bot">
       <span>© 2026 Breeze HR · getbreeze.co.uk</span>
-      <span>Built for UK businesses · UK employment law · ACAS guidance</span>
+      <span>Built for UK businesses · ACAS guidance</span>
     </div>
   </div>
 </footer>
