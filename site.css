@@ -1030,6 +1030,29 @@ body{background:#fff;color:#1c1d22}
 .hero-shot .lv-orb.o2{background:rgba(52,211,153,.20)}
 .hero-shot .lv-orb.o3{background:rgba(139,108,255,.20)}
 
+/* ===== v9: marquee plain-text, headshot overlay, review bar ===== */
+.logos .marquee-row{gap:0;animation:scrollx 32s linear infinite}
+.mqx{font-size:17px;font-weight:700;color:#9aa6b8;white-space:nowrap}
+.mqsep{color:#cdd6e2;padding:0 22px;font-weight:700}
+
+/* headshot-over-screenshot */
+.shot-wrap{position:relative}
+.shot-frame{border-radius:20px;overflow:hidden;border:1px solid var(--hair);box-shadow:var(--softsh);background:#fff}
+.shot-frame img{display:block;width:100%}
+.headcard{position:absolute;right:-14px;top:-18px;display:flex;align-items:center;gap:11px;background:#fff;border:1px solid var(--hair);border-radius:16px;padding:10px 14px 10px 10px;box-shadow:var(--softsh);max-width:250px}
+.headcard img{width:48px;height:48px;border-radius:12px;object-fit:cover;flex-shrink:0}
+.headcard b{display:block;font-size:13px;font-weight:800;color:var(--ink-x);line-height:1.2}
+.headcard .role{display:block;font-size:11px;color:#6b7280;margin-top:1px}
+.headcard .tag{display:inline-block;margin-top:5px;font-size:9.5px;font-weight:700;color:#5b3fd1;background:#F0ECFF;border-radius:6px;padding:2px 7px}
+@media (max-width:560px){.headcard{right:0;top:-10px;max-width:210px}}
+
+/* review distribution bar (analytics box) */
+.rev-bar{display:flex;height:10px;border-radius:6px;overflow:hidden;margin:12px 0 9px;border:1px solid var(--hair)}
+.rev-bar span{display:block;height:100%}
+.rev-key{display:flex;flex-wrap:wrap;gap:8px 14px;font-size:10.5px;font-weight:600;color:var(--ink-soft)}
+.rev-key span{display:inline-flex;align-items:center;gap:5px}
+.rev-key i{width:8px;height:8px;border-radius:2px;display:inline-block}
+
 /* ===== v8: "AI suggestion" line on feature components ===== */
 .ai-hint{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;font-weight:600;color:#0a5da8;background:var(--brand-soft);border:1px solid #cfe0ff;border-radius:12px;padding:9px 12px;line-height:1.35}
 .ai-hint svg{width:15px;height:15px;flex-shrink:0;color:#2F6FE0}
