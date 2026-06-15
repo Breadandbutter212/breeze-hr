@@ -1025,20 +1025,10 @@ body{background:#fff;color:#1c1d22}
 .hero-shot .lv-area{height:70px}
 .hero-shot .lv-xlabels span{font-size:8px}
 .hero-shot .lv-live{font-size:9px;padding:3px 8px}
-/* all-blue recolour (no purple / green / amber) */
-.hero-shot .lv-akpi b{color:#2F6FE0!important}
-.hero-shot .lv-av{background:#2F6FE0}
-.hero-shot .lv-live{color:#0a5da8;background:#e3eefb}
-.hero-shot .lv-live::before{background:#2F6FE0}
-.hero-shot .lv-orb.o2{background:rgba(59,167,255,.18)}
-.hero-shot .lv-orb.o3{background:rgba(59,167,255,.16)}
-.hero-shot .lv-flag{background:#EAF2FF;border-color:#bfd9ff}
-.hero-shot .lv-flag .ft{color:#1f3b66}
-.hero-shot .lv-flag .fb{background:#2F6FE0}
-.hero-shot .flow.g3 .lv-flag,.hero-shot .flow.g4 .lv-flag{background:#dbeafe;border-color:#93c5fd}
-.hero-shot .flow.g3 .lv-flag .ft,.hero-shot .flow.g4 .lv-flag .ft{color:#1f3b66}
-.hero-shot .flow.g3 .lv-flag .fb,.hero-shot .flow.g4 .lv-flag .fb{background:#1e5fd0}
-.hero-shot .lv-step.done .bx{background:#2F6FE0;border-color:#2F6FE0}
+/* colourful again: KPIs blue/purple/green, green LIVE + checks, amber->green flag.
+   keep the orbs a calm blue so the section doesn't get noisy */
+.hero-shot .lv-orb.o2{background:rgba(52,211,153,.20)}
+.hero-shot .lv-orb.o3{background:rgba(139,108,255,.20)}
 
 /* ===== v8: "AI suggestion" line on feature components ===== */
 .ai-hint{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;font-weight:600;color:#0a5da8;background:var(--brand-soft);border:1px solid #cfe0ff;border-radius:12px;padding:9px 12px;line-height:1.35}
