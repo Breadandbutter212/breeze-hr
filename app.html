@@ -5929,7 +5929,7 @@ function homeCountUp(node, to){
 }
 
 async function homeGather(){
-  const out = { ppSoon:0, ppList:[], projActive:0, projOverdue:0, projAttn:0, chats:0, lastChat:null, docs:0 };
+  const out = { ppSoon:0, ppList:[], projActive:0, projOverdue:0, projAttn:0, chats:0, lastChat:null, docs:0, roles:0, rolesUrgent:0, cases:0 };
   // Projects (cheap: single row) - count active + overdue + attention
   try {
     if (typeof loadProjects==='function' && !Array.isArray(projectsData)) await loadProjects();
@@ -5969,13 +5969,27 @@ async function homeGather(){
       out.meetingNotes = count || 0;
     }
   } catch(e){}
+  // Headcount - open roles (not hired/withdrawn), plus urgent/high count
+  try {
+    if (typeof loadHCRoles==='function' && hcRoles===null) await loadHCRoles();
+    const rs = Array.isArray(hcRoles) ? hcRoles : [];
+    const open = rs.filter(r=>!['hired','withdrawn'].includes(r.stage));
+    out.roles = open.length;
+    out.rolesUrgent = open.filter(r=>r.priority==='urgent'||r.priority==='high').length;
+  } catch(e){}
+  // Trackers - open workflow cases (anything not closed)
+  try {
+    if (typeof loadWfCases==='function' && wfCases===null) await loadWfCases();
+    const cs = Array.isArray(wfCases) ? wfCases : [];
+    out.cases = cs.filter(c=>c.status!=='closed').length;
+  } catch(e){}
   return out;
 }
 
 async function homeFill(){
   const d = await homeGather();
   if (!document.getElementById('homeRing')) return;   // user navigated away
-  const attention = (d.projOverdue||0) + (d.ppSoon||0);
+  const attention = (d.projOverdue||0) + (d.ppSoon||0) + (d.rolesUrgent||0);
   const sub = document.getElementById('homeSub');
   if (sub) sub.innerHTML = attention>0
     ? `You've got <b>${attention}</b> thing${attention>1?'s':''} that need a look. Here's where they are.`
@@ -5987,10 +6001,11 @@ async function homeFill(){
     { key:'projects',color:'#F59E0B', name:'Projects', count:d.projActive,
       desc: d.projActive ? `${d.projActive} active` : 'Nothing on right now', view:'projects',
       flag: d.projOverdue ? `${d.projOverdue} overdue` : '' },
-    { key:'docs',    color:'#10B981', name:'Documents', count:d.docs,
-      desc: d.docs ? `${d.docs} template${d.docs>1?'s':''} ready to use` : 'No templates yet', view:'docs' },
-    { key:'chats',   color:'#8B5CF6', name:'Conversations', count:d.chats,
-      desc: d.chats ? `${d.chats} saved` : 'No saved chats yet', view:'chats' },
+    { key:'roles',   color:'#10B981', name:'Open roles', count:d.roles,
+      desc: d.roles ? `${d.roles} role${d.roles>1?'s':''} being hired` : 'No open roles', view:'headcount',
+      flag: d.rolesUrgent ? `${d.rolesUrgent} urgent` : '' },
+    { key:'cases',   color:'#8B5CF6', name:'Open cases', count:d.cases,
+      desc: d.cases ? `${d.cases} case${d.cases>1?'s':''} in progress` : 'No live cases', view:'trackers' },
   ];
   const total = segs.reduce((s,x)=>s+(x.count||0),0);
   homePaintRing(segs, total);
