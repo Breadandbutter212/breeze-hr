@@ -1078,7 +1078,7 @@ html:not(.js) .rev-bar span{transform:none!important}
 .logo-mk{background:#2C2C2E;color:#3B82F6}
 .foot-logo .logo-mk{background:#2C2C2E;color:#3B82F6}
 /* faint team photo behind the hero */
-.hero-v2{background:linear-gradient(180deg,rgba(238,243,252,.93),rgba(238,243,252,.965)),url('/img/team-planning.jpg') center/cover no-repeat}
+.hero-v2{background:linear-gradient(180deg,rgba(255,255,255,.86),rgba(255,255,255,.9)),url('/img/team-planning.jpg') center/cover no-repeat}
 /* little headshot tile on the hero inbox card */
 .lv-headcard{position:absolute;top:-12px;right:-12px;z-index:6;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--hair);border-radius:12px;padding:6px 11px 6px 6px;box-shadow:var(--softsh)}
 .lv-headcard img{width:34px;height:34px;border-radius:9px;object-fit:cover;flex-shrink:0}

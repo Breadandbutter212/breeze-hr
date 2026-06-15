@@ -1061,7 +1061,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- AUTOMATIONS -->
 <div class="view manage-view" id="view-automations">
   <div class="manage-topbar">
-    <div><div class="manage-title">Automations</div><div class="manage-sub">Build your own HR workflows - assign tasks, generate documents and draft emails.</div></div>
+    <div><div class="manage-title">Automations <span style="font-size:10px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:4px;font-weight:500;vertical-align:middle;">Beta</span></div><div class="manage-sub">Build your own HR workflows - assign tasks, generate documents and draft emails.</div></div>
   </div>
   <div class="manage-body" id="automationsBody"></div>
 </div>
@@ -15287,8 +15287,8 @@ function projFmtDate(iso){ if(!iso) return '-'; const d = new Date(iso); return 
 function projMilestoneOverdue(m){ return m && m.dueDate && !projMsDone(m) && new Date(m.dueDate) < projToday(); }
 function projOverdueList(p){ return (p.milestones||[]).filter(projMilestoneOverdue); }
 function projPct(p){ const ms = p.milestones||[]; if(!ms.length) return p.stage==='complete'?100:0; return Math.round(ms.reduce((s,m)=>s+projMsProgress(m),0) / ms.length); }
-// Ring colour by % complete: neutral at 0, then a smooth red -> amber -> green heat, solid green at 100.
-function projPctColor(pct){ if(pct<=0) return 'var(--surface3)'; if(pct>=100) return PROJ_RAG.green; return `hsl(${Math.round((pct/100)*130)}, 70%, 48%)`; }
+// Ring colour by % complete: neutral at 0, then red / amber / green bands by thirds.
+function projPctColor(pct){ if(pct<=0) return 'var(--surface3)'; if(pct<34) return PROJ_RAG.red; if(pct<67) return PROJ_RAG.amber; return PROJ_RAG.green; }
 function projComputeRag(p){
   if (p.rag && p.rag !== 'auto') return p.rag;
   if (p.stage === 'complete') return 'green';
@@ -15494,7 +15494,7 @@ function renderProjectDetail(){
           <div style="font-size:18px;font-weight:700;color:var(--ink);cursor:pointer;" onclick="projEditField('name')" title="Click to edit">${escapeHtml(p.name)}</div>
           <div style="font-size:13px;color:var(--ink2);margin-top:4px;cursor:pointer;" onclick="projEditField('objective')" title="Click to edit">${escapeHtml(p.objective||'Add an objective…')}</div>
         </div>
-        <div style="width:62px;height:62px;border-radius:50%;background:conic-gradient(${PROJ_RAG[rag]} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);">${pct}%</div></div>
+        <div style="width:62px;height:62px;border-radius:50%;background:conic-gradient(${projPctColor(pct)} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);">${pct}%</div></div>
       </div>
       <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;align-items:center;">
         <label style="font-size:11px;color:var(--ink3);">Stage <select style="${sel}" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
@@ -15504,7 +15504,7 @@ function renderProjectDetail(){
         <label style="font-size:11px;color:var(--ink3);">Start <input type="date" value="${p.startDate||''}" onchange="projSet('startDate',this.value)" style="${sel}cursor:text;"></label>
         <label style="font-size:11px;color:var(--ink3);">Target <input type="date" value="${p.targetDate||''}" onchange="projSet('targetDate',this.value)" style="${sel}cursor:text;"></label>
       </div>
-      <div style="margin-top:14px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${PROJ_RAG[rag]};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(projMsDone).length}/${(p.milestones||[]).length} tasks</div></div>
+      <div style="margin-top:14px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${projPctColor(pct)};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(projMsDone).length}/${(p.milestones||[]).length} tasks</div></div>
     </div>
 
     ${projMilestonesBlock(p, sel, card)}`;
@@ -15905,7 +15905,7 @@ async function projConfirmEmailToTask(){
     create:{ label:'Create', icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'}, {label:'Documents', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
     people:{ label:'Your people', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Talent review', view:'talent', beta:true}, {label:'Headcount planning', view:'headcount'} ] },
     policies:{ label:'Policies', icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', items:[ {label:'Policy library', view:'manage'} ] },
-    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Automations', view:'automations'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true} ] },
+    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true}, {label:'Automations', view:'automations', beta:true} ] },
     insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] },
     admin:{ label:'Admin', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 0-.33-1.82"/>', items:[ {label:'Settings', view:'settings'}, {label:'FAQs', view:'faqs'} ] }
   };
