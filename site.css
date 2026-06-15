@@ -879,7 +879,7 @@ body{background:#fff;color:#1c1d22}
    ===== v5: more useful product components + copy polish =====
    ============================================================ */
 /* 9-box: real names instead of initials */
-.m9 .nm{font-size:9px;font-weight:700;color:var(--ink-x);text-align:center;line-height:1.15;padding:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
+.m9 .nm{font-size:8px;font-weight:700;color:var(--ink-x);text-align:center;line-height:1.1;padding:1px 2px;white-space:normal;max-width:100%}
 .m9 .c.star .nm{color:#06794f}
 .m9 .c.risk .nm{color:#c23b2c}
 
