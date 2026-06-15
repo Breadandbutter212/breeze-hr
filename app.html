@@ -642,6 +642,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .trk-badge-amber { background:var(--amber-bg);color:var(--amber); }
 .trk-badge-red { background:var(--red-bg);color:var(--red); }
 .trk-badge-purple { background:#F3EEFF;color:#4B0082; }
+.trk-badge-teal { background:#E6F7F4;color:#0F766E; }
 .trk-badge-grey { background:var(--surface2);color:var(--ink2); }
 .trk-flag { display:flex;align-items:flex-start;gap:10px;background:#FFF8E7;border:1px solid #FDE68A;border-radius:var(--r);padding:11px 14px;font-size:12px;color:#78350F;line-height:1.5; }
 .trk-flag-icon { font-size:16px;flex-shrink:0;margin-top:-1px; }
@@ -2103,6 +2104,7 @@ const policies = [
   {icon:'🤱',name:'Maternity leave policy',desc:'52 weeks entitlement, SMP, enhanced pay, KIT days, return to work rights',status:'missing',acas:'https://www.acas.org.uk/maternity-paternity-and-adoption'},
   {icon:'👶',name:'Paternity leave policy',desc:'2 weeks statutory entitlement, SPP (£184.03/week), 15 weeks notice required before due date',status:'missing',acas:'https://www.acas.org.uk/maternity-paternity-and-adoption'},
   {icon:'👨‍👩‍👧',name:'Shared parental leave policy',desc:'Up to 50 weeks between parents, ShPP, eligibility and curtailment notice requirements',status:'missing',acas:'https://www.acas.org.uk/shared-parental-leave-and-pay'},
+  {icon:'👪',name:'Adoption leave policy',desc:'Up to 52 weeks entitlement, SAP, matching certificate, paid adoption appointments, KIT days, return to work rights',status:'missing',acas:'https://www.acas.org.uk/adoption-leave-and-pay'},
   {icon:'🏥',name:'Sickness absence policy',desc:'Self-certification (7 days), fit notes, SSP (£116.75/week), trigger points, long-term absence',status:'missing',acas:'https://www.acas.org.uk/absence-from-work'},
   {icon:'💰',name:'Pension policy',desc:'Auto-enrolment obligations, qualifying earnings, employer/employee contributions, opt-out',status:'missing',acas:'https://www.acas.org.uk/workplace-pensions'},
   {icon:'⚡',name:'Performance management policy',desc:'Informal feedback first, SMART objectives, formal review, PIP - ACAS code compliant',status:'missing',acas:'https://www.acas.org.uk/performance-management'},
@@ -2119,6 +2121,7 @@ const policies = [
 const processes = [
   {icon:'👋',name:'New starter onboarding',badge:'Building',steps:['Contract issued','Right to work check','IT setup','Welcome email','Day one check-in','Probation review set']},
   {icon:'🤱',name:'Maternity leave',badge:'Building',steps:['Initial notification','MAT B1 received','Pay calculated','Manager notified','Cover planned','Return date confirmed']},
+  {icon:'👪',name:'Adoption leave',badge:'Building',steps:['Initial notification','Matching certificate received','SAP calculated','Adoption appointments arranged','Cover planned','Return date confirmed']},
   {icon:'📉',name:'Performance management',badge:'Beta',steps:['Informal conversation','Follow-up email sent','Formal PIP issued','Review meetings','Outcome decision']},
   {icon:'🚪',name:'Offboarding',badge:'Beta',steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned']}
 ];
@@ -7787,6 +7790,7 @@ async function detectTrackerSuggestion(email) {
   let type = null;
   if (/paternity|pat leave|spp\b/.test(text)) type = 'Paternity';
   else if (/shared parental|\bspl\b/.test(text)) type = 'Shared Parental';
+  else if (/adoption|adopt|matching certificate|\bsap\b/.test(text)) type = 'Adoption';
   else if (/maternity|mat leave|\bsmp\b|pregnant|pregnancy|expecting|parental leave|family leave|due date/.test(text)) type = 'Maternity';
   if (!type) return;
   showNewTrackerSuggest(senderName, type);
@@ -7813,11 +7817,12 @@ function showNewTrackerSuggest(senderName, type) {
 
 // Work out what a follow-up email from a tracked employee is about, and which checklist step it maps to
 function detectLeaveSubtopic(text, rec) {
-  const scId = rec.type === 'Maternity' ? 'maternity-leave' : 'paternity-leave';
+  const scId = rec.type === 'Maternity' ? 'maternity-leave' : rec.type === 'Adoption' ? 'adoption-leave' : 'paternity-leave';
   const sc = (typeof WF_SCENARIOS !== 'undefined' ? WF_SCENARIOS : []).find(s => s.id === scId) || { steps: [] };
   const map = [
     { test:/dse|display screen|workstation|risk assessment|expectant mother|health (and|&) safety/, step:/risk assessment|dse/i, label:'DSE / risk assessment' },
     { test:/matb1|mat b1|midwife|gp form/, step:/matb1/i, label:'MATB1 form' },
+    { test:/matching certificate|adoption agency|placement|matched with/, step:/matching certificate|eligibility/i, label:'matching certificate' },
     { test:/kit day|keeping in touch/, step:/kit/i, label:'KIT days' },
     { test:/\bsmp\b|maternity pay|how.*pay|enhanced pay|pay during|pay will work|statutory.*pay|\bspp\b/, step:/smp|pay|entitlement/i, label:'pay / SMP' },
     { test:/return date|return to work|coming back|back to work|return early|extend.*leave/, step:/return|dates in writing|confirm.*dates/i, label:'return / leave dates' },
@@ -10908,7 +10913,7 @@ function mpFlags(records) {
   records.forEach(r => {
     const status = mpStatus(r);
     if (status === 'returned') return;
-    if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity') && status === 'active') {
+    if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity' || r.type === 'Adoption') && status === 'active') {
       flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave - dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
     }
     const days = mpDaysSinceContact(r);
@@ -10954,7 +10959,7 @@ async function renderTrackers() {
 function renderTrackersBody() {
   const body = document.getElementById('trackersBody');
   if (!body) return;
-  if (trackerTab === 'family-leave') renderWfCategoryTab(body, ['maternity-leave','paternity-leave'], {showMatPat:true});
+  if (trackerTab === 'family-leave') renderWfCategoryTab(body, ['maternity-leave','paternity-leave','adoption-leave'], {showMatPat:true});
   else if (trackerTab === 'absence') renderWfCategoryTab(body, ['short-term-absence','long-term-absence']);
   else if (trackerTab === 'leavers') renderWfCategoryTab(body, ['resignation']);
   else if (trackerTab === 'performance') renderWfCategoryTab(body, ['performance-concern']);
@@ -10973,12 +10978,13 @@ function renderTrackersBody() {
 // ── TRACKER GUIDANCE ENGINE ──
 const TRACKER_GUIDANCE_FALLBACK = {
   leave: {
-    title: 'Maternity, Paternity & Shared Parental Leave',
+    title: 'Maternity, Paternity, Adoption & Shared Parental Leave',
     source: 'ACAS & UK statutory guidance',
     acasUrl: 'https://www.acas.org.uk/maternity-paternity-and-adoption',
     points: [
-      '<strong>Eligibility - SMP/SPP:</strong> Employees need 26 weeks continuous employment by the 15th week before the expected week of childbirth. SMP = 90% AWE for 6 weeks, then £184.03/week (or 90% AWE if lower) for up to 33 weeks.',
-      '<strong>Leave entitlement:</strong> Maternity - up to 52 weeks (26 OML + 26 AML). Paternity - up to 2 weeks, taken within 56 days of birth. Shared Parental Leave - up to 50 weeks between parents once maternity is curtailed.',
+      '<strong>Eligibility - SMP/SPP/SAP:</strong> Employees need 26 weeks continuous employment by a qualifying week (15th week before the expected week of childbirth for SMP/SPP; the week matched with a child for SAP). SMP and SAP = 90% AWE for 6 weeks, then £184.03/week (or 90% AWE if lower) for up to 33 weeks.',
+      '<strong>Leave entitlement:</strong> Maternity - up to 52 weeks (26 OML + 26 AML). Paternity - up to 2 weeks, taken within 56 days of birth. Adoption - up to 52 weeks (26 OAL + 26 AAL), mirroring maternity, for one member of an adopting couple. Shared Parental Leave - up to 50 weeks between parents once maternity or adoption leave is curtailed.',
+      '<strong>Adoption specifics:</strong> Notice must be given within 7 days of being matched, supported by a matching certificate from the adoption agency. The primary adopter gets paid time off for up to 5 adoption appointments; a secondary adopter gets unpaid time off for up to 2.',
       '<strong>Keeping in Touch (KIT) days:</strong> Employees can work up to 10 KIT days during maternity leave without breaking or ending it. Shared Parental Leave allows up to 20 SPLIT days. KIT days must be agreed - the employee cannot be compelled to work.',
       '<strong>Dependants:</strong> When an employee starts family leave, review whether dependants need adding to health insurance, death-in-service or other company benefits schemes.',
       '<strong>Contact during leave:</strong> Maintain reasonable, agreed contact - typically monthly. Over-contacting or pressuring employees to return early may constitute detriment and give rise to a tribunal claim.',
@@ -11162,7 +11168,7 @@ function renderLeaveTracker(body) {
   const active  = recs.filter(r => mpStatus(r) === 'active');
   const upcoming= recs.filter(r => mpStatus(r) === 'upcoming');
   const returned= recs.filter(r => mpStatus(r) === 'returned');
-  const matActive = active.filter(r => r.type==='Maternity');
+  const matActive = active.filter(r => r.type==='Maternity' || r.type==='Adoption');
   const patActive = active.filter(r => r.type==='Paternity' || r.type==='Shared Parental');
   const flags = mpFlags(recs);
 
@@ -11172,7 +11178,7 @@ function renderLeaveTracker(body) {
     if (s==='upcoming') return `<span class="trk-badge trk-badge-blue">● Upcoming</span>`;
     return `<span class="trk-badge trk-badge-green">● Active</span>`;
   };
-  const typeBadge = (t) => t==='Maternity'?`<span class="trk-badge trk-badge-purple">Maternity</span>`:t==='Paternity'?`<span class="trk-badge trk-badge-blue">Paternity</span>`:`<span class="trk-badge trk-badge-amber">Shared Parental</span>`;
+  const typeBadge = (t) => t==='Maternity'?`<span class="trk-badge trk-badge-purple">Maternity</span>`:t==='Paternity'?`<span class="trk-badge trk-badge-blue">Paternity</span>`:t==='Adoption'?`<span class="trk-badge trk-badge-teal">Adoption</span>`:`<span class="trk-badge trk-badge-amber">Shared Parental</span>`;
   const contactAge = (r) => {
     const d = mpDaysSinceContact(r);
     if (d===null) return `<span style="color:var(--red);font-size:11px;">Never</span>`;
@@ -11184,8 +11190,8 @@ function renderLeaveTracker(body) {
   <div style="display:flex;flex-direction:column;gap:18px;">
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity').length} upcoming</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${patActive.length}</div><div class="trk-kpi-label">On paternity / SPL</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type!=='Maternity').length} upcoming</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity / adoption leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity'||r.type==='Adoption').length} upcoming</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${patActive.length}</div><div class="trk-kpi-label">On paternity / SPL</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Paternity'||r.type==='Shared Parental').length} upcoming</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${recs.filter(r=>r.kitDaysUsed>0).reduce((s,r)=>s+r.kitDaysUsed,0)}</div><div class="trk-kpi-label">KIT days used</div><div class="trk-kpi-sub">Across all active</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length>0?'var(--red)':'var(--green)'};">${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length}</div><div class="trk-kpi-label">Missing dependant</div><div class="trk-kpi-sub">Need adding to benefits</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${returned.length}</div><div class="trk-kpi-label">Returned to work</div><div class="trk-kpi-sub">This year</div></div>
@@ -11211,7 +11217,7 @@ function renderLeaveTracker(body) {
     <!-- Table -->
     <div class="trk-card">
       <div style="padding:14px 18px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
-        <div class="trk-section-head" style="margin:0;">Maternity, Paternity &amp; Shared Parental Leave</div>
+        <div class="trk-section-head" style="margin:0;">Maternity, Paternity, Adoption &amp; Shared Parental Leave</div>
         <div style="display:flex;gap:8px;align-items:center;">
           <button onclick="downloadMatPatCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
           <button onclick="openTrackerGuidance('leave')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
@@ -11252,13 +11258,13 @@ function openAddMatPatModal() {
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
     <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
       <div style="font-size:15px;font-weight:700;color:white;">New leave record</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Maternity, paternity or shared parental leave</div>
+      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Maternity, paternity, adoption or shared parental leave</div>
     </div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div style="grid-column:1/-1;position:relative;"><label style="${lbl}">Employee full name</label><input id="mp-name" placeholder="e.g. Sarah Mitchell" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('mp-name').value=emp.display_full_name||'';document.getElementById('mp-title').value=emp.employments?.[0]?.job_title||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Job title</label><input id="mp-title" placeholder="e.g. Marketing Manager" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
-        <div><label style="${lbl}">Leave type</label><select id="mp-type" style="${inp}"><option value="Maternity">Maternity</option><option value="Paternity">Paternity</option><option value="Shared Parental">Shared Parental</option></select></div>
+        <div><label style="${lbl}">Leave type</label><select id="mp-type" style="${inp}"><option value="Maternity">Maternity</option><option value="Paternity">Paternity</option><option value="Adoption">Adoption</option><option value="Shared Parental">Shared Parental</option></select></div>
         <div><label style="${lbl}">Due / birth date</label><input type="date" id="mp-due" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Leave start date</label><input type="date" id="mp-start" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
         <div><label style="${lbl}">Expected return date</label><input type="date" id="mp-return" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
@@ -11360,7 +11366,7 @@ function openMatPatRecord(id) {
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(rec.employeeName)}</div>
-            <span class="trk-badge ${rec.type==='Maternity'?'trk-badge-purple':rec.type==='Paternity'?'trk-badge-blue':'trk-badge-amber'}">${rec.type}</span>
+            <span class="trk-badge ${rec.type==='Maternity'?'trk-badge-purple':rec.type==='Paternity'?'trk-badge-blue':rec.type==='Adoption'?'trk-badge-teal':'trk-badge-amber'}">${rec.type}</span>
             <span class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
           </div>
           <div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(rec.jobTitle||'')}</div>
@@ -12920,6 +12926,20 @@ const WF_SCENARIOS = [
       {id:5,title:'Confirm leave dates in writing',desc:'Issue written confirmation of start/end dates, SPP calculation and any enhanced pay.',timeframe:'Once dates confirmed',tag:'legal',action:{label:'Draft paternity letter',type:'doc',docId:'t14'}},
     ]
   },
+  { id:'adoption-leave', cat:'Family Leave', icon:'👪', label:'Adoption leave',
+    steps:[
+      {id:1,title:'Acknowledge and confirm entitlement privately',desc:'Statutory Adoption Leave mirrors maternity - up to 52 weeks (26 weeks Ordinary plus 26 weeks Additional). Where a couple adopts jointly, only one can take adoption leave; the other may take paternity leave or Shared Parental Leave. The first conversation must be private and confidential.',timeframe:'Same day',tag:'recommended'},
+      {id:2,title:'Confirm eligibility and request the matching certificate',desc:'Employee needs 26 weeks continuous employment by the week they are matched with a child (UK adoption) or notified of a match (overseas). Request the matching certificate from the adoption agency - this is the adoption equivalent of the MATB1 and is required to process SAP.',timeframe:'Within 1 week of notification',tag:'legal'},
+      {id:3,title:'Schedule meeting to walk through the adoption leave policy',desc:'Explain leave entitlement (up to 52 weeks), SAP rates, how to give notice, KIT days and the right to return. Share the policy in writing. Check whether your policy offers enhanced pay.',timeframe:'Within 2 weeks',tag:'policy',policyTag:'adoption',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+      {id:4,title:'Arrange paid time off for adoption appointments',desc:'The primary adopter is entitled to paid time off to attend up to 5 adoption appointments. A secondary adopter may take unpaid time off for up to 2 appointments. Agree dates and confirm pay.',timeframe:'As appointments arise',tag:'legal'},
+      {id:5,title:'Calculate and confirm SAP entitlement',desc:'Statutory Adoption Pay = 90% AWE for the first 6 weeks, then £184.03/week (or 90% AWE if lower) for up to 33 weeks. Check 26 weeks continuous employment by the matching week. Confirm any enhanced pay under company policy.',timeframe:'Once matching confirmed',tag:'legal'},
+      {id:6,title:'Add dependant(s) to company benefits',desc:'Review health insurance, life assurance, pension nominations and any other benefits that require updating when a child joins the family. Commonly missed.',timeframe:'Within 2 weeks of notification',tag:'recommended',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+      {id:7,title:'Confirm adoption leave dates in writing',desc:'Employee must give notice within 7 days of being matched, stating the date they want leave to start (up to 14 days before placement). Letter must confirm OAL start, AAL end, expected return date and right to change the return date with 8 weeks notice.',timeframe:'Within 7 days of matching',tag:'legal'},
+      {id:8,title:'Discuss KIT days',desc:'Up to 10 Keeping in Touch days during leave without breaking it. Must be agreed by both parties. Paid at least at normal rate.',timeframe:'Before leave starts',tag:'policy'},
+      {id:9,title:'Plan cover and handover',desc:'Discuss workload handover and cover plan. Do not assume the employee wants to help recruit their own cover.',timeframe:'Before placement',tag:'recommended'},
+      {id:10,title:'Set keeping-in-touch schedule and log in tracker',desc:'Agree frequency and method of contact during leave. Log all contacts. Over-contacting can constitute detriment.',timeframe:'Before leave starts',tag:'recommended',action:{label:'Open mat/pat tracker',type:'tab',tab:'leave'}},
+    ]
+  },
   { id:'short-term-absence', cat:'Absence', icon:'🏥', label:'Short-term sickness absence',
     steps:[
       {id:1,title:'Log the absence immediately',desc:'Record: date, time, who reported it, reason given, expected return. Note if pregnancy-related - these must be recorded separately and excluded from trigger-point calculations.',timeframe:'Same day',tag:'recommended'},
@@ -13055,7 +13075,7 @@ async function saveWfCases() {
 
 function wfFindPolicy(tag) {
   if (!wfPolicies?.length) return null;
-  const tagMap = { maternity:['maternity','family leave','parental'], paternity:['paternity','parental'], absence:['absence','sickness','sick'], performance:['performance','pip','capability'], disciplinary:['disciplinary','conduct'], grievance:['grievance'], redundancy:['redundancy'], 'health-safety':['health','safety','dse'], probation:['probation'] };
+  const tagMap = { maternity:['maternity','family leave','parental'], paternity:['paternity','parental'], adoption:['adoption','family leave','parental'], absence:['absence','sickness','sick'], performance:['performance','pip','capability'], disciplinary:['disciplinary','conduct'], grievance:['grievance'], redundancy:['redundancy'], 'health-safety':['health','safety','dse'], probation:['probation'] };
   const kws = tagMap[tag] || [tag];
   return wfPolicies.find(p => kws.some(k => (p.name+' '+(p.content||'')).toLowerCase().includes(k)));
 }
@@ -13330,7 +13350,7 @@ async function createWfCaseForEmployee(employeeName, scenarioId) {
   if (!wfCases) wfCases = [];
   wfCases.push(newCase);
   // Auto-link to mat/pat record
-  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave') {
+  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave' || scenarioId === 'adoption-leave') {
     if (mpRecords === null) await loadMatPatRecords();
     const mpRec = (mpRecords||[]).find(r => r.employeeName?.toLowerCase().trim() === employeeName.toLowerCase().trim());
     if (mpRec) { mpRec.wfCaseId = newCase.id; newCase.mpRecordId = mpRec.id; await saveMatPatRecords(); }
@@ -13400,8 +13420,10 @@ function wfInjectChecklistButtons(container, activeCases) {
         // No case yet - replace existing View → with View + Checklist
         lastTd.style.cssText = 'white-space:nowrap;';
         const mpRecId = row.querySelector('button[onclick*="openMatPatRecord"]')?.getAttribute('onclick')?.match(/openMatPatRecord\('([^']+)'\)/)?.[1] || '';
+        const rowType = (row.querySelector('td:nth-child(2)')?.textContent || '').trim();
+        const rowScenario = rowType === 'Adoption' ? 'adoption-leave' : (rowType === 'Paternity' || rowType === 'Shared Parental') ? 'paternity-leave' : 'maternity-leave';
         lastTd.innerHTML = `<div style="display:flex;align-items:center;gap:4px;flex-wrap:nowrap;">
-          <button onclick="event.stopPropagation();createWfCaseForEmployee('${escapeHtml(name)}','maternity-leave')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">+ Checklist</button>
+          <button onclick="event.stopPropagation();createWfCaseForEmployee('${escapeHtml(name)}','${rowScenario}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;">+ Checklist</button>
           ${mpRecId?`<button onclick="event.stopPropagation();openMatPatRecord('${mpRecId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>`:''}
           ${mpRecId?`<button onclick="event.stopPropagation();deleteMatPatRecord('${mpRecId}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;">Delete</button>`:''}
         </div>`;
@@ -13446,10 +13468,10 @@ async function wfCreateCase(btn) {
   if (!wfCases) wfCases = [];
   wfCases.push(newCase);
   // Auto-add to mat/pat tracker for family leave scenarios
-  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave') {
+  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave' || scenarioId === 'adoption-leave') {
     if (mpRecords === null) await loadMatPatRecords();
     const exists = (mpRecords||[]).find(r => r.employeeName.toLowerCase().trim() === name.toLowerCase().trim());
-    const type = scenarioId === 'maternity-leave' ? 'Maternity' : 'Paternity';
+    const type = scenarioId === 'maternity-leave' ? 'Maternity' : scenarioId === 'adoption-leave' ? 'Adoption' : 'Paternity';
     if (!exists) {
       const newRec = { id:'mp_'+Date.now(), employeeName:name, jobTitle:'', type, dueDate:'', leaveStart:'', expectedReturn:'', actualReturn:'', kitDaysUsed:0, kitDaysMax:10, dependantAdded:false, contactLog:[], notes:'Added via Next Steps workflow.', createdAt:new Date().toISOString(), wfCaseId: newCase.id };
       if (!mpRecords) mpRecords = [];
