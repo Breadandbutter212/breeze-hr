@@ -1027,8 +1027,7 @@ body{background:#fff;color:#1c1d22}
 .hero-shot .lv-live{font-size:9px;padding:3px 8px}
 /* colourful again: KPIs blue/purple/green, green LIVE + checks, amber->green flag.
    keep the orbs a calm blue so the section doesn't get noisy */
-.hero-shot .lv-orb.o2{background:rgba(52,211,153,.20)}
-.hero-shot .lv-orb.o3{background:rgba(139,108,255,.20)}
+.hero-shot .lv-orb{display:none}
 
 /* ===== v9: marquee plain-text, headshot overlay, review bar ===== */
 .logos .marquee-row{gap:0;animation:scrollx 32s linear infinite}
