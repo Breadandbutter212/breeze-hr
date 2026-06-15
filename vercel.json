@@ -3,6 +3,7 @@
     { "source": "/app", "destination": "/app.html" },
     { "source": "/app/(.*)", "destination": "/app.html" },
     { "source": "/pricing", "destination": "/pricing.html" },
+    { "source": "/story", "destination": "/story.html" },
     { "source": "/templates", "destination": "/templates.html" },
     { "source": "/templates/offer-letter", "destination": "/offer-letter-template.html" },
     { "source": "/templates/contract-of-employment", "destination": "/contract-of-employment-template.html" },

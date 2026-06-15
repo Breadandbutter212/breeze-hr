@@ -1085,6 +1085,27 @@ html:not(.js) .rev-bar span{transform:none!important}
 .lv-headcard span{display:block;font-size:8.5px;color:#6b7280;font-weight:600;margin-top:1px}
 @media (max-width:560px){.lv-headcard{top:-8px;right:-6px}}
 
+/* ===== story page: lede, founder card, timeline ===== */
+.story-lede p{font-size:18px;line-height:1.7;color:var(--ink-soft);margin-bottom:16px}
+.founder{display:flex;align-items:center;gap:16px;margin-top:30px;background:#fff;border:1px solid var(--hair);border-radius:var(--r-lg2);padding:18px 20px;box-shadow:var(--softsh-sm);flex-wrap:wrap}
+.founder-av{width:48px;height:48px;border-radius:50%;flex-shrink:0;background:#2C2C2E;color:#3B82F6;font-family:var(--font-display);font-weight:800;font-size:16px;display:flex;align-items:center;justify-content:center}
+.founder-bd{flex:1;min-width:0}
+.founder-bd b{display:block;font-size:16px;font-weight:800;color:var(--ink-x)}
+.founder-bd span{display:block;font-size:13px;color:var(--ink-soft);margin-top:1px}
+.founder .btn{flex-shrink:0}
+
+.tl{max-width:680px;margin:0 auto;position:relative;padding-left:30px}
+.tl::before{content:'';position:absolute;left:6px;top:8px;bottom:8px;width:2px;background:var(--hair)}
+.tl-item{position:relative;padding-bottom:32px}
+.tl-item:last-child{padding-bottom:0}
+.tl-item::before{content:'';position:absolute;left:-30px;top:5px;width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid var(--brand)}
+.tl-role{font-size:17px;font-weight:800;letter-spacing:-.01em;color:var(--ink-x)}
+.tl-co{font-size:14px;font-weight:700;color:var(--brand);margin-top:1px}
+.tl-date{font-size:12.5px;color:#8a8d94;margin-top:3px}
+.tl-item ul{margin:11px 0 0;padding-left:18px}
+.tl-item li{font-size:14px;color:var(--ink-soft);line-height:1.6;margin-bottom:7px}
+@media (max-width:560px){.founder .btn{width:100%;justify-content:center}}
+
 /* ===== v8: "AI suggestion" line on feature components ===== */
 .ai-hint{display:flex;align-items:center;gap:8px;margin-top:14px;font-size:12.5px;font-weight:600;color:#0a5da8;background:var(--brand-soft);border:1px solid #cfe0ff;border-radius:12px;padding:9px 12px;line-height:1.35}
 .ai-hint svg{width:15px;height:15px;flex-shrink:0;color:#2F6FE0}
