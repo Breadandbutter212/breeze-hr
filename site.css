@@ -988,3 +988,50 @@ body{background:#fff;color:#1c1d22}
 .hero-cta-row .btn svg{width:18px;height:18px}
 @media (max-width:880px){.hero-cta-row{margin-top:10px}}
 @media (max-width:560px){.hero-cta-row .btn{padding:15px 28px;font-size:15.5px}}
+
+/* ===== v7: 2-card hero scene — bigger + all blue ===== */
+.hero-shot{min-height:470px}
+.hero-shot .lv-scene{max-width:600px;height:420px}
+.lv-c2{left:0;top:10px;width:66%;z-index:2;transform:rotate(-1.2deg)}
+.lv-c2.flow{height:236px}
+.lv-c3{right:0;top:208px;width:66%;z-index:3;transform:rotate(1deg)}
+.hero-shot .lv-c{padding:15px 16px}
+.hero-shot .lv-c .hd{margin-bottom:12px}
+.hero-shot .lv-c .hd b{font-size:13px}
+.hero-shot .lv-ic2{width:28px;height:28px;border-radius:9px}
+.hero-shot .lv-ic2 svg{width:15px;height:15px}
+.hero-shot .lv-view{inset:15px 16px}
+.hero-shot .lv-email .fr b{font-size:12px}
+.hero-shot .lv-email .fr span{font-size:10px}
+.hero-shot .lv-email p{font-size:11px;margin-top:9px}
+.hero-shot .lv-av{width:29px;height:29px;font-size:10px}
+.hero-shot .lv-flag{padding:8px 10px;margin-top:11px}
+.hero-shot .lv-flag .ft{font-size:9.5px}
+.hero-shot .lv-flag .fb{font-size:9px;padding:4px 10px}
+.hero-shot .lv-tracker .ts{font-size:9.5px;margin-bottom:9px}
+.hero-shot .lv-step{font-size:11px;padding:4px 0;gap:8px}
+.hero-shot .lv-step .bx{width:15px;height:15px}
+.hero-shot .lv-step .bx svg{width:9px;height:9px}
+.hero-shot .lv-akpis{gap:8px;margin-bottom:11px}
+.hero-shot .lv-akpi{padding:8px 9px;border-radius:9px}
+.hero-shot .lv-akpi b{font-size:17px}
+.hero-shot .lv-akpi span{font-size:8.5px}
+.hero-shot .lv-area{height:70px}
+.hero-shot .lv-xlabels span{font-size:8px}
+.hero-shot .lv-live{font-size:9px;padding:3px 8px}
+/* all-blue recolour (no purple / green / amber) */
+.hero-shot .lv-akpi b{color:#2F6FE0!important}
+.hero-shot .lv-av{background:#2F6FE0}
+.hero-shot .lv-live{color:#0a5da8;background:#e3eefb}
+.hero-shot .lv-live::before{background:#2F6FE0}
+.hero-shot .lv-orb.o2{background:rgba(59,167,255,.18)}
+.hero-shot .lv-orb.o3{background:rgba(59,167,255,.16)}
+.hero-shot .lv-flag{background:#EAF2FF;border-color:#bfd9ff}
+.hero-shot .lv-flag .ft{color:#1f3b66}
+.hero-shot .lv-flag .fb{background:#2F6FE0}
+.hero-shot .flow.g3 .lv-flag,.hero-shot .flow.g4 .lv-flag{background:#dbeafe;border-color:#93c5fd}
+.hero-shot .flow.g3 .lv-flag .ft,.hero-shot .flow.g4 .lv-flag .ft{color:#1f3b66}
+.hero-shot .flow.g3 .lv-flag .fb,.hero-shot .flow.g4 .lv-flag .fb{background:#1e5fd0}
+.hero-shot .lv-step.done .bx{background:#2F6FE0;border-color:#2F6FE0}
+@media (max-width:980px){.hero-shot .lv-scene{max-width:520px}}
+@media (max-width:560px){.hero-shot .lv-scene{transform:scale(.86);transform-origin:top center;height:380px}}
