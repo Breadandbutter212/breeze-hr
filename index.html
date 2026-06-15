@@ -141,69 +141,152 @@
 <!-- FEATURES -->
 <section class="section" id="features">
   <div class="wrap">
-    <div class="s-head center reveal">
-      <div class="s-label">One platform</div>
-      <h2>Everything an HR team does, in one place</h2>
-      <p>From answering a leave query to running a pay review, Breeze handles the admin so you can focus on people.</p>
+    <div class="s-head center reveal pop">
+      <span class="sticker s-sky">One tab. Not twelve tools.</span>
+      <h2 class="dh" style="margin-top:18px">Your whole HR job, <span class="hl hl-sky">handled</span>.</h2>
+      <p>Draft the letter. Track the case. Read the inbox. Score the talent. Breeze does the admin so you stay in the room.</p>
     </div>
-    <div class="grid">
-      <div class="card reveal d1"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div><h3>AI HR assistant</h3><p>Ask anything and get a policy-accurate answer in seconds. Paste an employee email and get a compliant draft reply, written in your tone.</p></div>
-      <div class="card reveal d2"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><h3>Document drafting</h3><p>Offer letters, contracts, disciplinary and reference letters. Answer a few questions and the document builds live, ready to download.</p></div>
-      <div class="card reveal d3"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>Case trackers</h3><p>Family leave, absence, performance, right to work and more. Detect a case from an email and add it to the right tracker in a click.</p></div>
-      <div class="card reveal d1"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div><h3>People analytics</h3><p>Drop in your data and get instant dashboards - headcount, attrition, compensation and more, with natural-language filtering.</p></div>
-      <div class="card reveal d2"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="13" width="3" height="5"/><rect x="12" y="9" width="3" height="9"/><rect x="17" y="5" width="3" height="13"/></svg></div><h3>Project tracker</h3><p>Plan HR projects with AI-generated plans, a timeline view, next-step checklists and status reports you can export.</p></div>
-      <div class="card reveal d3"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div><h3>Policies and knowledge</h3><p>Upload your handbook and policies. Breeze reads them first, so every answer reflects your rules, not generic advice.</p></div>
-      <div class="card reveal d1"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2"/><line x1="12" y1="19" x2="12" y2="23"/></svg></div><h3>Meeting notes</h3><p>Record meetings and get clean, structured notes and summaries written up automatically, ready to save against the case.</p></div>
-      <div class="card reveal d2"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div><h3>Workforce planning</h3><p>Org charts, headcount planning and people plans, so you can model the team you have and the one you are building.</p></div>
-      <div class="card reveal d3"><div class="ci"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="3" x2="12" y2="21"/><path d="M5 7h14"/><path d="M2 13l3-6 3 6z"/><path d="M16 13l3-6 3 6z"/></svg></div><h3>Compare and compensation</h3><p>Compare document versions and generate clear total-reward and compensation statements from your data.</p></div>
+    <div class="bento">
+      <!-- AI assistant (real chat component) -->
+      <div class="bcell b-sky col4 row2 reveal pop">
+        <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+        <h3>Ask anything. Get an answer you can act on.</h3>
+        <p>Grounded in your policies and UK employment law - never a guess.</p>
+        <div class="mc">
+          <div class="mc-row me"><div class="mc-av me">You</div><div class="mc-bub me">Can a maternity KIT day fall on a Friday?</div></div>
+          <div class="mc-row"><div class="mc-av ai">BZ</div><div class="mc-bub ai">Yes. Keeping In Touch days can be any working day, Fridays included - up to 10 without ending the leave or losing SMP.<a class="mc-cite" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Your Family Leave policy · §4.2</a></div></div>
+        </div>
+      </div>
+      <!-- 9-box talent grid (real component) -->
+      <div class="bcell b-grape col2 row2 reveal pop d1">
+        <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg></div>
+        <h3>Spot your stars.</h3>
+        <p>A 9-box, built from your review data.</p>
+        <div class="m9">
+          <div class="c"><span class="dot" style="background:#9aa4b5">RP</span></div>
+          <div class="c"><span class="dot" style="background:var(--grape)">JR</span></div>
+          <div class="c star"><span class="dot" style="background:var(--mint)">AS</span></div>
+          <div class="c"></div>
+          <div class="c"><span class="dot" style="background:var(--sky)">TM</span></div>
+          <div class="c"><span class="dot" style="background:var(--grape)">LW</span></div>
+          <div class="c risk"><span class="dot" style="background:#9aa4b5">DK</span></div>
+          <div class="c"></div>
+          <div class="c star"><span class="dot" style="background:var(--mint)">PN</span></div>
+        </div>
+        <div class="m9-axis"><span>Performance →</span><span class="hi">Stars</span></div>
+      </div>
+      <!-- case tracker (real component) -->
+      <div class="bcell b-coral col3 reveal pop d2">
+        <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+        <h3>Nothing slips through.</h3>
+        <div class="mtrk">
+          <div class="mtrk-h"><span>Employee</span><span>Type</span><span>Status</span></div>
+          <div class="mtrk-r"><span class="nm">Priya Shah<span>Marketing Lead</span></span><span class="t-badge t-purple">Maternity</span><span class="t-badge t-green">Active</span></div>
+          <div class="mtrk-r"><span class="nm">Tom Reilly<span>Account Exec</span></span><span class="t-badge t-amber">Absence</span><span class="t-badge t-blue">Day 3</span></div>
+          <div class="mtrk-r"><span class="nm">Dan Kerr<span>Engineer</span></span><span class="t-badge t-blue">Right to work</span><span class="t-badge t-amber">Review due</span></div>
+        </div>
+      </div>
+      <!-- stat cards (real component) -->
+      <div class="bcell b-mint col3 reveal pop d3">
+        <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+        <h3>People analytics, the second your data lands.</h3>
+        <div class="mstat">
+          <div class="s"><div class="v" style="color:#0a5da8">187</div><div class="l">Current headcount</div></div>
+          <div class="s dark"><div class="v">14.2%</div><div class="l">Attrition rate YTD</div></div>
+          <div class="s"><div class="v" style="color:#06794f">12</div><div class="l">New starters this month</div></div>
+          <div class="s"><div class="v" style="color:#c23b2c">93%</div><div class="l">Reviews on time</div></div>
+        </div>
+      </div>
+      <!-- icon cells -->
+      <div class="bcell b-sun col2 reveal pop d1">
+        <div class="bc-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+        <h3>Letters that draft themselves</h3>
+        <p>Offers, contracts, disciplinaries - answer a few questions, download as Word or PDF.</p>
+      </div>
+      <div class="bcell b-ink col2 reveal pop d2">
+        <div class="bc-ic" style="background:rgba(59,167,255,.18);color:#9bd2ff"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg></div>
+        <h3>It reads your handbook first</h3>
+        <p>Upload your policies and every answer reflects your rules, not generic advice.</p>
+      </div>
+      <div class="bcell col2 reveal pop d3">
+        <div class="bc-ic" style="background:var(--grape-bg);color:#5b3fd1"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/></svg></div>
+        <h3>Meeting notes, projects & planning</h3>
+        <p>Auto-written notes, AI project plans and workforce planning - all in one place.</p>
+      </div>
     </div>
   </div>
 </section>
 
 <!-- SPLIT 1: drafting -->
-<section class="section alt">
+<section class="section warm">
   <div class="wrap split">
-    <div class="split-text reveal">
-      <div class="s-label">Drafting</div>
-      <h2>Letters and replies, drafted in your voice</h2>
+    <div class="split-text reveal pop">
+      <span class="sticker s-coral">Drafting</span>
+      <h2 class="dh" style="margin-top:16px">Letters drafted in <span class="hl hl-coral">your voice</span>.</h2>
       <p>Breeze learns how your team writes from every edit and rating, then drafts in that style - grounded in your policies and UK employment law.</p>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Compliant replies to employee emails in seconds</div>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 25+ ready-to-use letter and contract templates</div>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Download as Word or PDF, or send straight from your inbox</div>
     </div>
-    <div class="split-img reveal d2"><img src="/img/documents.jpg" alt="HR professionals reviewing documents on laptops" loading="lazy"></div>
+    <div class="reveal pop d2 float">
+      <div class="showcase draft anim sc-coral">
+        <div class="sc-head"><div class="ic" style="background:var(--coral-bg);color:#c23b2c"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div><b>Offer letter · Account Executive</b><span class="live">Drafting</span></div>
+        <div class="d-to">To <b>jordan.lee@example.com</b> · in your house style</div>
+        <div class="ln w1"></div><div class="ln w2"></div><div class="ln w3"></div><div class="ln w4"></div>
+        <div class="d-foot">
+          <span class="pill dl"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Download</span>
+          <span class="pill gh">Word · PDF</span>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- SPLIT 2: from inbox to tracked -->
 <section class="section">
   <div class="wrap split rev">
-    <div class="split-text reveal">
-      <div class="s-label">From inbox to tracked</div>
-      <h2>It spots the case and tracks it for you</h2>
+    <div class="split-text reveal pop">
+      <span class="sticker s-mint">Inbox → tracked</span>
+      <h2 class="dh" style="margin-top:16px">It spots the case and <span class="hl hl-mint">tracks it</span> for you.</h2>
       <p>Connect Gmail or Outlook and Breeze reads incoming emails, flags what they relate to - maternity, absence, a grievance - and adds them to the right tracker automatically.</p>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Detects family leave, absence and ER cases from email</div>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> One click to add, with the next steps already mapped</div>
       <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Nothing slips through the cracks</div>
     </div>
-    <div class="split-img reveal d2"><img src="/img/desk.jpg" alt="Workspace with laptops and devices viewed from above" loading="lazy"></div>
+    <div class="reveal pop d2 float f2">
+      <div class="showcase sc-mint">
+        <div class="sc-head"><div class="ic" style="background:var(--mint-bg);color:#06794f"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg></div><b>Inbox</b><span class="live">Watching</span></div>
+        <div class="flow">
+          <div class="email"><div class="av">RC</div><div class="bd"><div class="sub">Rachel Coombs · Starting my maternity leave</div><div class="pre">Hi, just letting you know my last day before leave will be 21 March, with my due date on 4 April…</div></div></div>
+          <div class="detect"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5L19 19M19 5l-2.5 2.5M7.5 16.5L5 19"/></svg>Detected: Maternity leave → Family leave tracker</div>
+          <div class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg></div>
+          <div class="mtrk" style="margin-top:0">
+            <div class="mtrk-r"><span class="nm">Rachel Coombs<span>Product Designer</span></span><span class="t-badge t-purple">Maternity</span><span class="t-badge t-green">Added</span></div>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 </section>
 
 <!-- STATS -->
-<section class="section alt">
-  <div class="wrap stats">
-    <div class="stat reveal d1"><div class="n" data-count="25" data-suffix="+">0</div><div class="l">Built-in templates</div></div>
-    <div class="stat reveal d2"><div class="n" data-count="8">0</div><div class="l">HR tools in one platform</div></div>
-    <div class="stat reveal d3"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">Built for UK employment law</div></div>
-    <div class="stat reveal d4"><div class="n">EU</div><div class="l">Hosted, GDPR ready</div></div>
+<section class="section tint has-blobs">
+  <span class="blob blob-mint" style="width:340px;height:340px;top:-120px;right:-60px"></span>
+  <span class="blob blob-sky" style="width:300px;height:300px;bottom:-130px;left:-70px;opacity:.4"></span>
+  <div class="wrap">
+    <div class="statband">
+      <div class="sb c1 reveal pop d1"><div class="n" data-count="25" data-suffix="+">0</div><div class="l">Built-in letter templates</div></div>
+      <div class="sb c2 reveal pop d2"><div class="n" data-count="8">0</div><div class="l">HR tools in one tab</div></div>
+      <div class="sb c3 reveal pop d3"><div class="n" data-count="100" data-suffix="%">0</div><div class="l">Built for UK employment law</div></div>
+      <div class="sb c4 reveal pop d4"><div class="n">EU</div><div class="l">Hosted · GDPR ready</div></div>
+    </div>
   </div>
 </section>
 
 <!-- INTEGRATIONS -->
 <section class="section">
   <div class="wrap">
-    <div class="s-head center reveal"><div class="s-label">Integrations</div><h2>Works with the tools you already use</h2><p>Connect your inbox, documents and HR data so Breeze can read, draft and track in context.</p></div>
+    <div class="s-head center reveal pop"><span class="sticker s-mint">Integrations</span><h2 class="dh" style="margin-top:16px">Plays nice with your <span class="hl hl-mint">stack</span>.</h2><p>Connect your inbox, documents and HR data so Breeze can read, draft and track in context.</p></div>
     <div class="int-logos reveal d1">
       <span class="int-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg> Gmail</span>
       <span class="int-pill"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/></svg> Outlook</span>
@@ -217,42 +300,34 @@
 <!-- HOW IT WORKS -->
 <section class="section alt" id="how">
   <div class="wrap">
-    <div class="s-head center reveal"><div class="s-label">How it works</div><h2>Up and running in an afternoon</h2></div>
+    <div class="s-head center reveal pop"><span class="sticker s-coral">How it works</span><h2 class="dh" style="margin-top:16px">Live by <span class="hl hl-coral">this afternoon</span>.</h2></div>
     <div class="steps">
-      <div class="step reveal d1"><h3>Add your policies</h3><p>Upload your handbook and policies. Breeze reads them and learns how your company does things.</p></div>
-      <div class="step reveal d2"><h3>Connect your inbox</h3><p>Link Gmail or Outlook so Breeze can read, draft and track straight from your emails.</p></div>
-      <div class="step reveal d3"><h3>Let it take the admin</h3><p>Ask questions, draft letters, track cases and pull insights - all in your tone, all compliant.</p></div>
+      <div class="step reveal pop d1"><h3>Add your policies</h3><p>Upload your handbook and policies. Breeze reads them and learns how your company does things.</p></div>
+      <div class="step reveal pop d2"><h3>Connect your inbox</h3><p>Link Gmail or Outlook so Breeze can read, draft and track straight from your emails.</p></div>
+      <div class="step reveal pop d3"><h3>Let it take the admin</h3><p>Ask questions, draft letters, track cases and pull insights - all in your tone, all compliant.</p></div>
     </div>
   </div>
 </section>
 
-<!-- WHY -->
-<section class="section" id="why">
-  <div class="wrap split">
-    <div class="split-img reveal"><img src="/img/interview.jpg" alt="HR manager interviewing a candidate" loading="lazy"></div>
-    <div class="split-text reveal d2">
-      <div class="s-label">Why Breeze</div>
-      <h2>Run HR like a much bigger team</h2>
-      <p>Enterprise-grade drafting, tracking and analytics, sized for a team of one. Breeze keeps the HR professional in control at every step - it drafts based on what you have told it, flags what it does not know, and never guesses.</p>
-      <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Your data stays yours - never used to train AI models</div>
-      <div class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Every company isolated, EU-hosted, GDPR ready</div>
-    </div>
-  </div>
-</section>
-
-<!-- SECURITY -->
-<section class="section" style="background:#16284A;color:#fff">
+<!-- WHY + SECURITY (merged) -->
+<section class="section safe has-blobs" id="why">
+  <span class="blob blob-mint" style="width:380px;height:380px;top:-140px;left:-80px"></span>
+  <span class="blob blob-grape" style="width:340px;height:340px;bottom:-150px;right:-70px"></span>
   <div class="wrap">
-    <div class="s-head center reveal" style="color:#fff">
-      <div class="s-label" style="color:#7FE3B0">Security and compliance</div>
-      <h2 style="color:#fff">Enterprise-grade, built for UK HR data</h2>
-      <p style="color:rgba(255,255,255,.7)">HR data is sensitive. Breeze is built so it stays private, isolated and compliant from day one.</p>
+    <div class="safe-head reveal pop">
+      <span class="sticker s-mint">Why Breeze</span>
+      <h2 class="dh" style="margin-top:16px">Run HR like a <span class="hl hl-mint">much bigger team</span> - safely.</h2>
+      <p>Enterprise-grade drafting, tracking and analytics, sized for a team of one. Breeze keeps the HR professional in control at every step - it drafts based on what you have told it, flags what it does not know, and never guesses.</p>
     </div>
-    <div class="sec-grid">
-      <div class="sec reveal d1"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Zero data retention</h3><p>Queries are processed in real time and not stored or used to train any AI model.</p></div>
-      <div class="sec reveal d2"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>EU-hosted</h3><p>Data is stored in the EU with encryption in transit and at rest.</p></div>
-      <div class="sec reveal d3"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></div><h3>Isolated by company</h3><p>Row-level security means one company's data can never be seen by another.</p></div>
-      <div class="sec reveal d4"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>GDPR ready</h3><p>You are the controller, we are the processor, with a full DPA in place.</p></div>
+    <div class="safe-ticks reveal pop d1">
+      <span class="safe-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Your data stays yours - never used to train AI models</span>
+      <span class="safe-tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Every company isolated, EU-hosted, GDPR ready</span>
+    </div>
+    <div class="safe-grid">
+      <div class="safe-card reveal pop d1"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg></div><h3>Zero data retention</h3><p>Queries are processed in real time and not stored or used to train any AI model.</p></div>
+      <div class="safe-card reveal pop d2"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div><h3>EU-hosted</h3><p>Data is stored in the EU with encryption in transit and at rest.</p></div>
+      <div class="safe-card reveal pop d3"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7h-9"/><path d="M14 17H5"/><circle cx="17" cy="17" r="3"/><circle cx="7" cy="7" r="3"/></svg></div><h3>Isolated by company</h3><p>Row-level security means one company's data can never be seen by another.</p></div>
+      <div class="safe-card reveal pop d4"><div class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div><h3>GDPR ready</h3><p>You are the controller, we are the processor, with a full DPA in place.</p></div>
     </div>
   </div>
 </section>
@@ -260,7 +335,7 @@
 <!-- TEMPLATES TEASER -->
 <section class="section alt">
   <div class="wrap">
-    <div class="s-head center reveal"><div class="s-label">Free resources</div><h2>Free UK HR letter templates</h2><p>Grab a compliant starting point, or generate a personalised version in seconds inside Breeze.</p></div>
+    <div class="s-head center reveal pop"><span class="sticker s-sky">Free resources</span><h2 class="dh" style="margin-top:16px">Free UK HR <span class="hl hl-sun">templates</span>.</h2><p>Grab a compliant starting point, or generate a personalised version in seconds inside Breeze.</p></div>
     <div class="chips reveal d1" style="justify-content:center">
       <a href="/templates/offer-letter">Offer letter</a>
       <a href="/templates/contract-of-employment">Contract of employment</a>
@@ -274,9 +349,9 @@
 
 <!-- CTA -->
 <section style="padding:0 0 92px">
-  <div class="cta reveal">
-    <h2>HR professionals belong in the room, not the inbox.</h2>
-    <p>Join HR teams using Breeze to handle the admin faster.</p>
+  <div class="cta reveal pop">
+    <h2>Belong in the room, not the inbox.</h2>
+    <p>Join the HR teams using Breeze to handle the admin faster.</p>
     <a href="/app" class="btn btn-light btn-lg">Get started free</a>
   </div>
 </section>
