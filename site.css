@@ -1107,6 +1107,7 @@ html:not(.js) .rev-bar span{transform:none!important}
 @media (max-width:560px){.founder .btn{width:100%;justify-content:center}}
 
 /* horizontal history line (titles + industry, no companies) */
+.htl-head{text-align:center;font-size:12px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#9499a3;margin:44px 0 4px}
 .htl{display:flex;gap:14px;overflow-x:auto;padding:8px 2px 14px}
 .htl-item{flex:1 0 120px;min-width:120px}
 .htl-yr{font-family:var(--font-display);font-weight:800;font-size:16px;color:var(--ink-x);height:22px}
