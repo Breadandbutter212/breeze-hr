@@ -744,4 +744,110 @@ html:not(.js) .reveal{opacity:1!important;transform:none!important}
 
 /* template article pages: match the system */
 .article h1{font-family:var(--font-display);letter-spacing:-.03em}
-.ai-cta{background:linear-gradient(125deg,#3BA7FF,#FF6B5B);border:1.5px solid var(--ink-x);box-shadow:8px 9px 0 var(--ink-x)}
+
+/* ============================================================
+   ===== v4: HUMAANS-STYLE — calm, soft, blue + ink ===========
+   Final layer. Drops hard offset shadows, rotation and the
+   multicolour treatment for soft shadows, white/soft-blue
+   panels, clean grey eyebrow pills and black pill buttons.
+   ============================================================ */
+:root{
+  --font-display:'Inter',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+  --brand:#2F6FE0; --brand-soft:#EEF4FF;
+  --paper:#ffffff; --tint:#EEF3FC; --panel:#DEEAFD; --hair:#ECEAE3;
+  --softsh:0 18px 44px -20px rgba(20,34,68,.26); --softsh-sm:0 10px 26px -14px rgba(20,34,68,.18);
+}
+body{background:#fff;color:#1c1d22}
+
+/* type: heavy, tight, near-black; no marker highlight */
+.dh,.s-head h2,.hero2 h1,.cta h2,.article h1,.safe-head h2{font-family:var(--font-display);font-weight:800;letter-spacing:-.035em}
+.hl{background:none!important;padding:0!important;border-radius:0!important;color:inherit!important}
+.gtext{-webkit-text-fill-color:initial;background:none;color:var(--brand)}
+
+/* eyebrow pills: clean white pill, grey uppercase (Humaans) */
+.sticker,.sticker.s-sky,.sticker.s-mint,.sticker.s-coral{
+  background:#fff;border:1px solid var(--hair);color:#6b7280;box-shadow:none;transform:none;
+  text-transform:uppercase;letter-spacing:.11em;font-size:11px;font-weight:700;padding:7px 14px;border-radius:var(--r-pill)}
+.s-label{color:#9499a3;letter-spacing:.13em}
+
+/* buttons: solid black primary, clean ghost */
+.btn-primary{background:var(--ink-x);color:#fff;box-shadow:none}
+.btn-primary:hover{background:#000;transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(0,0,0,.4)}
+.btn-ghost,.hero2 .btn-ghost{background:#fff;border:1px solid var(--hair);color:var(--ink-x);box-shadow:none}
+.btn-ghost:hover,.hero2 .btn-ghost:hover{border-color:#cdd4df;transform:translateY(-1px);box-shadow:none}
+
+/* section rhythm: white + soft blue. kill decorative blobs */
+.blob{display:none!important}
+.section.alt,.section.warm,.section.tint{background:var(--tint)!important;border:none!important}
+
+/* feature bento: soft white cards, subtle shadow, no rotation/hard shadow */
+.bcell,.b-sky,.b-mint,.b-coral,.b-grape,.b-sun{border:1px solid var(--hair)!important;box-shadow:var(--softsh-sm)!important;border-radius:22px}
+.bcell{transform:none!important}
+.bcell:hover{transform:translateY(-4px)!important;box-shadow:var(--softsh)!important}
+.bcell .bc-ic,.b-coral .bc-ic{background:var(--brand-soft)!important;color:#1f2937!important;border-radius:13px}
+.b-ink{background:#171717!important;box-shadow:var(--softsh-sm)!important}
+.b-ink .bc-ic{background:rgba(255,255,255,.12)!important;color:#cfe0ff!important}
+
+/* lifted components: calm the chat bubble shadow */
+.mc-bub.ai{box-shadow:none;border-color:var(--hair)}
+.mc-bub.me{background:var(--brand-soft);border-color:#cfe0ff;color:#1f3b66}
+.mc-av.ai{background:var(--brand)}
+.mc-cite{background:var(--brand-soft);border-color:#cfe0ff;color:#1f3b66}
+
+/* stat band: soft, black numbers */
+.sb{box-shadow:var(--softsh-sm)!important;transform:none!important;border:1px solid var(--hair);border-radius:22px}
+.sb:hover{transform:translateY(-4px)!important;box-shadow:var(--softsh)!important}
+.sb .n,.sb.c1 .n,.sb.c2 .n,.sb.c3 .n,.sb.c4 .n{color:var(--ink-x)!important}
+
+/* steps: soft, uniform ink number */
+.steps .step,.steps .step:nth-child(2),.steps .step:nth-child(3){box-shadow:var(--softsh-sm)!important;border:1px solid var(--hair);transform:none}
+.steps .step:hover{transform:translateY(-4px)}
+.steps .step::before,.steps .step:nth-child(2)::before,.steps .step:nth-child(3)::before{box-shadow:none!important;background:var(--ink-x)}
+
+/* marquee + chips + integrations: soft, single accent */
+.logos{border-bottom:1px solid var(--hair)}
+.mq-pill{box-shadow:var(--softsh-sm);border:1px solid var(--hair);transform:none!important}
+.mq-pill .dot{background:var(--brand)!important}
+.chips a{box-shadow:none;border:1px solid var(--hair)}
+.chips a:hover{transform:translateY(-2px);background:var(--brand-soft)}
+.int-pill{box-shadow:none;border:1px solid var(--hair)}
+.int-pill:hover{transform:translateY(-2px) rotate(0)}
+.int-pill svg,.int-pill:nth-child(2) svg,.int-pill:nth-child(3) svg,.int-pill:nth-child(4) svg,.int-pill:nth-child(5) svg{color:var(--brand)}
+
+/* split showcases: white card on the tinted section, soft shadow */
+.showcase{box-shadow:var(--softsh)!important;border:1px solid var(--hair)!important;border-radius:24px}
+.sc-head .ic{background:var(--brand-soft);color:#1f2937}
+.draft .pill.dl{background:var(--ink-x)}
+.flow .detect{color:#1f3b66;background:var(--brand-soft);border-color:#cfe0ff}
+
+/* safe (security) section: keep dark, blue glyphs */
+.safe-card:nth-child(1) .si,.safe-card:nth-child(2) .si,.safe-card:nth-child(3) .si,.safe-card:nth-child(4) .si{background:rgba(96,150,255,.16)!important;color:#9fc2ff!important}
+.safe-tick svg{color:#9fc2ff}
+
+/* CTA: clean black panel, white button (no rainbow) */
+.cta{background:var(--ink-x)!important;border:none!important;box-shadow:var(--softsh)!important;border-radius:28px}
+.cta::before{display:none!important}
+.cta .btn-light{background:#fff;color:var(--ink-x);border:none;box-shadow:none}
+.cta .btn-light:hover{transform:translateY(-1px);box-shadow:0 12px 24px -10px rgba(0,0,0,.35)}
+
+/* in-article CTA: calm blue */
+.ai-cta{background:linear-gradient(120deg,#2F6FE0,#3BA7FF)!important;border:none!important;box-shadow:var(--softsh)!important}
+
+/* ===== NEW HERO (Humaans split: bold type + product shot) ===== */
+.hero-v2{background:var(--tint);border-bottom:1px solid var(--hair)}
+.hero2.hero-split{display:grid;grid-template-columns:1fr 1.08fr;gap:56px;align-items:center;text-align:left;padding:78px 32px 86px}
+.hero-copy2 .eyebrow2{margin-bottom:20px}
+.hero2 h1{font-family:var(--font-display);font-weight:800;font-size:66px;line-height:1.02;letter-spacing:-.04em;color:var(--ink-x);margin:0 0 20px}
+.hero-copy2 p{font-size:19px;color:#54555a;line-height:1.6;max-width:520px;margin:0 0 28px}
+.hero-btns2{display:flex;gap:13px;flex-wrap:wrap}
+.hero-sub2{margin-top:18px;font-size:13px;color:#8a8d94}
+.hero-shot{position:relative}
+.hero-shot-panel{background:var(--panel);border-radius:26px;padding:26px 26px 0;overflow:hidden;box-shadow:var(--softsh)}
+.hero-shot-panel img{display:block;width:100%;border-radius:12px 12px 0 0;box-shadow:0 -1px 0 rgba(0,0,0,.04);border:1px solid rgba(0,0,0,.06);border-bottom:none}
+@media (max-width:880px){
+  .hero2.hero-split{grid-template-columns:1fr;gap:36px;padding:56px 24px 60px;text-align:center}
+  .hero-copy2 p{margin-left:auto;margin-right:auto}
+  .hero-btns2{justify-content:center}
+  .hero2 h1{font-size:46px}
+}
+@media (max-width:560px){.hero2 h1{font-size:38px}.hero-shot-panel{padding:16px 16px 0}}
