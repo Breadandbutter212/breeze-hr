@@ -980,3 +980,8 @@ body{background:#fff;color:#1c1d22}
 @media (max-width:980px){.hero-shot .lv-scene{max-width:480px}}
 @media (max-width:880px){.hero-shot{min-height:400px}.hero-shot .lv-scene{max-width:520px;margin:0 auto}}
 @media (max-width:560px){.hero-shot .lv-scene{transform:scale(.82);transform-origin:top center;height:320px}}
+
+/* hero CTAs: centered row at the bottom, spanning both columns */
+.hero-cta-row{grid-column:1 / -1;display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:26px}
+.hero-cta-row .hero-btns2{justify-content:center}
+@media (max-width:880px){.hero-cta-row{margin-top:10px}}
