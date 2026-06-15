@@ -73,4 +73,54 @@
   // Subtle nav shadow on scroll
   var nav=document.querySelector('.nav');
   if(nav){ window.addEventListener('scroll',function(){ nav.style.boxShadow = window.scrollY>8 ? '0 6px 20px rgba(16,32,60,.06)' : 'none'; },{passive:true}); }
+
+  // Hero "automated" scene (lifted from the app sign-in)
+  (function(){
+    var letter=document.getElementById('lvLetter');
+    if(letter){
+      var steps=['f1','f2','f3','f4','done'];
+      if(reduce){ steps.forEach(function(s){ letter.classList.add(s); }); }
+      else{
+        var lt=[];
+        (function run(){
+          lt.forEach(clearTimeout); lt=[];
+          steps.forEach(function(s){ letter.classList.remove(s); });
+          steps.forEach(function(s,i){ lt.push(setTimeout(function(){ letter.classList.add(s); }, 900+i*1000)); });
+          lt.push(setTimeout(run, 9500));
+        })();
+      }
+    }
+    var flow=document.getElementById('lvFlow');
+    if(flow){
+      if(reduce){ flow.classList.add('g2','g3','g4'); }
+      else{
+        var fs=['g1','g2','g3','g4'], ft=[];
+        (function runFlow(){
+          ft.forEach(clearTimeout); ft=[];
+          fs.forEach(function(s){ flow.classList.remove(s); });
+          ft.push(setTimeout(function(){ flow.classList.add('g1'); }, 500));
+          ft.push(setTimeout(function(){ flow.classList.add('g2'); }, 2000));
+          ft.push(setTimeout(function(){ flow.classList.add('g3'); }, 3600));
+          ft.push(setTimeout(function(){ flow.classList.add('g4'); }, 4600));
+          ft.push(setTimeout(runFlow, 9500));
+        })();
+      }
+    }
+    var lvCounts=[].slice.call(document.querySelectorAll('.lv-count'));
+    function lvCountUp(el){
+      var to=parseFloat(el.getAttribute('data-to'))||0, dec=parseInt(el.getAttribute('data-dec')||'0',10);
+      var suf=el.getAttribute('data-suffix')||'', dur=1300, t0=null;
+      if(reduce){ el.textContent=to.toFixed(dec)+suf; return; }
+      function tick(now){ if(t0===null)t0=now; var p=Math.min(1,(now-t0)/dur); var e=1-Math.pow(1-p,3);
+        el.textContent=(to*e).toFixed(dec)+suf; if(p<1)requestAnimationFrame(tick); else el.textContent=to.toFixed(dec)+suf; }
+      requestAnimationFrame(tick);
+    }
+    if(lvCounts.length){
+      if(reduce || !('IntersectionObserver' in window)){ lvCounts.forEach(lvCountUp); }
+      else{
+        var io3=new IntersectionObserver(function(es){ es.forEach(function(e){ if(e.isIntersecting){ lvCountUp(e.target); io3.unobserve(e.target); } }); },{threshold:.4});
+        lvCounts.forEach(function(el){ io3.observe(el); });
+      }
+    }
+  })();
 })();
