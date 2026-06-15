@@ -983,5 +983,8 @@ body{background:#fff;color:#1c1d22}
 
 /* hero CTAs: centered row at the bottom, spanning both columns */
 .hero-cta-row{grid-column:1 / -1;display:flex;flex-direction:column;align-items:center;text-align:center;margin-top:26px}
-.hero-cta-row .hero-btns2{justify-content:center}
+.hero-cta-row .hero-btns2{justify-content:center;gap:16px}
+.hero-cta-row .btn{padding:18px 40px;font-size:17px;border-radius:var(--r-pill)}
+.hero-cta-row .btn svg{width:18px;height:18px}
 @media (max-width:880px){.hero-cta-row{margin-top:10px}}
+@media (max-width:560px){.hero-cta-row .btn{padding:15px 28px;font-size:15.5px}}
