@@ -10347,8 +10347,9 @@ function renderPPTimeline() {
   const cats = PP_CATS.filter(c => events.some(e => e.catId === c.id));
   if (!cats.length) { body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No events yet. <a onclick="ppAddEvent()" style="color:var(--accent);cursor:pointer;">Add an event</a></div>'; return; }
 
-  const LANE_H = 28;
-  const PAD = 6;
+  const LANE_H = 40;
+  const BAR_H = 24;
+  const PAD = 8;
 
   let gridHtml = `<div style="background:#1B2D50;padding:9px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.04em;display:flex;align-items:center;white-space:nowrap;">CATEGORY</div>`;
   PP_MONTHS.forEach(m => gridHtml += `<div class="pp-month-header">${m}</div>`);
@@ -10358,14 +10359,14 @@ function renderPPTimeline() {
     const { laneMap, numLanes } = ppAssignLanes(catEvents);
     const rowH = numLanes * LANE_H + PAD * 2;
 
-    gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD+4}px;" onclick="ppAddEvent('${cat.id}')"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
+    gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD + (LANE_H - BAR_H) / 2}px;" onclick="ppAddEvent('${cat.id}')"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
 
     for (let m = 1; m <= 12; m++) {
       const activeEvts = catEvents.filter(e => e.startMonth <= m && e.endMonth >= m);
       let inner = '';
       activeEvts.forEach(ev => {
         const lane = laneMap[ev.id];
-        const top = PAD + lane * LANE_H;
+        const top = PAD + lane * LANE_H + (LANE_H - BAR_H) / 2;
         const isStart = ev.startMonth === m;
         const isEnd = ev.endMonth === m;
         const isSingle = ev.startMonth === ev.endMonth;
@@ -10374,7 +10375,7 @@ function renderPPTimeline() {
         const left  = (isStart || isSingle) ? '3px' : '0';
         const right = (isEnd   || isSingle) ? '3px' : '-1px';
         const label = isStart ? escapeHtml(ev.title) : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${LANE_H-5}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:10px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 7px;line-height:${LANE_H-5}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:10px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 7px;line-height:${BAR_H}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
