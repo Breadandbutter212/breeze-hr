@@ -32,8 +32,8 @@
   --accent-ink: #993C1D;
   --green: #15803D;
   --green-bg: #F0FAF3;
-  --amber: #BA7517;
-  --amber-bg: #FAEEDA;
+  --amber: #CA8A04;
+  --amber-bg: #FEF3C7;
   --red: #B42318;
   --red-bg: #FCF0EF;
   --teal: #1D9E75;
@@ -62,7 +62,7 @@ body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: 
 /* ── SIDEBAR ── */
 .sidebar {
   width: 220px; flex-shrink: 0;
-  background: #2E3D52;
+  background: #2A5080;
   display: flex; flex-direction: column;
   border-right: none;
 }
@@ -88,7 +88,7 @@ body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: 
 .slimbar { display:none; }
 body.nav-slim .sidebar { display:none !important; }
 body.nav-slim .slimbar { display:flex; }
-.slimbar { width:208px; flex-shrink:0; background:#2E3D52; flex-direction:column; height:100%; }
+.slimbar { width:208px; flex-shrink:0; background:#2A5080; flex-direction:column; height:100%; }
 .slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
 .slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
@@ -11005,6 +11005,35 @@ async function wfLoadTemplateOptions(){
   return opts;
 }
 
+// Shared centred-modal helper: dimmed backdrop, click-outside + Escape close, body scroll lock.
+// `inner` is the modal box (caller styles its max-width / max-height / rounded corners).
+function openCenteredModal(id, inner){
+  document.getElementById(id)?.remove();
+  const ov=document.createElement('div');
+  ov.id=id;
+  ov.setAttribute('data-centered-modal','');
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(2px);z-index:950;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+  ov.appendChild(inner);
+  document.body.appendChild(ov);
+  document.body.style.overflow='hidden';
+  const close=()=>{
+    if(!ov.isConnected) return;
+    ov.remove();
+    document.removeEventListener('keydown',onKey);
+    if(!document.querySelector('[data-centered-modal]')) document.body.style.overflow='';
+  };
+  const onKey=e=>{ if(e.key==='Escape'){ e.preventDefault(); close(); } };
+  document.addEventListener('keydown',onKey);
+  ov.onclick=e=>{ if(e.target===ov) close(); };
+  ov._close=close;
+  return close;
+}
+function closeCenteredModal(id){
+  const ov=document.getElementById(id);
+  if(!ov) return;
+  if(ov._close) ov._close(); else ov.remove();
+}
+
 async function openWorkflowBuilder(existingId){
   await wfLoadTemplateOptions();
   if(existingId){
@@ -11015,15 +11044,9 @@ async function openWorkflowBuilder(existingId){
   } else {
     _wfBuilder = {id:null,label:'',icon:'⚡',steps:[],editing:false};
   }
-  document.getElementById('wfBuilderModal')?.remove();
-  const ov=document.createElement('div');
-  ov.id='wfBuilderModal';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:950;display:flex;align-items:stretch;justify-content:flex-end;';
   const inner=document.createElement('div');
-  inner.style.cssText='width:680px;max-width:96vw;background:var(--bg);height:100%;display:flex;flex-direction:column;box-shadow:-12px 0 40px rgba(0,0,0,0.25);';
-  ov.appendChild(inner);
-  document.body.appendChild(ov);
-  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  inner.style.cssText='width:680px;max-width:calc(100vw - 48px);max-height:85vh;background:var(--bg);border-radius:var(--r-xl);display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg);';
+  openCenteredModal('wfBuilderModal', inner);
   wfbRender();
 }
 
@@ -11053,7 +11076,7 @@ function wfbRender(){
         <button onclick="wfbDeleteStep(${i})" title="Delete" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:26px;height:26px;cursor:pointer;font-size:12px;color:var(--red);">✕</button>
       </div>
     </div>`;
-  }).join('') : `<div style="text-align:center;padding:40px 20px;color:var(--ink3);border:1px dashed var(--border);border-radius:var(--r-lg);background:white;">
+  }).join('') : `<div style="text-align:center;padding:40px 20px;color:var(--ink3);border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface2);">
       <div style="font-size:28px;margin-bottom:8px;">🧩</div>
       <div style="font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:4px;">No steps yet</div>
       <div style="font-size:12px;line-height:1.6;max-width:340px;margin:0 auto;">Add steps one by one, or let AI draft a first version you can edit. Each step can assign a task, generate a document, or draft an email.</div>
@@ -11067,7 +11090,7 @@ function wfbRender(){
         <input id="wfb-name" value="${escapeHtml(b.label)}" placeholder="Workflow name - e.g. New starter onboarding" style="width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-size:16px;font-weight:700;font-family:inherit;" />
         <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${b.editing?'Editing workflow':'Build your own workflow'} · ${b.steps.length} step${b.steps.length===1?'':'s'}</div>
       </div>
-      <button onclick="document.getElementById('wfBuilderModal').remove()" style="background:none;border:none;color:var(--ink3);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
+      <button onclick="closeCenteredModal('wfBuilderModal')" style="background:none;border:none;color:var(--ink3);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:8px;">
       ${stepsHtml}
@@ -11076,7 +11099,7 @@ function wfbRender(){
       <button onclick="wfbAddStep()" class="btn btn-secondary btn-sm">+ Add step</button>
       <button onclick="wfbGenerateAI(this)" class="btn btn-secondary btn-sm" style="color:var(--accent);">✨ Draft with AI</button>
       <div style="flex:1;"></div>
-      <button onclick="document.getElementById('wfBuilderModal').remove()" class="btn btn-ghost btn-sm">Cancel</button>
+      <button onclick="closeCenteredModal('wfBuilderModal')" class="btn btn-ghost btn-sm">Cancel</button>
       <button onclick="wfbSave(this)" class="btn btn-primary btn-sm">${b.editing?'Save changes':'Create workflow'}</button>
     </div>`;
   const nameEl=document.getElementById('wfb-name');
@@ -11211,7 +11234,7 @@ async function wfbSave(btn){
     const sc=WF_SCENARIOS.find(s=>s.id===_wfBuilder.id);
     if(sc){ sc.label=name; sc.icon=_wfBuilder.icon; sc.steps=steps; }
     await saveAutomations();
-    document.getElementById('wfBuilderModal')?.remove();
+    closeCenteredModal('wfBuilderModal');
     renderAutomations();
     showBreezeToast('Workflow updated');
   } else {
@@ -11220,7 +11243,7 @@ async function wfbSave(btn){
     automations.push(wf);
     WF_SCENARIOS.push({id,cat:'Automation',icon:wf.icon,label:name,steps});
     await saveAutomations();
-    document.getElementById('wfBuilderModal')?.remove();
+    closeCenteredModal('wfBuilderModal');
     renderAutomations();
     showBreezeToast('Workflow created');
   }
@@ -13812,16 +13835,14 @@ function wfNewCaseForTab() {
 // Open a workflow checklist in a slide-out panel
 function openWfCasePanel(caseId) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
-  document.getElementById('wfCaseSlidePanel')?.remove();
-  const panel = document.createElement('div');
-  panel.id = 'wfCaseSlidePanel';
-  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  // Centred modal: rounded box with a pinned frame; only the body (#wf-detail) scrolls.
+  const box = document.createElement('div');
+  box.style.cssText = 'width:760px;max-width:calc(100vw - 48px);max-height:85vh;background:white;border-radius:var(--r-xl);overflow:hidden;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;';
   const inner = document.createElement('div');
   inner.id = 'wf-detail';
-  inner.style.cssText = 'width:760px;max-width:95vw;background:white;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,0.15);flex-shrink:0;';
-  panel.appendChild(inner);
-  document.body.appendChild(panel);
-  panel.onclick = e => { if(e.target===panel) panel.remove(); };
+  inner.style.cssText = 'flex:1;overflow-y:auto;';
+  box.appendChild(inner);
+  openCenteredModal('wfCaseSlidePanel', box);
   wfActiveCase = c;
   wfRenderCase(c);
 }
@@ -14122,7 +14143,7 @@ function wfRenderCase(c) {
       <div style="display:flex;flex-direction:column;gap:6px;flex-shrink:0;">
         ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);font-size:11px;">✓ Close</button>`:''}
         <button onclick="wfCaseCalendar('${c.id}')" style="font-size:11px;color:#D85A30;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">📅 Schedule</button>
-        <button onclick="document.getElementById('wfCaseSlidePanel')?.remove()" class="btn btn-secondary btn-sm" style="font-size:11px;">✕ Close</button>
+        <button onclick="closeCenteredModal('wfCaseSlidePanel')" class="btn btn-secondary btn-sm" style="font-size:11px;">✕ Close</button>
         <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">Delete</button>
       </div>
     </div>
@@ -14456,7 +14477,7 @@ async function wfDeleteCase(id) {
   wfCases = wfCases.filter(x=>x.id!==id);
   await saveWfCases();
   wfActiveCase = null;
-  document.getElementById('wfCaseSlidePanel')?.remove();
+  closeCenteredModal('wfCaseSlidePanel');
   renderTrackersBody();
 }
 
@@ -14939,6 +14960,15 @@ async function submitAddRole(btn, existingId) {
     if (_ocTree) ocBuild();
   }
 }
+function hcToggleDetails(hdr){
+  const body=hdr.parentElement.querySelector('.hc-det-body');
+  const chev=hdr.querySelector('.hc-det-chev');
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'grid';
+  if(chev) chev.style.transform=open?'':'rotate(90deg)';
+}
+
 function openRolePanel(id) {
   const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
   document.getElementById('hcRolePanel')?.remove();
@@ -15005,8 +15035,14 @@ function openRolePanel(id) {
     </div>
     <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
 
-      <!-- Quick details row -->
-      <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <!-- Quick details row (collapsed by default) -->
+      <div style="border-bottom:1px solid var(--border);">
+      <div onclick="hcToggleDetails(this)" style="padding:12px 22px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+        <span class="hc-det-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+        <span style="font-size:12px;font-weight:700;color:var(--ink);">Role details</span>
+        <span style="font-size:11px;font-weight:400;color:var(--ink3);">stage, comp, source, agency</span>
+      </div>
+      <div class="hc-det-body" style="display:none;padding:0 22px 14px;grid-template-columns:repeat(3,1fr);gap:10px;">
         <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${sel}">${stageOpts}</select></div>
         <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${sel}">${priorOpts}</select></div>
         <div><label style="${lbl}">Country</label><input value="${escapeHtml(r.country||'')}" onchange="hcUpdateField('${id}','country',this.value)" style="${inp}" placeholder="e.g. UK, USA, Germany..."></div>
@@ -15017,6 +15053,7 @@ function openRolePanel(id) {
         <div><label style="${lbl}">Agency name</label><input value="${escapeHtml(r.agencyName||'')}" onchange="hcUpdateField('${id}','agencyName',this.value)" style="${inp}" placeholder="e.g. Hays, Michael Page..."></div>
         <div><label style="${lbl}">Budget (£)</label><input type="number" value="${r.budget||''}" onchange="hcUpdateField('${id}','budget',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 25000"></div>
         <div><label style="${lbl}">Agency fee %</label><input type="number" min="0" max="30" value="${r.agencyFee||''}" onchange="hcUpdateField('${id}','agencyFee',parseFloat(this.value)||0)" style="${inp}" placeholder="e.g. 20"></div>
+      </div>
       </div>
 
       ${r.interviewProcess?`<div style="padding:10px 22px;border-bottom:1px solid var(--border);background:var(--surface2);"><span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Interview process: </span><span style="font-size:12px;color:var(--ink2);">${escapeHtml(r.interviewProcess)}</span></div>`:''}
