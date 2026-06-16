@@ -10604,19 +10604,10 @@ function renderPPTimeline() {
       var lr = lbl.getBoundingClientRect();
       var avail = barRight - lr.left - 8;   // usable px from the label start to the bar end
       if (lr.left + lbl.scrollWidth + 6 > barRight) {
-        if (avail >= 30) {
-          // Shrink the title so it fits inside the pill (down to a readable floor).
-          var size = Math.max(7, Math.min(10, Math.floor(10 * avail / lbl.scrollWidth)));
-          lbl.style.fontSize = size + 'px';
-          lbl.style.maxWidth = avail + 'px';
-          lbl.style.overflow = 'hidden';
-          lbl.style.textOverflow = 'ellipsis';
-        } else {
-          // Bar too tiny even to shrink into -> place just past it, in dark ink.
-          var parentLeft = lbl.offsetParent ? lbl.offsetParent.getBoundingClientRect().left : 0;
-          lbl.style.left = (barRight - parentLeft + 8) + 'px';
-          lbl.style.color = 'var(--ink)';
-        }
+        // Keep the text at its normal size and clip it inside the pill (e.g. "Perf...").
+        lbl.style.maxWidth = Math.max(avail, 22) + 'px';
+        lbl.style.overflow = 'hidden';
+        lbl.style.textOverflow = 'ellipsis';
       }
     });
 }
@@ -16966,16 +16957,16 @@ async function projConfirmEmailToTask(){
     var sub='Performance distribution across '+total+' rated '+(total===1?'person':'people')+
       (prevPct?', with change since the previous review cycle.':'. Upload a previous review rating to see change over time.');
     // Companion breakdown: a 100% stacked bar + per-band bars with counts and change.
-    var companion='<div style="border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:18px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;">'+
-      '<div style="font-size:12px;font-weight:700;color:var(--ink);">Share of rated people</div>'+
-      '<div style="font-size:11px;color:var(--ink3);margin:2px 0 16px;">'+total+' rated'+(prevPct?' · arrows show change vs last cycle':'')+'</div>'+
-      '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:20px;background:var(--surface3);">'+
+    var companion='<div style="border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:20px 20px 22px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;justify-content:center;">'+
+      '<div style="font-size:13px;font-weight:700;color:var(--ink);">Share of rated people</div>'+
+      '<div style="font-size:11px;color:var(--ink3);margin:3px 0 18px;padding-bottom:16px;border-bottom:1px solid var(--border);">'+total+' rated'+(prevPct?' · arrows show change vs last cycle':'')+'</div>'+
+      '<div style="display:flex;height:14px;border-radius:7px;overflow:hidden;margin-bottom:22px;background:var(--surface3);">'+
         PR.map(function(c,i){ return curPct[i]>0?'<div style="width:'+curPct[i]+'%;background:'+c.line+';"></div>':''; }).join('')+
       '</div>'+
       PR.map(function(c,i){
         var d=delta[i];
         var dh=(d!=null&&d!==0)?'<span style="font-size:11px;font-weight:600;color:'+(d>0?'#2F8B43':'#A8660C')+';margin-left:6px;">'+(d>0?'↑':'↓')+Math.abs(d)+'</span>':'';
-        return '<div style="margin-bottom:14px;">'+
+        return '<div style="margin-bottom:'+(i<2?'16px':'0')+';">'+
           '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">'+
             '<span style="width:9px;height:9px;border-radius:2px;background:'+c.line+';flex-shrink:0;"></span>'+
             '<span style="font-size:12px;color:var(--ink2);flex:1;">'+c.title+'</span>'+
