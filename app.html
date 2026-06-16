@@ -15,34 +15,37 @@
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
-  --bg: #F5F5F7;
+  --bg: #FAFAF9;
   --surface: #FFFFFF;
-  --surface2: #F5F5F7;
-  --surface3: #E8E8ED;
-  --border: rgba(0,0,0,0.08);
-  --border2: rgba(0,0,0,0.14);
-  --ink: #1D1D1F;
-  --ink2: #6E6E73;
-  --ink3: #AEAEB2;
-  --accent: #3B82F6;
-  --accent-bg: #EFF6FF;
-  --accent-mid: #BFDBFE;
-  --green: #1A7A3C;
-  --green-bg: #E8F5EE;
-  --amber: #7A4A0A;
-  --amber-bg: #FDF3E3;
-  --red: #8B0000;
-  --red-bg: #FFF0F0;
-  --purple: #4B0082;
-  --purple-bg: #F3EEFF;
-  --r: 10px;
-  --r-sm: 6px;
-  --r-lg: 14px;
-  --r-xl: 18px;
-  --shadow-sm: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
-  --shadow: 0 4px 16px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
-  --shadow-lg: 0 20px 60px rgba(0,0,0,0.12), 0 4px 16px rgba(0,0,0,0.06);
+  --surface2: #F4F4F2;
+  --surface3: #E7E7E3;
+  --border: rgba(0,0,0,0.10);
+  --border2: rgba(0,0,0,0.16);
+  --ink: #16181D;
+  --ink2: #6B6F76;
+  --ink3: #9AA0A6;
+  --accent: #2A4A6B;
+  --accent-bg: #EEF2F6;
+  --accent-mid: #C2D0DE;
+  --green: #15803D;
+  --green-bg: #F0FAF3;
+  --amber: #B45309;
+  --amber-bg: #FBF3E6;
+  --red: #B42318;
+  --red-bg: #FCF0EF;
+  --purple: #5B4B8A;
+  --purple-bg: #F1EEF8;
+  --r: 6px;
+  --r-sm: 4px;
+  --r-lg: 8px;
+  --r-xl: 10px;
+  --shadow-sm: 0 1px 2px rgba(20,30,50,0.04);
+  --shadow: 0 2px 8px rgba(20,30,50,0.06);
+  --shadow-lg: 0 16px 48px rgba(20,30,50,0.14);
+  --focus: 0 0 0 3px rgba(42,74,107,0.14);
 }
+.trk-kpi-val, .trk-table td, .diff-table td, .lv-akpi b, .emp-field-table .field-val,
+.home-roi-val, .home-evt-day { font-variant-numeric: tabular-nums; }
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
 body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
@@ -68,10 +71,10 @@ body { font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); c
 .nav-label:first-child { margin-top: 2px; }
 .ni { display: flex; align-items: center; gap: 9px; padding: 5px 8px; border-radius: var(--r-sm); color: rgba(255,255,255,0.9); cursor: pointer; font-size: 12px; font-weight: 400; transition: all 0.15s; user-select: none; }
 .ni:hover { background: rgba(255,255,255,0.07); color: white; }
-.ni.active { background: rgba(59,130,246,0.25); color: white; font-weight: 500; border-left: 2px solid var(--accent); padding-left: 6px; }
+.ni.active { background: rgba(255,255,255,0.12); color: white; font-weight: 500; border-left: 2px solid rgba(255,255,255,0.9); padding-left: 6px; }
 .ni svg { flex-shrink: 0; opacity: 0.5; }
 .ni.active svg { opacity: 1; }
-.ni-badge { margin-left: auto; background: var(--accent); color: #0A1628; font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
+.ni-badge { margin-left: auto; background: rgba(255,255,255,0.92); color: var(--ink); font-size: 10px; font-weight: 600; padding: 1px 6px; border-radius: 20px; }
 .sidebar-foot { padding: 10px 12px; border-top: 1px solid rgba(255,255,255,0.07); flex-shrink: 0; }
 .int-pill { display: flex; align-items: center; gap: 7px; padding: 7px 8px; border-radius: var(--r-sm); background: rgba(255,255,255,0.06); font-size: 11px; color: rgba(255,255,255,0.4); }
 .live-dot { width: 6px; height: 6px; border-radius: 50%; background: #30D158; flex-shrink: 0; animation: pulse 2.5s infinite; box-shadow: 0 0 4px rgba(48,209,88,0.5); }
@@ -83,7 +86,7 @@ body.nav-slim .sidebar { display:none !important; }
 body.nav-slim .slimbar { display:flex; }
 .slimbar { width:208px; flex-shrink:0; background:#2A5080; flex-direction:column; height:100%; }
 .slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
-.slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
+.slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--accent); font-size:10px; font-weight:700; letter-spacing:0.5px; }
 .slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
 .slim-nav { flex:1; overflow-y:auto; padding:4px 10px; display:flex; flex-direction:column; justify-content:flex-start; }
 .sg { margin-bottom:1px; }
@@ -120,7 +123,7 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .topsearch input:focus { border-color:var(--accent-mid); background:#fff; }
 .topsearch .si { position:absolute; left:10px; top:50%; transform:translateY(-50%); color:var(--ink3); pointer-events:none; display:flex; }
 .topsearch .si svg { width:15px; height:15px; }
-.search-pop { position:absolute; top:42px; left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:12px; box-shadow:var(--shadow-lg); padding:6px; max-height:360px; overflow-y:auto; z-index:120; }
+.search-pop { position:absolute; top:42px; left:0; right:0; background:#fff; border:1px solid var(--border); border-radius:var(--r-lg); box-shadow:var(--shadow-lg); padding:6px; max-height:360px; overflow-y:auto; z-index:120; }
 .search-cat { font-size:10px; font-weight:600; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink3); padding:8px 8px 4px; }
 .search-item { display:flex; align-items:center; gap:9px; padding:8px 9px; border-radius:8px; cursor:pointer; font-size:13px; color:var(--ink); }
 .search-item:hover, .search-item.sel { background:var(--surface2); }
@@ -204,7 +207,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .ti-ico { width: 30px; height: 30px; border-radius: var(--r-sm); display: flex; align-items: center; justify-content: center; font-size: 14px; flex-shrink: 0; }
 .ti-name { font-size: 12px; font-weight: 500; color: var(--ink); }
 .ti-sub { font-size: 10px; color: var(--ink3); margin-top: 1px; }
-.upload-zone { margin: 10px; padding: 10px; border: 1.5px dashed var(--border2); border-radius: var(--r); text-align: center; cursor: pointer; font-size: 11px; color: var(--ink3); transition: all 0.15s; }
+.upload-zone { margin: 10px; padding: 10px; border: 1px dashed var(--border2); border-radius: var(--r); text-align: center; cursor: pointer; font-size: 11px; color: var(--ink3); transition: all 0.15s; background: var(--surface2); }
 .upload-zone:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
 .gen-area { flex: 1; display: flex; overflow: hidden; }
 .gen-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink3); text-align: center; padding: 40px; }
@@ -239,10 +242,10 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .info-tip .tip-box { display:none; position:absolute; top:calc(100% + 8px); right:0; left:auto; background:#1A202C; color:#fff; font-size:11px; line-height:1.6; padding:9px 12px; border-radius:6px; white-space:normal; width:240px; z-index:9999; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,0.3); }
 .info-tip .tip-box::before { content:''; position:absolute; bottom:100%; right:4px; left:auto; border:5px solid transparent; border-bottom-color:#1A202C; }
 .info-tip:hover .tip-box { display:block; }
-.tmpl-hint-callout { display:flex; align-items:flex-start; gap:8px; background:#EFF6FF; border:1px solid #BFDBFE; border-radius:6px; padding:9px 11px; font-size:11px; color:#1e40af; line-height:1.5; margin:8px 10px 0; }
-.tmpl-hint-callout strong { color:#1e3a8a; }
-.tmpl-hint-dismiss { margin-left:auto; cursor:pointer; font-size:13px; color:#93c5fd; flex-shrink:0; line-height:1; padding-left:6px; }
-.tmpl-hint-dismiss:hover { color:#1e40af; }
+.tmpl-hint-callout { display:flex; align-items:flex-start; gap:8px; background:var(--accent-bg); border:1px solid var(--accent-mid); border-radius:var(--r-sm); padding:9px 11px; font-size:11px; color:var(--accent); line-height:1.5; margin:8px 10px 0; }
+.tmpl-hint-callout strong { color:var(--accent); }
+.tmpl-hint-dismiss { margin-left:auto; cursor:pointer; font-size:13px; color:var(--ink3); flex-shrink:0; line-height:1; padding-left:6px; }
+.tmpl-hint-dismiss:hover { color:var(--accent); }
 .faq-item { border-bottom:1px solid var(--border); }
 .faq-q { display:flex; align-items:center; justify-content:space-between; padding:16px 0; font-size:14px; font-weight:600; color:var(--ink); cursor:pointer; gap:12px; user-select:none; }
 .faq-q:hover { color:var(--accent); }
@@ -303,14 +306,14 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 /* ── COMPARE ── */
 .compare-view { flex-direction: column; }
 .compare-upload-row { display: flex; gap: 16px; padding: 20px; }
-.compare-drop { flex: 1; border: 2px dashed var(--border); border-radius: var(--r-lg); padding: 28px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.15s; background: var(--surface); }
+.compare-drop { flex: 1; border: 1px dashed var(--border2); border-radius: var(--r-lg); padding: 28px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.15s; background: var(--surface2); }
 .compare-drop:hover, .compare-drop.drag-over { border-color: var(--accent); background: var(--accent-bg); }
 .compare-drop-label { font-size: 12px; font-weight: 600; color: var(--ink2); }
 .compare-drop-sub { font-size: 11px; color: var(--ink3); }
 .compare-drop-file { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; }
 .compare-results { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
 .diff-table { width: 100%; border-collapse: collapse; font-size: 12px; }
-.diff-table th { text-align: left; padding: 8px 12px; background: var(--surface); border-bottom: 2px solid var(--border); font-size: 11px; font-weight: 600; color: var(--ink2); position: sticky; top: 0; }
+.diff-table th { text-align: left; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 500; letter-spacing: 0.04em; text-transform: uppercase; color: var(--ink3); position: sticky; top: 0; }
 .diff-table td { padding: 7px 12px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
 .diff-table tr.diff-changed td:first-child { border-left: 3px solid #F59E0B; }
 .diff-table tr.diff-added td:first-child { border-left: 3px solid #10B981; }
@@ -397,12 +400,14 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .btn { display: inline-flex; align-items: center; gap: 5px; padding: 7px 14px; border-radius: var(--r-sm); font-size: 12px; font-weight: 500; font-family: inherit; cursor: pointer; transition: all 0.15s; border: 1px solid transparent; }
 .btn-sm { padding: 5px 11px; font-size: 11px; }
 .btn-xs { padding: 3px 8px; font-size: 10px; }
-.btn-primary { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 1px 4px rgba(59,130,246,0.3); }
-.btn-primary:hover { opacity: 0.88; }
-.btn-secondary { background: var(--surface); color: var(--ink2); border-color: var(--border); }
-.btn-secondary:hover { border-color: var(--border2); color: var(--ink); }
+.btn-primary { background: var(--ink); color: white; border-color: var(--ink); }
+.btn-primary:hover { background: #2A2D34; border-color: #2A2D34; }
+.btn-secondary { background: var(--surface); color: var(--ink); border-color: var(--border); }
+.btn-secondary:hover { border-color: var(--border2); background: var(--surface2); }
 .btn-ghost { background: transparent; color: var(--ink2); border-color: transparent; }
-.btn-ghost:hover { background: var(--surface2); }
+.btn-ghost:hover { background: var(--surface2); color: var(--ink); }
+.btn-danger { background: transparent; color: var(--ink2); border-color: transparent; }
+.btn-danger:hover { background: var(--red-bg); color: var(--red); }
 
 /* ── CHAT VIEW ── */
 .chat-view { flex-direction: column; background: var(--surface); }
@@ -413,7 +418,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .chat-av { width: 32px; height: 32px; border-radius: 50%; flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 700; }
 .chat-av.ai-av { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-mid); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; width: auto; padding: 0 8px; border-radius: 12px; }
 .chat-av.user-av { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-mid); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; width: auto; padding: 0 8px; border-radius: 12px; }
-.chat-bubble { padding: 13px 17px; border-radius: 14px; font-size: 13px; line-height: 1.75; max-width: 88%; }
+.chat-bubble { padding: 13px 17px; border-radius: var(--r-xl); font-size: 13px; line-height: 1.75; max-width: 88%; }
 .chat-bubble.ai-bubble { background: white; border: 1px solid var(--border); border-top-left-radius: 4px; color: var(--ink); }
 .chat-bubble.user-bubble { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-top-right-radius: 4px; color: var(--ink); }
 .chat-actions { display: flex; align-items: center; gap: 5px; margin-top: 7px; margin-left: 44px; }
@@ -425,8 +430,8 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .chat-chips { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
 .chat-chip { font-size: 12px; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--ink2); cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
 .chat-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
-.chat-input-wrap { display: flex; gap: 10px; align-items: center; border: 1px solid var(--border); border-radius: 14px; padding: 10px 14px; background: white; transition: border 0.15s; }
-.chat-input-wrap:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(59,130,246,0.08); }
+.chat-input-wrap { display: flex; gap: 10px; align-items: center; border: 1px solid var(--border); border-radius: var(--r-xl); padding: 10px 14px; background: white; transition: border 0.15s; }
+.chat-input-wrap:focus-within { border-color: var(--accent); box-shadow: var(--focus); }
 .chat-ta { flex: 1; border: none; outline: none; font-size: 13px; font-family: inherit; color: var(--ink); resize: none; line-height: 1.6; max-height: 160px; overflow-y: auto; background: transparent; }
 .chat-ta::placeholder { color: var(--ink3); }
 .chat-ta:placeholder-shown { text-align: left; }
@@ -453,7 +458,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .org-node.highlighted { opacity:1; box-shadow:0 0 0 2px var(--accent); }
 .oc-toggle { position:absolute; bottom:-11px; left:50%; transform:translateX(-50%); background:white; border:1.5px solid #CBD5E1; border-radius:20px; padding:0 7px; height:18px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap; z-index:10; color:#6B7280; line-height:16px; font-family:inherit; transition:all 0.1s; }
 .oc-toggle:hover { background:#F1F5F9; border-color:#94A3B8; color:#374151; }
-.oc-toggle.collapsed { background:#EFF6FF; border-color:#93C5FD; color:#3B82F6; }
+.oc-toggle.collapsed { background:#EFF6FF; border-color:#93C5FD; color:var(--accent); }
 .org-avatar { width:34px; height:34px; border-radius:8px; color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
 .org-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .org-title { font-size:10px; color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
@@ -624,18 +629,18 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .emp-flat-name { font-size:13px;font-weight:600;color:var(--ink); }
 
 /* ── TRACKERS ── */
-.tracker-tab-btn { font-size:11px;padding:5px 14px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:var(--ink2);font-weight:500;transition:all 0.12s; }
-.tracker-tab-btn.active-tt { background:var(--accent);color:white;font-weight:600; }
-.tracker-tab-btn:not(.active-tt):hover { background:var(--surface3); }
+.tracker-tab-btn { font-size:12px;padding:8px 2px;margin-right:18px;border:none;border-bottom:2px solid transparent;cursor:pointer;font-family:inherit;background:transparent;color:var(--ink2);font-weight:500;transition:color 0.12s,border-color 0.12s; }
+.tracker-tab-btn.active-tt { color:var(--ink);font-weight:600;border-bottom-color:var(--ink); }
+.tracker-tab-btn:not(.active-tt):hover { color:var(--ink); }
 .trk-kpi { background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 20px;display:flex;flex-direction:column;gap:4px; }
 .trk-kpi-val { font-size:28px;font-weight:700;letter-spacing:-0.04em;line-height:1; }
 .trk-kpi-label { font-size:11px;color:var(--ink2);font-weight:500; }
 .trk-kpi-sub { font-size:10px;color:var(--ink3); }
 .trk-table { width:100%;border-collapse:collapse;font-size:12px; }
-.trk-table th { background:#1B2D50;color:rgba(255,255,255,0.75);font-size:10px;font-weight:600;letter-spacing:0.06em;padding:9px 14px;text-align:left;white-space:nowrap; }
+.trk-table th { background:transparent;color:var(--ink3);font-size:10px;font-weight:500;letter-spacing:0.04em;text-transform:uppercase;padding:8px 14px;text-align:left;white-space:nowrap;border-bottom:1px solid var(--border); }
 .trk-table td { padding:11px 14px;border-bottom:1px solid var(--border);vertical-align:middle; }
 .trk-table tr:last-child td { border-bottom:none; }
-.trk-table tr:hover td { background:#F8FAFC; }
+.trk-table tr:hover td { background:var(--surface2); }
 .trk-badge { display:inline-flex;align-items:center;gap:4px;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap; }
 .trk-badge-green { background:var(--green-bg);color:var(--green); }
 .trk-badge-blue { background:var(--accent-bg);color:var(--accent); }
@@ -675,7 +680,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 /* ── PEOPLE PLAN ── */
 .pp-timeline { flex:1;overflow:auto;padding:20px; }
 .pp-grid { display:grid; grid-template-columns: 160px repeat(12, 1fr); gap:0; border:1px solid var(--border); border-radius:var(--r-lg); overflow:hidden; background:white; box-shadow:var(--shadow); }
-.pp-month-header { background:#1B2D50; color:white; font-size:10px; font-weight:600; text-align:center; padding:9px 4px; letter-spacing:0.04em; border-right:1px solid rgba(255,255,255,0.1); }
+.pp-month-header { background:var(--surface2); color:var(--ink3); font-size:10px; font-weight:500; text-transform:uppercase; text-align:center; padding:9px 4px; letter-spacing:0.04em; border-right:1px solid var(--border); border-bottom:1px solid var(--border); }
 .pp-month-header:last-child { border-right:none; }
 .pp-cat-label { display:flex; align-items:center; gap:8px; padding:10px 12px; font-size:11px; font-weight:600; color:var(--ink); background:var(--surface2); border-right:1px solid var(--border); border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
 .pp-cat-label:last-child { border-bottom:none; }
@@ -704,7 +709,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
 /* ───────────── HOME / TODAY ───────────── */
 #view-home.active { display:block; overflow-y:auto; overflow-x:hidden; background:
-   radial-gradient(900px 420px at 14% -8%, rgba(59,130,246,0.07), transparent 60%),
+   radial-gradient(900px 420px at 14% -8%, rgba(42,74,107,0.07), transparent 60%),
    radial-gradient(760px 380px at 96% 0%, rgba(16,185,129,0.06), transparent 55%),
    var(--bg); }
 .home { max-width:1180px; margin:0 auto; padding:22px 46px 72px; }
@@ -721,11 +726,11 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 /* hero: ring + legend */
 .home-hero { position:relative; display:grid; grid-template-columns:288px minmax(0,560px); justify-content:center; gap:38px; align-items:center;
    margin-top:30px; padding:30px 34px; background:var(--surface);
-   border:1px solid var(--border); border-radius:26px; overflow:hidden;
-   box-shadow:0 1px 2px rgba(0,0,0,0.03), 0 18px 40px -28px rgba(20,40,80,0.28); }
+   border:1px solid var(--border); border-radius:var(--r-xl); overflow:hidden;
+   box-shadow:var(--shadow); }
 .home-glow { position:absolute; left:-60px; top:50%; transform:translateY(-50%);
    width:420px; height:420px; border-radius:50%; pointer-events:none;
-   background:radial-gradient(circle, rgba(59,130,246,0.12), rgba(139,92,246,0.05) 45%, transparent 68%); }
+   background:radial-gradient(circle, rgba(42,74,107,0.12), rgba(139,92,246,0.05) 45%, transparent 68%); }
 
 .home-ring { position:relative; width:240px; height:240px; justify-self:center; }
 .home-ring svg { display:block; }
@@ -740,7 +745,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-ring-cap { font-size:11px; color:var(--ink3); margin-top:4px; max-width:140px; }
 
 .home-legend { display:flex; flex-direction:column; gap:2px; }
-.home-leg-row { display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:15px; cursor:pointer;
+.home-leg-row { display:flex; align-items:center; gap:14px; padding:12px 14px; border-radius:var(--r-lg); cursor:pointer;
    transition:background .15s; border:1px solid transparent; }
 .home-leg-row:hover { background:var(--surface2); border-color:var(--border); }
 .home-leg-dot { width:11px; height:11px; border-radius:50%; flex-shrink:0; box-shadow:0 0 0 4px rgba(0,0,0,0.03); transition:box-shadow .15s; }
@@ -755,7 +760,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
 /* bento */
 .home-roi { display:flex; flex-wrap:wrap; align-items:stretch; gap:12px; margin-top:26px; }
-.home-roi-tile { flex:1; min-width:120px; background:var(--surface); border:1px solid var(--border); border-radius:14px; padding:14px 16px; transition:border-color .15s, transform .15s; }
+.home-roi-tile { flex:1; min-width:120px; background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:14px 16px; transition:border-color .15s, transform .15s; }
 .home-roi-tile:hover { border-color:var(--accent-mid); }
 .home-roi-tile.accent { background:linear-gradient(135deg,#0A1628,#143058); border-color:transparent; }
 .home-roi-val { font-size:24px; font-weight:700; letter-spacing:-0.02em; color:var(--ink); line-height:1.1; }
@@ -764,20 +769,20 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-roi-tile.accent .home-roi-label { color:rgba(255,255,255,0.6); }
 .home-roi-note { flex-basis:100%; font-size:10.5px; color:var(--ink3); opacity:0.75; margin-top:-2px; }
 .home-bento { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:30px; }
-.home-card { background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:22px 22px 20px;
+.home-card { background:var(--surface); border:1px solid var(--border); border-radius:var(--r-xl); padding:22px 22px 20px;
    transition:transform .16s ease, box-shadow .16s ease, border-color .16s ease; display:flex; flex-direction:column; }
-.home-card:hover { transform:translateY(-2px); box-shadow:0 14px 34px -22px rgba(20,40,80,0.4); border-color:var(--border2); }
+.home-card:hover { box-shadow:var(--shadow); border-color:var(--border2); }
 .home-card.span2 { grid-column:span 2; }
 .home-card-eyebrow { display:flex; align-items:center; gap:8px; font-size:10.5px; font-weight:700; letter-spacing:0.1em; text-transform:uppercase; color:var(--ink3); margin-bottom:14px; }
 .home-card-eyebrow svg { width:13px; height:13px; }
 
-.home-resume { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:13px; cursor:pointer; transition:background .14s; }
+.home-resume { display:flex; align-items:center; gap:12px; padding:11px 12px; border-radius:var(--r-lg); cursor:pointer; transition:background .14s; }
 .home-resume:hover { background:var(--surface2); }
 .home-resume-ic { width:30px; height:30px; border-radius:9px; background:var(--accent-bg); color:var(--accent); display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .home-resume-t { font-size:13px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .home-resume-m { font-size:11px; color:var(--ink3); margin-top:1px; }
 
-.home-launch { display:flex; align-items:center; gap:12px; padding:10px 11px; border-radius:12px; cursor:pointer; transition:background .14s; }
+.home-launch { display:flex; align-items:center; gap:12px; padding:10px 11px; border-radius:var(--r-lg); cursor:pointer; transition:background .14s; }
 .home-launch:hover { background:var(--surface2); }
 .home-launch:hover .home-launch-ar { opacity:1; transform:none; }
 .home-launch-ic { width:32px; height:32px; border-radius:10px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
@@ -814,7 +819,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
         <!-- Dark rounded square icon -->
         <rect width="52" height="52" rx="10" fill="#2C2C2E"/>
         <!-- HR text in blue, bottom-left of square -->
-        <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#3B82F6" letter-spacing="0.5">HR</text>
+        <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill=var(--accent) letter-spacing="0.5">HR</text>
         <!-- Breeze wordmark -->
         <text x="64" y="20" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Breeze</text>
         <text x="65" y="43" font-family="Inter, Arial, sans-serif" font-size="13" font-weight="400" fill="rgba(255,255,255,0.55)" letter-spacing="0.2">People operations platform</text>
@@ -871,7 +876,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <div id="mobileBlock" style="display:none;position:fixed;inset:0;background:#0A1628;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;z-index:9999;">
   <svg width="160" height="52" viewBox="0 0 160 52" fill="none" xmlns="http://www.w3.org/2000/svg" style="margin-bottom:32px;">
     <rect width="52" height="52" rx="10" fill="#2C2C2E"/>
-    <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill="#3B82F6" letter-spacing="0.5">HR</text>
+    <text x="9" y="43" font-family="Inter, Arial, sans-serif" font-size="14" font-weight="700" fill=var(--accent) letter-spacing="0.5">HR</text>
     <text x="64" y="20" font-family="Inter, Arial, sans-serif" font-size="26" font-weight="700" fill="white" letter-spacing="-0.5">Breeze</text>
     <text x="65" y="43" font-family="Inter, Arial, sans-serif" font-size="11" font-weight="400" fill="rgba(255,255,255,0.5)">People operations platform</text>
   </svg>
@@ -4807,8 +4812,8 @@ function updatePreview() {
 <table style="border-collapse:collapse;width:100%;margin-top:16px;font-size:12px;">
   <thead>
     <tr>
-      <th style="border:1px solid #1B2D50;padding:8px 10px;background:#1B2D50;color:white;font-weight:600;font-size:12px;">Information Request</th>
-      <th style="border:1px solid #1B2D50;padding:8px 10px;background:#1B2D50;color:white;font-weight:600;font-size:12px;">Response</th>
+      <th style="border:none;border-bottom:1px solid var(--border);padding:8px 10px;background:transparent;color:var(--ink3);font-weight:500;font-size:10px;letter-spacing:0.04em;text-transform:uppercase;">Information Request</th>
+      <th style="border:none;border-bottom:1px solid var(--border);padding:8px 10px;background:transparent;color:var(--ink3);font-weight:500;font-size:10px;letter-spacing:0.04em;text-transform:uppercase;">Response</th>
     </tr>
   </thead>
   <tbody>
@@ -5894,7 +5899,7 @@ function homeRingSVG(segs, total){
       cum += frac*C;
     });
   }
-  s += `<defs><linearGradient id="homeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#10B981"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs></svg>`;
+  s += `<defs><linearGradient id="homeGrad" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#10B981"/><stop offset="1" stop-color=var(--accent)/></linearGradient></defs></svg>`;
   return s;
 }
 
@@ -5995,7 +6000,7 @@ async function homeFill(){
     : `You're all caught up - nothing overdue. Here's your workspace at a glance.`;
 
   const segs = [
-    { key:'people',  color:'#3B82F6', name:'People plan', count:d.ppSoon,
+    { key:'people',  color:'var(--accent)', name:'People plan', count:d.ppSoon,
       desc: d.ppSoon ? `${d.ppSoon} event${d.ppSoon>1?'s':''} in the next 60 days` : 'No events coming up', view:'peopleplan' },
     { key:'projects',color:'#F59E0B', name:'Projects', count:d.projActive,
       desc: d.projActive ? `${d.projActive} active` : 'Nothing on right now', view:'projects',
@@ -6109,7 +6114,7 @@ function homePaintBento(d){
 
   // 2 - Launch
   const launch = [
-    { p:ic.chat,  c:'#3B82F6', bg:'rgba(59,130,246,0.10)', t:'Ask a question',   d:'Policy, process or guidance', v:'chat' },
+    { p:ic.chat,  c:'var(--accent)', bg:'rgba(42,74,107,0.10)', t:'Ask a question',   d:'Policy, process or guidance', v:'chat' },
     { p:ic.doc,   c:'#10B981', bg:'rgba(16,185,129,0.10)', t:'Draft a document', d:'Letters, contracts, offers',  v:'docs' },
     { p:ic.proj,  c:'#F59E0B', bg:'rgba(245,158,11,0.12)', t:'Start a project',  d:'Plan and track work',        v:'projects' },
     { p:ic.cal,   c:'#8B5CF6', bg:'rgba(139,92,246,0.12)', t:'Plan your year',   d:'Build the people plan',      v:'peopleplan' },
@@ -6154,7 +6159,7 @@ function homePaintBento(d){
     <div class="home-card">
       <div class="home-card-eyebrow">${svg(ic.people)} Your people</div>
       <div class="home-launch" onclick="homeGo('orgchart')">
-        <div class="home-launch-ic" style="background:rgba(59,130,246,0.10);color:#3B82F6">${svg(ic.org,'#3B82F6')}</div>
+        <div class="home-launch-ic" style="background:rgba(42,74,107,0.10);color:var(--accent)>${svg(ic.org,'var(--accent)')}</div>
         <div><div class="home-launch-t">Org structure</div><div class="home-launch-d">See how teams fit together</div></div>
         <svg class="home-launch-ar" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
       </div>
@@ -7912,7 +7917,7 @@ function bzToast(msg) {
   document.getElementById('bzToast')?.remove();
   const t = document.createElement('div');
   t.id = 'bzToast';
-  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#1B2D50;color:#fff;padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:500;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90vw;';
+  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:12.5px;font-weight:500;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90vw;';
   t.innerHTML = msg;
   document.body.appendChild(t);
   setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3400);
@@ -8448,7 +8453,7 @@ function renderDashboard() {
     });
     const sorted = Object.entries(months).sort((a,b)=>new Date('1 '+a[0])-new Date('1 '+b[0])).slice(-18);
     if (sorted.length > 1) charts.push({ id:'ac-date-'+col, title: col.replace(/_/g,' ')+' over time', type:'line',
-      data:{ labels:sorted.map(([k])=>k), datasets:[{data:sorted.map(([,v])=>v),borderColor:'#0066CC',backgroundColor:'rgba(59,130,246,0.08)',tension:0.3,fill:true,pointRadius:3}]},
+      data:{ labels:sorted.map(([k])=>k), datasets:[{data:sorted.map(([,v])=>v),borderColor:'#0066CC',backgroundColor:'rgba(42,74,107,0.08)',tension:0.3,fill:true,pointRadius:3}]},
       opts:{responsive:true,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{maxRotation:45,font:{size:10}}},y:{grid:{color:gridC},ticks:{precision:0}}}}, span:2 });
   });
 
@@ -9951,7 +9956,7 @@ async function compareEmployeeMatch(isCompMode, selectedColumns) {
 
 // ── PEOPLE PLAN ──
 const PP_CATS_DEFAULT = [
-  { id:'performance',  label:'Performance',     color:'#3B82F6', bg:'#EFF6FF' },
+  { id:'performance',  label:'Performance',     color:'var(--accent)', bg:'#EFF6FF' },
   { id:'salary',       label:'Salary & Comp',   color:'#10B981', bg:'#ECFDF5' },
   { id:'benefits',     label:'Benefits',        color:'#8B5CF6', bg:'#F5F3FF' },
   { id:'learning',     label:'L&D / Training',  color:'#F59E0B', bg:'#FFFBEB' },
@@ -10006,7 +10011,7 @@ async function ppChangeYear(y) {
   renderPeoplePlan();
 }
 
-const PP_CAT_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#F97316','#06B6D4','#84CC16','#A855F7','#0EA5E9'];
+const PP_CAT_COLORS = ['var(--accent)','#10B981','#8B5CF6','#F59E0B','#EC4899','#14B8A6','#EF4444','#F97316','#06B6D4','#84CC16','#A855F7','#0EA5E9'];
 
 function ppAddCategory() {
   const overlay = document.createElement('div');
@@ -10015,7 +10020,7 @@ function ppAddCategory() {
   const usedColors = PP_CATS_ALL().map(c=>c.color);
   const defaultColor = PP_CAT_COLORS.find(c=>!usedColors.includes(c)) || PP_CAT_COLORS[0];
   overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:400px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add category</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Add category</div></div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category name</div>
         <input id="ppCatName" placeholder="e.g. Wellbeing, DEI, Reward..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
@@ -10351,7 +10356,7 @@ function renderPPTimeline() {
   const BAR_H = 24;
   const PAD = 8;
 
-  let gridHtml = `<div style="background:#1B2D50;padding:9px 12px;font-size:11px;font-weight:600;color:rgba(255,255,255,0.6);letter-spacing:0.04em;display:flex;align-items:center;white-space:nowrap;">CATEGORY</div>`;
+  let gridHtml = `<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:9px 12px;font-size:11px;font-weight:600;color:var(--ink3);letter-spacing:0.04em;display:flex;align-items:center;white-space:nowrap;">CATEGORY</div>`;
   PP_MONTHS.forEach(m => gridHtml += `<div class="pp-month-header">${m}</div>`);
 
   cats.forEach(cat => {
@@ -10428,7 +10433,7 @@ function ppAddEvent(defaultCat) {
   const monthOptions = PP_MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
   const inp = ppModalInputStyle();
   overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add event</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Add event</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:13px;max-height:70vh;overflow-y:auto;">
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEvtTitle" placeholder="e.g. Annual performance review" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEvtCat" style="${inp}">${catOptions}</select></div>
@@ -10490,7 +10495,7 @@ function ppEditEvent(id) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const inp = ppModalInputStyle();
   overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:${cat?.color||'#1B2D50'};padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Edit event</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
+    <div style="background:var(--surface);border-top:3px solid ${cat?.color||'var(--accent)'};border-bottom:1px solid var(--border);padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Edit event</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:13px;max-height:70vh;overflow-y:auto;">
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEditTitle" value="${escapeHtml(ev.title)}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEditCat" style="${inp}">${catOptions}</select></div>
@@ -10688,14 +10693,14 @@ function renderPPDetails() {
     <div style="flex:1;overflow:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
-          <tr style="background:#1B2D50;position:sticky;top:0;z-index:2;">
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">CATEGORY</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;">EVENT</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">MONTH</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">START DATE</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;white-space:nowrap;">END / DEADLINE</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;">OWNER</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:600;color:rgba(255,255,255,0.7);letter-spacing:0.06em;">NOTES</th>
+          <tr style="background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;">
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">CATEGORY</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;">EVENT</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">MONTH</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">START DATE</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">END / DEADLINE</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;">OWNER</th>
+            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;">NOTES</th>
             <th style="padding:10px 14px;"></th>
           </tr>
         </thead>
@@ -10824,9 +10829,9 @@ function openCreateTrackerModal() {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
-      <div style="font-size:15px;font-weight:700;color:white;">Create custom tracker</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">AI generates a tailored checklist based on your description</div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;">
+      <div style="font-size:15px;font-weight:700;color:var(--ink);">Create custom tracker</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;">AI generates a tailored checklist based on your description</div>
     </div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:14px;">
       <div style="background:#EFF6FF;border:1px solid #BFDBFE;border-radius:var(--r);padding:12px 14px;display:flex;gap:10px;align-items:flex-start;">
@@ -10889,9 +10894,9 @@ function showTrackerPreviewModal(tracker) {
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const stepsHtml = (tracker.steps||[]).map((s,i)=>`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div><div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${escapeHtml(s.title)}</div><div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(s.desc)}</div></div></div>`).join('');
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:86vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
       <div style="font-size:28px;">${tracker.icon}</div>
-      <div><div style="font-size:15px;font-weight:700;color:white;">${escapeHtml(tracker.label)}</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${tracker.steps.length} AI-generated steps - review before saving</div></div>
+      <div><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(tracker.label)}</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">${tracker.steps.length} AI-generated steps - review before saving</div></div>
     </div>
     <div style="overflow-y:auto;padding:0 24px;flex:1;">${stepsHtml}</div>
     <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-shrink:0;">
@@ -11021,13 +11026,13 @@ function wfbRender(){
 
   inner.innerHTML = `
     <style>.wfb-chip{font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px;white-space:nowrap;}</style>
-    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:14px;">
-      <button onclick="wfbPickIcon()" title="Change icon" style="width:46px;height:46px;border-radius:12px;background:rgba(255,255,255,0.12);border:none;cursor:pointer;font-size:24px;flex-shrink:0;">${b.icon}</button>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:14px;">
+      <button onclick="wfbPickIcon()" title="Change icon" style="width:46px;height:46px;border-radius:12px;background:var(--surface2);border:none;cursor:pointer;font-size:24px;flex-shrink:0;">${b.icon}</button>
       <div style="flex:1;min-width:0;">
-        <input id="wfb-name" value="${escapeHtml(b.label)}" placeholder="Workflow name - e.g. New starter onboarding" style="width:100%;background:transparent;border:none;outline:none;color:white;font-size:16px;font-weight:700;font-family:inherit;" />
-        <div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">${b.editing?'Editing workflow':'Build your own workflow'} · ${b.steps.length} step${b.steps.length===1?'':'s'}</div>
+        <input id="wfb-name" value="${escapeHtml(b.label)}" placeholder="Workflow name - e.g. New starter onboarding" style="width:100%;background:transparent;border:none;outline:none;color:var(--ink);font-size:16px;font-weight:700;font-family:inherit;" />
+        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${b.editing?'Editing workflow':'Build your own workflow'} · ${b.steps.length} step${b.steps.length===1?'':'s'}</div>
       </div>
-      <button onclick="document.getElementById('wfBuilderModal').remove()" style="background:none;border:none;color:rgba(255,255,255,0.6);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
+      <button onclick="document.getElementById('wfBuilderModal').remove()" style="background:none;border:none;color:var(--ink3);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:8px;">
       ${stepsHtml}
@@ -11061,7 +11066,7 @@ function wfbStepEditor(idx){
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
     <style>.wfb-lab{font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;}</style>
-    <div style="background:#1B2D50;padding:15px 20px;position:sticky;top:0;z-index:1;"><div style="font-size:14px;font-weight:700;color:white;">${editing?'Edit step':'Add step'}</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:15px 20px;position:sticky;top:0;z-index:1;"><div style="font-size:14px;font-weight:700;color:var(--ink);">${editing?'Edit step':'Add step'}</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:13px;">
       <div><label class="wfb-lab">Step title *</label><input id="wfbs-title" value="${escapeHtml(s.title)}" placeholder="e.g. Send welcome email" style="${inp}"></div>
       <div><label class="wfb-lab">Guidance <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><textarea id="wfbs-desc" rows="2" style="${inp}resize:vertical;min-height:54px;">${escapeHtml(s.desc||'')}</textarea></div>
@@ -11595,9 +11600,9 @@ function renderLeaveTracker(body) {
   <div style="display:flex;flex-direction:column;gap:18px;">
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${matActive.length}</div><div class="trk-kpi-label">On maternity / adoption leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity'||r.type==='Adoption').length} upcoming</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${patActive.length}</div><div class="trk-kpi-label">On paternity / SPL</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Paternity'||r.type==='Shared Parental').length} upcoming</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${recs.filter(r=>r.kitDaysUsed>0).reduce((s,r)=>s+r.kitDaysUsed,0)}</div><div class="trk-kpi-label">KIT days used</div><div class="trk-kpi-sub">Across all active</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${matActive.length}</div><div class="trk-kpi-label">On maternity / adoption leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity'||r.type==='Adoption').length} upcoming</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${patActive.length}</div><div class="trk-kpi-label">On paternity / SPL</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Paternity'||r.type==='Shared Parental').length} upcoming</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${recs.filter(r=>r.kitDaysUsed>0).reduce((s,r)=>s+r.kitDaysUsed,0)}</div><div class="trk-kpi-label">KIT days used</div><div class="trk-kpi-sub">Across all active</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length>0?'var(--red)':'var(--green)'};">${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length}</div><div class="trk-kpi-label">Missing dependant</div><div class="trk-kpi-sub">Need adding to benefits</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${returned.length}</div><div class="trk-kpi-label">Returned to work</div><div class="trk-kpi-sub">This year</div></div>
     </div>
@@ -11661,9 +11666,9 @@ function openAddMatPatModal() {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;">
-      <div style="font-size:15px;font-weight:700;color:white;">New leave record</div>
-      <div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Maternity, paternity, adoption or shared parental leave</div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;">
+      <div style="font-size:15px;font-weight:700;color:var(--ink);">New leave record</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;">Maternity, paternity, adoption or shared parental leave</div>
     </div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
@@ -11730,7 +11735,7 @@ function mpLogEntry(e, recId) {
   const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
   const t = new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
   const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-  const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const colMap = {call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
   const docPart = e.docFilename ? `<span onclick="mpDownloadLogDoc('${recId}','${escapeHtml(e.date)}')" style="font-size:10px;color:var(--accent);margin-left:6px;cursor:pointer;text-decoration:underline;">📎 ${escapeHtml(e.docFilename)}</span>` : '';
   return `<div class="log-entry" style="align-items:flex-start;">
     <div class="log-dot" style="background:${colMap[e.type]||'#6B7280'};margin-top:4px;"></div>
@@ -11767,16 +11772,16 @@ function openMatPatRecord(id) {
     <div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
 
       <!-- Header -->
-      <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
+      <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
-            <div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(rec.employeeName)}</div>
+            <div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(rec.employeeName)}</div>
             <span class="trk-badge ${rec.type==='Maternity'?'trk-badge-purple':rec.type==='Paternity'?'trk-badge-blue':rec.type==='Adoption'?'trk-badge-teal':'trk-badge-amber'}">${rec.type}</span>
             <span class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
           </div>
-          <div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(rec.jobTitle||'')}</div>
+          <div style="font-size:12px;color:var(--ink3);">${escapeHtml(rec.jobTitle||'')}</div>
         </div>
-        <button onclick="document.getElementById('mpRecordPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+        <button onclick="document.getElementById('mpRecordPanel').remove()" style="background:var(--surface2);border:none;color:var(--ink2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
       </div>
 
       <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:0;">
@@ -12014,11 +12019,11 @@ function renderRecruitmentTracker(body) {
     <div style="display:flex;justify-content:flex-end;margin-bottom:-4px;"><button onclick="openTrackerGuidance('recruitment')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Recruitment guidance</button></div>
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">8</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">3 urgent</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">34</div><div class="trk-kpi-label">Active candidates</div><div class="trk-kpi-sub">Across all roles</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">6</div><div class="trk-kpi-label">Interviews this week</div><div class="trk-kpi-sub">2 final stage</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">2</div><div class="trk-kpi-label">Offers outstanding</div><div class="trk-kpi-sub">Avg 3.2 days to decide</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EF4444;">28d</div><div class="trk-kpi-label">Avg time to hire</div><div class="trk-kpi-sub">↓ 4 days vs last Q</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">8</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">3 urgent</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">34</div><div class="trk-kpi-label">Active candidates</div><div class="trk-kpi-sub">Across all roles</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">6</div><div class="trk-kpi-label">Interviews this week</div><div class="trk-kpi-sub">2 final stage</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">2</div><div class="trk-kpi-label">Offers outstanding</div><div class="trk-kpi-sub">Avg 3.2 days to decide</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">28d</div><div class="trk-kpi-label">Avg time to hire</div><div class="trk-kpi-sub">↓ 4 days vs last Q</div></div>
     </div>
 
     <!-- Open roles -->
@@ -12065,7 +12070,7 @@ function renderRecruitmentTracker(body) {
             {name:'Yuki Tanaka',role:'InfoSec Analyst',src:'linkedin',days:5,notes:false},
             {name:'Remi Adeyemi',role:'Finance BP',src:'direct',days:9,notes:true},
           ]},
-          { stage:'Interview', color:'#3B82F6', candidates:[
+          { stage:'Interview', color:'var(--accent)', candidates:[
             {name:'Grace Nwosu',role:'Frontend Engineer',src:'referral',days:14,notes:true},
             {name:'Tom Briggs',role:'DevOps Engineer',src:'referral',days:11,notes:true},
             {name:'Lucia Ferrara',role:'HR BP',src:'agency',days:18,notes:true},
@@ -12161,11 +12166,11 @@ function renderCareersTracker(body) {
   body.innerHTML = `
   <div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);display:flex;flex-direction:column;gap:20px;">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${DEMO_CAREERS.filter(c=>c.hrisLinked).length}</div><div class="trk-kpi-label">HRIS linked</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">${DEMO_CAREERS.filter(c=>!c.cvLinked).length}</div><div class="trk-kpi-label">CVs missing</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EC4899;">${DEMO_CAREERS.filter(c=>c.stage==='Succession candidate').length}</div><div class="trk-kpi-label">Succession candidates</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_CAREERS.filter(c=>c.stage.includes('approved')||c.stage.includes('Eligible')).length}</div><div class="trk-kpi-label">Promotions pending/eligible</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_CAREERS.filter(c=>c.stage.includes('review')).length}</div><div class="trk-kpi-label">In review cycle</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_CAREERS.filter(c=>c.hrisLinked).length}</div><div class="trk-kpi-label">HRIS linked</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_CAREERS.filter(c=>!c.cvLinked).length}</div><div class="trk-kpi-label">CVs missing</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${DEMO_CAREERS.filter(c=>c.stage==='Succession candidate').length}</div><div class="trk-kpi-label">Succession candidates</div></div>
     </div>
     ${DEMO_CAREERS.filter(c=>c.stage.includes('Eligible')||!c.cvLinked).map(c=>
       `<div class="trk-flag" style="${!c.stage.includes('Eligible')?'background:#EFF6FF;border-color:#BFDBFE;color:#1e40af;':''}"><span class="trk-flag-icon">${c.stage.includes('Eligible')?'⚠️':'ℹ️'}</span><div style="flex:1;"><strong>${c.name}</strong> - ${c.stage.includes('Eligible')?'eligible for promotion but no action taken.':'original CV from recruitment not attached to employee record.'}</div><button onclick="this.closest('.trk-flag').remove()" style="background:none;border:none;cursor:pointer;color:${c.stage.includes('Eligible')?'#fbbf24':'#93c5fd'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button></div>`
@@ -12215,9 +12220,9 @@ function openCareerMap(idx) {
     </div>
   </div>`).join('');
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:85vh;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
-      <div style="flex:1;"><div style="font-size:15px;font-weight:700;color:white;">${c.name}</div><div style="font-size:11px;color:rgba(255,255,255,0.5);">${c.title} - ${c.dept}</div></div>
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">x</button>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;"><div style="font-size:15px;font-weight:700;color:var(--ink);">${c.name}</div><div style="font-size:11px;color:var(--ink3);">${c.title} - ${c.dept}</div></div>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--surface2);border:none;color:var(--ink2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;">x</button>
     </div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;">
       <div style="font-size:12px;font-weight:700;margin-bottom:14px;">Career progression</div>
@@ -12299,7 +12304,7 @@ async function renderImmigrationTracker(body) {
       <div class="trk-kpi"><div class="trk-kpi-val">${recs.length}</div><div class="trk-kpi-label">Visa holders</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--red);">${recs.filter(r=>immDaysUntil(r.visaExpiry)<0).length}</div><div class="trk-kpi-label">Expired</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--amber);">${recs.filter(r=>{const n=immDaysUntil(r.visaExpiry);return n>=0&&n<=90;}).length}</div><div class="trk-kpi-label">Expiring in 90 days</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#8B5CF6;">${recs.filter(r=>r.ilrStatus&&(r.ilrStatus.toLowerCase().includes('progress')||r.ilrStatus.toLowerCase().includes('applied'))).length}</div><div class="trk-kpi-label">ILR applications</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${recs.filter(r=>r.ilrStatus&&(r.ilrStatus.toLowerCase().includes('progress')||r.ilrStatus.toLowerCase().includes('applied'))).length}</div><div class="trk-kpi-label">ILR applications</div></div>
     </div>
     ${flags.length?`<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;">${flags}</div>`:''}
     <div class="trk-card">
@@ -12328,7 +12333,7 @@ function openAddImmigrationModal(existing) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:580px;max-height:90vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:white;">${isEdit?'Edit':'Add'} immigration record</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:var(--ink);">${isEdit?'Edit':'Add'} immigration record</div></div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div style="grid-column:1/-1;"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="imm-name" value="${escapeHtml(r.employeeName||'')}" placeholder="Full name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('imm-name').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
@@ -12395,7 +12400,7 @@ function openImmigrationRecord(id) {
   panel.id = 'immRecordPanel';
   panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-  const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const colMap={call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
   const logHtml = (r.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>{
     const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -12404,11 +12409,11 @@ function openImmigrationRecord(id) {
   }).join('') || '<div style="text-align:center;padding:12px 0;color:var(--ink3);font-size:12px;">No contacts logged yet</div>';
 
   panel.innerHTML = `<div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow-y:auto;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
-    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
-      <div style="flex:1;"><div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(r.employeeName)}</div><div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(r.nationality||'')} · <span class="trk-badge trk-badge-blue" style="font-size:10px;">${escapeHtml(r.visaType||'')}</span></div></div>
-      <button onclick="immExpiryCalendar('${r.id}')" style="font-size:10px;color:#1D4ED8;background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;">📅 Reminders</button>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+      <div style="flex:1;"><div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(r.employeeName)}</div><div style="font-size:12px;color:var(--ink3);">${escapeHtml(r.nationality||'')} · <span class="trk-badge trk-badge-blue" style="font-size:10px;">${escapeHtml(r.visaType||'')}</span></div></div>
+      <button onclick="immExpiryCalendar('${r.id}')" style="font-size:10px;color:#1D4ED8;background:var(--surface2);border:1px solid rgba(255,255,255,0.2);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;">📅 Reminders</button>
       <button onclick="openAddImmigrationModal(${JSON.stringify(r).replace(/"/g,'&quot;')})" class="btn btn-secondary btn-sm" style="font-size:10px;flex-shrink:0;">Edit</button>
-      <button onclick="document.getElementById('immRecordPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
+      <button onclick="document.getElementById('immRecordPanel').remove()" style="background:var(--surface2);border:none;color:var(--ink2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
     </div>
     <div style="padding:18px 22px;display:flex;flex-direction:column;gap:14px;">
       <!-- Key dates -->
@@ -12467,7 +12472,7 @@ async function addImmContactLog(id) {
   const listEl=document.getElementById(`imm-log-list-${id}`);
   if(listEl){
     const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-    const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+    const colMap={call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
     listEl.innerHTML=(r.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>{
       const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
       const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -12740,7 +12745,7 @@ function ocRender(root) {
       div.style.background=node.color+'0d';
       const _hcs = node.hcStage ? HC_STAGES.find(s=>s.id===node.hcStage) : null;
       const _badge = _hcs ? `<span style="font-size:9px;font-weight:700;color:${_hcs.color};background:${_hcs.bg};border-radius:20px;padding:1px 6px;display:inline-block;margin-top:3px;letter-spacing:0.03em;">${_hcs.label.replace(' ✓','')}</span>` : `<span style="font-size:9px;font-weight:700;color:#059669;background:#D1FAE5;border-radius:20px;padding:1px 6px;display:inline-block;margin-top:3px;letter-spacing:0.03em;">HIRING</span>`;
-      div.innerHTML=`<div class="org-avatar" style="background:transparent;border:2px dashed ${node.color};color:${node.color};font-size:15px;">+</div>
+      div.innerHTML=`<div class="org-avatar" style="background:transparent;border:1px dashed ${node.color};color:${node.color};font-size:15px;">+</div>
         <div style="flex:1;min-width:0;">
           <div class="org-name" style="color:var(--ink2);">${escapeHtml(node.name)}</div>
           ${_badge}
@@ -13203,7 +13208,7 @@ function ocExportXlsx() {
     const mid = _ocRelations.hasOwnProperty(n.id) ? _ocRelations[n.id] : n.managerId;
     return mid ? all.find(p => p.id === mid) : null;
   };
-  const deptRgb = n => (n.color || '#3B82F6').replace('#', '');
+  const deptRgb = n => (n.color || '#2A4A6B').replace('#', '');
   const calcDepth = node => {
     let d = 0, cur = node; const seen = new Set();
     while (cur && !seen.has(cur.id)) {
@@ -13260,7 +13265,7 @@ function ocExportXlsx() {
   const s2 = []; const s2merges = []; let ri = 0;
   deptOrder.forEach(dept => {
     const emps = deptMap[dept].sort((a, b) => a.name.localeCompare(b.name));
-    const dc = (emps[0]?.color || '#3B82F6').replace('#', '');
+    const dc = (emps[0]?.color || '#2A4A6B').replace('#', '');
     s2merges.push({ s: { r: ri, c: 0 }, e: { r: ri, c: 3 } });
     const dHdr = (v, align) => ({ v: v ?? '', t: 's', s: { font: { bold: true, color: { rgb: 'FFFFFF' }, sz: align ? 10 : 13 }, fill: { fgColor: { rgb: dc }, patternType: 'solid' }, alignment: { vertical: 'center', horizontal: align || 'left' }, border: {} } });
     s2.push([dHdr(dept), dHdr(''), dHdr(''), dHdr(`${emps.length} ${emps.length === 1 ? 'person' : 'people'}`, 'right')]); ri++;
@@ -13593,7 +13598,7 @@ function buildTabKpisHtml(activeCases, closedCases, scenarioIds) {
 
   if (scenarioIds.some(id => id.includes('absence'))) {
     kpis = [
-      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' resolved this year', col:'#3B82F6'},
+      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' resolved this year', col:'var(--accent)'},
       {val:activeCases.filter(c=>c.scenarioId==='short-term-absence').length, label:'Short-term sickness', sub:'Active', col:'#F59E0B'},
       {val:activeCases.filter(c=>c.scenarioId==='long-term-absence').length, label:'Long-term absence', sub:'4+ weeks', col:'#EF4444'},
       {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
@@ -13601,7 +13606,7 @@ function buildTabKpisHtml(activeCases, closedCases, scenarioIds) {
     ];
   } else if (scenarioIds.some(id => id.includes('disciplinary') || id.includes('grievance'))) {
     kpis = [
-      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' closed this year', col:'#3B82F6'},
+      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' closed this year', col:'var(--accent)'},
       {val:activeCases.filter(c=>c.scenarioId==='disciplinary').length, label:'Disciplinary', sub:'Open', col:'#EF4444'},
       {val:activeCases.filter(c=>c.scenarioId==='grievance').length, label:'Grievances', sub:'Open', col:'#F59E0B'},
       {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
@@ -13609,7 +13614,7 @@ function buildTabKpisHtml(activeCases, closedCases, scenarioIds) {
     ];
   } else if (scenarioIds.some(id => id.includes('immigration') || id.includes('rtw') || id.includes('visa') || id.includes('ilr'))) {
     kpis = [
-      {val:activeCases.length, label:'Active checklists', sub: closedThisYear.length+' closed this year', col:'#3B82F6'},
+      {val:activeCases.length, label:'Active checklists', sub: closedThisYear.length+' closed this year', col:'var(--accent)'},
       {val:activeCases.filter(c=>c.scenarioId==='rtw-new-starter').length, label:'RTW checks', sub:'New starters', col:'#10B981'},
       {val:activeCases.filter(c=>c.scenarioId==='visa-renewal').length, label:'Visa renewals', sub:'In progress', col:'#F59E0B'},
       {val:activeCases.filter(c=>c.scenarioId==='ilr-application').length, label:'ILR applications', sub:'In progress', col:'#8B5CF6'},
@@ -13622,7 +13627,7 @@ function buildTabKpisHtml(activeCases, closedCases, scenarioIds) {
       return sc.steps.length && c.checkedSteps.length >= sc.steps.length;
     });
     kpis = [
-      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' closed this year', col:'#3B82F6'},
+      {val:activeCases.length, label:'Active cases', sub: closedThisYear.length+' closed this year', col:'var(--accent)'},
       {val:complete.length, label:'Checklist complete', sub:'Ready to close', col:'#10B981'},
       {val:noContact.length, label:'No contact logged', sub:'Action needed', col:noContact.length?'var(--red)':'var(--green)'},
       {val:closedThisYear.length, label:'Closed this year', sub:'', col:'var(--ink2)'},
@@ -13843,7 +13848,7 @@ function wfNewCase(filterScenarioIds) {
   const opts = scenarios.map(s=>`<option value="${s.id}">${s.icon} ${s.label}</option>`).join('');
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:18px 22px;"><div style="font-size:15px;font-weight:700;color:white;">New checklist</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Each employee gets their own progress</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">New checklist</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">Each employee gets their own progress</div></div>
     <div style="padding:20px 22px;display:flex;flex-direction:column;gap:14px;">
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Employee name</label><input id="wf-new-name" placeholder="e.g. Sarah Mitchell" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('wf-new-name').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Checklist type</label><select id="wf-new-scenario" style="${inp}">${opts}</select></div>
@@ -13926,7 +13931,7 @@ function wfEditStep(caseId, stepId) {
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:white;">Edit checklist step</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Edit checklist step</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Step title</label><input id="wf-edit-title" value="${escapeHtml(step.title)}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Guidance</label><textarea id="wf-edit-desc" rows="3" style="${inp}resize:vertical;min-height:70px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">${escapeHtml(step.desc||'')}</textarea></div>
@@ -13967,7 +13972,7 @@ function wfAddStep(caseId) {
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:white;">Add checklist step</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Add checklist step</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Step title *</label><input id="wf-add-title" placeholder="e.g. Confirm return date in writing" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Guidance <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><textarea id="wf-add-desc" rows="3" placeholder="Practical guidance for this step..." style="${inp}resize:vertical;min-height:70px;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></textarea></div>
@@ -14039,7 +14044,7 @@ function wfRenderCase(c) {
   const contactLog = c.contactLog || [];
   const daysSinceLast = contactLog.length ? Math.floor((new Date()-new Date(contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date))[0].date))/86400000) : null;
   const iconMap = {call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-  const colMap = {call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const colMap = {call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
 
   const renderLogEntry = (e, caseId) => {
     const d = new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
@@ -14159,7 +14164,7 @@ async function wfDeleteLogEntry(caseId, dateStr) {
   await saveWfCases();
   // Re-render log list
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-  const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const colMap={call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
   const listEl = document.getElementById(`wf-log-list-${caseId}`);
   if (listEl) {
     const sorted = (c.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -14229,7 +14234,7 @@ async function wfAddContactLog(caseId) {
   const listEl = document.getElementById(`wf-log-list-${caseId}`);
   if (listEl) {
     const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-    const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+    const colMap={call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
     const sorted = c.contactLog.slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
     listEl.innerHTML = sorted.map(e=>{
       const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
@@ -14330,7 +14335,7 @@ function openWfDetailsPanel(caseId) {
   const contactLog = (c.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   const daysSince = contactLog.length?Math.floor((new Date()-new Date(contactLog[0].date))/86400000):null;
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-  const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const colMap={call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
   const docs = c.docs||[];
   const logHtml = contactLog.map(e=>{
     const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
@@ -14342,9 +14347,9 @@ function openWfDetailsPanel(caseId) {
     return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;">${done?'✅':'⬜'}</span><span style="font-size:11px;${done?'text-decoration:line-through;color:var(--ink3);':'color:var(--ink);'}">${escapeHtml(step.title)}</span></div>`;
   }).join('');
   panel.innerHTML=`<div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
-    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
-      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(c.employeeName)}</div><span class="trk-badge trk-badge-blue">${sc.icon} ${sc.label}</span><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● ${pct===100?'Complete':'Active'}</span></div><div style="font-size:12px;color:rgba(255,255,255,0.55);">Started ${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
-      <button onclick="document.getElementById('wfDetailPanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
+      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(c.employeeName)}</div><span class="trk-badge trk-badge-blue">${sc.icon} ${sc.label}</span><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● ${pct===100?'Complete':'Active'}</span></div><div style="font-size:12px;color:var(--ink3);">Started ${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
+      <button onclick="document.getElementById('wfDetailPanel').remove()" style="background:var(--surface2);border:none;color:var(--ink2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
       <div style="padding:18px 22px;border-bottom:1px solid var(--border);">
@@ -14441,12 +14446,12 @@ async function openTrackerGuidance(topic) {
   const isFromPolicy = !!policy;
 
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:85vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
       <div style="flex:1;">
-        <div style="font-size:15px;font-weight:700;color:white;">Guidance - ${fallback?.title||topic}</div>
+        <div style="font-size:15px;font-weight:700;color:var(--ink);">Guidance - ${fallback?.title||topic}</div>
         <div style="font-size:11px;color:${isFromPolicy?'#6EE7B7':'rgba(255,255,255,0.45)'};margin-top:3px;">${isFromPolicy?'📋 '+source:'ℹ '+source}</div>
       </div>
-      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
+      <button onclick="this.closest('div[style*=fixed]').remove()" style="background:var(--surface2);border:none;color:var(--ink2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;">✕</button>
     </div>
     <div style="padding:18px 22px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:10px;" id="guidance-modal-body">
       ${points.map(p=>`<div style="display:flex;gap:10px;font-size:12px;color:var(--ink);line-height:1.7;"><span style="color:var(--accent);flex-shrink:0;margin-top:3px;">•</span><span>${p}</span></div>`).join('')}
@@ -14603,7 +14608,7 @@ let hcRoles = null;
 
 const HC_STAGES = [
   {id:'briefing',    label:'Briefing',     color:'#6B7280', bg:'#F3F4F6'},
-  {id:'sourcing',    label:'Sourcing',     color:'#3B82F6', bg:'#EFF6FF'},
+  {id:'sourcing',    label:'Sourcing',     color:'var(--accent)', bg:'#EFF6FF'},
   {id:'shortlisting',label:'Shortlisting', color:'#8B5CF6', bg:'#F5F3FF'},
   {id:'interviewing',label:'Interviewing', color:'#F59E0B', bg:'#FFFBEB'},
   {id:'offer',       label:'Offer',        color:'#10B981', bg:'#ECFDF5'},
@@ -14614,7 +14619,7 @@ const HC_STAGES = [
 const HC_PRIORITIES = [
   {id:'urgent', label:'Urgent', color:'#EF4444', bg:'#FEF2F2'},
   {id:'high',   label:'High',   color:'#F59E0B', bg:'#FFFBEB'},
-  {id:'normal', label:'Normal', color:'#3B82F6', bg:'#EFF6FF'},
+  {id:'normal', label:'Normal', color:'var(--accent)', bg:'#EFF6FF'},
   {id:'low',    label:'Low',    color:'#9CA3AF', bg:'#F9FAFB'},
 ];
 const HC_SOURCES = ['Direct','LinkedIn','Agency','Job board','Internal transfer','Referral','Other'];
@@ -14783,10 +14788,10 @@ function renderHeadcount() {
 
   body.innerHTML = `<div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#3B82F6;">${active.length}</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">${hiredTY.length} hired this year</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#EF4444;">${urgent.length}</div><div class="trk-kpi-label">Urgent / high priority</div><div class="trk-kpi-sub">Need action</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#F59E0B;">${interviewing.length}</div><div class="trk-kpi-label">Interviewing</div><div class="trk-kpi-sub">${activeCands.length} active candidates</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:#10B981;">${atOffer.length}</div><div class="trk-kpi-label">At offer stage</div><div class="trk-kpi-sub">Pending acceptance</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${active.length}</div><div class="trk-kpi-label">Open roles</div><div class="trk-kpi-sub">${hiredTY.length} hired this year</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${urgent.length}</div><div class="trk-kpi-label">Urgent / high priority</div><div class="trk-kpi-sub">Need action</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${interviewing.length}</div><div class="trk-kpi-label">Interviewing</div><div class="trk-kpi-sub">${activeCands.length} active candidates</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val">${atOffer.length}</div><div class="trk-kpi-label">At offer stage</div><div class="trk-kpi-sub">Pending acceptance</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${avgDays}d</div><div class="trk-kpi-label">Avg days open</div><div class="trk-kpi-sub">Active roles</div></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
@@ -14815,7 +14820,7 @@ function openAddRoleModal(existing) {
   const ov = document.createElement('div');
   ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:600px;max-height:92vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
-    <div style="background:#1B2D50;padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:white;">${isEdit?'Edit':'Add'} open role</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:var(--ink);">${isEdit?'Edit':'Add'} open role</div></div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
         <div style="grid-column:1/-1;"><label style="${lbl}">Job title *</label><input id="hc-title" value="${escapeHtml(r.title||'')}" placeholder="e.g. HR Director" style="${inp}" autocomplete="off" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
@@ -14947,7 +14952,7 @@ function openRolePanel(id) {
   const contactLog=(r.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   const daysSince=contactLog.length?Math.floor((new Date()-new Date(contactLog[0].date))/86400000):null;
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
-  const colMap={call:'#3B82F6',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
+  const colMap={call:'var(--accent)',email:'#10B981',meeting:'#8B5CF6',note:'#F59E0B',action:'#10B981'};
   const logHtml=contactLog.map(e=>{
     const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
     const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
@@ -14955,13 +14960,13 @@ function openRolePanel(id) {
   }).join('')||'<div style="text-align:center;padding:16px 0;color:var(--ink3);font-size:12px;">No updates logged yet</div>';
 
   panel.innerHTML=`<div style="width:740px;max-width:96vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
-    <div style="background:#1B2D50;padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
       <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;">
-        <div style="font-size:16px;font-weight:700;color:white;">${escapeHtml(r.title)}${r.headcount>1?` <span style="font-size:12px;font-weight:400;opacity:0.6;">×${r.headcount}</span>`:''}</div>
+        <div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(r.title)}${r.headcount>1?` <span style="font-size:12px;font-weight:400;opacity:0.6;">×${r.headcount}</span>`:''}</div>
         ${hcStageBadge(r.stage)} ${hcPriorityBadge(r.priority)}
       </div>
-      <div style="font-size:12px;color:rgba(255,255,255,0.55);">${escapeHtml(r.dept||'')}${r.hiringManager?' · HM: '+escapeHtml(r.hiringManager):''} · Opened ${hcFmt(r.createdAt)} · ${hcDaysOpen(r)} days open</div></div>
-      <button onclick="document.getElementById('hcRolePanel').remove()" style="background:rgba(255,255,255,0.1);border:none;color:white;width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
+      <div style="font-size:12px;color:var(--ink3);">${escapeHtml(r.dept||'')}${r.hiringManager?' · HM: '+escapeHtml(r.hiringManager):''} · Opened ${hcFmt(r.createdAt)} · ${hcDaysOpen(r)} days open</div></div>
+      <button onclick="document.getElementById('hcRolePanel').remove()" style="background:var(--surface2);border:none;color:var(--ink2);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
 
@@ -15032,7 +15037,7 @@ function hcAddCandidateModal(roleId) {
   const ov=document.createElement('div');
   ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:white;">Add candidate</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">${escapeHtml(r.title)}</div></div>
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Add candidate</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(r.title)}</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
       <div><label style="${lbl}">Name *</label><input id="hc-cand-name" placeholder="Full name" style="${inp}" autocomplete="off" oninput="showHrisDropdown(this,this.value,emp=>{document.getElementById('hc-cand-name').value=emp.display_full_name||'';document.getElementById('hris-dd')?.remove();})" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
@@ -15159,7 +15164,7 @@ let _ocT = { x: 0, y: 0, k: 0.85 };
 let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
 const OC_SNAP = 10;
 const OC_W = 180, OC_H = 76, OC_HG = 26, OC_VG = 70;
-const OC_COLORS = ['#3B82F6','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899','#14B8A6','#6366F1'];
+const OC_COLORS = ['var(--accent)','#10B981','#8B5CF6','#F59E0B','#EF4444','#06B6D4','#F97316','#EC4899','#14B8A6','#6366F1'];
 
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
