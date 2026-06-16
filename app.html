@@ -10560,15 +10560,10 @@ function renderPPTimeline() {
               '<div style="position:absolute;top:'+top+'px;left:calc('+leftPct+'% + '+gapL+'px + 23px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
           }
         } else {
-          // A bar with real width: title inside (white) if it fits, else dark to the right of the end.
-          const fitsInside = coverageMonths * 128 >= (ev.title.length * 6.0 + 18);
-          let labelHtml = '';
-          if (fitsInside) {
-            if (isStart) labelHtml = '<div style="position:absolute;top:'+top+'px;left:calc('+leftPct+'% + '+gapL+'px + 10px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
-          } else if (isEnd) {
-            labelHtml = '<div style="position:absolute;top:'+top+'px;left:calc(100% - '+rightPct+'% - '+gapR+'px + 8px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
-          }
-          inner += '<div style="position:absolute;top:'+top+'px;left:'+left+';right:'+right+';height:'+BAR_H+'px;background:'+cat.color+';border-radius:'+rL+' '+rR+' '+rR+' '+rL+';cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent('+ev.id+')" '+tipAttr+'></div>'+labelHtml;
+          // Bar; label starts inside (white). A measure pass after render moves it to the
+          // right in dark ink only if it genuinely does not fit within the bar's real width.
+          inner += '<div data-ppbar="'+ev.id+'" style="position:absolute;top:'+top+'px;left:'+left+';right:'+right+';height:'+BAR_H+'px;background:'+cat.color+';border-radius:'+rL+' '+rR+' '+rR+' '+rL+';cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent('+ev.id+')" '+tipAttr+'></div>';
+          if (isStart) inner += '<div data-pplabel="'+ev.id+'" style="position:absolute;top:'+top+'px;left:calc('+leftPct+'% + '+gapL+'px + 10px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
         }
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
@@ -10595,6 +10590,25 @@ function renderPPTimeline() {
       </div>
     </div>
     <div class="pp-legend">${legendHtml}</div>`;
+
+    // Measure pass: keep each title inside its bar; move it to the right (dark) only if
+    // the rendered title is genuinely wider than the rendered bar.
+    var ppGrid = body.querySelector('.pp-grid');
+    if (ppGrid) ppGrid.querySelectorAll('[data-pplabel]').forEach(function(lbl){
+      var id = lbl.getAttribute('data-pplabel');
+      var segs = ppGrid.querySelectorAll('[data-ppbar="'+id+'"]');
+      if (!segs.length) return;
+      var barRight = 0, barLeft = Infinity;
+      segs.forEach(function(s){ var r = s.getBoundingClientRect(); if (r.right > barRight) barRight = r.right; if (r.left < barLeft) barLeft = r.left; });
+      if (!barRight) return; // not laid out / hidden
+      var lr = lbl.getBoundingClientRect();
+      if (lr.left + lbl.scrollWidth + 6 > barRight) {
+        // Doesn't fit inside -> place just past the bar end, in dark ink.
+        var parentLeft = lbl.offsetParent ? lbl.offsetParent.getBoundingClientRect().left : 0;
+        lbl.style.left = (barRight - parentLeft + 8) + 'px';
+        lbl.style.color = 'var(--ink)';
+      }
+    });
 }
 
 let ppView = 'timeline'; // 'timeline' | 'details'
