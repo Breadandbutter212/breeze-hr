@@ -5093,6 +5093,19 @@ function policyIco(name){
 // Small inline download icon (replaces the down-arrow glyph).
 const _ICO_DL='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>';
 const _ICO_X='<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+// Themed monochrome line icon for a tracker scenario (replaces emoji), keyed by category/label.
+function scenarioIco(s, size){
+  size = size || 15;
+  const cat = (s && s.cat) || '', lbl = ((s && s.label) || '').toLowerCase();
+  const w = p => '<svg width="'+size+'" height="'+size+'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;flex-shrink:0;">'+p+'</svg>';
+  if (cat==='Family Leave' || /maternit|paternit|parental|adoption|family/.test(lbl)) return w('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
+  if (cat==='Absence' || /sick|absence/.test(lbl)) return w('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>');
+  if (cat==='Leavers' || /resignation|leaver|notice/.test(lbl)) return w('<path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>');
+  if (cat==='Performance' || /performance|capability|\bpip\b|appraisal|probation/.test(lbl)) return w('<polyline points="23 6 13.5 15.5 8.5 10.5 1 18"/><polyline points="17 6 23 6 23 12"/>');
+  if (cat==='Conduct' || /disciplin|grievance|conduct/.test(lbl)) return w('<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>');
+  if (cat==='Immigration' || /visa|immigration|right to work|\bilr\b|settled/.test(lbl)) return w('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>');
+  return w('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/>');
+}
 
 async function renderManage() {
   const body=document.getElementById('manageBody');if(!body)return;
@@ -10472,7 +10485,13 @@ function renderPPTimeline() {
         const left  = `calc(${leftPct}% + ${gapL}px)`;
         const right = `calc(${rightPct}% + ${gapR}px)`;
         const label = isStart ? escapeHtml(ev.title) : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:9px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 5px;line-height:${BAR_H}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
+        // Multi-month bars are wide enough for an inside label; single-month bars are usually
+        // too narrow, so render the full title in dark ink just to the right of the bar.
+        const insideLabel = (isStart && !isSingle) ? label : '';
+        const outsideLabel = (isStart && isSingle && label)
+          ? `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 7px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:9px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:3;">${label}</div>`
+          : '';
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:9px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 5px;line-height:${BAR_H}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${insideLabel}</div>${outsideLabel}`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
@@ -10559,8 +10578,11 @@ function ppSaveNewEvent(btn) {
   const owner = document.getElementById('ppEvtOwner')?.value?.trim();
   const startDate = document.getElementById('ppEvtStartDate')?.value || '';
   const endDate = document.getElementById('ppEvtEndDate')?.value || '';
+  // Specific dates win: derive the months from them so the bar lands where the dates say.
+  const sMonth = startDate ? parseInt(startDate.split('-')[1]) : start;
+  const eMonth = endDate ? parseInt(endDate.split('-')[1]) : end;
   const maxId = ppPlan.events.reduce((m,e)=>Math.max(m,e.id),0);
-  ppPlan.events.push({ id: maxId+1, catId, title, startMonth: Math.min(start,end), endMonth: Math.max(start,end), notes, owner, startDate, endDate });
+  ppPlan.events.push({ id: maxId+1, catId, title, startMonth: Math.min(sMonth,eMonth), endMonth: Math.max(sMonth,eMonth), notes, owner, startDate, endDate });
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
@@ -10618,11 +10640,14 @@ function ppSaveEditEvent(id, btn) {
   ev.catId = document.getElementById('ppEditCat')?.value || ev.catId;
   const s = parseInt(document.getElementById('ppEditStart')?.value);
   const e2 = parseInt(document.getElementById('ppEditEnd')?.value);
-  ev.startMonth = Math.min(s,e2); ev.endMonth = Math.max(s,e2);
   ev.notes = document.getElementById('ppEditNotes')?.value?.trim() || '';
   ev.owner = document.getElementById('ppEditOwner')?.value?.trim() || '';
   ev.startDate = document.getElementById('ppEditStartDate')?.value || '';
   ev.endDate = document.getElementById('ppEditEndDate')?.value || '';
+  // Specific dates win: derive the months from them so the bar lands where the dates say.
+  const sM = ev.startDate ? parseInt(ev.startDate.split('-')[1]) : s;
+  const eM = ev.endDate ? parseInt(ev.endDate.split('-')[1]) : e2;
+  ev.startMonth = Math.min(sM,eM); ev.endMonth = Math.max(sM,eM);
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
@@ -10645,8 +10670,10 @@ function ppSaveAndInvite(btn) {
   const owner = document.getElementById('ppEvtOwner')?.value?.trim();
   const startDate = document.getElementById('ppEvtStartDate')?.value || '';
   const endDate = document.getElementById('ppEvtEndDate')?.value || '';
+  const sMonth = startDate ? parseInt(startDate.split('-')[1]) : start;
+  const eMonth = endDate ? parseInt(endDate.split('-')[1]) : end;
   const maxId = ppPlan.events.reduce((m,e)=>Math.max(m,e.id),0);
-  const ev = { id: maxId+1, catId, title, startMonth: Math.min(start,end), endMonth: Math.max(start,end), notes, owner, startDate, endDate };
+  const ev = { id: maxId+1, catId, title, startMonth: Math.min(sMonth,eMonth), endMonth: Math.max(sMonth,eMonth), notes, owner, startDate, endDate };
   ppPlan.events.push(ev);
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
@@ -10660,11 +10687,14 @@ function ppSaveEditAndInvite(id, btn) {
   ev.catId = document.getElementById('ppEditCat')?.value || ev.catId;
   const s = parseInt(document.getElementById('ppEditStart')?.value);
   const e2 = parseInt(document.getElementById('ppEditEnd')?.value);
-  ev.startMonth = Math.min(s,e2); ev.endMonth = Math.max(s,e2);
   ev.notes = document.getElementById('ppEditNotes')?.value?.trim() || '';
   ev.owner = document.getElementById('ppEditOwner')?.value?.trim() || '';
   ev.startDate = document.getElementById('ppEditStartDate')?.value || '';
   ev.endDate = document.getElementById('ppEditEndDate')?.value || '';
+  // Specific dates win: derive the months from them so the bar lands where the dates say.
+  const sM = ev.startDate ? parseInt(ev.startDate.split('-')[1]) : s;
+  const eM = ev.endDate ? parseInt(ev.endDate.split('-')[1]) : e2;
+  ev.startMonth = Math.min(sM,eM); ev.endMonth = Math.max(sM,eM);
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
@@ -11691,7 +11721,7 @@ function renderLeaveTracker(body) {
     if (s==='upcoming') return `<span class="trk-badge trk-badge-blue">● Upcoming</span>`;
     return `<span class="trk-badge trk-badge-green">● Active</span>`;
   };
-  const typeBadge = (t) => `<span class="trk-badge trk-badge-grey">${escapeHtml(t)}</span>`;
+  const typeBadge = (t) => `<span style="font-size:12px;color:var(--ink2);">${escapeHtml(t)}</span>`;
   const contactAge = (r) => {
     const d = mpDaysSinceContact(r);
     if (d===null) return `<span style="color:var(--red);font-size:11px;">Never</span>`;
@@ -11741,7 +11771,7 @@ function renderLeaveTracker(body) {
       <div style="overflow-x:auto;">
         <table class="trk-table">
           <thead><tr>
-            <th>Employee</th><th>Type</th><th>Due / Birth</th><th>Leave start</th><th>Expected return</th><th>Status</th><th>Last contact</th><th></th>
+            <th>Employee</th><th>Type</th><th>Due / Birth</th><th>Leave start</th><th>Expected return</th><th>Status</th><th>Last contact</th><th>Checklist</th>
           </tr></thead>
           <tbody>
             ${recs.map(r => `<tr>
@@ -13788,7 +13818,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                   <div style="font-weight:600;color:var(--ink);">${escapeHtml(c.employeeName)}</div>
                   <div style="font-size:10px;color:var(--ink3);margin-top:2px;">${logCount?logCount+' log entr'+(logCount===1?'y':'ies'):'No contacts logged'}${docCount?' · '+docCount+' file'+(docCount===1?'':'s'):''}</div>
                 </td>
-                <td><span style="font-size:13px;">${sc.icon}</span> <span style="font-size:12px;color:var(--ink2);">${sc.label}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:7px;color:var(--ink2);"><span style="color:var(--ink3);display:inline-flex;">${scenarioIco(sc,14)}</span><span style="font-size:12px;">${sc.label}</span></span></td>
                 <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${started}</td>
                 <td style="min-width:140px;">
                   <div style="display:flex;align-items:center;gap:8px;">
@@ -13809,7 +13839,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
               const pct = sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0;
               return `<tr style="opacity:0.55;cursor:pointer;" onclick="openWfCasePanel('${c.id}')">
                 <td><div style="font-weight:600;color:var(--ink);">${escapeHtml(c.employeeName)}</div></td>
-                <td><span style="font-size:13px;">${sc.icon}</span> <span style="font-size:12px;color:var(--ink2);">${sc.label}</span></td>
+                <td><span style="display:inline-flex;align-items:center;gap:7px;color:var(--ink2);"><span style="color:var(--ink3);display:inline-flex;">${scenarioIco(sc,14)}</span><span style="font-size:12px;">${sc.label}</span></span></td>
                 <td style="font-size:12px;color:var(--ink3);">${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
                 <td><span style="font-size:12px;font-weight:600;color:var(--green);">${pct}%</span></td>
                 <td><span class="trk-badge trk-badge-grey">✓ Closed</span></td>
@@ -13824,10 +13854,10 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
         </table>
       </div>`
     : `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:48px;text-align:center;">
-        <div style="font-size:32px;margin-bottom:12px;">${tabScenarios[0]?.icon||'📋'}</div>
+        <div style="width:48px;height:48px;border-radius:12px;background:var(--surface2);color:var(--ink3);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">${tabScenarios[0]?scenarioIco(tabScenarios[0],24):''}</div>
         <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;">No active cases</div>
         <div style="font-size:13px;color:var(--ink3);margin-bottom:20px;max-width:360px;margin-left:auto;margin-right:auto;line-height:1.7;">Start a checklist for an employee - track every step and upload documents.</div>
-        ${tabScenarios.map(s=>`<button onclick="wfNewCaseForScenario('${s.id}')" class="btn btn-secondary btn-sm" style="margin:4px;">${s.icon} ${s.label}</button>`).join('')}
+        ${tabScenarios.map(s=>`<button onclick="wfNewCaseForScenario('${s.id}')" class="btn btn-secondary btn-sm" style="margin:4px;display:inline-flex;align-items:center;gap:6px;">${scenarioIco(s,14)} ${s.label}</button>`).join('')}
       </div>`;
 
   body.innerHTML = `<div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);">
@@ -14179,7 +14209,7 @@ function wfRenderCase(c) {
       </div>
       <div style="flex:1;min-width:0;">
         <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:2px;">${escapeHtml(c.employeeName)}</div>
-        <div style="font-size:12px;color:var(--ink3);">${scenario.icon} ${scenario.label} · Opened ${startedDate}</div>
+        <div style="font-size:12px;color:var(--ink3);display:flex;align-items:center;gap:6px;">${scenarioIco(scenario,13)} ${scenario.label} · Opened ${startedDate}</div>
         <div style="margin-top:8px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;"><div id="wf-progress-fill" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;transition:width 0.3s;"></div></div>
         <div style="display:flex;justify-content:space-between;margin-top:3px;font-size:10px;color:var(--ink3);">
           <span id="wf-progress-pct">${done} / ${total} steps complete</span>
@@ -14449,7 +14479,7 @@ function openWfDetailsPanel(caseId) {
   }).join('');
   panel.innerHTML=`<div style="width:680px;max-width:95vw;background:white;display:flex;flex-direction:column;overflow:hidden;box-shadow:-8px 0 32px rgba(0,0,0,0.15);">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 22px;flex-shrink:0;display:flex;align-items:flex-start;gap:12px;">
-      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(c.employeeName)}</div><span class="trk-badge trk-badge-blue">${sc.icon} ${sc.label}</span><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● ${pct===100?'Complete':'Active'}</span></div><div style="font-size:12px;color:var(--ink3);">Started ${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
+      <div style="flex:1;"><div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;"><div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(c.employeeName)}</div><span class="trk-badge trk-badge-blue" style="display:inline-flex;align-items:center;gap:5px;">${scenarioIco(sc,12)} ${sc.label}</span><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● ${pct===100?'Complete':'Active'}</span></div><div style="font-size:12px;color:var(--ink3);">Started ${new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</div></div>
       <button onclick="document.getElementById('wfDetailPanel').remove()" style="background:var(--surface2);border:none;color:var(--ink);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
