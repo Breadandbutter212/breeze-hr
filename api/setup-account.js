@@ -43,7 +43,7 @@ export default async function handler(req, res) {
     // Create profile
     const { error: profErr } = await admin
       .from('profiles')
-      .insert({ id: user.id, company_id: co.id, full_name: full_name || '' });
+      .insert({ id: user.id, company_id: co.id, full_name: full_name || '', role: 'owner' });
     if (profErr) return res.status(500).json({ error: 'Failed to create profile: ' + profErr.message });
 
     return res.status(200).json({ ok: true, company_id: co.id });
