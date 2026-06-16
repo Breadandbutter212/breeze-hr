@@ -14891,7 +14891,7 @@ function wfOpenEmailDraft(caseId, stepId, subId) {
   document.getElementById('wfEmailDraft')?.remove();
   const ov=document.createElement('div');
   ov.id='wfEmailDraft';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:990;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
     <div style="background:#047857;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">✉️ Draft email</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">Review, then send from your own inbox - nothing sends automatically.</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
