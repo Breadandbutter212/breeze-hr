@@ -10601,9 +10601,9 @@ function renderPPTimeline() {
         if (coverageMonths <= 0.18) {
           // A single-day / very short event: mark the date with a star, title to the right.
           if (isStart) {
-            var starTop = top + (BAR_H-16)/2;
-            inner += '<div '+tipAttr+' onclick="ppEditEvent('+ev.id+')" style="position:absolute;top:'+starTop+'px;left:calc('+leftPct+'% + '+gapL+'px);width:16px;height:16px;color:'+cat.color+';cursor:pointer;z-index:3;"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7.3L12 18.2 5.8 21.5l1.6-7.3L2 9.5l7.1-.6z"/></svg></div>'+
-              '<div style="position:absolute;top:'+top+'px;left:calc('+leftPct+'% + '+gapL+'px + 23px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
+            var starTop = top + (BAR_H-20)/2;
+            inner += '<div '+tipAttr+' onclick="ppEditEvent('+ev.id+')" style="position:absolute;top:'+starTop+'px;left:calc('+leftPct+'% + '+gapL+'px);width:20px;height:20px;color:'+cat.color+';cursor:pointer;z-index:3;"><svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l2.9 6.9 7.1.6-5.4 4.7 1.6 7.3L12 18.2 5.8 21.5l1.6-7.3L2 9.5l7.1-.6z"/></svg></div>'+
+              '<div style="position:absolute;top:'+top+'px;left:calc('+leftPct+'% + '+gapL+'px + 27px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
           }
         } else {
           // Bar; label starts inside (white). A measure pass after render moves it to the
