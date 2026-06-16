@@ -11646,7 +11646,7 @@ function renderLeaveTracker(body) {
     if (s==='upcoming') return `<span class="trk-badge trk-badge-blue">● Upcoming</span>`;
     return `<span class="trk-badge trk-badge-green">● Active</span>`;
   };
-  const typeBadge = (t) => t==='Maternity'?`<span class="trk-badge trk-badge-purple">Maternity</span>`:t==='Paternity'?`<span class="trk-badge trk-badge-blue">Paternity</span>`:t==='Adoption'?`<span class="trk-badge trk-badge-teal">Adoption</span>`:`<span class="trk-badge trk-badge-amber">Shared Parental</span>`;
+  const typeBadge = (t) => `<span class="trk-badge trk-badge-grey">${escapeHtml(t)}</span>`;
   const contactAge = (r) => {
     const d = mpDaysSinceContact(r);
     if (d===null) return `<span style="color:var(--red);font-size:11px;">Never</span>`;
@@ -11834,7 +11834,7 @@ function openMatPatRecord(id) {
         <div style="flex:1;">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(rec.employeeName)}</div>
-            <span class="trk-badge ${rec.type==='Maternity'?'trk-badge-purple':rec.type==='Paternity'?'trk-badge-blue':rec.type==='Adoption'?'trk-badge-teal':'trk-badge-amber'}">${rec.type}</span>
+            <span class="trk-badge trk-badge-grey">${rec.type}</span>
             <span class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
           </div>
           <div style="font-size:12px;color:var(--ink3);">${escapeHtml(rec.jobTitle||'')}</div>
