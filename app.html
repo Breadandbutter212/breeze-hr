@@ -12855,6 +12855,13 @@ async function ocLoadData() {
   ocBuild();
 }
 
+// Collapse near-duplicate department names into one canonical label.
+const OC_DEPT_ALIASES = { 'finance & analytics':'Finance', 'finance and analytics':'Finance' };
+function ocNormalizeDept(d) {
+  const k = String(d || '').trim().toLowerCase();
+  return OC_DEPT_ALIASES[k] || (d ? String(d).trim() : d);
+}
+
 function ocExtractDept(emp) {
   // Merge returns department as string, object {id,name}, or via groups array
   const empl = emp.employments?.[0];
@@ -12883,11 +12890,11 @@ function ocExtractMgrId(emp) {
 function ocBuild() {
   const emps = _ocEmps; if (!emps?.length) return;
   _ocDeptColors = {}; let dci = 0;
-  const nodeMap = {};
+  let nodeMap = {};
   emps.forEach(emp => {
     const id = String(emp.id || emp.display_full_name || Math.random());
     const empl = emp.employments?.[0];
-    const baseDept = ocExtractDept(emp) || 'General';
+    const baseDept = ocNormalizeDept(ocExtractDept(emp) || 'General');
     const dept = _ocDeptOverrides.hasOwnProperty(id) ? _ocDeptOverrides[id] : baseDept;
     const managerId = ocExtractMgrId(emp);
     if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
@@ -12895,6 +12902,23 @@ function ocBuild() {
     const effectiveMgrId = _ocRelations.hasOwnProperty(id) ? _ocRelations[id] : managerId;
     nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: effectiveMgrId, children: [], isOpen: !!emp.isOpen, hcRoleId: emp.hcRoleId||null, hcStage: emp.hcStage||null, photo: emp.photo || emp.avatar || empl?.avatar || null };
   });
+  // Search filter → isolate just the matching people, reconnected into their own sub-chart.
+  if (_ocFilter) {
+    const q = _ocFilter.toLowerCase();
+    const matchIds = new Set(Object.values(nodeMap)
+      .filter(n => [n.name, n.title, n.dept].some(v => (v || '').toLowerCase().includes(q)))
+      .map(n => n.id));
+    if (matchIds.size) {
+      const keep = {};
+      matchIds.forEach(id => { keep[id] = { ...nodeMap[id], children: [] }; });
+      Object.keys(keep).forEach(id => {
+        let p = nodeMap[id].managerId;
+        while (p && !matchIds.has(p)) p = nodeMap[p]?.managerId;   // nearest matching ancestor
+        keep[id].managerId = (p && matchIds.has(p)) ? p : null;
+      });
+      nodeMap = keep;
+    }
+  }
   const roots = [];
   Object.values(nodeMap).forEach(n => {
     const mgrNode = n.managerId ? nodeMap[n.managerId] : null;
@@ -12902,7 +12926,7 @@ function ocBuild() {
   });
   const hasReal = Object.values(nodeMap).some(n => n.managerId && nodeMap[n.managerId]);
   let root;
-  if (hasReal && roots.length <= 5) {
+  if (_ocFilter || (hasReal && roots.length <= 5)) {
     if (roots.length === 1) {
       root = roots[0];
     } else {
@@ -12918,9 +12942,13 @@ function ocBuild() {
     root = ocBuildDeptTree(Object.values(nodeMap));
   }
   _ocTree = root; _ocOffsets = {};
-  if (!_ocDefaultApplied) { _ocDefaultApplied = true; ocSetDefaultCollapsed(root, 0); }
+  if (!_ocDefaultApplied && !_ocFilter) { _ocDefaultApplied = true; ocSetDefaultCollapsed(root, 0); }
+  // A filtered sub-chart is shown fully expanded, without disturbing the saved collapse state.
+  const _savedCollapsed = _ocCollapsed;
+  if (_ocFilter) _ocCollapsed = new Set();
   ocLayout(root, 0, 0);
   ocRender(root);
+  _ocCollapsed = _savedCollapsed;
   setTimeout(() => ocInitialView(), 80);
 }
 
@@ -13021,7 +13049,7 @@ function ocRender(root) {
   if (spinner) spinner.style.display = 'none';
   svg.innerHTML = ''; nd.innerHTML = '';
   const all = []; const collect = n => { all.push(n); if(!_ocCollapsed.has(n.id)) (n.children||[]).forEach(collect); }; collect(root);
-  if (cnt) cnt.textContent = all.filter(n=>!n.id.startsWith('__')).length + ' people';
+  if (cnt) cnt.textContent = (all.filter(n=>!n.id.startsWith('__')).length + ' people') + (_ocFilter ? ` · filtered by "${_ocFilter}"` : '');
 
   // Edges - bus connectors
   const lines=[]; ocDrawEdges(root,lines); svg.innerHTML=lines.join('');
@@ -13085,9 +13113,23 @@ function ocRender(root) {
 
   // Legend
   const leg=document.getElementById('ocLegend');
-  if(leg) leg.innerHTML=Object.entries(_ocDeptColors).map(([d,c])=>
-    `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);">
-      <div style="width:9px;height:9px;border-radius:3px;background:${c};flex-shrink:0;"></div>${escapeHtml(d)}</div>`).join('');
+  if(leg){
+    const swatches=Object.entries(_ocDeptColors).map(([d,c])=>
+      `<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink2);">
+        <div style="width:9px;height:9px;border-radius:3px;background:${c};flex-shrink:0;"></div>${escapeHtml(d)}</div>`).join('');
+    leg.innerHTML=`
+      <button onclick="ocToggleLegend()" style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--ink3);background:none;border:none;cursor:pointer;font-family:inherit;padding:0;">
+        <svg id="ocLegendChev" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="transition:transform 0.15s;"><polyline points="6 9 12 15 18 9"/></svg>Department key</button>
+      <div id="ocLegendItems" style="display:none;align-items:center;gap:12px;flex-wrap:wrap;">${swatches}</div>`;
+  }
+}
+
+function ocToggleLegend(){
+  const items=document.getElementById('ocLegendItems'), chev=document.getElementById('ocLegendChev');
+  if(!items) return;
+  const open=items.style.display!=='none';
+  items.style.display=open?'none':'flex';
+  if(chev) chev.style.transform=open?'':'rotate(-90deg)';
 }
 
 function ocRedrawEdges() {
@@ -13349,6 +13391,8 @@ function ocReset() {
   _ocDeptOverrides={};
   _ocCollapsed=new Set();
   _ocDefaultApplied=false;
+  _ocFilter='';
+  const s=document.getElementById('ocSearch'); if(s) s.value='';
   _ocEmps=ocGetDemoData();
   ocBuild();
 }
@@ -13378,11 +13422,10 @@ function ocCollapseAll() {
 }
 
 function ocHighlight(q) {
-  document.querySelectorAll('.org-node').forEach(d=>{
-    if(!q){d.classList.remove('dimmed','highlighted');return;}
-    if(d.textContent.toLowerCase().includes(q.toLowerCase())){d.classList.remove('dimmed');d.classList.add('highlighted');}
-    else{d.classList.add('dimmed');d.classList.remove('highlighted');}
-  });
+  // Typing isolates the matching sub-chart; clearing the box returns to the full chart.
+  _ocFilter = (q || '').trim();
+  clearTimeout(_ocFilterTimer);
+  _ocFilterTimer = setTimeout(() => { if (_ocEmps) ocBuild(); }, 200);
 }
 
 async function ocConnectHRIS() {
@@ -15574,6 +15617,7 @@ let _ocEmps = null, _ocTree = null, _ocDeptColors = {}, _ocOffsets = {};
 let _ocRelations = {}, _ocDeptOverrides = {};
 let _ocCollapsed = new Set();
 let _ocDefaultApplied = false;
+let _ocFilter = '', _ocFilterTimer = null;
 let _ocT = { x: 0, y: 0, k: 0.85 };
 let _ocPanning = false, _ocPanOrig = null, _ocDragNode = null;
 const OC_SNAP = 10;
@@ -15582,7 +15626,7 @@ const OC_COLORS = ['var(--accent)','#1D9E75','#1D9E75','#BA7517','#B42318','#06B
 
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
-  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set(); _ocDefaultApplied=false;
+  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set(); _ocDefaultApplied=false; _ocFilter='';
   const root = document.getElementById('orgChartRoot'); if (!root) return;
   root.innerHTML = `
     <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
@@ -16820,7 +16864,52 @@ async function projConfirmEmailToTask(){
   }
 
   // ---------- AI build ----------
-  var TALENT_CAP=60;
+  var TALENT_CAP=300;     // hard ceiling; everyone up to here is placed, in batches
+  var TALENT_BATCH=25;    // people per AI call - keeps each response well inside the token budget
+  var TALENT_SYS='You are a panel of senior HR strategy directors and HRBPs with deep experience in talent management, 9-box calibration and succession planning. You are precise, commercially minded and honest about risk. You output ONLY valid minified JSON, no markdown, no commentary.';
+
+  function talentChat(token,prompt,maxTokens){
+    return fetch('/api/chat',{ method:'POST',
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
+      body:JSON.stringify({ messages:[{role:'user',content:prompt}], system:TALENT_SYS, max_tokens:maxTokens }) })
+      .then(function(res){ return res.json(); })
+      .then(function(data){ return (data&&data.content&&data.content[0]&&data.content[0].text)||''; });
+  }
+
+  // Place one batch of people on the 9-box. Resolves to an array of {id,performance,potential,confidence,rationale}.
+  function talentPlaceBatch(token,batch){
+    var prompt='Below is a performance review export (JSON) for a group of employees. Each person has review ratings, NOT a 9-box position. Work out where each sits on a 9-box talent grid.\n\n'+
+      'For EVERY person derive performance (1-3) and potential (1-3), where 1=low, 2=medium, 3=high:\n'+
+      '- performance reflects recent results: read it from the latest review rating and goal achievement.\n'+
+      '- potential reflects capacity to take on more in future (not current results): read it from the trajectory between the previous and latest review, leadership and competency signals, manager comments, role level and tenure.\n'+
+      'Map any rating scale sensibly. For a five-band scale (for example Outstanding, Exceeds, Meets, Developing, Below) the top two bands map to 3, the middle to 2, and the bottom two to 1. Do the same proportionally for numeric or percentage scales.\n'+
+      'Give each person a confidence of high, medium or low, and a one-line rationale that cites the actual ratings you used.\n\n'+
+      'Return EXACTLY this JSON shape, one entry for every person in the dataset, and nothing else:\n'+
+      '{"people":[{"id":"p0","performance":1,"potential":2,"confidence":"high","rationale":"short why citing the ratings"}]}\n\n'+
+      'DATASET:\n'+JSON.stringify(batch);
+    return talentChat(token,prompt,4000).then(function(text){
+      var ai=talentParseJSON(text); return (ai&&ai.people)||[];
+    }).catch(function(err){ console.error('[talent place]',err); return []; });
+  }
+
+  // Derive succession + summary from the full workforce, with each person's placement already computed.
+  function talentSuccessionSummary(token,full){
+    var prompt='Below is the full workforce (JSON). Each person already has a 9-box placement: performance (1-3) and potential (1-3), where 3=high.\n\n'+
+      'Produce:\n'+
+      '- A "succession" array for the senior or business-critical roles you can identify from job titles (plus any marked keyRole). For each: {role, incumbent, successors:[{name, readiness}], gap, gapNote}. '+
+      'Provide 3-4 candidate successors per role wherever the data supports it, ordered strongest first, spanning a realistic pipeline. '+
+      'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "3to5" (ready in 3-5 years), "5to10" (longer-term, 5-10 years), "emergency" (emergency cover only). '+
+      'successors are names from the dataset; if none are suitable, return [] and set gap=true with a short gapNote. '+
+      'Set gap=true when there is no ready-now internal successor.\n'+
+      '- A "summary": a concise CHRO-ready narrative (120-200 words) on overall bench strength, key risks, retention priorities and three recommended actions.\n\n'+
+      'Return EXACTLY this JSON shape and nothing else:\n'+
+      '{"succession":[{"role":"","incumbent":"","successors":[{"name":"","readiness":"ready"}],"gap":false,"gapNote":""}],"summary":""}\n\n'+
+      'DATASET:\n'+JSON.stringify(full);
+    return talentChat(token,prompt,4000).then(function(text){
+      var ai=talentParseJSON(text); return {succession:(ai&&ai.succession)||[],summary:(ai&&ai.summary)||''};
+    }).catch(function(err){ console.error('[talent succession]',err); return {succession:[],summary:''}; });
+  }
+
   function talentInferAndBuild(people){
     var truncatedAt=null;
     if(people.length>TALENT_CAP){ truncatedAt=people.length; people=people.slice(0,TALENT_CAP); }
@@ -16830,37 +16919,24 @@ async function projConfirmEmailToTask(){
       tenure:p.tenure,latestReview:p.reviewLatest,previousReview:p.reviewPrev,goalAchievement:p.goals,
       competency:p.competency,managerComments:p.notes,keyRole:p.keyRole}; });
 
-    var sys='You are a panel of senior HR strategy directors and HRBPs with deep experience in talent management, 9-box calibration and succession planning. You are precise, commercially minded and honest about risk. You output ONLY valid minified JSON, no markdown, no commentary.';
-    var prompt='Below is a performance review export (JSON). Each person has review ratings, NOT a 9-box position. Your job is to work out where each person sits on a 9-box talent grid.\n\n'+
-      'For EVERY person derive performance (1-3) and potential (1-3), where 1=low, 2=medium, 3=high:\n'+
-      '- performance reflects recent results: read it from the latest review rating and goal achievement.\n'+
-      '- potential reflects capacity to take on more in future (not current results): read it from the trajectory between the previous and latest review, leadership and competency signals, manager comments, role level and tenure.\n'+
-      'Map any rating scale sensibly. For a five-band scale (for example Outstanding, Exceeds, Meets, Developing, Below) the top two bands map to 3, the middle to 2, and the bottom two to 1. Do the same proportionally for numeric or percentage scales.\n'+
-      'Give each person a confidence of high, medium or low, and a one-line rationale that cites the actual ratings you used.\n\n'+
-      'Then produce:\n'+
-      '- A "succession" array for the senior or business-critical roles you can identify from job titles (plus any marked keyRole). For each: {role, incumbent, successors:[{name, readiness}], gap, gapNote}. '+
-      'Provide 3-4 candidate successors per role wherever the data supports it, ordered strongest first, spanning a realistic pipeline. '+
-      'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "3to5" (ready in 3-5 years), "5to10" (longer-term, 5-10 years), "emergency" (emergency cover only). '+
-      'successors are names from the dataset; if none are suitable, return [] and set gap=true with a short gapNote. '+
-      'Set gap=true when there is no ready-now internal successor.\n'+
-      '- A "summary": a concise CHRO-ready narrative (120-200 words) on overall bench strength, key risks, retention priorities and three recommended actions.\n\n'+
-      'Return EXACTLY this JSON shape and nothing else:\n'+
-      '{"people":[{"id":"p0","performance":1,"potential":2,"confidence":"high","rationale":"short why citing the ratings"}],'+
-      '"succession":[{"role":"","incumbent":"","successors":[{"name":"","readiness":"ready"}],"gap":false,"gapNote":""}],'+
-      '"summary":""}\n\n'+
-      'DATASET:\n'+JSON.stringify(slim);
+    var batches=[]; for(var i=0;i<slim.length;i+=TALENT_BATCH){ batches.push(slim.slice(i,i+TALENT_BATCH)); }
 
     getAuthToken().then(function(token){
-      return fetch('/api/chat',{ method:'POST',
-        headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
-        body:JSON.stringify({ messages:[{role:'user',content:prompt}], system:sys, max_tokens:8000 }) });
-    }).then(function(res){ return res.json(); }).then(function(data){
-      var text=(data&&data.content&&data.content[0]&&data.content[0].text)||'';
-      var ai=talentParseJSON(text);
+      // Place everyone in parallel batches, then derive succession + summary from the placed workforce.
+      return Promise.all(batches.map(function(b){ return talentPlaceBatch(token,b); })).then(function(results){
+        var placements=[]; results.forEach(function(r){ placements=placements.concat(r); });
+        var byId={}; placements.forEach(function(a){ byId[a.id]=a; });
+        var full=slim.map(function(s){ var a=byId[s.id]||{}; return {name:s.name,role:s.role,dept:s.dept,
+          manager:s.manager,tenure:s.tenure,keyRole:s.keyRole,performance:a.performance,potential:a.potential}; });
+        return talentSuccessionSummary(token,full).then(function(ss){
+          return {people:placements,succession:ss.succession,summary:ss.summary};
+        });
+      });
+    }).then(function(ai){
       talentMerge(people,ai,truncatedAt);
     }).catch(function(err){
       console.error('[talent ai]',err);
-      // Graceful fallback: place by any ratings present, leave the rest unplaced
+      // Graceful fallback: leave people unplaced for manual placement.
       talentMerge(people,{people:[],succession:[],summary:''},truncatedAt,true);
     });
   }
