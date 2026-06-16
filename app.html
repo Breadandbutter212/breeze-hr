@@ -16473,6 +16473,7 @@ async function projConfirmEmailToTask(){
       '<div class="tl-wrap">'+
         '<div class="tl-tabs">'+
           tabBtn('grid','9-box grid',talentState.people.length)+
+          tabBtn('rating','Performance rating',null)+
           tabBtn('succession','Succession',talentState.succession.length)+
           tabBtn('plans','Development plans',null)+
           tabBtn('summary','CHRO summary',null)+
@@ -16485,7 +16486,7 @@ async function projConfirmEmailToTask(){
     return '<button class="tl-tab'+(talentTab===id?' active':'')+'" onclick="talentGoTab(\''+id+'\')">'+label+(count!=null?'<span class="pill">'+count+'</span>':'')+'</button>';
   }
   window.talentGoTab=function(t){ talentTab=t; document.querySelectorAll('#view-talent .tl-tab').forEach(function(b){b.classList.remove('active');}); talentRenderPanel();
-    var btns=document.querySelectorAll('#view-talent .tl-tab'); var order=['grid','succession','plans','summary']; var i=order.indexOf(t); if(btns[i])btns[i].classList.add('active'); };
+    var btns=document.querySelectorAll('#view-talent .tl-tab'); var order=['grid','rating','succession','plans','summary']; var i=order.indexOf(t); if(btns[i])btns[i].classList.add('active'); };
 
   function talentRenderLoading(n){
     var body=document.getElementById('talentBody'); if(!body) return;
@@ -16495,6 +16496,7 @@ async function projConfirmEmailToTask(){
 
   function talentRenderPanel(){
     if(talentTab==='grid') return talentRenderGrid();
+    if(talentTab==='rating') return talentRenderRating();
     if(talentTab==='succession') return talentRenderSuccession();
     if(talentTab==='plans') return talentRenderPlans();
     if(talentTab==='summary') return talentRenderSummary();
@@ -16537,6 +16539,102 @@ async function projConfirmEmailToTask(){
     return '<div class="tl-emp'+(low?' lowconf':'')+'" draggable="true" data-id="'+p.id+'"'+(low?' title="AI inferred, review placement"':'')+' ondragstart="talentDragStart(event,\''+p.id+'\')" ondragend="talentDragEnd(this)" onclick="talentEditCard(\''+p.id+'\')">'+
       '<div class="who"><div class="n">'+esc(p.name)+star+'</div><div class="r">'+esc(p.role||'')+'</div></div></div>';
   }
+  // ---------- PERFORMANCE RATING (bell curve) ----------
+  // Maps a free-text / numeric rating to a 1-3 band (1 below, 2 meets, 3 exceeds).
+  function ratingBand(raw){
+    if(raw==null||raw==='') return null;
+    var s=String(raw).toLowerCase().trim();
+    if(/exceed|outstand|except|excellent|above|distinguish|top performer|star/.test(s)) return 3;
+    if(/below|under(?!stand)|poor|needs? (improv|develop)|unsatisf|weak|inconsistent/.test(s)) return 1;
+    if(/meet|solid|good|satisf|on.?track|consistent|effective|achiev|expected|fully|competent/.test(s)) return 2;
+    var n=parseFloat(s.replace(/[^0-9.]/g,''));
+    if(!isNaN(n)){
+      if(/%/.test(s)){ if(n>=85) return 3; if(n>=60) return 2; return 1; }
+      if(n>=4) return 3; if(n>=3) return 2; if(n>0) return 1;
+    }
+    return null;
+  }
+
+  function talentRenderRating(){
+    var panel=document.getElementById('talentPanel'); if(!panel) return;
+    var placed=talentState.people.filter(function(p){ return p.perf>=1&&p.perf<=3; });
+    if(!placed.length){
+      panel.innerHTML='<div class="tl-note">No performance ratings yet. Place people on the 9-box grid first, then this view builds the distribution.</div>';
+      return;
+    }
+    var total=placed.length;
+    var cur=[0,0,0]; // below, meets, exceeds
+    placed.forEach(function(p){ cur[p.perf-1]++; });
+    var curPct=cur.map(function(c){ return Math.round(c/total*100); });
+
+    // Previous distribution (for deltas) from the previous-review column, like-for-like.
+    var prev=[0,0,0], prevTot=0;
+    placed.forEach(function(p){ var b=ratingBand(p.reviewPrev); if(b){ prev[b-1]++; prevTot++; } });
+    var prevPct=prevTot?prev.map(function(c){ return Math.round(c/prevTot*100); }):null;
+    var delta=prevPct?curPct.map(function(v,i){ return v-prevPct[i]; }):[null,null,null];
+
+    var PR=[
+      {title:'Below expectations', line:'#E89B53', txt:'#A8660C', bgT:'#FCEEE1', bgB:'#FDFBF9'},
+      {title:'Meets expectations',  line:'#34B7CC', txt:'#0E7F92', bgT:'#E3F4F9', bgB:'#FAFEFE'},
+      {title:'Exceeds expectations',line:'#5FBA66', txt:'#2F8B43', bgT:'#E8F5EA', bgB:'#FAFEFB'}
+    ];
+
+    // geometry
+    var W=960,H=430, chartL=52, chartR=948, chartW=chartR-chartL;
+    var gap=14, panelW=(chartW-2*gap)/3, yT=70, yB=404, plotH=yB-yT, top=44, pH=yB-top;
+    var xc=(chartL+chartR)/2, sig=150;
+    function dens(x){ return Math.exp(-((x-xc)*(x-xc))/(2*sig*sig)); }
+    function yAt(x){ return yB - dens(x)*0.70*plotH; }
+    function px0(i){ return chartL + i*(panelW+gap); }
+    function areaPath(a,b){ var s='M '+a.toFixed(1)+' '+yB+' '; for(var x=a;x<b;x+=4){ s+='L '+x.toFixed(1)+' '+yAt(x).toFixed(1)+' '; } s+='L '+b.toFixed(1)+' '+yAt(b).toFixed(1)+' L '+b.toFixed(1)+' '+yB+' Z'; return s; }
+    function linePath(a,b){ var s='M '+a.toFixed(1)+' '+yAt(a).toFixed(1)+' '; for(var x=a;x<b;x+=4){ s+='L '+x.toFixed(1)+' '+yAt(x).toFixed(1)+' '; } return s+'L '+b.toFixed(1)+' '+yAt(b).toFixed(1); }
+
+    var defs='', panels='', curve='';
+    PR.forEach(function(c,i){
+      var a=px0(i), b=a+panelW, cx=(a+b)/2;
+      // gradients + per-panel clip
+      defs+='<linearGradient id="prbg'+i+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0" stop-color="'+c.bgT+'"/><stop offset="1" stop-color="'+c.bgB+'"/></linearGradient>'+
+        '<linearGradient id="prfill'+i+'" x1="0" y1="0" x2="0" y2="1">'+
+        '<stop offset="0" stop-color="'+c.line+'" stop-opacity="0.42"/>'+
+        '<stop offset="0.55" stop-color="'+c.line+'" stop-opacity="0.14"/>'+
+        '<stop offset="1" stop-color="'+c.line+'" stop-opacity="0"/></linearGradient>'+
+        '<clipPath id="prclip'+i+'"><rect x="'+a.toFixed(1)+'" y="'+top+'" width="'+panelW.toFixed(1)+'" height="'+pH+'" rx="16"/></clipPath>';
+      // panel background + text
+      panels+='<rect x="'+a.toFixed(1)+'" y="'+top+'" width="'+panelW.toFixed(1)+'" height="'+pH+'" rx="16" fill="url(#prbg'+i+')"/>'+
+        '<text x="'+cx.toFixed(1)+'" y="94" text-anchor="middle" font-size="15.5" font-weight="700" fill="'+c.txt+'" font-family="inherit">'+c.title+'</text>'+
+        '<text x="'+cx.toFixed(1)+'" y="138" text-anchor="middle" font-size="31" font-weight="800" fill="#1F2937" font-family="inherit" letter-spacing="-0.5">'+curPct[i]+'%'+
+          (delta[i]!=null&&delta[i]!==0?'<tspan dx="9" font-size="13.5" font-weight="600" fill="#98A2B3" letter-spacing="0">'+(delta[i]>0?'↑':'↓')+Math.abs(delta[i])+'%</tspan>':'')+
+        '</text>';
+      // curve fill + stroke, clipped to panel
+      curve+='<g clip-path="url(#prclip'+i+')">'+
+        '<path d="'+areaPath(a,b)+'" fill="url(#prfill'+i+')"/>'+
+        '<path d="'+linePath(a,b)+'" fill="none" stroke="'+c.line+'" stroke-width="2.6" stroke-linejoin="round" stroke-linecap="round"/></g>';
+    });
+
+    // y axis labels
+    var axis='';
+    [['100%',yT],['50%',(yT+yB)/2],['0%',yB]].forEach(function(l){
+      axis+='<text x="36" y="'+(l[1]+4)+'" text-anchor="end" font-size="11.5" fill="#9AA3AF" font-family="inherit">'+l[0]+'</text>';
+    });
+
+    var reveal='<clipPath id="prReveal"><rect x="'+chartL+'" y="0" width="0" height="'+H+'">'+
+      '<animate attributeName="width" from="0" to="'+chartW+'" dur="1.05s" begin="0s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.22 0.61 0.36 1"/></rect></clipPath>';
+
+    var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;max-width:1080px;display:block;" preserveAspectRatio="xMidYMid meet">'+
+      '<defs>'+defs+reveal+'</defs>'+
+      panels+axis+
+      '<g clip-path="url(#prReveal)">'+curve+'</g>'+
+      '</svg>';
+
+    var sub='Performance distribution across '+total+' rated '+(total===1?'person':'people')+
+      (prevPct?', with change since the previous review cycle.':'. Upload a previous review rating to see change over time.');
+    panel.innerHTML='<div style="max-width:1080px;margin:0 auto;">'+
+      '<div class="tl-bar" style="margin-bottom:4px;"><div style="font-size:13px;font-weight:600;color:var(--ink);">Performance rating distribution</div></div>'+
+      '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">'+sub+'</div>'+
+      svg+'</div>';
+  }
+
   window.talentDragStart=function(e,id){ _dragId=id; e.dataTransfer.effectAllowed='move'; var el=e.target.closest('.tl-emp'); if(el)el.classList.add('dragging'); };
   window.talentDragEnd=function(el){ el.classList.remove('dragging'); };
   window.talentDragOver=function(e,el){ e.preventDefault(); e.dataTransfer.dropEffect='move'; el.classList.add('over'); };
