@@ -309,12 +309,15 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .main > .view.manage-view.active { display: flex !important; flex-direction: column !important; position: absolute !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; overflow: hidden; }
 /* ── COMPARE ── */
 .compare-view { flex-direction: column; }
-.compare-upload-row { display: flex; gap: 16px; padding: 20px; }
-.compare-drop { flex: 1; border: 1px dashed var(--border2); border-radius: var(--r-lg); padding: 28px 20px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; cursor: pointer; transition: all 0.15s; background: var(--surface2); }
+.compare-upload-row { display: flex; gap: 16px; padding: 14px 20px; }
+.compare-drop { flex: 1; border: 1px solid var(--border); border-radius: var(--r-lg); padding: 16px 18px; display: flex; flex-direction: row; align-items: center; gap: 14px; cursor: pointer; transition: all 0.15s; background: var(--surface2); }
 .compare-drop:hover, .compare-drop.drag-over { border-color: var(--accent); background: var(--accent-bg); }
-.compare-drop-label { font-size: 12px; font-weight: 600; color: var(--ink2); }
-.compare-drop-sub { font-size: 11px; color: var(--ink3); }
-.compare-drop-file { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+.compare-drop-icon { width: 42px; height: 42px; border-radius: var(--r); display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.compare-drop-label { font-size: 13px; font-weight: 600; color: var(--ink); }
+.compare-drop-sub { font-size: 11px; color: var(--ink3); margin-top: 1px; }
+.compare-drop-file { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 3px; }
+.compare-drop-browse { font-size: 11px; font-weight: 600; color: var(--ink2); background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-sm); padding: 3px 10px; display: inline-block; }
+.compare-drop:hover .compare-drop-browse, .compare-drop.drag-over .compare-drop-browse { border-color: var(--accent-mid); color: var(--accent); }
 .compare-results { flex: 1; overflow-y: auto; padding: 0 20px 20px; }
 .diff-table { width: 100%; border-collapse: collapse; font-size: 12px; }
 .diff-table th { text-align: left; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 10px; font-weight: 500; letter-spacing:0.04em; text-transform:uppercase; color: var(--ink3); position: sticky; top: 0; }
@@ -810,6 +813,13 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
 @media (max-width:1080px){ .home-bento { grid-template-columns:1fr 1fr; } .home-card.span2 { grid-column:span 2; } }
 @media (max-width:820px){ .home-hero { grid-template-columns:1fr; gap:18px; } .home-bento { grid-template-columns:1fr; } .home-card.span2 { grid-column:span 1; } }
+
+/* ── PROJECT DETAIL: responsive metadata grid ── */
+.proj-meta { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:14px 20px; margin-top:16px; }
+.proj-meta-f { display:flex; flex-direction:column; gap:5px; min-width:0; }
+.proj-meta-f .lbl { font-size:10px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink3); }
+@media (max-width:900px){ .proj-meta { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+@media (max-width:560px){ .proj-meta { grid-template-columns:1fr; } }
 </style>
 </head>
 <body>
@@ -1412,8 +1422,8 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <div class="view compare-view" id="view-compare">
   <div class="manage-topbar">
     <div>
-      <div class="manage-title">Compare documents</div>
-      <div class="manage-sub" id="compareSubTitle">Select a mode to get started.</div>
+      <div class="manage-title">Compare two versions</div>
+      <div class="manage-sub" id="compareSubTitle">Upload two files and Breeze HR highlights every change.</div>
     </div>
     <div style="display:flex;gap:8px;align-items:center;">
       <select id="compareMode" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);cursor:pointer;" onchange="onCompareModeChange()">
@@ -1425,30 +1435,40 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
       <button class="btn btn-primary btn-sm" id="compareBtn" onclick="runCompare()" style="display:none;">Compare</button>
     </div>
   </div>
-  <!-- Mode guidance card -->
-  <div id="compareModeHelp" style="margin:0 20px 0;display:none;">
-    <div style="background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 18px;display:flex;gap:14px;align-items:flex-start;">
-      <div id="compareModeIcon" style="font-size:22px;flex-shrink:0;margin-top:1px;"></div>
-      <div style="flex:1;">
-        <div id="compareModeTitle" style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;"></div>
-        <div id="compareModeDesc" style="font-size:12px;color:var(--ink2);line-height:1.7;"></div>
-        <div id="compareModeSteps" style="margin-top:8px;display:flex;flex-wrap:wrap;gap:6px;"></div>
-      </div>
-    </div>
+  <!-- One short helper line + How it works toggle (replaces info-pill chips) -->
+  <div style="padding:12px 20px 0;">
+    <button id="compareHowToggle" onclick="toggleCompareHow()" style="background:none;border:none;color:var(--accent);font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;padding:0;">How it works</button>
+    <div id="compareModeHow" style="display:none;margin-top:8px;font-size:12px;color:var(--ink2);line-height:1.7;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r);padding:10px 14px;"></div>
   </div>
   <div class="compare-upload-row">
     <div class="compare-drop" id="dropA" onclick="document.getElementById('fileA').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCompareDrop(event,'A')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ink3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <div class="compare-drop-label" id="compareLabelA">Original file</div>
-      <div class="compare-drop-sub" id="compareSubA">.xlsx, .xls, .docx, .doc</div>
-      <div class="compare-drop-file" id="fileAName"></div>
+      <div class="compare-drop-icon" style="background:var(--surface);border:1px solid var(--border);color:var(--ink2);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="compare-drop-label" id="compareLabelA">Original</div>
+        <div class="compare-drop-sub" id="compareSubA">.xlsx, .xls, .docx, .doc</div>
+        <div class="compare-drop-file" id="fileAName"></div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+          <span class="compare-drop-browse">Choose file</span>
+          <span style="font-size:11px;color:var(--ink3);">or drag here</span>
+        </div>
+      </div>
       <input type="file" id="fileA" accept=".xlsx,.xls,.docx,.doc,.csv" style="display:none" onchange="handleCompareFile(this,'A')">
     </div>
     <div class="compare-drop" id="dropB" onclick="document.getElementById('fileB').click()" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')" ondrop="handleCompareDrop(event,'B')">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="color:var(--ink3)"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-      <div class="compare-drop-label" id="compareLabelB">Updated file</div>
-      <div class="compare-drop-sub" id="compareSubB">.xlsx, .xls, .docx, .doc</div>
-      <div class="compare-drop-file" id="fileBName"></div>
+      <div class="compare-drop-icon" style="background:var(--accent-bg);color:var(--accent);">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="11" x2="12" y2="17"/><line x1="9" y1="14" x2="15" y2="14"/></svg>
+      </div>
+      <div style="flex:1;min-width:0;">
+        <div class="compare-drop-label" id="compareLabelB">Updated</div>
+        <div class="compare-drop-sub" id="compareSubB">.xlsx, .xls, .docx, .doc</div>
+        <div class="compare-drop-file" id="fileBName"></div>
+        <div style="margin-top:6px;display:flex;align-items:center;gap:8px;">
+          <span class="compare-drop-browse">Choose file</span>
+          <span style="font-size:11px;color:var(--ink3);">or drag here</span>
+        </div>
+      </div>
       <input type="file" id="fileB" accept=".xlsx,.xls,.docx,.doc,.csv,.pdf" style="display:none" onchange="handleCompareFile(this,'B')">
     </div>
   </div>
@@ -9159,19 +9179,22 @@ async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
 const COMPARE_MODE_INFO = {
   general: {
     icon: '📄',
-    title: 'General comparison - spot exactly what changed between two files',
-    desc: 'Upload two versions of the same Excel or Word document. Breeze HR compares them cell-by-cell (Excel) or line-by-line (Word) and shows every addition, removal and change.',
+    title: 'General comparison',
+    helper: 'Upload two versions of the same Excel or Word file and Breeze HR highlights every change.',
+    desc: 'Breeze HR compares the two files cell-by-cell (Excel) or line-by-line (Word) and shows every addition, removal and change.',
     steps: ['Good for: contract redlines, policy updates, spotting edits between two versions', 'Both files should be the same type and roughly the same structure', 'Excel: compares each cell across matching sheets · Word: LCS diff on paragraph text']
   },
   comp: {
     icon: '💰',
-    title: 'Compensation statement - cross-check comp letters against your payroll data',
+    title: 'Compensation statement',
+    helper: 'Cross-check compensation letters against your payroll spreadsheet.',
     desc: 'Upload your HR or payroll spreadsheet as File A, then select one or more compensation letters (.docx) as File B. Breeze HR matches each letter to the employee row by name, reads the letter using AI regardless of its format, and flags any discrepancies in salary, bonus, allowances or other payments.',
     steps: ['Good for: checking offer letters match what\'s in your system, auditing comp statements before issue', 'Handles any letter format - formal tables, prose, informal - AI extracts the numbers', 'Select multiple letters at once to check your whole cohort in one run']
   },
   employee: {
     icon: '📊',
-    title: 'Spreadsheet vs spreadsheet - compare two systems for the same employees',
+    title: 'Spreadsheet vs spreadsheet',
+    helper: 'Match employees across two spreadsheets and compare the columns they share.',
     desc: 'Upload two Excel files that both contain employee data - for example your HR system export and your payroll export. Breeze HR matches rows by employee name or ID and compares only the columns that exist in both files, so you only see real discrepancies, not just different column structures.',
     steps: ['Good for: cross-checking HR system vs payroll, validating a data migration, audit trail comparison', 'Only columns with the same name in both files are compared - different columns are ignored', 'Employee names don\'t need to match exactly - middle initials and minor differences are handled']
   }
@@ -9191,29 +9214,37 @@ function onCompareModeChange() {
     if (labelB) labelB.textContent = mode === 'comp' ? 'File B - compensation statements (select multiple .docx)' : 'File B - spreadsheet B';
     if (subA) subA.textContent = '.xlsx, .xls, .csv';
     if (subB) subB.textContent = mode === 'comp' ? '.docx or .pdf - select multiple files at once' : '.xlsx, .xls, .csv';
-    if (subTitle) subTitle.textContent = '';
     if (fB) fB.setAttribute('multiple', '');
   } else {
-    if (labelA) labelA.textContent = 'Original file';
-    if (labelB) labelB.textContent = 'Updated file';
+    if (labelA) labelA.textContent = 'Original';
+    if (labelB) labelB.textContent = 'Updated';
     if (subA) subA.textContent = '.xlsx, .xls, .docx, .doc';
     if (subB) subB.textContent = '.xlsx, .xls, .docx, .doc';
-    if (subTitle) subTitle.textContent = '';
     if (fB) fB.removeAttribute('multiple');
   }
-  // Update the help card
+  // One-line helper text + collapsible "How it works"
   const info = COMPARE_MODE_INFO[mode];
-  const helpCard = document.getElementById('compareModeHelp');
-  if (helpCard && info) {
-    document.getElementById('compareModeIcon').textContent = info.icon;
-    document.getElementById('compareModeTitle').textContent = info.title;
-    document.getElementById('compareModeDesc').textContent = info.desc;
-    document.getElementById('compareModeSteps').innerHTML = info.steps
-      .map(s => `<div style="font-size:11px;color:var(--ink3);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;line-height:1.5;">${escapeHtml(s)}</div>`)
-      .join('');
-    helpCard.style.display = 'block';
+  if (info) {
+    if (subTitle) subTitle.textContent = info.helper || '';
+    const howEl = document.getElementById('compareModeHow');
+    if (howEl) {
+      howEl.innerHTML = `<div>${escapeHtml(info.desc)}</div>` +
+        info.steps.map(s => `<div style="margin-top:5px;color:var(--ink3);">· ${escapeHtml(s)}</div>`).join('');
+      howEl.style.display = 'none';
+    }
+    const tg = document.getElementById('compareHowToggle');
+    if (tg) tg.textContent = 'How it works';
   }
   document.getElementById('compareResults').innerHTML = '';
+}
+
+function toggleCompareHow() {
+  const el = document.getElementById('compareModeHow');
+  const tg = document.getElementById('compareHowToggle');
+  if (!el) return;
+  const open = el.style.display !== 'none';
+  el.style.display = open ? 'none' : 'block';
+  if (tg) tg.textContent = open ? 'How it works' : 'Hide';
 }
 
 // Show help card for the default mode on page load
@@ -15565,6 +15596,9 @@ function backToProjects(){ renderProjects(); }
 function renderProjectDetail(){
   const body = document.getElementById('projectsBody'); const p = projActive(); if(!body||!p) { renderProjects(); return; }
   const rag = projComputeRag(p); const pct = projPct(p);
+  const onHold = p.stage==='on-hold';
+  const stageColor = (PROJ_STAGES[p.stage]||PROJ_STAGES['not-started']).color;
+  const progColor = onHold ? '#BA7517' : projPctColor(pct);
   const stageOpts = Object.entries(PROJ_STAGES).map(([k,v])=>`<option value="${k}" ${p.stage===k?'selected':''}>${v.label}</option>`).join('');
   const ragOpts = ['auto','green','amber','red'].map(r=>`<option value="${r}" ${(p.rag||'auto')===r?'selected':''}>${r==='auto'?'Auto':r[0].toUpperCase()+r.slice(1)}</option>`).join('');
   const catOpts = PROJ_CATEGORIES.map(c=>`<option value="${c}" ${p.category===c?'selected':''}>${c}</option>`).join('');
@@ -15583,22 +15617,21 @@ function renderProjectDetail(){
 
     <div style="${card}">
       <div style="display:flex;align-items:flex-start;gap:14px;">
-        <span style="width:12px;height:12px;border-radius:50%;background:${PROJ_RAG[rag]};margin-top:7px;flex-shrink:0;"></span>
+        <span title="${(PROJ_STAGES[p.stage]||{}).label||''}" style="width:12px;height:12px;border-radius:50%;background:${stageColor};margin-top:7px;flex-shrink:0;"></span>
         <div style="flex:1;min-width:0;">
           <div style="font-size:18px;font-weight:700;color:var(--ink);cursor:pointer;" onclick="projEditField('name')" title="Click to edit">${escapeHtml(p.name)}</div>
           <div style="font-size:13px;color:var(--ink2);margin-top:4px;cursor:pointer;" onclick="projEditField('objective')" title="Click to edit">${escapeHtml(p.objective||'Add an objective…')}</div>
         </div>
-        <div style="width:62px;height:62px;border-radius:50%;background:conic-gradient(${projPctColor(pct)} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:48px;height:48px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;color:var(--ink);">${pct}%</div></div>
       </div>
-      <div style="display:flex;flex-wrap:wrap;gap:16px;margin-top:14px;align-items:center;">
-        <label style="font-size:11px;color:var(--ink3);">Stage <select style="${sel}" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
-        <label style="font-size:11px;color:var(--ink3);">Category <select style="${sel}" onchange="projSet('category',this.value)">${catOpts}</select></label>
-        <label style="font-size:11px;color:var(--ink3);">Priority <select style="${sel}" onchange="projSet('priority',this.value)">${priOpts}</select></label>
-        <label style="font-size:11px;color:var(--ink3);">Owner <input value="${jsAttr(p.owner||'')}" onchange="projSet('owner',this.value)" style="${sel}width:120px;cursor:text;"></label>
-        <label style="font-size:11px;color:var(--ink3);">Start <input type="date" value="${p.startDate||''}" onchange="projSet('startDate',this.value)" style="${sel}cursor:text;"></label>
-        <label style="font-size:11px;color:var(--ink3);">Target <input type="date" value="${p.targetDate||''}" onchange="projSet('targetDate',this.value)" style="${sel}cursor:text;"></label>
+      <div class="proj-meta">
+        <label class="proj-meta-f"><span class="lbl">Stage</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
+        <label class="proj-meta-f"><span class="lbl">Category</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('category',this.value)">${catOpts}</select></label>
+        <label class="proj-meta-f"><span class="lbl">Priority</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('priority',this.value)">${priOpts}</select></label>
+        <label class="proj-meta-f"><span class="lbl">Owner</span><input value="${jsAttr(p.owner||'')}" onchange="projSet('owner',this.value)" style="${sel}width:100%;box-sizing:border-box;cursor:text;"></label>
+        <label class="proj-meta-f"><span class="lbl">Start</span><input type="date" value="${p.startDate||''}" onchange="projSet('startDate',this.value)" style="${sel}width:100%;box-sizing:border-box;cursor:text;"></label>
+        <label class="proj-meta-f"><span class="lbl">Target</span><input type="date" value="${p.targetDate||''}" onchange="projSet('targetDate',this.value)" style="${sel}width:100%;box-sizing:border-box;cursor:text;"></label>
       </div>
-      <div style="margin-top:14px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${projPctColor(pct)};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(projMsDone).length}/${(p.milestones||[]).length} tasks</div></div>
+      <div style="margin-top:16px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${progColor};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(projMsDone).length}/${(p.milestones||[]).length} tasks</div></div>
     </div>
 
     ${projMilestonesBlock(p, sel, card)}`;
@@ -15795,9 +15828,14 @@ function projRenderTimeline(p){
   if (!ms.length) return '<div style="font-size:12px;color:var(--ink3);padding:14px 0;">Add due dates to tasks to see the timeline.</div>';
   const LBL = 220, ROW = 54, HEAD = 26;
   const dues = ms.map(m=>new Date(m.dueDate).getTime());
-  let min = Math.min(...dues, p.startDate?new Date(p.startDate).getTime():dues[0]);
-  let max = Math.max(...dues, p.targetDate?new Date(p.targetDate).getTime():dues[dues.length-1]);
-  const pad = (max-min)*0.06 || 86400000*10; min -= pad; max += pad; const span = max-min || 1;
+  const todayT = projToday().getTime();
+  // axis starts from the earliest of start/first task/today and ends at the latest of target/last task/today,
+  // then snaps to whole-month boundaries so the start date and the Today marker render inside the grid (not against the edge).
+  let min = Math.min(...dues, p.startDate?new Date(p.startDate).getTime():dues[0], todayT);
+  let max = Math.max(...dues, p.targetDate?new Date(p.targetDate).getTime():dues[dues.length-1], todayT);
+  const dmin = new Date(min); dmin.setDate(1); dmin.setHours(0,0,0,0); min = dmin.getTime();
+  const dmax = new Date(max); dmax.setDate(1); dmax.setHours(0,0,0,0); dmax.setMonth(dmax.getMonth()+1); max = dmax.getTime();
+  const pad = (max-min)*0.06 || 86400000*10; const span = max-min || 1;
   const pct = t => (t-min)/span*100;
   const xc = v => `calc(${LBL}px + (100% - ${LBL}px) * ${v/100})`;
   const wc = w => `calc((100% - ${LBL}px) * ${w/100})`;
@@ -15807,18 +15845,19 @@ function projRenderTimeline(p){
   const todayPct = pct(projToday().getTime());
   const todayLine = (todayPct>=0&&todayPct<=100) ? `<div title="Today" style="position:absolute;left:${xc(todayPct)};top:${HEAD-4}px;height:${rowsH+4}px;width:2px;background:#B42318;opacity:0.55;z-index:2;"></div>` : '';
   const headerBand = `<div style="position:absolute;left:${LBL}px;right:0;top:0;height:${HEAD-4}px;background:var(--surface2);border-radius:6px;"></div>`;
+  const onHold = p.stage==='on-hold';
   const bars = ms.map((m,i)=>{
     const due = new Date(m.dueDate).getTime();
     const startT = m.startDate ? new Date(m.startDate).getTime() : (i>0 ? new Date(ms[i-1].dueDate).getTime() : min+pad*0.5);
     const a = Math.min(startT,due); let l = Math.max(0,pct(a)); let w = Math.max(2.5, pct(due)-pct(a)); if (l+w>100) w = 100-l;
-    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m); const col = ov?'#B42318':stt.color; const prog = projMsProgress(m);
+    const stt = MS_STATUS[projMsStatus(m)]; const ov = projMilestoneOverdue(m); const col = ov?'#B42318':(onHold?'#BA7517':stt.color); const prog = projMsProgress(m);
     const top = HEAD + i*ROW; const barTop = 13;
-    return `<div style="position:absolute;left:0;top:${top}px;height:${ROW}px;width:100%;${i%2?'background:var(--surface2);':''}border-radius:6px;">
+    return `<div style="position:absolute;left:0;top:${top}px;height:${ROW}px;width:100%;${i%2?'background:rgba(46,61,82,0.025);':''}border-radius:6px;">
       <div title="${jsAttr(m.title)}" style="position:absolute;left:12px;top:6px;width:${LBL-22}px;font-size:11px;color:var(--ink);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(m.title)}</div>
       <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} - ${escapeHtml(stt.label)}, ${prog}% done, due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(l)};width:${wc(w)};top:${barTop}px;height:18px;background:${col}2e;border:1px solid ${col}80;border-radius:9px;cursor:pointer;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.08);" onmouseover="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.08)'">
         <div style="height:100%;width:${prog}%;background:${col};border-radius:9px;"></div>
       </div>
-      <div title="Due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(pct(due))};top:${barTop+1}px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid ${col};transform:translateX(-50%);box-shadow:0 1px 2px rgba(0,0,0,0.15);cursor:pointer;z-index:1;"></div>
+      ${(projMsStatus(m)==='in-progress' && !projMsDone(m)) ? `<div title="Active task - due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(pct(due))};top:${barTop+1}px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid ${col};transform:translateX(-50%);box-shadow:0 1px 2px rgba(0,0,0,0.15);cursor:pointer;z-index:1;"></div>` : ''}
     </div>`;
   }).join('');
   const legend = Object.entries(MS_STATUS).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:9px;height:9px;border-radius:3px;background:${v.color};"></span>${v.label}</span>`).join('');
