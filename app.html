@@ -12893,7 +12893,7 @@ function ocBuild() {
     if (!_ocDeptColors[dept]) _ocDeptColors[dept] = OC_COLORS[dci++ % OC_COLORS.length];
     // _ocRelations overrides HRIS manager data
     const effectiveMgrId = _ocRelations.hasOwnProperty(id) ? _ocRelations[id] : managerId;
-    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: effectiveMgrId, children: [], isOpen: !!emp.isOpen, hcRoleId: emp.hcRoleId||null, hcStage: emp.hcStage||null };
+    nodeMap[id] = { id, name: emp.display_full_name || 'Unknown', title: empl?.job_title || emp.job_title || '', dept, color: _ocDeptColors[dept], managerId: effectiveMgrId, children: [], isOpen: !!emp.isOpen, hcRoleId: emp.hcRoleId||null, hcStage: emp.hcStage||null, photo: emp.photo || emp.avatar || empl?.avatar || null };
   });
   const roots = [];
   Object.values(nodeMap).forEach(n => {
@@ -13046,7 +13046,8 @@ function ocRender(root) {
         </div>`;
     } else {
       div.style.borderColor=node.color+'44';
-      div.innerHTML=`<div class="org-avatar" style="background:${node.color}">${initials}</div>
+      const _photoImg = node.photo ? `<img src="${escapeHtml(node.photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">` : '';
+      div.innerHTML=`<div class="org-avatar" style="background:${node.color};position:relative;overflow:hidden;">${initials}${_photoImg}</div>
         <div style="flex:1;min-width:0;">
           <div class="org-name">${escapeHtml(node.name)}</div>
           <div class="org-title">${escapeHtml(node.title||node.dept||'')}</div>
@@ -13403,7 +13404,7 @@ async function ocLoadCSV(event) {
 function ocGetDemoData() {
   return [
     // ── C-Suite ──
-    {id:'e1', display_full_name:'Sarah Mitchell',   employments:[{job_title:'Chief Executive Officer',    department:'Leadership'}],      manager:null},
+    {id:'e1', display_full_name:'Sarah Mitchell',   employments:[{job_title:'Chief Executive Officer',    department:'Leadership'}],      manager:null, photo:'https://randomuser.me/api/portraits/women/44.jpg'},
     {id:'e2', display_full_name:'James Thornton',   employments:[{job_title:'Chief Operating Officer',    department:'Leadership'}],      manager:'e1'},
     {id:'e36',display_full_name:'Robert Chen',      employments:[{job_title:'Chief Financial Officer',    department:'Finance'}],         manager:'e1'},
     {id:'e41',display_full_name:'Laura Kim',        employments:[{job_title:'General Counsel',            department:'Legal'}],           manager:'e1'},
