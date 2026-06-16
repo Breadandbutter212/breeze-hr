@@ -14960,6 +14960,15 @@ async function submitAddRole(btn, existingId) {
     if (_ocTree) ocBuild();
   }
 }
+function hcToggleDetails(hdr){
+  const body=hdr.parentElement.querySelector('.hc-det-body');
+  const chev=hdr.querySelector('.hc-det-chev');
+  if(!body) return;
+  const open=body.style.display!=='none';
+  body.style.display=open?'none':'grid';
+  if(chev) chev.style.transform=open?'':'rotate(90deg)';
+}
+
 function openRolePanel(id) {
   const r=(hcRoles||[]).find(x=>x.id===id); if(!r) return;
   document.getElementById('hcRolePanel')?.remove();
@@ -15026,8 +15035,14 @@ function openRolePanel(id) {
     </div>
     <div style="flex:1;overflow-y:auto;display:flex;flex-direction:column;">
 
-      <!-- Quick details row -->
-      <div style="padding:14px 22px;border-bottom:1px solid var(--border);display:grid;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <!-- Quick details row (collapsed by default) -->
+      <div style="border-bottom:1px solid var(--border);">
+      <div onclick="hcToggleDetails(this)" style="padding:12px 22px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
+        <span class="hc-det-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+        <span style="font-size:12px;font-weight:700;color:var(--ink);">Role details</span>
+        <span style="font-size:11px;font-weight:400;color:var(--ink3);">stage, comp, source, agency</span>
+      </div>
+      <div class="hc-det-body" style="display:none;padding:0 22px 14px;grid-template-columns:repeat(3,1fr);gap:10px;">
         <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${sel}">${stageOpts}</select></div>
         <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${sel}">${priorOpts}</select></div>
         <div><label style="${lbl}">Country</label><input value="${escapeHtml(r.country||'')}" onchange="hcUpdateField('${id}','country',this.value)" style="${inp}" placeholder="e.g. UK, USA, Germany..."></div>
@@ -15038,6 +15053,7 @@ function openRolePanel(id) {
         <div><label style="${lbl}">Agency name</label><input value="${escapeHtml(r.agencyName||'')}" onchange="hcUpdateField('${id}','agencyName',this.value)" style="${inp}" placeholder="e.g. Hays, Michael Page..."></div>
         <div><label style="${lbl}">Budget (£)</label><input type="number" value="${r.budget||''}" onchange="hcUpdateField('${id}','budget',parseInt(this.value)||0)" style="${inp}" placeholder="e.g. 25000"></div>
         <div><label style="${lbl}">Agency fee %</label><input type="number" min="0" max="30" value="${r.agencyFee||''}" onchange="hcUpdateField('${id}','agencyFee',parseFloat(this.value)||0)" style="${inp}" placeholder="e.g. 20"></div>
+      </div>
       </div>
 
       ${r.interviewProcess?`<div style="padding:10px 22px;border-bottom:1px solid var(--border);background:var(--surface2);"><span style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;">Interview process: </span><span style="font-size:12px;color:var(--ink2);">${escapeHtml(r.interviewProcess)}</span></div>`:''}
