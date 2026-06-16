@@ -1241,7 +1241,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
     <div id="recInput" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);margin-bottom:28px;overflow:hidden;">
 
       <!-- Header: mic chip + status + record controls -->
-      <div style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border);">
+      <div class="geo-rings" style="display:flex;align-items:center;gap:12px;padding:16px 22px;border-bottom:1px solid var(--border);">
         <div style="width:38px;height:38px;border-radius:10px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 10v1a7 7 0 0 0 14 0v-1"/><line x1="12" y1="19" x2="12" y2="22"/></svg>
         </div>
@@ -4605,7 +4605,7 @@ async function renderTmpls(filter) {
       const visible = showAll ? ts : ts.slice(0,UPLOADS_PREVIEW);
       visible.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'};color:${t.isCustom?'var(--amber)':'var(--accent)'};">${templateIco(t)}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
       if(isUploads && ts.length>UPLOADS_PREVIEW){
@@ -4663,7 +4663,7 @@ function renderTmplsLocal() {
     if(!isCollapsed){
       ts.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'};color:${t.isCustom?'var(--amber)':'var(--accent)'};">${templateIco(t)}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
     }
@@ -4703,7 +4703,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title" style="display:flex;align-items:center;gap:7px;">${templateIco(t)} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
@@ -5078,7 +5078,7 @@ function downloadTxt() {
 // Themed monochrome line icon for a policy, matched by name keywords (replaces emoji).
 function policyIco(name){
   const n=(name||'').toLowerCase();
-  const w=p=>'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">'+p+'</svg>';
+  const w=p=>'<svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">'+p+'</svg>';
   if(/holiday|annual leave|time off|sabbatical/.test(n)) return w('<rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>');
   if(/maternit|paternit|parental|adoption|family|carer|bereave|dependant|childcare/.test(n)) return w('<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>');
   if(/sick|absence|health|wellbeing|wellness|occupational/.test(n)) return w('<polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/>');
@@ -5105,6 +5105,16 @@ function scenarioIco(s, size){
   if (cat==='Conduct' || /disciplin|grievance|conduct/.test(lbl)) return w('<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>');
   if (cat==='Immigration' || /visa|immigration|right to work|\bilr\b|settled/.test(lbl)) return w('<circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>');
   return w('<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M9 9h6M9 13h6M9 17h4"/>');
+}
+// Themed monochrome line icon for a document template (replaces emoji), keyed by type/name.
+function templateIco(t){
+  const ty=(t&&t.type)||'', nm=((t&&t.name)||'').toLowerCase();
+  const w=p=>'<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;">'+p+'</svg>';
+  if(ty==='Disciplinary'||/disciplin|grievance|warning|dismissal|\bpip\b/.test(nm)) return w('<path d="m16 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="m2 16 3-8 3 8c-.87.65-1.92 1-3 1s-2.13-.35-3-1Z"/><path d="M7 21h10"/><path d="M12 3v18"/><path d="M3 7h2c2 0 5-1 7-2 2 1 5 2 7 2h2"/>');
+  if(ty==='Contracts'||/contract|agreement|tupe/.test(nm)) return w('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M9 15l1.5 1.5L14 13"/>');
+  if(ty==='References'||/reference/.test(nm)) return w('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><circle cx="12" cy="14" r="2.3"/><path d="M9.5 19a3 3 0 0 1 5 0"/>');
+  if(ty==='Letters'||/letter|offer|confirmation|invite/.test(nm)) return w('<rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 5L2 7"/>');
+  return w('<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>');
 }
 
 async function renderManage() {
@@ -5392,7 +5402,7 @@ function renderProcessRow(p) {
   const safeName = jsAttr(p.name);
   return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
     <div style="padding:12px 16px;display:flex;align-items:center;gap:10px;user-select:none;">
-      <span style="font-size:20px;cursor:pointer;" onclick="toggleProcessMap(this.closest('div').nextElementSibling?this.parentElement:this.parentElement,'${safeName}')">${p.icon}</span>
+      <span style="width:34px;height:34px;border-radius:9px;background:var(--surface2);color:var(--ink2);display:flex;align-items:center;justify-content:center;flex-shrink:0;cursor:pointer;" onclick="toggleProcessMap(this.closest('div').nextElementSibling?this.parentElement:this.parentElement,'${safeName}')">${policyIco(p.name)}</span>
       <div style="flex:1;cursor:pointer;" onclick="toggleProcessMap(this.parentElement,'${safeName}')">
         <div style="font-size:13px;font-weight:600;color:var(--ink);">${p.name}</div>
         <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${p.steps.length} steps</div>
@@ -10485,13 +10495,16 @@ function renderPPTimeline() {
         const left  = `calc(${leftPct}% + ${gapL}px)`;
         const right = `calc(${rightPct}% + ${gapR}px)`;
         const label = isStart ? escapeHtml(ev.title) : '';
-        // Multi-month bars are wide enough for an inside label; single-month bars are usually
-        // too narrow, so render the full title in dark ink just to the right of the bar.
-        const insideLabel = (isStart && !isSingle) ? label : '';
-        const outsideLabel = (isStart && isSingle && label)
-          ? `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 7px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:9px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:3;">${label}</div>`
-          : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:9px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 5px;line-height:${BAR_H}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${insideLabel}</div>${outsideLabel}`;
+        // Label is a separate, unclipped overlay so the full title always shows:
+        // multi-month bars carry a white label across the bar; single-month (narrow) bars
+        // show the title in dark ink just to the right of the pill.
+        let labelHtml = '';
+        if (isStart && label) {
+          labelHtml = isSingle
+            ? `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 7px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">${label}</div>`
+            : `<div style="position:absolute;top:${top}px;left:calc(${leftPct}% + ${gapL}px + 9px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;pointer-events:none;z-index:4;">${label}</div>`;
+        }
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}"></div>${labelHtml}`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
@@ -11441,7 +11454,8 @@ async function saveMatPatRecords() {
 function mpStatus(rec) {
   const now = new Date();
   if (rec.actualReturn) return 'returned';
-  if (rec.leaveStart && new Date(rec.leaveStart) > now) return 'upcoming';
+  // No leave-start date yet, or it's in the future -> treat as upcoming (don't nag for contact).
+  if (!rec.leaveStart || new Date(rec.leaveStart) > now) return 'upcoming';
   return 'active';
 }
 
@@ -11460,9 +11474,11 @@ function mpFlags(records) {
       flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave - dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
     }
     const days = mpDaysSinceContact(r);
-    if (status === 'active' && (days === null || days > 42)) {
-      const ago = days === null ? 'never contacted' : `${days} days ago`;
-      flags.push({ type:'info', msg:`<strong>KIT day check-in:</strong> ${r.employeeName} (${r.type.toLowerCase()}) - last contact ${ago}. Consider reaching out.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'Log contact →' });
+    // Only nudge once leave has actually been under way a couple of weeks - not the moment a record is added.
+    const daysSinceStart = r.leaveStart ? Math.floor((new Date() - new Date(r.leaveStart)) / 86400000) : -1;
+    if (status === 'active' && daysSinceStart >= 14 && (days === null || days > 42)) {
+      const ago = days === null ? 'no contact logged yet' : `${days} days ago`;
+      flags.push({ type:'info', msg:`<strong>KIT day check-in:</strong> ${r.employeeName} (${r.type.toLowerCase()}) - ${ago}. Consider reaching out.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'Log contact →' });
     }
     if (r.expectedReturn) {
       const daysToReturn = Math.floor((new Date(r.expectedReturn) - new Date()) / 86400000);
@@ -16297,7 +16313,10 @@ async function projConfirmEmailToTask(){
   .tl-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;}
   .tl-hero{max-width:880px;width:100%;margin:auto 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden;display:grid;grid-template-columns:1.18fr 0.82fr;}
   .tl-hero-main{padding:40px 40px 34px;}
-  .tl-hero-side{background:linear-gradient(165deg,var(--surface2),var(--surface));border-left:1px solid var(--border);padding:40px 34px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .tl-hero-side{background:repeating-linear-gradient(45deg,rgba(42,80,128,0.05) 0 1px,transparent 1px 16px),repeating-linear-gradient(-45deg,rgba(42,80,128,0.05) 0 1px,transparent 1px 16px),linear-gradient(165deg,var(--surface2),var(--surface));border-left:1px solid var(--border);padding:40px 34px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  /* Reusable faint navy geometric texture for headers / decorative panels */
+  .geo-accent{background-image:repeating-linear-gradient(45deg,rgba(42,80,128,0.045) 0 1px,transparent 1px 15px),repeating-linear-gradient(-45deg,rgba(42,80,128,0.045) 0 1px,transparent 1px 15px);}
+  .geo-rings{background-image:repeating-radial-gradient(circle at calc(100% - 30px) 50%, transparent 0 22px, rgba(42,80,128,0.06) 22px 23px);background-repeat:no-repeat;}
   .tl-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);}
   .tl-eyebrow svg{width:15px;height:15px;}
   .tl-uptitle{font-size:23px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.18;margin-top:13px;}
