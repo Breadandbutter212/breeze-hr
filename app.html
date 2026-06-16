@@ -14735,11 +14735,8 @@ async function wfDeleteDoc(caseId, docId) {
 }
 
 function showBreezeToast(msg) {
-  const t = document.getElementById('breezeToast');
-  if (!t) return;
-  t.textContent = msg;
-  t.classList.add('visible');
-  setTimeout(()=>t.classList.remove('visible'), 2500);
+  // Unified: all toasts use the bottom-centre navy bzToast style.
+  bzToast(msg);
 }
 
 // ── HEADCOUNT PLANNING ──
