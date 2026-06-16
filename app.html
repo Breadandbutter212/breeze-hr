@@ -16391,7 +16391,9 @@ async function projConfirmEmailToTask(){
       'Give each person a confidence of high, medium or low, and a one-line rationale that cites the actual ratings you used.\n\n'+
       'Then produce:\n'+
       '- A "succession" array for the senior or business-critical roles you can identify from job titles (plus any marked keyRole). For each: {role, incumbent, successors:[{name, readiness}], gap, gapNote}. '+
-      'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "emergency" (emergency cover only). successors are names from the dataset; if none are suitable, return [] and set gap=true with a short gapNote. '+
+      'Provide 3-4 candidate successors per role wherever the data supports it, ordered strongest first, spanning a realistic pipeline. '+
+      'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "3to5" (ready in 3-5 years), "5to10" (longer-term, 5-10 years), "emergency" (emergency cover only). '+
+      'successors are names from the dataset; if none are suitable, return [] and set gap=true with a short gapNote. '+
       'Set gap=true when there is no ready-now internal successor.\n'+
       '- A "summary": a concise CHRO-ready narrative (120-200 words) on overall bench strength, key risks, retention priorities and three recommended actions.\n\n'+
       'Return EXACTLY this JSON shape and nothing else:\n'+
@@ -16713,12 +16715,15 @@ async function projConfirmEmailToTask(){
   };
 
   // ---------- SUCCESSION ----------
-  var READY={ready:'Ready now','1to2':'1-2 years',emergency:'Emergency cover'};
+  var READY={ready:'Ready now','1to2':'1-2 years','3to5':'3-5 years','5to10':'5-10 years',emergency:'Emergency cover'};
+  var SUCC_MIN=4; // show at least this many successor slots per role
+  function padSuccessors(s){ s.successors=s.successors||[]; while(s.successors.length<SUCC_MIN) s.successors.push({name:'',readiness:'1to2'}); return s; }
   function talentRenderSuccession(){
     var panel=document.getElementById('talentPanel'); if(!panel)return;
     var html='<div class="tl-bar"><div style="font-size:12.5px;color:var(--ink2);">Succession cover for business-critical roles. Edit readiness, add a successor, or flag a gap.</div><button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="talentAddSuccession()">+ Add role</button></div>';
     if(!talentState.succession.length){ html+='<div class="tl-note">No critical roles identified. Mark people as "Key role" in the grid, or add a role to plan its succession.</div>'; }
     talentState.succession.forEach(function(s,i){
+      padSuccessors(s);
       html+='<div class="tl-succ">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'+
           '<div style="flex:1"><input class="tl-input" style="font-size:14px;font-weight:700;border:none;padding:2px 0;" value="'+esc(s.role||'')+'" onchange="talentSucc('+i+',\'role\',this.value)" placeholder="Role">'+
@@ -16746,7 +16751,7 @@ async function projConfirmEmailToTask(){
   window.talentAddSuccPerson=function(i){ talentState.succession[i].successors=talentState.succession[i].successors||[]; talentState.succession[i].successors.push({name:'',readiness:'1to2'}); talentRenderSuccession(); };
   window.talentDelSuccPerson=function(i,j){ talentState.succession[i].successors.splice(j,1); talentRenderSuccession(); };
   window.talentDelSucc=function(i){ talentState.succession.splice(i,1); renderTalent(); };
-  window.talentAddSuccession=function(){ talentState.succession.push({role:'',incumbent:'',successors:[],gap:true,gapNote:''}); renderTalent(); };
+  window.talentAddSuccession=function(){ talentState.succession.push(padSuccessors({role:'',incumbent:'',successors:[],gap:true,gapNote:''})); renderTalent(); };
 
   // ---------- DEVELOPMENT PLANS (AI) ----------
   var TALENT_PLAN_SYS='You are a panel of senior HR development directors, executive coaches and HRBPs with decades of experience writing individual development plans (IDPs). You write specific, practical, role-aware plans, never generic filler. You output ONLY valid minified JSON.';
