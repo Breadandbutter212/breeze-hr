@@ -11582,7 +11582,7 @@ async function renderAutomations(){
       <div style="flex:1;"></div>
       ${runsHtml}
       <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-primary" style="font-size:10px;font-weight:600;padding:3px 9px;border-radius:6px;" onclick="autoStartRun('${a.id}')">▶ Run</button>
+        <button class="btn btn-primary" title="Start for someone" style="font-size:13px;font-weight:700;line-height:1;padding:4px 9px;border-radius:6px;" onclick="autoStartRun('${a.id}')">+</button>
         <div style="flex:1;"></div>
         <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')">✏ Edit</button>
         <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
