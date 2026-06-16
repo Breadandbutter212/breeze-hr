@@ -14861,23 +14861,17 @@ async function wfOpenDoc(docId) {
 let _wfRunId = null;
 function openWfRunVisual(caseId){
   _wfRunId = caseId;
-  if(!(wfCases||[]).find(x=>x.id===caseId)) return;
-  document.getElementById('wfRunModal')?.remove();
-  const ov=document.createElement('div'); ov.id='wfRunModal';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(2px);z-index:960;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
-  const box=document.createElement('div'); box.id='wfRunBox';
-  box.style.cssText='background:var(--bg);border-radius:var(--r-xl);width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg);';
-  ov.appendChild(box); document.body.appendChild(ov);
-  ov.onclick=e=>{ if(e.target===ov){ ov.remove(); _wfRunId=null; } };
+  if(!(wfCases||[]).find(x=>x.id===caseId)){ _wfRunId=null; return; }
   wfRunRender();
 }
+function wfRunClose(){ _wfRunId=null; renderAutomations(); }
 function wfRunStepDone(c, st){
   const subSet=new Set(c.checkedSubs||[]);
   return (st.subs&&st.subs.length) ? st.subs.every(su=>subSet.has(st.id+':'+su.id)) : (c.checkedSteps||[]).includes(st.id);
 }
 function wfRunRender(){
-  const box=document.getElementById('wfRunBox'); if(!box) return;
-  const c=(wfCases||[]).find(x=>x.id===_wfRunId); if(!c) return;
+  const el=document.getElementById('automationsBody'); if(!el) return;
+  const c=(wfCases||[]).find(x=>x.id===_wfRunId); if(!c){ renderAutomations(); return; }
   const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{label:'Workflow',icon:'⚡',steps:[]};
   const steps=sc.steps||[];
   const subSet=new Set(c.checkedSubs||[]);
@@ -14891,27 +14885,30 @@ function wfRunRender(){
     const bg=done?'var(--green)':current?'var(--accent)':'#fff';
     const numCol=(done||current)?'#fff':'var(--ink3)';
     const subTxt=(st.subs&&st.subs.length)?(st.subs.filter(su=>subSet.has(st.id+':'+su.id)).length+'/'+st.subs.length+' tasks'):'';
-    const connector=i<steps.length-1?'<div style="width:46px;height:2px;background:'+(done?'var(--green)':'var(--border2)')+';margin:20px 0 0;flex-shrink:0;"></div>':'';
+    const connector=i<steps.length-1?'<div style="width:50px;height:2px;background:'+(done?'var(--green)':'var(--border2)')+';margin:21px 0 0;flex-shrink:0;"></div>':'';
     return '<div style="display:flex;align-items:flex-start;flex-shrink:0;">'+
-      '<div onclick="wfOpenStepTasks(\''+c.id+'\','+st.id+')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;flex-shrink:0;width:120px;">'+
-        '<div style="width:42px;height:42px;border-radius:50%;background:'+bg+';border:2.5px solid '+ring+';color:'+numCol+';display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;box-shadow:'+(current?'0 0 0 4px var(--accent-bg)':'none')+';">'+(done?'✓':(i+1))+'</div>'+
+      '<div onclick="wfOpenStepTasks(\''+c.id+'\','+st.id+')" style="display:flex;flex-direction:column;align-items:center;gap:8px;cursor:pointer;flex-shrink:0;width:124px;">'+
+        '<div style="width:44px;height:44px;border-radius:50%;background:'+bg+';border:2.5px solid '+ring+';color:'+numCol+';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:'+(current?'0 0 0 5px var(--accent-bg)':'none')+';transition:all .15s;">'+(done?'✓':(i+1))+'</div>'+
         '<div style="font-size:11px;font-weight:600;color:'+(done||current?'var(--ink)':'var(--ink3)')+';text-align:center;line-height:1.3;">'+escapeHtml(st.title)+'</div>'+
         (subTxt?'<div style="font-size:9px;font-weight:600;color:'+(done?'var(--green)':'var(--ink3)')+';">'+subTxt+'</div>':'')+
       '</div>'+ connector +
     '</div>';
   }).join('');
-  box.innerHTML=
-    '<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;display:flex;align-items:center;gap:14px;flex-shrink:0;">'+
-      '<div style="width:44px;height:44px;border-radius:12px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">'+(sc.icon||'⚡')+'</div>'+
-      '<div style="flex:1;min-width:0;"><div style="font-size:16px;font-weight:700;color:var(--ink);">'+escapeHtml(sc.label)+'</div><div style="font-size:12px;color:var(--ink3);">'+escapeHtml(c.employeeName||'')+' · '+doneN+' of '+steps.length+' stages complete</div></div>'+
-      '<div style="font-size:20px;font-weight:800;color:'+(pct===100?'var(--green)':'var(--accent)')+';">'+pct+'%</div>'+
-      '<button onclick="document.getElementById(\'wfRunModal\').remove()" style="background:var(--surface2);border:none;color:var(--ink);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>'+
-    '</div>'+
-    '<div style="flex:1;overflow:auto;padding:44px 24px;"><div style="display:flex;align-items:flex-start;flex-wrap:nowrap;min-width:min-content;">'+nodes+'</div>'+
-      '<div style="margin-top:34px;font-size:12px;color:var(--ink3);">Click a stage to open its tasks and drafts. Finish a stage and it turns green; the next one lights up.</div>'+
+  el.innerHTML=
+    '<div style="margin-bottom:16px;"><button onclick="wfRunClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:0;">‹ Back to workflows</button></div>'+
+    '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">'+
+      '<div style="border-bottom:1px solid var(--border);padding:18px 24px;display:flex;align-items:center;gap:14px;">'+
+        '<div style="width:46px;height:46px;border-radius:12px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0;">'+(sc.icon||'⚡')+'</div>'+
+        '<div style="flex:1;min-width:0;"><div style="font-size:17px;font-weight:700;color:var(--ink);">'+escapeHtml(sc.label)+'</div><div style="font-size:12px;color:var(--ink3);margin-top:1px;">'+escapeHtml(c.employeeName||'')+' · '+doneN+' of '+steps.length+' stages complete</div></div>'+
+        '<div style="text-align:right;flex-shrink:0;"><div style="font-size:22px;font-weight:800;color:'+(pct===100?'var(--green)':'var(--accent)')+';line-height:1;">'+pct+'%</div></div>'+
+      '</div>'+
+      '<div style="height:4px;background:var(--surface3);"><div style="width:'+pct+'%;height:100%;background:'+(pct===100?'var(--green)':'var(--accent)')+';transition:width .3s;"></div></div>'+
+      '<div style="overflow-x:auto;padding:48px 28px 40px;"><div style="display:flex;align-items:flex-start;flex-wrap:nowrap;min-width:min-content;">'+nodes+'</div>'+
+        '<div style="margin-top:38px;font-size:12px;color:var(--ink3);">Click a stage to open its tasks and drafted emails. Finish a stage and it turns green; the next one lights up.</div>'+
+      '</div>'+
     '</div>';
 }
-function wfRunRefresh(){ if(_wfRunId && document.getElementById('wfRunBox')) wfRunRender(); }
+function wfRunRefresh(){ if(_wfRunId && document.getElementById('automationsBody')) wfRunRender(); }
 
 // Step detail popup: lists a stage's sub-tasks (tick off), or a plain stage with a complete toggle.
 function wfOpenStepTasks(caseId, stepId) {
