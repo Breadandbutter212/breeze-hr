@@ -32,8 +32,8 @@
   --accent-ink: #993C1D;
   --green: #15803D;
   --green-bg: #F0FAF3;
-  --amber: #CA8A04;
-  --amber-bg: #FEF3C7;
+  --amber: #E0A800;
+  --amber-bg: #FEF9C3;
   --red: #B42318;
   --red-bg: #FCF0EF;
   --teal: #1D9E75;
@@ -14961,11 +14961,12 @@ async function submitAddRole(btn, existingId) {
   }
 }
 function hcToggleDetails(hdr){
-  const body=hdr.parentElement.querySelector('.hc-det-body');
-  const chev=hdr.querySelector('.hc-det-chev');
+  const body=hdr.parentElement.querySelector('.hc-sec-body');
+  const chev=hdr.querySelector('.hc-chev');
   if(!body) return;
+  const disp=body.getAttribute('data-disp')||'block';
   const open=body.style.display!=='none';
-  body.style.display=open?'none':'grid';
+  body.style.display=open?'none':disp;
   if(chev) chev.style.transform=open?'':'rotate(90deg)';
 }
 
@@ -15038,11 +15039,11 @@ function openRolePanel(id) {
       <!-- Quick details row (collapsed by default) -->
       <div style="border-bottom:1px solid var(--border);">
       <div onclick="hcToggleDetails(this)" style="padding:12px 22px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
-        <span class="hc-det-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+        <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
         <span style="font-size:12px;font-weight:700;color:var(--ink);">Role details</span>
         <span style="font-size:11px;font-weight:400;color:var(--ink3);">stage, comp, source, agency</span>
       </div>
-      <div class="hc-det-body" style="display:none;padding:0 22px 14px;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <div class="hc-sec-body" data-disp="grid" style="display:none;padding:0 22px 14px;grid-template-columns:repeat(3,1fr);gap:10px;">
         <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${sel}">${stageOpts}</select></div>
         <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${sel}">${priorOpts}</select></div>
         <div><label style="${lbl}">Country</label><input value="${escapeHtml(r.country||'')}" onchange="hcUpdateField('${id}','country',this.value)" style="${inp}" placeholder="e.g. UK, USA, Germany..."></div>
@@ -15064,17 +15065,22 @@ function openRolePanel(id) {
         ${hcStageDurationHtml(r)}
       </div>
 
-      <!-- Candidates section -->
-      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:12px;font-weight:700;color:var(--ink);">Candidates <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${cands.length} total · ${activeCandCount} active${hiredCount?' · '+hiredCount+' hired':''}${rejectedCount?' · '+rejectedCount+' rejected/withdrawn':''})</span></div>
-          <div style="display:flex;gap:6px;">
+      <!-- Candidates section (collapsible) -->
+      <div style="border-bottom:1px solid var(--border);">
+        <div onclick="hcToggleDetails(this)" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 22px;cursor:pointer;user-select:none;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+            <span style="font-size:12px;font-weight:700;color:var(--ink);">Candidates <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${cands.length} total · ${activeCandCount} active${hiredCount?' · '+hiredCount+' hired':''}${rejectedCount?' · '+rejectedCount+' rejected/withdrawn':''})</span></span>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;" onclick="event.stopPropagation();">
             ${activeCandCount>0?`<button onclick="hcScheduleAllInterviews('${id}')" style="font-size:11px;color:#D85A30;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;">📅 Schedule all</button>`:''}
             <button onclick="hcAddCandidateModal('${id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Add candidate</button>
           </div>
         </div>
-        ${activeCandCount>0?`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r);"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pipeline</div>${pipelineHtml}</div>`:''}
-        ${cands.length?candsByStage:`<div style="padding:20px 0;text-align:center;color:var(--ink3);font-size:12px;">No candidates yet - click <strong>+ Add candidate</strong> to start tracking.</div>`}
+        <div class="hc-sec-body" data-disp="block" style="display:none;padding:0 22px 16px;">
+          ${activeCandCount>0?`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r);"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pipeline</div>${pipelineHtml}</div>`:''}
+          ${cands.length?candsByStage:`<div style="padding:20px 0;text-align:center;color:var(--ink3);font-size:12px;">No candidates yet - click <strong>+ Add candidate</strong> to start tracking.</div>`}
+        </div>
       </div>
 
       <!-- Contact log -->
@@ -15428,7 +15434,7 @@ window.seedDemoData = async function() {
 let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
 
 const PROJ_STAGES = {
-  'not-started': { label: 'Not started', color: '#8A94A6' },
+  'not-started': { label: 'Not started', color: '#3B82F6' },
   'in-progress': { label: 'In progress', color: '#D85A30' },
   'on-hold':     { label: 'On hold',     color: '#BA7517' },
   'blocked':     { label: 'Blocked',     color: '#B42318' },
@@ -15437,7 +15443,7 @@ const PROJ_STAGES = {
 const PROJ_RAG = { green: '#30D158', amber: '#BA7517', red: '#B42318' };
 const PROJ_CATEGORIES = ['Comp & reward','Employee relations','Policy','Wellbeing','DEI','Recruitment','Compliance','Systems','Other'];
 const PROJ_PRIORITIES = ['low','normal','high','urgent'];
-const MS_STATUS = { 'not-started':{label:'Not started',color:'#8A94A6'}, 'in-progress':{label:'In progress',color:'#D85A30'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
+const MS_STATUS = { 'not-started':{label:'Not started',color:'#3B82F6'}, 'in-progress':{label:'In progress',color:'#D85A30'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
 function projMsStatus(m){ return m.status || (m.done ? 'done' : 'not-started'); }
 function projMsDone(m){ return projMsStatus(m) === 'done'; }
 function projMsProgress(m){ const s = m.subtasks||[]; if (s.length) return Math.round(s.filter(x=>x.done).length / s.length * 100); return projMsDone(m) ? 100 : (projMsStatus(m)==='in-progress' ? 40 : 0); }
@@ -15660,7 +15666,12 @@ function renderProjectDetail(){
           <div style="font-size:13px;color:var(--ink2);margin-top:4px;cursor:pointer;" onclick="projEditField('objective')" title="Click to edit">${escapeHtml(p.objective||'Add an objective…')}</div>
         </div>
       </div>
-      <div class="proj-meta">
+      <div onclick="hcToggleDetails(this)" style="display:flex;align-items:center;gap:8px;margin-top:16px;cursor:pointer;user-select:none;">
+        <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+        <span style="font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink3);">Details</span>
+        <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink3);">stage, category, owner, dates</span>
+      </div>
+      <div class="proj-meta hc-sec-body" data-disp="grid" style="display:none;">
         <label class="proj-meta-f"><span class="lbl">Stage</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
         <label class="proj-meta-f"><span class="lbl">Category</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('category',this.value)">${catOpts}</select></label>
         <label class="proj-meta-f"><span class="lbl">Priority</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('priority',this.value)">${priOpts}</select></label>
@@ -16562,7 +16573,7 @@ async function projConfirmEmailToTask(){
           tabBtn('grid','9-box grid',talentState.people.length)+
           tabBtn('rating','Performance rating',null)+
           tabBtn('succession','Succession',talentState.succession.length)+
-          tabBtn('plans','Development plans',null)+
+          /* Development plans tab hidden for now - still being worked on */
           tabBtn('summary','CHRO summary',null)+
         '</div>'+
         '<div class="tl-panel" id="talentPanel"></div>'+
@@ -16573,7 +16584,7 @@ async function projConfirmEmailToTask(){
     return '<button class="tl-tab'+(talentTab===id?' active':'')+'" onclick="talentGoTab(\''+id+'\')">'+label+(count!=null?'<span class="pill">'+count+'</span>':'')+'</button>';
   }
   window.talentGoTab=function(t){ talentTab=t; document.querySelectorAll('#view-talent .tl-tab').forEach(function(b){b.classList.remove('active');}); talentRenderPanel();
-    var btns=document.querySelectorAll('#view-talent .tl-tab'); var order=['grid','rating','succession','plans','summary']; var i=order.indexOf(t); if(btns[i])btns[i].classList.add('active'); };
+    var btns=document.querySelectorAll('#view-talent .tl-tab'); var order=['grid','rating','succession','summary']; var i=order.indexOf(t); if(btns[i])btns[i].classList.add('active'); };
 
   function talentRenderLoading(n){
     var body=document.getElementById('talentBody'); if(!body) return;
