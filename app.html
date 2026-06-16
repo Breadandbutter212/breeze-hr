@@ -11500,14 +11500,6 @@ async function renderAutomations(){
   const cards=list.map(a=>{
     const runs=(wfCases||[]).filter(c=>c.scenarioId===a.id);
     const active=runs.filter(c=>c.status!=='closed');
-    const stepPreview=(a.steps||[]).slice(0,4).map(s=>{
-      let ic='○';
-      if(s.action?.type==='doc') ic='📄';
-      else if(s.action?.type==='email') ic='✉️';
-      else if(s.owner) ic='👤';
-      return `<div style="display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);padding:3px 0;"><span style="width:16px;text-align:center;flex-shrink:0;">${ic}</span><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(s.title)}</span></div>`;
-    }).join('');
-    const more=(a.steps||[]).length>4?`<div style="font-size:11px;color:var(--ink3);padding-top:4px;">+${a.steps.length-4} more</div>`:'';
     const runsHtml=active.length?`<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:6px;">
         ${active.slice(0,4).map(c=>{
           const total=(a.steps||[]).length||1; const pct=Math.round(((c.checkedSteps||[]).length/total)*100);
@@ -11526,7 +11518,7 @@ async function renderAutomations(){
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${(a.steps||[]).length} step${(a.steps||[]).length===1?'':'s'}${active.length?` · ${active.length} active`:''}</div>
         </div>
       </div>
-      <div style="flex:1;">${stepPreview}${more}</div>
+      <div style="flex:1;"></div>
       ${runsHtml}
       <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;">
         <button class="btn btn-primary btn-sm" style="font-size:11px;flex:1;" onclick="autoStartRun('${a.id}')">▶ Start for someone</button>
