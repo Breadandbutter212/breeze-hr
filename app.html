@@ -482,7 +482,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .oc-toggle { position:absolute; bottom:-11px; left:50%; transform:translateX(-50%); background:white; border:1.5px solid var(--border2); border-radius:20px; padding:0 7px; height:18px; font-size:10px; font-weight:600; cursor:pointer; white-space:nowrap; z-index:10; color:var(--ink2); line-height:16px; font-family:inherit; transition:all 0.1s; }
 .oc-toggle:hover { background:#F1F5F9; border-color:#94A3B8; color:var(--ink); }
 .oc-toggle.collapsed { background:var(--accent-bg); border-color:#93C5FD; color:var(--accent); }
-.org-avatar { width:34px; height:34px; border-radius:8px; color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
+.org-avatar { width:34px; height:34px; border-radius:50%; color:white; display:flex; align-items:center; justify-content:center; font-size:11px; font-weight:700; flex-shrink:0; }
 .org-name { font-size:12px; font-weight:600; color:var(--ink); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .org-title { font-size:10px; color:var(--ink3); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
 .org-dept-badge { font-size:9px; border-radius:20px; padding:1px 6px; display:inline-block; margin-top:2px; max-width:100%; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
@@ -1533,7 +1533,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- ORG STRUCTURE -->
 <div class="view manage-view" id="view-orgchart">
   <div class="manage-topbar">
-    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Click any node to change reporting lines. Drag to reposition. Demo data - replace with your own via CSV or HRIS.</div></div>
+    <div><div class="manage-title">Org Structure</div><div class="manage-sub">Click any node to change reporting lines. Demo data - replace with your own via CSV or HRIS.</div></div>
     <div style="display:flex;gap:6px;align-items:center;" id="orgTopBtns"></div>
   </div>
   <div style="position:absolute;top:52px;left:0;right:0;bottom:0;overflow:hidden;display:flex;flex-direction:column;" id="orgChartRoot"></div>
@@ -13402,7 +13402,7 @@ async function ocLoadCSV(event) {
 }
 
 function ocGetDemoData() {
-  return [
+  const data = [
     // ── C-Suite ──
     {id:'e1', display_full_name:'Sarah Mitchell',   employments:[{job_title:'Chief Executive Officer',    department:'Leadership'}],      manager:null, photo:'https://randomuser.me/api/portraits/women/44.jpg'},
     {id:'e2', display_full_name:'James Thornton',   employments:[{job_title:'Chief Operating Officer',    department:'Leadership'}],      manager:'e1'},
@@ -13473,6 +13473,17 @@ function ocGetDemoData() {
     {id:'e49',display_full_name:'Joel Marsh',       employments:[{job_title:'Customer Success Rep',       department:'Customer Success'}], manager:'e47'},
     {id:'e50',display_full_name:'Nina Patel',       employments:[{job_title:'Customer Success Rep',       department:'Customer Success'}], manager:'e47'},
   ];
+  // Give every demo person a photoreal face (gender-matched), keeping initials as the
+  // runtime fallback. Open roles stay as the dashed "+" placeholder.
+  const FEMALE = new Set(['sarah','laura','emma','lucy','mia','kate','sophie','maya','olivia','rachel','diana','lily','priya','jessica','amy','fiona','hannah','grace','claire','victoria','isabella','sandra','anna','rebecca','lena','nina']);
+  let fc = 10, mc = 10;
+  return data.map(e => {
+    if (e.photo || e.isOpen) return e;
+    const first = (e.display_full_name || '').trim().split(' ')[0].toLowerCase();
+    const isF = FEMALE.has(first);
+    const n = (isF ? fc++ : mc++) % 100;
+    return { ...e, photo: `https://randomuser.me/api/portraits/${isF ? 'women' : 'men'}/${n}.jpg` };
+  });
 }
 
 function ocLoadDemo() {
