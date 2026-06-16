@@ -1089,7 +1089,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- PROCESS MAPS -->
 <div class="view manage-view" id="view-processmaps">
   <div class="manage-topbar">
-    <div><div class="manage-title">Process Maps <span style="font-size:10px;background:var(--purple-bg);color:var(--purple);padding:2px 7px;border-radius:8px;margin-left:4px;font-weight:500;vertical-align:middle;">Beta</span></div></div>
+    <div><div class="manage-title">Process Maps</div></div>
   </div>
   <div class="manage-body" id="processMapsBody"></div>
 </div>
@@ -2132,8 +2132,8 @@ const processes = [
   {icon:'👋',name:'New starter onboarding',badge:'Building',steps:['Contract issued','Right to work check','IT setup','Welcome email','Day one check-in','Probation review set']},
   {icon:'🤱',name:'Maternity leave',badge:'Building',steps:['Initial notification','MAT B1 received','Pay calculated','Manager notified','Cover planned','Return date confirmed']},
   {icon:'👪',name:'Adoption leave',badge:'Building',steps:['Initial notification','Matching certificate received','SAP calculated','Adoption appointments arranged','Cover planned','Return date confirmed']},
-  {icon:'📉',name:'Performance management',badge:'Beta',steps:['Informal conversation','Follow-up email sent','Formal PIP issued','Review meetings','Outcome decision']},
-  {icon:'🚪',name:'Offboarding',badge:'Beta',steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned']}
+  {icon:'📉',name:'Performance management',badge:'Building',steps:['Informal conversation','Follow-up email sent','Formal PIP issued','Review meetings','Outcome decision']},
+  {icon:'🚪',name:'Offboarding',badge:'Building',steps:['Written resignation received','Acknowledgement sent','Exit interview','IT access removal','Final pay confirmed','Kit returned']}
 ];
 
 // ── MERGE HRIS ──
@@ -5374,7 +5374,6 @@ async function renderProcessMaps() {
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Building</span>
-        <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);font-weight:500;">◌ Beta</span>
       </div>
     </div>
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
@@ -11176,6 +11175,7 @@ async function confirmSaveCustomTracker(btn) {
 let automations = null;        // [{id,label,icon,steps,createdAt}]
 let _wfBuilder = null;         // { id, label, icon, steps:[], editing }
 let _wfTemplateOpts = [];      // [{id,name,emoji}] available templates for doc steps
+let _wfbSubs = [];             // working copy of the open step's sub-tasks [{title,owner,email}]
 
 async function loadAutomations(){
   if(automations!==null) return;
@@ -11274,6 +11274,7 @@ function wfbRender(){
     else if(s.action?.type==='email'){actBadge=`<span class="wfb-chip" style="background:#ECFDF5;color:#047857;">✉️ ${escapeHtml(s.action.email?.subject||'Email')}</span>`;}
     const ownerBadge=s.owner?`<span class="wfb-chip" style="background:var(--surface2);color:var(--ink2);">👤 ${escapeHtml(s.owner)}</span>`:'';
     const timeBadge=s.timeframe?`<span class="wfb-chip" style="background:var(--surface2);color:var(--ink3);">⏱ ${escapeHtml(s.timeframe)}</span>`:'';
+    const subBadge=(s.subs&&s.subs.length)?`<span class="wfb-chip" style="background:var(--accent-bg);color:var(--accent);">☑ ${s.subs.length} task${s.subs.length===1?'':'s'}</span>`:'';
     return `<div style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;display:flex;gap:12px;align-items:flex-start;">
       <div style="display:flex;flex-direction:column;align-items:center;gap:2px;flex-shrink:0;padding-top:2px;">
         <button onclick="wfbMoveStep(${i},-1)" ${i===0?'disabled':''} style="background:none;border:none;cursor:pointer;font-size:11px;color:var(--ink3);opacity:${i===0?0.25:1};">▲</button>
@@ -11283,7 +11284,7 @@ function wfbRender(){
       <div style="flex:1;min-width:0;cursor:pointer;" onclick="wfbEditStep(${i})">
         <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:3px;">${escapeHtml(s.title)}</div>
         ${s.desc?`<div style="font-size:11px;color:var(--ink3);line-height:1.5;margin-bottom:6px;">${escapeHtml(s.desc)}</div>`:''}
-        <div style="display:flex;flex-wrap:wrap;gap:5px;">${timeBadge}${ownerBadge}${actBadge}</div>
+        <div style="display:flex;flex-wrap:wrap;gap:5px;">${timeBadge}${ownerBadge}${subBadge}${actBadge}</div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;">
         <button onclick="wfbEditStep(${i})" title="Edit" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:26px;height:26px;cursor:pointer;font-size:12px;color:var(--ink3);">✏</button>
@@ -11330,6 +11331,7 @@ function wfbPickIcon(){
 function wfbStepEditor(idx){
   const editing = idx!=null;
   const s = editing ? _wfBuilder.steps[idx] : {title:'',desc:'',timeframe:'',owner:'',tag:'recommended',action:null};
+  _wfbSubs = (s.subs||[]).map(su=>({title:su.title||'',owner:su.owner||'',email:su.email?{...su.email}:null}));
   const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const actType = s.action?.type||'none';
   const tmplOpts = _wfTemplateOpts.map(o=>`<option value="${o.id}" ${s.action?.docId===o.id?'selected':''}>${escapeHtml(o.name)}</option>`).join('');
@@ -11345,6 +11347,11 @@ function wfbStepEditor(idx){
       <div style="display:flex;gap:10px;">
         <div style="flex:1;"><label class="wfb-lab">Timeframe</label><input id="wfbs-time" value="${escapeHtml(s.timeframe||'')}" placeholder="e.g. Day 1" style="${inp}"></div>
         <div style="flex:1;"><label class="wfb-lab">Assign to (owner)</label><input id="wfbs-owner" value="${escapeHtml(s.owner||'')}" placeholder="e.g. IT, Line manager" style="${inp}"></div>
+      </div>
+      <div>
+        <label class="wfb-lab">Checklist sub-tasks <span style="font-weight:400;color:var(--ink3);">(optional - break this stage into tickable tasks)</span></label>
+        <div id="wfbs-subs-list" style="display:flex;flex-direction:column;gap:8px;"></div>
+        <button type="button" onclick="wfbAddSub()" class="btn btn-secondary btn-sm" style="margin-top:8px;font-size:11px;">+ Add sub-task</button>
       </div>
       <div><label class="wfb-lab">Action <span style="font-weight:400;color:var(--ink3);">(optional automation)</span></label>
         <select id="wfbs-acttype" style="${inp}" onchange="wfbToggleActionFields(this.value)">
@@ -11374,7 +11381,48 @@ function wfbStepEditor(idx){
   </div>`;
   document.body.appendChild(ov);
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  wfbRenderSubs();
   setTimeout(()=>document.getElementById('wfbs-title')?.focus(),60);
+}
+function wfbRenderSubs(){
+  const wrap=document.getElementById('wfbs-subs-list'); if(!wrap) return;
+  const si='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  if(!_wfbSubs.length){ wrap.innerHTML=`<div style="font-size:11px;color:var(--ink3);padding:2px 0;">No sub-tasks - this stage is a single task to tick off. Add sub-tasks to turn it into a checklist.</div>`; return; }
+  wrap.innerHTML=_wfbSubs.map((su,i)=>{
+    const emailBlock = su.email
+      ? `<div style="border-top:1px dashed var(--border);margin-top:2px;padding-top:8px;display:flex;flex-direction:column;gap:6px;">
+           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;font-weight:700;color:#047857;">✉️ Email draft</span><button type="button" onclick="wfbSubDelEmail(${i})" style="background:none;border:none;color:var(--ink3);font-size:10px;cursor:pointer;text-decoration:underline;">Remove email</button></div>
+           <input value="${escapeHtml(su.email.subject||'')}" placeholder="Subject - e.g. Welcome, {employee}!" oninput="_wfbSubEmailSet(${i},'subject',this.value)" style="${si}">
+           <textarea rows="3" placeholder="Body - use {employee} for the person's name." oninput="_wfbSubEmailSet(${i},'body',this.value)" style="${si}resize:vertical;min-height:60px;">${escapeHtml(su.email.body||'')}</textarea>
+         </div>`
+      : `<button type="button" onclick="wfbSubAddEmail(${i})" class="btn btn-ghost btn-sm" style="font-size:10px;color:#047857;align-self:flex-start;padding:2px 0;">+ Add email to this task</button>`;
+    return `<div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 10px;background:var(--surface2);display:flex;flex-direction:column;gap:7px;">
+      <div style="display:flex;gap:7px;align-items:center;">
+        <span style="width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
+        <input value="${escapeHtml(su.title||'')}" placeholder="Sub-task title" oninput="_wfbSubSet(${i},'title',this.value)" style="${si}flex:1;">
+        <button type="button" onclick="wfbDelSub(${i})" title="Delete sub-task" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:11px;color:var(--red);flex-shrink:0;">✕</button>
+      </div>
+      <input value="${escapeHtml(su.owner||'')}" placeholder="Owner (optional) - e.g. HR, IT" oninput="_wfbSubSet(${i},'owner',this.value)" style="${si}">
+      ${emailBlock}
+    </div>`;
+  }).join('');
+}
+function _wfbSubSet(i,field,val){ if(_wfbSubs[i]) _wfbSubs[i][field]=val; }
+function _wfbSubEmailSet(i,field,val){ if(_wfbSubs[i]&&_wfbSubs[i].email) _wfbSubs[i].email[field]=val; }
+function wfbAddSub(){ _wfbSubs.push({title:'',owner:'',email:null}); wfbRenderSubs(); }
+function wfbDelSub(i){ _wfbSubs.splice(i,1); wfbRenderSubs(); }
+function wfbSubAddEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email={to:'',cc:'',bcc:'',subject:'',body:''}; wfbRenderSubs(); }
+function wfbSubDelEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email=null; wfbRenderSubs(); }
+function wfbCollectSubs(){
+  return _wfbSubs
+    .filter(su=>(su.title||'').trim())
+    .map((su,j)=>{
+      const o={ id:String.fromCharCode(97+j), title:su.title.trim(), owner:(su.owner||'').trim() };
+      if(su.email&&((su.email.subject||'').trim()||(su.email.body||'').trim())){
+        o.email={ to:(su.email.to||'').trim(), cc:(su.email.cc||'').trim(), bcc:(su.email.bcc||'').trim(), subject:(su.email.subject||'').trim(), body:su.email.body||'' };
+      }
+      return o;
+    });
 }
 function wfbToggleActionFields(v){
   const dF=document.getElementById('wfbs-doc-fields'); if(dF) dF.style.display = v==='doc'?'block':'none';
@@ -11400,6 +11448,7 @@ function wfbSaveStep(idx){
       body:document.getElementById('wfbs-ebody')?.value||''
     }};
   }
+  const subs=wfbCollectSubs();
   const step={
     title,
     desc:document.getElementById('wfbs-desc')?.value?.trim()||'',
@@ -11408,6 +11457,7 @@ function wfbSaveStep(idx){
     tag:(idx!=null&&_wfBuilder.steps[idx]?.tag)||'recommended',
     action
   };
+  if(subs.length) step.subs=subs;
   if(idx===null||idx===undefined){ step.id=wfbNextId(); _wfBuilder.steps.push(step); }
   else { step.id=_wfBuilder.steps[idx].id||wfbNextId(); _wfBuilder.steps[idx]=step; }
   document.getElementById('wfbStepEditor')?.remove();
@@ -11427,9 +11477,9 @@ async function wfbGenerateAI(btn){
     const token=await getAuthToken();
     const userPrompt=`Generate a practical HR process checklist for a workflow called: "${name}".
 Return ONLY valid JSON, no markdown fences, no explanation:
-{"icon":"<one emoji>","steps":[{"title":"Short action title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","owner":"Who typically does it (e.g. HR, Line manager, IT)","email":{"subject":"...","body":"..."}}]}
-For any step whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for steps that are not emails.
-Generate 6-9 steps.`;
+{"icon":"<one emoji>","steps":[{"title":"Short stage title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","owner":"Who typically does it (e.g. HR, Line manager, IT)","subs":[{"title":"Specific tickable sub-task","owner":"Who does this sub-task","email":{"subject":"...","body":"..."}}]}]}
+Each step is a STAGE. Break each stage into 2-4 concrete "subs" (sub-tasks) that someone ticks off to complete the stage. For any sub-task whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for sub-tasks that are not emails.
+Generate 5-8 stages, each with 2-4 sub-tasks.`;
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
     const d=await res.json();
     const raw=d.content?.[0]?.text||'';
@@ -11441,7 +11491,18 @@ Generate 6-9 steps.`;
       if(s.email && (s.email.subject||s.email.body)){
         action={type:'email',label:'Draft email',email:{to:'',cc:'',bcc:'',subject:s.email.subject||'',body:s.email.body||''}};
       }
-      _wfBuilder.steps.push({id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action});
+      const subs=(s.subs||[])
+        .filter(su=>su&&(su.title||'').trim())
+        .map((su,j)=>{
+          const o={ id:String.fromCharCode(97+j), title:String(su.title).trim(), owner:(su.owner||'').trim() };
+          if(su.email && (su.email.subject||su.email.body)){
+            o.email={ to:'', cc:'', bcc:'', subject:su.email.subject||'', body:su.email.body||'' };
+          }
+          return o;
+        });
+      const step={id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action};
+      if(subs.length) step.subs=subs;
+      _wfBuilder.steps.push(step);
     });
     wfbRender();
   }catch(e){ btn.textContent=orig; btn.disabled=false; showBreezeToast('AI draft failed - try again or add steps manually'); }
@@ -11454,7 +11515,7 @@ async function wfbSave(btn){
   if(!_wfBuilder.steps.length){ showBreezeToast('Add at least one step first'); return; }
   btn.textContent='Saving…'; btn.disabled=true;
   if(!automations) await loadAutomations();
-  const steps=_wfBuilder.steps.map((s,i)=>({...s,id:i+1}));
+  const steps=_wfBuilder.steps.map((s,i)=>({...s,id:i+1,...(s.subs&&s.subs.length?{subs:s.subs.map((su,j)=>({...su,id:String.fromCharCode(97+j)}))}:{})}));
   if(_wfBuilder.editing && _wfBuilder.id){
     const a=(automations||[]).find(x=>x.id===_wfBuilder.id);
     if(a){ a.label=name; a.icon=_wfBuilder.icon; a.steps=steps; }
@@ -11521,7 +11582,7 @@ async function renderAutomations(){
       <div style="flex:1;"></div>
       ${runsHtml}
       <div style="display:flex;gap:6px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" style="font-size:11px;flex:1;" onclick="autoStartRun('${a.id}')">▶ Start for someone</button>
+        <button class="btn btn-primary btn-sm" style="font-size:11px;flex:1;" onclick="autoStartRun('${a.id}')">▶ Start</button>
         <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')">✏ Edit</button>
         <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
       </div>
@@ -14857,6 +14918,15 @@ function openWfRunVisual(caseId){
   wfRunRender();
 }
 function wfRunClose(){ _wfRunId=null; renderAutomations(); }
+async function wfRunDeleteCase(caseId){
+  const c=(wfCases||[]).find(x=>x.id===caseId);
+  const who=c?.employeeName?` for ${c.employeeName}`:'';
+  if(!confirm(`Remove this workflow run${who}? This deletes their progress and cannot be undone.`)) return;
+  wfCases=(wfCases||[]).filter(x=>x.id!==caseId);
+  try{ await saveWfCases(); }catch(e){}
+  _wfRunId=null;
+  renderAutomations();
+}
 function wfRunStepDone(c, st){
   const subSet=new Set(c.checkedSubs||[]);
   return (st.subs&&st.subs.length) ? st.subs.every(su=>subSet.has(st.id+':'+su.id)) : (c.checkedSteps||[]).includes(st.id);
@@ -14887,15 +14957,17 @@ function wfRunRender(){
     '</div>';
   }).join('');
   el.innerHTML=
+    '<style>.wfMapScroll{overflow-x:auto;overflow-y:hidden;}.wfMapScroll::-webkit-scrollbar{height:8px;}.wfMapScroll::-webkit-scrollbar-track{background:var(--surface2);border-radius:8px;}.wfMapScroll::-webkit-scrollbar-thumb{background:var(--border2);border-radius:8px;}.wfMapScroll::-webkit-scrollbar-thumb:hover{background:var(--ink3);}.wfMapScroll{scrollbar-width:thin;scrollbar-color:var(--border2) var(--surface2);}</style>'+
     '<div style="margin-bottom:16px;"><button onclick="wfRunClose()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:0;">‹ Back to workflows</button></div>'+
     '<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">'+
       '<div style="border-bottom:1px solid var(--border);padding:18px 24px;display:flex;align-items:center;gap:14px;">'+
         '<div style="width:46px;height:46px;border-radius:12px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:23px;flex-shrink:0;">'+(sc.icon||'⚡')+'</div>'+
         '<div style="flex:1;min-width:0;"><div style="font-size:17px;font-weight:700;color:var(--ink);">'+escapeHtml(sc.label)+'</div><div style="font-size:12px;color:var(--ink3);margin-top:1px;">'+escapeHtml(c.employeeName||'')+' · '+doneN+' of '+steps.length+' stages complete</div></div>'+
         '<div style="text-align:right;flex-shrink:0;"><div style="font-size:22px;font-weight:800;color:'+(pct===100?'var(--green)':'var(--accent)')+';line-height:1;">'+pct+'%</div></div>'+
+        '<button onclick="wfRunDeleteCase(\''+c.id+'\')" title="Remove this person from the workflow" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--red);">Remove</button>'+
       '</div>'+
       '<div style="height:4px;background:var(--surface3);"><div style="width:'+pct+'%;height:100%;background:'+(pct===100?'var(--green)':'var(--accent)')+';transition:width .3s;"></div></div>'+
-      '<div style="overflow-x:auto;padding:48px 28px 40px;"><div style="display:flex;align-items:flex-start;flex-wrap:nowrap;min-width:min-content;">'+nodes+'</div>'+
+      '<div class="wfMapScroll" style="padding:40px 28px 24px;"><div style="display:flex;align-items:flex-start;flex-wrap:nowrap;min-width:min-content;">'+nodes+'</div>'+
         '<div style="margin-top:38px;font-size:12px;color:var(--ink3);">Click a stage to open its tasks and drafted emails. Finish a stage and it turns green; the next one lights up.</div>'+
       '</div>'+
     '</div>';
@@ -16556,7 +16628,7 @@ async function projConfirmEmailToTask(){
     create:{ label:'Create', icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'}, {label:'Documents', view:'docs'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
     people:{ label:'Your people', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Talent review', view:'talent', beta:true}, {label:'Headcount planning', view:'headcount'} ] },
     policies:{ label:'Policies', icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', items:[ {label:'Policy library', view:'manage'} ] },
-    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps', beta:true}, {label:'Automations', view:'automations', beta:true} ] },
+    manage:{ label:'Manage', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps'}, {label:'Automations', view:'automations', beta:true} ] },
     insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] },
     admin:{ label:'Admin', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 0-.33-1.82"/>', items:[ {label:'Settings', view:'settings'}, {label:'FAQs', view:'faqs'} ] }
   };
