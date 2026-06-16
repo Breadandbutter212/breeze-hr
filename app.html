@@ -90,7 +90,7 @@ body.nav-slim .sidebar { display:none !important; }
 body.nav-slim .slimbar { display:flex; }
 .slimbar { width:208px; flex-shrink:0; background:#2E3D52; flex-direction:column; height:100%; }
 .slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
-.slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:var(--accent); font-size:10px; font-weight:700; letter-spacing:0.5px; }
+.slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
 .slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
 .slim-nav { flex:1; overflow-y:auto; padding:4px 10px; display:flex; flex-direction:column; justify-content:flex-start; }
 .sg { margin-bottom:1px; }
@@ -15187,7 +15187,7 @@ function initOrgChart() {
       <button onclick="ocExportXlsx()" style="font-size:11px;background:#217346;color:white;border:none;border-radius:var(--r-sm);padding:0 12px;height:28px;cursor:pointer;font-family:inherit;">&#8659; Excel</button>
     </div>
     <div id="ocLegend" style="padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:34px;flex-shrink:0;"></div>
-    <div id="ocVP" style="flex:1;min-height:0;overflow:hidden;position:relative;background:linear-gradient(135deg,var(--surface2) 0%,var(--accent-bg) 100%);cursor:grab;user-select:none;"
+    <div id="ocVP" style="flex:1;min-height:0;overflow:hidden;position:relative;background:var(--surface);cursor:grab;user-select:none;"
       onmousedown="ocPanDown(event)" onmousemove="ocPanMove(event)" onmouseup="ocPanUp(event)" onmouseleave="ocPanUp(event)"
       onwheel="ocWheel(event)">
       <div id="ocWorld" style="position:absolute;top:0;left:0;transform-origin:0 0;will-change:transform;">
