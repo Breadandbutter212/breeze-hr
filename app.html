@@ -10115,7 +10115,7 @@ const PP_CATS_DEFAULT = [
   { id:'performance',  label:'Performance',     color:'var(--accent)', bg:'var(--accent-bg)' },
   { id:'salary',       label:'Salary & Comp',   color:'#1D9E75', bg:'#ECFDF5' },
   { id:'benefits',     label:'Benefits',        color:'#1D9E75', bg:'#F5F3FF' },
-  { id:'learning',     label:'L&D / Training',  color:'#BA7517', bg:'#FFFBEB' },
+  { id:'learning',     label:'L&D / Training',  color:'#E0A800', bg:'#FEF9E7' },
   { id:'engagement',   label:'Engagement',      color:'#2E3D52', bg:'#FDF2F8' },
   { id:'onboarding',   label:'Onboarding',      color:'#14B8A6', bg:'#F0FDFA' },
   { id:'compliance',   label:'Compliance',      color:'#B42318', bg:'#FEF2F2' },
@@ -10167,7 +10167,7 @@ async function ppChangeYear(y) {
   renderPeoplePlan();
 }
 
-const PP_CAT_COLORS = ['var(--accent)','#1D9E75','#1D9E75','#BA7517','#2E3D52','#14B8A6','#B42318','#F97316','#06B6D4','#84CC16','#A855F7','#0EA5E9'];
+const PP_CAT_COLORS = ['var(--accent)','#1D9E75','#1D9E75','#E0A800','#2E3D52','#14B8A6','#B42318','#F97316','#06B6D4','#84CC16','#A855F7','#0EA5E9'];
 
 function ppAddCategory() {
   const overlay = document.createElement('div');
@@ -10547,12 +10547,18 @@ function renderPPTimeline() {
         const gapR = (isEnd   || isSingle) ? 3 : -1;
         const left  = `calc(${leftPct}% + ${gapL}px)`;
         const right = `calc(${rightPct}% + ${gapR}px)`;
-        // Consistent labelling: every event shows its title in dark ink just to the
-        // right of where its bar ends (rendered once, in the bar's end cell).
-        const label = isEnd ? escapeHtml(ev.title) : '';
+        // Label placement: if the bar is wide enough to hold the title, show it INSIDE
+        // in white; otherwise show it in dark ink just to the right of where it ends.
+        const sFrac2 = (sd && sd.mo===ev.startMonth) ? (sd.day-1)/daysIn(ev.startMonth) : 0;
+        const eFrac2 = (ed && ed.mo===ev.endMonth) ? ed.day/daysIn(ev.endMonth) : 1;
+        const coverageMonths = (ev.endMonth - ev.startMonth) + eFrac2 - sFrac2;
+        const fitsInside = coverageMonths * 128 >= (ev.title.length * 6.0 + 18);
+        const titleStr = escapeHtml(ev.title);
         let labelHtml = '';
-        if (isEnd && label) {
-          labelHtml = `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 8px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">${label}</div>`;
+        if (fitsInside) {
+          if (isStart) labelHtml = `<div style="position:absolute;top:${top}px;left:calc(${leftPct}% + ${gapL}px + 10px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;pointer-events:none;z-index:4;">${titleStr}</div>`;
+        } else if (isEnd) {
+          labelHtml = `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 8px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">${titleStr}</div>`;
         }
         inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}"></div>${labelHtml}`;
       });
