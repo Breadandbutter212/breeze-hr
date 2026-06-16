@@ -8557,7 +8557,7 @@ function renderDashboard() {
 
   const rows = analyticsData;
   const n = rows.length;
-  const C = ['#D85A30','#30D158','#2E3D52','#BA7517','#B42318','#14B8A6','#F97316','#1D9E75','#2E3D52','#06B6D4'];
+  const C = ['#3B82F6','#1D9E75','#E0A800','#2E3D52','#D85A30','#14B8A6','#8B5CF6','#F97316','#06B6D4','#94A3B8'];
   const gridC = '#F0F0F0';
 
   const types = detectColumnTypes(rows);
@@ -8574,7 +8574,7 @@ function renderDashboard() {
 
   // KPI row: total rows + up to 3 numeric summaries
   const kpiNums = numCols.slice(0,3);
-  const kpiColors = ['#D85A30','#30D158','#2E3D52','#BA7517'];
+  const kpiColors = ['#3B82F6','#1D9E75','#2E3D52','#E0A800'];
   let kpiHtml = kpiCard('Total rows', n, `${Object.keys(types).length} columns detected`, '#D85A30');
   kpiNums.forEach((col,i) => {
     const vals = rows.map(r=>parseFloat(String(r[col]||'').replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
@@ -11358,6 +11358,10 @@ function wfbStepEditor(idx){
       </div>
       <div id="wfbs-email-fields" style="display:${actType==='email'?'flex':'none'};flex-direction:column;gap:10px;">
         <div><label class="wfb-lab">To</label><input id="wfbs-eto" value="${escapeHtml(s.action?.email?.to||'')}" placeholder="e.g. it@company.com or {employee}" style="${inp}"></div>
+        <div style="display:flex;gap:10px;">
+          <div style="flex:1;"><label class="wfb-lab">Cc</label><input id="wfbs-ecc" value="${escapeHtml(s.action?.email?.cc||'')}" placeholder="optional" style="${inp}"></div>
+          <div style="flex:1;"><label class="wfb-lab">Bcc</label><input id="wfbs-ebcc" value="${escapeHtml(s.action?.email?.bcc||'')}" placeholder="optional" style="${inp}"></div>
+        </div>
         <div><label class="wfb-lab">Subject</label><input id="wfbs-esub" value="${escapeHtml(s.action?.email?.subject||'')}" placeholder="e.g. Welcome to the team, {employee}!" style="${inp}"></div>
         <div><label class="wfb-lab">Body</label><textarea id="wfbs-ebody" rows="4" placeholder="Use {employee} to insert the person's name." style="${inp}resize:vertical;min-height:90px;">${escapeHtml(s.action?.email?.body||'')}</textarea></div>
         <div style="font-size:11px;color:var(--ink3);">Draft only - opens a pre-filled email you review and send from your own inbox.</div>
@@ -11390,6 +11394,8 @@ function wfbSaveStep(idx){
   } else if(at==='email'){
     action={type:'email',label:'Draft email',email:{
       to:document.getElementById('wfbs-eto')?.value?.trim()||'',
+      cc:document.getElementById('wfbs-ecc')?.value?.trim()||'',
+      bcc:document.getElementById('wfbs-ebcc')?.value?.trim()||'',
       subject:document.getElementById('wfbs-esub')?.value?.trim()||'',
       body:document.getElementById('wfbs-ebody')?.value||''
     }};
@@ -11421,7 +11427,8 @@ async function wfbGenerateAI(btn){
     const token=await getAuthToken();
     const userPrompt=`Generate a practical HR process checklist for a workflow called: "${name}".
 Return ONLY valid JSON, no markdown fences, no explanation:
-{"icon":"<one emoji>","steps":[{"title":"Short action title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","owner":"Who typically does it (e.g. HR, Line manager, IT)"}]}
+{"icon":"<one emoji>","steps":[{"title":"Short action title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","owner":"Who typically does it (e.g. HR, Line manager, IT)","email":{"subject":"...","body":"..."}}]}
+For any step whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for steps that are not emails.
 Generate 6-9 steps.`;
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
     const d=await res.json();
@@ -11429,7 +11436,13 @@ Generate 6-9 steps.`;
     const jsonStr=raw.match(/\{[\s\S]*\}/)?.[0]; if(!jsonStr) throw new Error('No JSON');
     const parsed=JSON.parse(jsonStr);
     if(parsed.icon) _wfBuilder.icon=parsed.icon;
-    (parsed.steps||[]).forEach(s=>_wfBuilder.steps.push({id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action:null}));
+    (parsed.steps||[]).forEach(s=>{
+      let action=null;
+      if(s.email && (s.email.subject||s.email.body)){
+        action={type:'email',label:'Draft email',email:{to:'',cc:'',bcc:'',subject:s.email.subject||'',body:s.email.body||''}};
+      }
+      _wfBuilder.steps.push({id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action});
+    });
     wfbRender();
   }catch(e){ btn.textContent=orig; btn.disabled=false; showBreezeToast('AI draft failed - try again or add steps manually'); }
 }
@@ -14783,6 +14796,8 @@ function wfOpenEmailDraft(caseId, stepId) {
   const step = wfGetSteps(c).find(s=>s.id===stepId); if (!step || step.action?.type!=='email') return;
   const sub = v => (v||'').replace(/\{employee\}/gi, c.employeeName||'').replace(/\{name\}/gi, c.employeeName||'');
   const to = sub(step.action.email?.to);
+  const cc = sub(step.action.email?.cc);
+  const bcc = sub(step.action.email?.bcc);
   const subject = sub(step.action.email?.subject);
   const body = sub(step.action.email?.body);
   const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
@@ -14793,7 +14808,11 @@ function wfOpenEmailDraft(caseId, stepId) {
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
     <div style="background:#047857;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">✉️ Draft email</div><div style="font-size:11px;color:rgba(255,255,255,0.7);margin-top:2px;">Review, then send from your own inbox - nothing sends automatically.</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
-      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">To</label><input id="wfe-to" value="${escapeHtml(to)}" style="${inp}"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">To</label><input id="wfe-to" value="${escapeHtml(to)}" placeholder="recipient@company.com" style="${inp}"></div>
+      <div style="display:flex;gap:10px;">
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Cc</label><input id="wfe-cc" value="${escapeHtml(cc)}" placeholder="optional" style="${inp}"></div>
+        <div style="flex:1;"><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Bcc</label><input id="wfe-bcc" value="${escapeHtml(bcc)}" placeholder="optional" style="${inp}"></div>
+      </div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Subject</label><input id="wfe-sub" value="${escapeHtml(subject)}" style="${inp}"></div>
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Body</label><textarea id="wfe-body" rows="7" style="${inp}resize:vertical;min-height:140px;">${escapeHtml(body)}</textarea></div>
     </div>
@@ -14810,16 +14829,21 @@ function wfOpenEmailDraft(caseId, stepId) {
 }
 function wfEmailCopy(){
   const to=document.getElementById('wfe-to')?.value||'';
+  const cc=document.getElementById('wfe-cc')?.value||'';
+  const bcc=document.getElementById('wfe-bcc')?.value||'';
   const sub=document.getElementById('wfe-sub')?.value||'';
   const body=document.getElementById('wfe-body')?.value||'';
-  const text=`To: ${to}\nSubject: ${sub}\n\n${body}`;
+  const text=`To: ${to}${cc?'\nCc: '+cc:''}${bcc?'\nBcc: '+bcc:''}\nSubject: ${sub}\n\n${body}`;
   navigator.clipboard?.writeText(text).then(()=>showBreezeToast('Email copied to clipboard'),()=>showBreezeToast('Copy failed'));
 }
 async function wfEmailOpenAndLog(caseId){
   const to=encodeURIComponent(document.getElementById('wfe-to')?.value||'');
+  const cc=encodeURIComponent(document.getElementById('wfe-cc')?.value||'');
+  const bcc=encodeURIComponent(document.getElementById('wfe-bcc')?.value||'');
   const sub=encodeURIComponent(document.getElementById('wfe-sub')?.value||'');
   const body=encodeURIComponent(document.getElementById('wfe-body')?.value||'');
-  window.open(`mailto:${to}?subject=${sub}&body=${body}`,'_blank');
+  const params=['subject='+sub,'body='+body]; if(cc)params.push('cc='+cc); if(bcc)params.push('bcc='+bcc);
+  window.open(`mailto:${to}?`+params.join('&'),'_blank');
   const c=(wfCases||[]).find(x=>x.id===caseId);
   if(c){
     if(!c.contactLog) c.contactLog=[];
