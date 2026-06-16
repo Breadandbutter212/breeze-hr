@@ -1,156 +1,121 @@
-# Breeze HR — design system refresh
+# Breeze HR — design system
 
-Goal: make the app stop looking like a default Tailwind/AI template and start looking
-like a deliberate, professional HR product. The look should read calm, trustworthy and
-dense-but-clear — closer to Linear, Vanta or Lattice than to a starter kit.
+Direction: friendly modern HRIS. Warm, rounded, people-first — think Humaans / Lattice,
+not a starter template. Navy gives structure and trust; coral makes it warm and human.
 
 ## How to use this
 
-Do NOT restyle pages one by one. The "AI look" comes from a small set of decisions that
-repeat everywhere. Fix them once at the source:
+Do NOT restyle pages one by one. The look comes from a small set of decisions that repeat
+everywhere. Apply them once at the source:
 
-1. First, map the codebase: find the theme/Tailwind config and the shared components
-   (Button, Badge/Tag, Card, Tabs, Table, Modal/Dialog, Input, EmptyState, KPI/StatCard,
-   Dropzone, ProgressBar, Avatar). List them before editing.
+1. Map the codebase first: find the theme/Tailwind config and the shared components
+   (Sidebar, Button, Badge/Tag, Card, StatCard/KPI, Tabs, Table, Modal, Input, Checkbox,
+   ProgressBar/Ring, EmptyState, Dropzone, Avatar, Chart).
 2. Change the tokens in the config and the shared components so the whole app moves at once.
-3. Only after that, grep for one-off inline styles that bypass the shared components
-   (hardcoded `bg-blue-600`, `border-dashed`, `rounded-2xl`, hex colours) and fix the stragglers.
-4. Detect the stack and adapt — class names below are illustrative, not literal.
+3. Then grep for one-off styles that bypassed the components (hardcoded `bg-blue-600`,
+   any purple, `border-dashed`, `rounded-2xl`, emoji, raw hex) and fix the stragglers.
+4. Visual changes only — never change how anything works.
 
-## North star (the five rules everything follows)
+## Brand in one line
 
-1. One accent, used sparingly. Monochrome does the heavy lifting; colour appears on roughly
-   5% of any screen and only where it means something.
-2. Primary buttons are near-black, not blue. One primary button per view; everything else
-   is secondary or ghost.
-3. No dashed boxes anywhere. Whitespace and hairlines do the framing.
-4. Calm corners. ~6–8px radius. No pills except real toggles/segmented controls and status dots.
-5. Real type hierarchy. Big confident headings, small muted labels, two or three weights only.
+Navy structure + a single warm coral accent + friendly rounded type. Colour is used to guide
+the eye, never to decorate. If a colour isn't carrying meaning, it's a neutral grey.
 
-## Tokens (replace the current ones)
+## Tokens
 
-Colour — base is monochrome:
+Typeface: Plus Jakarta Sans (load from Google Fonts), weights 400 / 500 / 600 / 700.
+Set it as the base font everywhere. Tighten heading letter-spacing to about -0.01em.
+Numbers in stats and tables use tabular figures.
 
-- `--ink` #16181D            (primary text, primary buttons)
-- `--surface` #FFFFFF        (cards, panels)
-- `--bg` #FAFAF9             (page background — a warm off-white, not pure grey)
-- `--text-secondary` #6B6F76
-- `--text-tertiary` #9AA0A6
-- `--border` rgba(0,0,0,0.10)  (hairlines — 1px, never dashed)
+Colour:
+- Navy (structure)        #2E3D52   sidebar, headings, primary text on light
+- Coral (accent)          #D85A30   primary buttons, active nav, progress, key highlights
+- Coral soft (fills)      #FAECE7   tags, active/completed tints
+- Coral text-on-tint      #993C1D   text/icons sitting on coral-soft
+- Page background         #FBFAF8   warm off-white
+- Surface                 #FFFFFF   cards, panels
+- Text secondary          #6B6F76
+- Text tertiary           #9AA0A6
+- Hairline border         rgba(0,0,0,0.08)
 
-One accent (swap for your brand colour, but keep it desaturated — NOT #2563EB):
+Meaning-only (never decoration):
+- Amber (warning)  #BA7517 / soft #FAEEDA   overdue, urgent
+- Green (success)  #15803D / soft #F0FAF3   done, on track
 
-- `--accent` #2A4A6B         (deep, calm blue-slate — used for active states + links only)
-- `--accent-soft` #EEF2F6    (accent background for selected rows / soft tags)
+Charts only (the donut and graphs — this set appears nowhere else in the UI):
+  navy #2E3D52 · coral #D85A30 · teal #1D9E75 · amber #BA7517
 
-Status — muted, semantic only. Never use these as decoration:
-
-- success #15803D  / soft bg #F0FAF3
-- warning #B45309  / soft bg #FBF3E6
-- danger  #B42318  / soft bg #FCF0EF  (reserve for genuinely destructive actions)
-
-Radius: `sm` 4px · `md` 6px (default) · `lg` 8px (cards). Kill anything ≥12px.
-
-Shadows: remove almost all. Separate elements with hairline borders and whitespace.
-The only allowed shadow is a faint focus ring on inputs.
-
-Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48. Use only these values. Increase padding
-generally — the app is currently cramped in places and floaty in others.
-
-Typography:
-- Keep Inter if you like, but tune it: tighten heading tracking to about -0.015em and lean
-  on size + colour for hierarchy, not just bold. (A characterful alternative: Geist or
-  General Sans for UI.)
-- Weights: 400 body, 500 medium for labels/headers, 600 only for page titles.
-- Numbers in tables and KPIs: use tabular figures (`font-variant-numeric: tabular-nums`).
-- Sentence case everywhere. Micro-labels (field labels, column heads) may be uppercase
-  ONLY if tracked (+0.04em) and in `--text-tertiary`, applied consistently.
+Radius: inputs/buttons/chips 10px · cards 16px. Pills only for toggles and status dots.
+Shadows: none heavy. Hairline borders separate things; one very soft shadow on the dashboard
+hero card is the only exception. Spacing scale: 4 / 8 / 12 / 16 / 24 / 32 / 48.
 
 ## Components
 
-### Buttons — three tiers, no colour-coding by function
-- Primary: solid `--ink` bg, white text, 6px radius, weight 500. One per view.
-- Secondary: transparent bg, 1px `--border`, `--ink` text, optional leading icon.
-- Ghost: text only, `--text-secondary`, hover adds a subtle bg.
-- Destructive (Delete): ghost by default in `--text-secondary`; turn `danger` only on
-  hover or in a confirm step. Do not paint every Delete red at rest.
-- Replace ALL of these with the tiers above: solid-blue "Generate", "+ Add record", "Log",
-  "Checklist"; green-outline "Export"; blue-outline "Guidance"; white "Details"; red "Delete".
-  Buttons should differ by weight/prominence, never by hue.
+Sidebar: navy #2E3D52, white labels, muted labels for inactive items. The active item is a
+coral fill with white text. Replace any purple highlight.
 
-### Tabs / segmented controls (Trackers nav, and toggles generally)
-Two acceptable patterns, pick one and use it everywhere:
-- Underline tabs: text labels, active tab marked by a 2px underline in `--ink` and `--ink`
-  text; inactive tabs `--text-secondary`. (Preferred for top-level nav like the Trackers row.)
-- Segmented control: a subtle `--bg` track, the active segment a white card with `--ink`
-  text and a barely-there shadow. Use for on/off and small option switches.
-Replace the blue filled pill tab and the blue "+ Custom" text. "+ Custom" becomes a
-secondary or ghost button aligned to the right.
-Toggle switches: grey track when off, `--ink` (or `--accent`) when on. One switch style app-wide.
+Buttons — three tiers, differ by prominence not by hue:
+- Primary: solid coral, white text, 10px radius, weight 600. One per view.
+- Secondary: white/transparent, hairline border, navy text, optional leading icon.
+- Ghost: text only, secondary grey, subtle hover fill.
+- Delete: ghost in secondary grey by default; turns coral/danger only on hover or confirm.
+  Replace every default-blue button and every plain-red Delete with these.
 
-### KPI / stat cards (Trackers top row) — single biggest upgrade
-- Remove shadows; use a hairline border or a flat `--bg` surface with no border.
-- Numbers are `--ink`, NOT pink/blue/green/red. The rainbow numbers are the loudest AI tell here.
-- Layout: small `--text-tertiary` label on top, large number below, muted caption under that.
-- Colour only enters when a number signals a problem — e.g. "2 missing dependant" may get a
-  small `warning` dot. Everything healthy stays monochrome.
+Checkboxes / toggles / progress: coral when on/active/filled. Progress bars and rings are
+coral on a light track. Completed or active items get a faint coral-soft background tint so
+finishing something feels rewarding.
 
-### Badges / tags / status — one consistent system
-- Type tags (Shared Parental, maternity): neutral soft tag — `--bg` fill, `--text-secondary`
-  text, 4px radius, 11px. No amber.
-- Status (Upcoming, Active, On leave): a small coloured dot + label. The dot colour encodes
-  state with muted status colours; the label stays `--text-secondary`. No filled blue pills.
-- KEY: a quiet 1px outline tag in `--text-tertiary`, not a yellow fill.
-- Same radius, same size, same padding for every tag in the app.
+Tags / badges — one rule: only genuinely important tags carry colour (e.g. "Legal requirement"
+uses coral-soft), everything else is a neutral grey soft tag. Same radius (10px), size and
+padding for every tag. Status (Upcoming, Active, On leave) is a small coloured dot + a grey
+label, not a filled pill.
 
-### Empty states (dev plan) — no dashed box
-Icon in a soft circle, a heading, one tight line of copy, one primary button — framed by
-whitespace and at most a single hairline divider above. Tighten the copy: lead with the action.
+StatCard / KPI: white surface, hairline border, big number in navy, small muted label. Numbers
+are navy, never a rainbow. A single highlighted metric (e.g. "time saved") may use the coral-soft
+tint with coral text. Colour enters only when a number signals a problem (e.g. an amber dot).
 
-### Dropzones (Compare documents)
-- Replace the heavy default dashed rectangles with a calm drop area: 1px `--border` (a fine
-  dash is acceptable here since drop zones conventionally read as dashed — but make it 1px and
-  subtle, not the chunky default), 8px radius, faint `--bg` fill, centred icon + label.
-- Delete the three outline "chip" descriptors ("Good for…", "Both files should be…",
-  "Excel: compares…"). They look like disabled inputs. Make them plain muted helper text lines.
+Icons: replace every emoji with a single outline icon set (Lucide or Tabler), one weight, one
+size. Use meaningful ones: ti-git-compare for compare, ti-calendar for dates, ti-clock for
+timing, ti-user for people.
 
-### Tables (Family Leave list)
-- Drop the heavy dark-navy header bar with rounded corners. Use a plain header row on the page
-  background: small uppercase-tracked `--text-tertiary` column labels, a bottom hairline, no fill.
-- Row separators are hairlines, not boxes. Add comfortable row padding.
-- Right-align numeric columns; use tabular figures.
+Empty states: icon + heading + one tight line + one coral button, framed by whitespace and at
+most one hairline rule. No dashed boxes anywhere.
 
-### Modal / detail panel (Sarah Mitchell)
-- Replace the full navy header block with a white header: `--ink` title, hairline bottom border,
-  a ghost icon close button. If you want a colour cue, use a thin 3px accent strip, not a slab.
-- Collapse the stacked grey rounded panels into one rhythm: sections separated by hairlines and
-  whitespace. The "MATB1 received…" note becomes a subtle left-border callout (border-radius 0 on
-  that single-sided border) or just muted text under a label — not another grey rounded box.
-- One input style: white or very subtle fill, 1px `--border`, 6px radius, consistent label
-  treatment. The uppercase field labels are fine if tracked and tertiary-coloured everywhere.
+Dropzones: calm 1px border (a fine dash is fine here since drop areas read as dashed — 1px,
+subtle, not the chunky default), 16px radius, faint fill, centred icon + label. No descriptor
+"chip" rows — fold that into one helper line.
 
-### Avatars
-Add initials-circle avatars wherever people appear — the dev-plan list, table rows, the modal
-header. Even uniform neutral circles instantly read as a real product. Tint by team if you want.
+Tables: plain header row on the page background with small tracked grey column labels and a
+bottom hairline — not a heavy navy slab. Rows separated by hairlines, comfortable padding,
+numeric columns right-aligned with tabular figures.
 
-### Progress bars
-Thinner track, `--ink` or `--accent` fill (not blue), muted `--bg` track, rounded ends.
+Modal / detail panel: white header with navy title and a hairline bottom border; close is a
+ghost icon. Collapse stacked grey panels into hairline-separated sections. One input style:
+white fill, hairline border, 10px radius, consistent label treatment.
+
+Avatars: initials circles wherever people appear (lists, table rows, modal headers).
+
+## Per-screen treatment
+
+Dashboard: friendly greeting, then a hero card with a coral progress ring ("21 active items")
+and the chart donut using the four chart colours. KPI row below in white hairline cards, navy
+numbers, the "time saved" card in coral-soft. Retire all purple.
+
+Checklist (leave detail): the 50% block becomes a coral progress ring. Checkboxes coral,
+completed steps get the faint coral tint. Tags follow the one-colour rule (legal = coral,
+recommended/policy = neutral). Emoji become icons. Schedule is the coral primary; Close is a
+ghost; Delete is ghost.
+
+Compare documents: two upload slots side by side with a circular ti-git-compare badge between
+them. Each slot is a clean white card with the file icon in a round chip — original in a light
+coral-soft chip, updated in a solid coral chip with a white icon. Remove the grey descriptor
+chips; replace with one helper line. Coral "Compare documents" button centred below.
+
+Trackers: KPI numbers in navy (not pink/blue/green/red). Pill tabs become underline tabs with
+a coral active underline. Status badges become dot + label. Export / Guidance / Add record
+unify into the button tiers. The navy table header becomes a hairline header.
 
 ## Copy
-Active voice, sentence case, no filler. Buttons say what happens ("Generate plan", not
-"Generate development plan" if space is tight). Empty states invite an action rather than
-describe a void. Errors state what to do next; they don't apologise.
 
-## Per-screen checklist (sanity check after the system change)
-
-Development plans: blue buttons → ink primary + outline secondary · dashed empty state gone ·
-KEY/Star tags quieted · avatars added · header given a real title with the caption demoted to subtitle.
-
-Trackers: pill tabs → underline tabs · rainbow KPI numbers → ink · green success banner softened ·
-navy table header → hairline header · Export/Guidance/Add unified into the button tiers · status
-badges → dot + label.
-
-Detail modal: navy header → white header + hairline · stacked grey panels collapsed · inputs unified ·
-contact-log container de-boxed.
-
-Compare documents: descriptor chips → muted helper text · dropzones calmed · Reset → secondary button.
+Active voice, sentence case, no filler. Buttons say what happens. Empty states invite an action.
+Errors say what to do next.
