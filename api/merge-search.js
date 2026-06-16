@@ -117,11 +117,14 @@ export default async function handler(req, res) {
 
   if (req.method !== 'GET') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { token: accountToken, integration } = await resolveAccountToken(sb, companyId);
+  const { token: accountToken, integration, source } = await resolveAccountToken(sb, companyId);
 
   // ── GET ?action=status: connection state (any company member may see this) ──
+  // Only a real per-company link counts as "connected" — the global demo env token
+  // must not mask the Connect button, or users can never open Merge Link to pick a platform.
   if (req.query.action === 'status') {
-    return res.status(200).json({ connected: !!accountToken, integration });
+    const realConnection = source === 'company';
+    return res.status(200).json({ connected: realConnection, integration: realConnection ? integration : null });
   }
 
   // ── GET (default): pull all employees — company-wide PII, so admins only ──
