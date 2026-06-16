@@ -16582,12 +16582,41 @@ async function projConfirmEmailToTask(){
     // geometry
     var W=960,H=430, chartL=52, chartR=948, chartW=chartR-chartL;
     var gap=14, panelW=(chartW-2*gap)/3, yT=70, yB=404, plotH=yB-yT, top=44, pH=yB-top;
-    var xc=(chartL+chartR)/2, sig=150;
-    function dens(x){ return Math.exp(-((x-xc)*(x-xc))/(2*sig*sig)); }
-    function yAt(x){ return yB - dens(x)*0.70*plotH; }
     function px0(i){ return chartL + i*(panelW+gap); }
-    function areaPath(a,b){ var s='M '+a.toFixed(1)+' '+yB+' '; for(var x=a;x<b;x+=4){ s+='L '+x.toFixed(1)+' '+yAt(x).toFixed(1)+' '; } s+='L '+b.toFixed(1)+' '+yAt(b).toFixed(1)+' L '+b.toFixed(1)+' '+yB+' Z'; return s; }
-    function linePath(a,b){ var s='M '+a.toFixed(1)+' '+yAt(a).toFixed(1)+' '; for(var x=a;x<b;x+=4){ s+='L '+x.toFixed(1)+' '+yAt(x).toFixed(1)+' '; } return s+'L '+b.toFixed(1)+' '+yAt(b).toFixed(1); }
+    function pcx(i){ return px0(i)+panelW/2; }
+
+    // Build the curve shape FROM the data: each band's height tracks its %.
+    var maxPct=Math.max(curPct[0],curPct[1],curPct[2],1);
+    function frac(i){ return (curPct[i]/maxPct)*0.72; }   // tallest band -> 72% of plot height
+    function hy(f){ return yB - f*plotH; }                // height fraction -> y
+    var CP=[
+      {x:chartL, y:hy(frac(0)*0.20)},                     // left edge tapers below band 1
+      {x:pcx(0), y:hy(frac(0))},
+      {x:pcx(1), y:hy(frac(1))},
+      {x:pcx(2), y:hy(frac(2))},
+      {x:chartR, y:hy(frac(2)*0.20)}                      // right edge tapers below band 3
+    ];
+    // Catmull-Rom spline -> dense polyline that passes smoothly through every band height.
+    var PTS=[];
+    for(var ci=0;ci<CP.length-1;ci++){
+      var p0=CP[ci-1]||CP[ci], p1=CP[ci], p2=CP[ci+1], p3=CP[ci+2]||CP[ci+1];
+      for(var t=0;t<=1.0001;t+=0.04){
+        var t2=t*t, t3=t2*t;
+        var sx=0.5*((2*p1.x)+(-p0.x+p2.x)*t+(2*p0.x-5*p1.x+4*p2.x-p3.x)*t2+(-p0.x+3*p1.x-3*p2.x+p3.x)*t3);
+        var sy=0.5*((2*p1.y)+(-p0.y+p2.y)*t+(2*p0.y-5*p1.y+4*p2.y-p3.y)*t2+(-p0.y+3*p1.y-3*p2.y+p3.y)*t3);
+        if(sy>yB)sy=yB; if(sy<yT)sy=yT;
+        PTS.push({x:sx,y:sy});
+      }
+    }
+    function yAtX(x){
+      if(x<=PTS[0].x) return PTS[0].y;
+      if(x>=PTS[PTS.length-1].x) return PTS[PTS.length-1].y;
+      for(var k=1;k<PTS.length;k++){ if(PTS[k].x>=x){ var a=PTS[k-1],b=PTS[k]; var r=(x-a.x)/((b.x-a.x)||1); return a.y+(b.y-a.y)*r; } }
+      return PTS[PTS.length-1].y;
+    }
+    function ptsInRange(a,b){ var r=[{x:a,y:yAtX(a)}]; PTS.forEach(function(p){ if(p.x>a&&p.x<b) r.push(p); }); r.push({x:b,y:yAtX(b)}); return r; }
+    function areaPath(a,b){ var pr=ptsInRange(a,b); var s='M '+a.toFixed(1)+' '+yB+' '; pr.forEach(function(p){ s+='L '+p.x.toFixed(1)+' '+p.y.toFixed(1)+' '; }); return s+'L '+b.toFixed(1)+' '+yB+' Z'; }
+    function linePath(a,b){ var pr=ptsInRange(a,b); var s='M '+pr[0].x.toFixed(1)+' '+pr[0].y.toFixed(1)+' '; for(var j=1;j<pr.length;j++){ s+='L '+pr[j].x.toFixed(1)+' '+pr[j].y.toFixed(1)+' '; } return s; }
 
     var defs='', panels='', curve='';
     PR.forEach(function(c,i){
