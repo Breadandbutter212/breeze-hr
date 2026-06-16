@@ -12141,7 +12141,7 @@ function openMatPatRecord(id) {
             </div>`;
           }
           const sc = WF_SCENARIOS.find(s=>s.id===linked.scenarioId)||{steps:[]};
-          const pct = sc.steps.length?Math.round((linked.checkedSteps.length/sc.steps.length)*100):0;
+          const pct = sc.steps.length?Math.min(100,Math.round((linked.checkedSteps.length/sc.steps.length)*100)):0;
           const stepsPreview = sc.steps.slice(0,5).map(step=>{
             const done = linked.checkedSteps.includes(step.id);
             return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);"><span style="font-size:12px;">${done?'✅':'⬜'}</span><span style="font-size:11px;color:var(--ink);${done?'text-decoration:line-through;color:var(--ink3);':''}">${step.title}</span></div>`;
@@ -13854,7 +13854,7 @@ function downloadTabCSVByScenarios(scenarioIdsStr, label) {
   const rows = [['Employee','Type','Started','Checklist %','Status','Contact logs','Documents']];
   (wfCases||[]).filter(c => ids.includes(c.scenarioId)).forEach(c => {
     const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{label:'Unknown',steps:[]};
-    const pct = sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0;
+    const pct = sc.steps.length ? Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)) : 0;
     rows.push([c.employeeName, sc.label, new Date(c.startedAt).toLocaleDateString('en-GB'), pct+'%', c.status==='closed'?'Closed':'Active', (c.contactLog||[]).length, (c.docs||[]).length]);
   });
   downloadCSV(rows, label + ' ' + new Date().toLocaleDateString('en-GB'));
@@ -13957,7 +13957,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
           <tbody>
             ${activeCases.map(c => {
               const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{icon:'📋',label:'Unknown',steps:[]};
-              const pct = sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0;
+              const pct = sc.steps.length ? Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)) : 0;
               const started = new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
               const logCount = (c.contactLog||[]).length;
               const docCount = (c.docs||[]).length;
@@ -13984,7 +13984,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
             }).join('')}
             ${closedCases.map(c => {
               const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{icon:'📋',label:'Unknown',steps:[]};
-              const pct = sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0;
+              const pct = sc.steps.length ? Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)) : 0;
               return `<tr style="opacity:0.55;cursor:pointer;" onclick="openWfCasePanel('${c.id}')">
                 <td><div style="font-weight:600;color:var(--ink);">${escapeHtml(c.employeeName)}</div></td>
                 <td><span style="display:inline-flex;align-items:center;gap:7px;color:var(--ink2);"><span style="color:var(--ink3);display:inline-flex;">${scenarioIco(sc,14)}</span><span style="font-size:12px;">${sc.label}</span></span></td>
@@ -14093,7 +14093,7 @@ function wfInjectChecklistButtons(container, activeCases) {
 
       if (linked) {
         const sc = WF_SCENARIOS.find(s=>s.id===linked.scenarioId)||{steps:[]};
-        const pct = sc.steps.length ? Math.round((linked.checkedSteps.length/sc.steps.length)*100) : 0;
+        const pct = sc.steps.length ? Math.min(100,Math.round((linked.checkedSteps.length/sc.steps.length)*100)) : 0;
         const mpRecId = row.querySelector('button[onclick*="openMatPatRecord"]')?.getAttribute('onclick')?.match(/openMatPatRecord\('([^']+)'\)/)?.[1] || linked.mpRecordId || '';
         lastTd.style.cssText = 'white-space:nowrap;';
         lastTd.innerHTML = `<div style="display:flex;align-items:center;gap:8px;">
@@ -14282,9 +14282,12 @@ async function wfSubmitAddStep(caseId, btn) {
 function wfRenderCase(c) {
   const detail = document.getElementById('wf-detail'); if (!detail) return;
   const scenario = WF_SCENARIOS.find(s=>s.id===c.scenarioId); if (!scenario) return;
-  const checkedSet = new Set(c.checkedSteps);
   const steps = wfGetSteps(c);
-  const total = steps.length, done = checkedSet.size, pct = Math.round((done/total)*100);
+  // Drop any checked IDs that no longer match a step (prevents >100% / "10 / 7").
+  const _validIds = new Set(steps.map(s=>s.id));
+  c.checkedSteps = (c.checkedSteps||[]).filter(id=>_validIds.has(id));
+  const checkedSet = new Set(c.checkedSteps);
+  const total = steps.length, done = checkedSet.size, pct = total?Math.min(100,Math.round((done/total)*100)):0;
 
   const stepsHtml = steps.map(step=>{
     const isDone = checkedSet.has(step.id);
@@ -14574,7 +14577,7 @@ async function wfToggleStep(caseId, stepId) {
   }
   const steps=wfGetSteps(c);
   if (steps.length) {
-    const pct=Math.round((c.checkedSteps.length/steps.length)*100);
+    const pct=Math.min(100,Math.round((c.checkedSteps.length/steps.length)*100));
     const bar=document.getElementById('wf-progress-fill'); if(bar){bar.style.width=pct+'%';bar.style.background=pct===100?'var(--green)':'var(--accent)';}
     const el=document.getElementById('wf-progress-pct'); if(el) el.textContent=c.checkedSteps.length+' / '+steps.length+' complete'+(pct===100?' - all steps done ✓':'');
   }
@@ -14584,7 +14587,7 @@ async function wfToggleStep(caseId, stepId) {
 
 function wfUpdateSidebarCase(c) {
   const steps = wfGetSteps(c);
-  const pct = steps.length?Math.round((c.checkedSteps.length/steps.length)*100):0;
+  const pct = steps.length?Math.min(100,Math.round((c.checkedSteps.length/steps.length)*100)):0;
   // Update table row button
   const btn = document.querySelector(`[data-wf-btn="${c.id}"]`);
   if (btn) { btn.style.background=pct===100?'var(--green)':''; btn.style.borderColor=pct===100?'var(--green)':''; }
@@ -14610,7 +14613,7 @@ function openWfDetailsPanel(caseId) {
   panel.id = 'wfDetailPanel';
   panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[],icon:'📋',label:'Unknown'};
-  const pct = sc.steps.length?Math.round((c.checkedSteps.length/sc.steps.length)*100):0;
+  const pct = sc.steps.length?Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)):0;
   const contactLog = (c.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   const daysSince = contactLog.length?Math.floor((new Date()-new Date(contactLog[0].date))/86400000):null;
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
@@ -16930,8 +16933,8 @@ async function projConfirmEmailToTask(){
     ];
 
     // geometry
-    var W=960,H=760, chartL=52, chartR=948, chartW=chartR-chartL;
-    var gap=14, panelW=(chartW-2*gap)/3, yT=240, yB=744, plotH=yB-yT, top=24, pH=yB-top;
+    var W=960,H=608, chartL=52, chartR=948, chartW=chartR-chartL;
+    var gap=14, panelW=(chartW-2*gap)/3, yT=192, yB=595, plotH=yB-yT, top=20, pH=yB-top;
     function px0(i){ return chartL + i*(panelW+gap); }
     function pcx(i){ return px0(i)+panelW/2; }
 
@@ -16981,8 +16984,8 @@ async function projConfirmEmailToTask(){
         '<clipPath id="prclip'+i+'"><rect x="'+a.toFixed(1)+'" y="'+top+'" width="'+panelW.toFixed(1)+'" height="'+pH+'" rx="16"/></clipPath>';
       // panel background + text
       panels+='<rect x="'+a.toFixed(1)+'" y="'+top+'" width="'+panelW.toFixed(1)+'" height="'+pH+'" rx="16" fill="url(#prbg'+i+')"/>'+
-        '<text x="'+cx.toFixed(1)+'" y="92" text-anchor="middle" font-size="16" font-weight="700" fill="'+c.txt+'" font-family="inherit">'+c.title+'</text>'+
-        '<text x="'+cx.toFixed(1)+'" y="168" text-anchor="middle" font-size="38" font-weight="800" fill="#1F2937" font-family="inherit" letter-spacing="-0.5">'+curPct[i]+'%'+
+        '<text x="'+cx.toFixed(1)+'" y="74" text-anchor="middle" font-size="15" font-weight="700" fill="'+c.txt+'" font-family="inherit">'+c.title+'</text>'+
+        '<text x="'+cx.toFixed(1)+'" y="134" text-anchor="middle" font-size="32" font-weight="800" fill="#1F2937" font-family="inherit" letter-spacing="-0.5">'+curPct[i]+'%'+
           (delta[i]!=null&&delta[i]!==0?'<tspan dx="9" font-size="13.5" font-weight="600" fill="#98A2B3" letter-spacing="0">'+(delta[i]>0?'↑':'↓')+Math.abs(delta[i])+'%</tspan>':'')+
         '</text>';
       // curve fill + stroke, clipped to panel
