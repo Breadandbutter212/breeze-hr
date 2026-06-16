@@ -11511,7 +11511,7 @@ async function renderAutomations(){
     const runsHtml=active.length?`<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:6px;">
         ${active.slice(0,4).map(c=>{
           const total=(a.steps||[]).length||1; const pct=Math.round(((c.checkedSteps||[]).length/total)*100);
-          return `<div onclick="openWfCasePanel('${c.id}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+          return `<div onclick="openWfRunVisual('${c.id}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
             <div style="flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.employeeName)}</div>
             <div style="width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};"></div></div>
             <span style="font-size:11px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink2)'};width:34px;text-align:right;">${pct}%</span>
@@ -11549,7 +11549,7 @@ async function autoStartRun(autoId){
   wfCases.push(newCase);
   await saveWfCases();
   renderAutomations();
-  setTimeout(()=>openWfCasePanel(newCase.id),150);
+  setTimeout(()=>openWfRunVisual(newCase.id),150);
 }
 
 async function deleteAutomation(id){
@@ -13792,12 +13792,7 @@ const WF_SCENARIOS = [
   { id:'rtw-new-starter', cat:'Immigration', icon:'✅', label:'Right to work check (new starter)',
     steps:[
       {id:1,title:'Check before first day - no exceptions',desc:'You must check the right to work of every new employee BEFORE their first day. A right to work check cannot be retrospective. Failure = potential civil penalty of up to £60,000 per worker.',timeframe:'Before Day 1',tag:'legal'},
-      {id:2,title:'Carry out the check correctly',desc:'Option 1 (manual): Check original documents in person, confirm they are genuine and belong to the person. Option 2 (online): Use the Home Office online checking service with the employees share code.',timeframe:'Before Day 1',tag:'legal',subs:[
-        {id:'a',title:'Verify original ID documents in person',owner:'HR'},
-        {id:'b',title:'Email new starter to bring passport on day 1',owner:'HR',email:{subject:'Your first day - please bring your ID',body:'Hi {employee},\n\nWe are really looking forward to welcoming you on your first day.\n\nSo we can complete your right to work check, please bring your original passport (or other right to work documents) with you on day one.\n\nIf you have any questions, just reply to this email.\n\nBest wishes,\nHR'}},
-        {id:'c',title:'Request IT account and equipment setup',owner:'IT',email:{subject:'New starter IT setup - {employee}',body:'Hi IT team,\n\nPlease set up the following for our new starter, {employee}:\n\n- Email account and system logins\n- Laptop and peripherals\n- Access to relevant shared drives and tools\n\nTheir start date to follow. Thank you.'}},
-        {id:'d',title:'Complete background and reference screening',owner:'HR'}
-      ]},
+      {id:2,title:'Carry out the check correctly',desc:'Option 1 (manual): Check original documents in person, confirm they are genuine and belong to the person. Option 2 (online): Use the Home Office online checking service with the employees share code.',timeframe:'Before Day 1',tag:'legal'},
       {id:3,title:'Copy and retain documents',desc:'Make a clear copy of all documents. Date-stamp with "Right to work check carried out on [date]". Retain for duration of employment plus 2 years after leaving.',timeframe:'Day 1',tag:'legal'},
       {id:4,title:'Record in immigration tracker',desc:'Add the employee to the immigration tracker with their visa type, expiry date, and check date. Set reminder for any repeat check needed.',timeframe:'Day 1',tag:'legal',action:{label:'Open immigration tracker',type:'tab',tab:'immigration-wf'}},
     ]
@@ -14370,17 +14365,10 @@ function wfRenderCase(c) {
   const _validIds = new Set(steps.map(s=>s.id));
   c.checkedSteps = (c.checkedSteps||[]).filter(id=>_validIds.has(id));
   const checkedSet = new Set(c.checkedSteps);
-  const subSet = new Set(c.checkedSubs||[]);
-  const subKey = (sid,uid) => sid+':'+uid;
-  const stepDone = step => (step.subs&&step.subs.length) ? step.subs.every(su=>subSet.has(subKey(step.id,su.id))) : checkedSet.has(step.id);
-  const total = steps.length, done = steps.filter(stepDone).length, pct = total?Math.min(100,Math.round((done/total)*100)):0;
+  const total = steps.length, done = checkedSet.size, pct = total?Math.min(100,Math.round((done/total)*100)):0;
 
   const stepsHtml = steps.map(step=>{
-    const hasSubs = step.subs && step.subs.length;
-    const isDone = stepDone(step);
-    const clickFn = hasSubs ? `wfOpenStepTasks('${c.id}',${step.id})` : `wfToggleStep('${c.id}',${step.id})`;
-    const subProg = hasSubs ? step.subs.filter(su=>subSet.has(subKey(step.id,su.id))).length : 0;
-    const tasksPill = hasSubs ? `<span onclick="event.stopPropagation();wfOpenStepTasks('${c.id}',${step.id})" style="font-size:10px;font-weight:600;color:${isDone?'var(--green)':'var(--accent)'};background:${isDone?'var(--green-bg)':'var(--accent-bg)'};padding:2px 9px;border-radius:20px;cursor:pointer;white-space:nowrap;">${subProg}/${step.subs.length} tasks ›</span>` : '';
+    const isDone = checkedSet.has(step.id);
     const policy = step.policyTag ? wfFindPolicy(step.policyTag) : null;
     const policyBadge = policy?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);white-space:nowrap;">📋 ${policy.name}</span>`:'';
     let actionBtn = '';
@@ -14392,8 +14380,8 @@ function wfRenderCase(c) {
     const ownerBadge = step.owner ? `<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(step.owner)}</span>` : '';
     const isMeetingStep = /meeting|interview|hearing|panel|review|discussion|welfare|invite|induction|accompan/i.test(step.title+' '+step.desc);
     const calBtn = isMeetingStep ? `<button onclick="event.stopPropagation();wfStepCalendarInvite('${c.id}',${step.id})" title="Add to calendar" style="background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:2px 7px;font-size:11px;cursor:pointer;color:#D85A30;">📅</button>` : '';
-    return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="${clickFn}">
-      <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} ${hasSubs?'disabled':''} onclick="event.stopPropagation();${clickFn}" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
+    return `<div id="wf-step-${step.id}" style="background:white;border:1px solid var(--border);border-radius:var(--r-lg);padding:14px 16px;display:flex;gap:12px;align-items:flex-start;opacity:${isDone?'0.5':'1'};transition:opacity 0.15s;cursor:pointer;" onclick="wfToggleStep('${c.id}',${step.id})">
+      <div style="flex-shrink:0;padding-top:2px;"><input type="checkbox" ${isDone?'checked':''} onclick="event.stopPropagation();wfToggleStep('${c.id}',${step.id})" style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;"></div>
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:5px;">
           <div class="wf-step-title" style="font-size:13px;font-weight:600;color:var(--ink);line-height:1.4;${isDone?'text-decoration:line-through;':''}">${step.title}</div>
@@ -14402,7 +14390,7 @@ function wfRenderCase(c) {
         <div style="font-size:12px;color:var(--ink2);line-height:1.65;margin-bottom:${(actionBtn||calBtn)?'10px':'0'};">${step.desc}</div>
         <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px;">
           <span style="font-size:10px;font-weight:600;color:var(--ink3);background:var(--surface2);padding:2px 8px;border-radius:20px;">⏱ ${step.timeframe||'-'}</span>
-          <div style="display:flex;gap:6px;align-items:center;">${tasksPill}${calBtn}${actionBtn}</div>
+          <div style="display:flex;gap:6px;">${calBtn}${actionBtn}</div>
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:4px;">
@@ -14867,37 +14855,113 @@ async function wfOpenDoc(docId) {
   else showBreezeToast('Template not found - it may have been deleted from Documents');
 }
 
-// Draft an email for a workflow step (draft-only: opens a pre-filled email to review and send).
-// Popup of a step's associated sub-tasks (tick off; the step goes green when all done).
+// ── VISUAL WORKFLOW RUNNER (Automations) ──
+// A run = a wfCase of an automation. Shown as a process-map of stages; click a stage to
+// open its tasks/drafts, tick them off, the stage turns green and the next becomes current.
+let _wfRunId = null;
+function openWfRunVisual(caseId){
+  _wfRunId = caseId;
+  if(!(wfCases||[]).find(x=>x.id===caseId)) return;
+  document.getElementById('wfRunModal')?.remove();
+  const ov=document.createElement('div'); ov.id='wfRunModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(2px);z-index:960;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+  const box=document.createElement('div'); box.id='wfRunBox';
+  box.style.cssText='background:var(--bg);border-radius:var(--r-xl);width:100%;max-width:1000px;max-height:88vh;display:flex;flex-direction:column;overflow:hidden;box-shadow:var(--shadow-lg);';
+  ov.appendChild(box); document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov){ ov.remove(); _wfRunId=null; } };
+  wfRunRender();
+}
+function wfRunStepDone(c, st){
+  const subSet=new Set(c.checkedSubs||[]);
+  return (st.subs&&st.subs.length) ? st.subs.every(su=>subSet.has(st.id+':'+su.id)) : (c.checkedSteps||[]).includes(st.id);
+}
+function wfRunRender(){
+  const box=document.getElementById('wfRunBox'); if(!box) return;
+  const c=(wfCases||[]).find(x=>x.id===_wfRunId); if(!c) return;
+  const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{label:'Workflow',icon:'⚡',steps:[]};
+  const steps=sc.steps||[];
+  const subSet=new Set(c.checkedSubs||[]);
+  const doneN=steps.filter(st=>wfRunStepDone(c,st)).length;
+  const pct=steps.length?Math.round(doneN/steps.length*100):0;
+  const firstTodo=steps.findIndex(st=>!wfRunStepDone(c,st));
+  const nodes=steps.map((st,i)=>{
+    const done=wfRunStepDone(c,st);
+    const current=(i===firstTodo);
+    const ring=done?'var(--green)':current?'var(--accent)':'var(--border2)';
+    const bg=done?'var(--green)':current?'var(--accent)':'#fff';
+    const numCol=(done||current)?'#fff':'var(--ink3)';
+    const subTxt=(st.subs&&st.subs.length)?(st.subs.filter(su=>subSet.has(st.id+':'+su.id)).length+'/'+st.subs.length+' tasks'):'';
+    const connector=i<steps.length-1?'<div style="width:46px;height:2px;background:'+(done?'var(--green)':'var(--border2)')+';margin:20px 0 0;flex-shrink:0;"></div>':'';
+    return '<div style="display:flex;align-items:flex-start;flex-shrink:0;">'+
+      '<div onclick="wfOpenStepTasks(\''+c.id+'\','+st.id+')" style="display:flex;flex-direction:column;align-items:center;gap:7px;cursor:pointer;flex-shrink:0;width:120px;">'+
+        '<div style="width:42px;height:42px;border-radius:50%;background:'+bg+';border:2.5px solid '+ring+';color:'+numCol+';display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;box-shadow:'+(current?'0 0 0 4px var(--accent-bg)':'none')+';">'+(done?'✓':(i+1))+'</div>'+
+        '<div style="font-size:11px;font-weight:600;color:'+(done||current?'var(--ink)':'var(--ink3)')+';text-align:center;line-height:1.3;">'+escapeHtml(st.title)+'</div>'+
+        (subTxt?'<div style="font-size:9px;font-weight:600;color:'+(done?'var(--green)':'var(--ink3)')+';">'+subTxt+'</div>':'')+
+      '</div>'+ connector +
+    '</div>';
+  }).join('');
+  box.innerHTML=
+    '<div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;display:flex;align-items:center;gap:14px;flex-shrink:0;">'+
+      '<div style="width:44px;height:44px;border-radius:12px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">'+(sc.icon||'⚡')+'</div>'+
+      '<div style="flex:1;min-width:0;"><div style="font-size:16px;font-weight:700;color:var(--ink);">'+escapeHtml(sc.label)+'</div><div style="font-size:12px;color:var(--ink3);">'+escapeHtml(c.employeeName||'')+' · '+doneN+' of '+steps.length+' stages complete</div></div>'+
+      '<div style="font-size:20px;font-weight:800;color:'+(pct===100?'var(--green)':'var(--accent)')+';">'+pct+'%</div>'+
+      '<button onclick="document.getElementById(\'wfRunModal\').remove()" style="background:var(--surface2);border:none;color:var(--ink);width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>'+
+    '</div>'+
+    '<div style="flex:1;overflow:auto;padding:44px 24px;"><div style="display:flex;align-items:flex-start;flex-wrap:nowrap;min-width:min-content;">'+nodes+'</div>'+
+      '<div style="margin-top:34px;font-size:12px;color:var(--ink3);">Click a stage to open its tasks and drafts. Finish a stage and it turns green; the next one lights up.</div>'+
+    '</div>';
+}
+function wfRunRefresh(){ if(_wfRunId && document.getElementById('wfRunBox')) wfRunRender(); }
+
+// Step detail popup: lists a stage's sub-tasks (tick off), or a plain stage with a complete toggle.
 function wfOpenStepTasks(caseId, stepId) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
-  const step = wfGetSteps(c).find(s=>s.id===stepId); if (!step || !(step.subs&&step.subs.length)) return;
+  const step = wfGetSteps(c).find(s=>s.id===stepId); if (!step) return;
+  const hasSubs = step.subs && step.subs.length;
   const subSet = new Set(c.checkedSubs||[]);
   const k = uid => stepId+':'+uid;
-  const doneN = step.subs.filter(su=>subSet.has(k(su.id))).length;
-  const allDone = doneN===step.subs.length;
-  const rows = step.subs.map(su=>{
-    const checked = subSet.has(k(su.id));
-    const ownerBadge = su.owner?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(su.owner)}</span>`:'';
-    const emailBtn = su.email?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:#047857;">✉️ Draft email →</button>`:'';
-    return `<div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
-      <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>
-        ${(ownerBadge||emailBtn)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ownerBadge}${emailBtn}</div>`:''}
-      </div>
-    </div>`;
-  }).join('');
+  const doneN = hasSubs ? step.subs.filter(su=>subSet.has(k(su.id))).length : 0;
+  const allDone = hasSubs ? (doneN===step.subs.length) : (c.checkedSteps||[]).includes(stepId);
+  const ownerBadge = step.owner?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(step.owner)}</span>`:'';
+  const timeBadge = step.timeframe?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink3);white-space:nowrap;">⏱ ${escapeHtml(step.timeframe)}</span>`:'';
+  const stepEmailBtn = step.action?.type==='email'?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:11px;color:#047857;">✉️ ${escapeHtml(step.action.label||'Draft email')} →</button>`:'';
+  const stepDocBtn = step.action?.type==='doc'?`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">${escapeHtml(step.action.label||'Generate document')} →</button>`:'';
+  let bodyHtml;
+  if (hasSubs) {
+    bodyHtml = step.subs.map(su=>{
+      const checked = subSet.has(k(su.id));
+      const ob = su.owner?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(su.owner)}</span>`:'';
+      const eb = su.email?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:#047857;">✉️ Draft email →</button>`:'';
+      return `<div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
+        <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
+        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>${(ob||eb)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}</div>`:''}</div>
+      </div>`;
+    }).join('');
+  } else {
+    bodyHtml = `${step.desc?`<div style="font-size:13px;color:var(--ink2);line-height:1.65;">${escapeHtml(step.desc)}</div>`:''}
+      ${(stepEmailBtn||stepDocBtn)?`<div style="display:flex;gap:8px;flex-wrap:wrap;">${stepEmailBtn}${stepDocBtn}</div>`:''}
+      <button onclick="wfToggleStepDetail('${caseId}',${stepId})" class="btn ${allDone?'btn-secondary':'btn-primary'} btn-sm" style="align-self:flex-start;${allDone?'':'background:var(--green);border-color:var(--green);'}">${allDone?'↺ Mark not done':'✓ Mark stage complete'}</button>`;
+  }
+  const headBtns = hasSubs ? (stepEmailBtn||stepDocBtn?`<div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap;">${stepEmailBtn}${stepDocBtn}</div>`:'') : '';
   document.getElementById('wfStepTasks')?.remove();
   const ov = document.createElement('div'); ov.id='wfStepTasks';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:985;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
-    <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${doneN} of ${step.subs.length} tasks complete${allDone?' · step done ✓':''}</div></div>
-    <div style="padding:16px 22px;display:flex;flex-direction:column;gap:8px;">${rows}</div>
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${hasSubs?`${doneN} of ${step.subs.length} tasks complete${allDone?' · stage done ✓':''}`:(allDone?'Stage complete ✓':'Not started')}</div>${(step.owner||step.timeframe)?`<div style="display:flex;gap:6px;margin-top:8px;">${ownerBadge}${timeBadge}</div>`:''}${headBtns}</div>
+    <div style="padding:16px 22px;display:flex;flex-direction:column;gap:8px;">${bodyHtml}</div>
     <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;"><button class="btn btn-primary btn-sm" onclick="document.getElementById('wfStepTasks').remove()">Done</button></div>
   </div>`;
   document.body.appendChild(ov);
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+async function wfToggleStepDetail(caseId, stepId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  c.checkedSteps=c.checkedSteps||[];
+  const i=c.checkedSteps.indexOf(stepId);
+  if(i>=0) c.checkedSteps.splice(i,1); else c.checkedSteps.push(stepId);
+  try{ await saveWfCases(); }catch(e){}
+  wfOpenStepTasks(caseId, stepId);
+  wfRunRefresh();
 }
 async function wfToggleSub(caseId, stepId, subId) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
@@ -14915,7 +14979,7 @@ async function wfToggleSub(caseId, stepId, subId) {
   else if (!allDone && si>=0) c.checkedSteps.splice(si,1);
   try { await saveWfCases(); } catch(e){}
   wfOpenStepTasks(caseId, stepId);
-  wfRenderCase(c);
+  wfRunRefresh();
 }
 
 function wfOpenEmailDraft(caseId, stepId, subId) {
@@ -15803,8 +15867,45 @@ window.seedDemoData = async function() {
   if (hcEx) await sb.from('policies').update({ content: hcJson }).eq('id', hcEx.id);
   else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'SETTING:HeadcountPlanning', content: hcJson });
 
+  // ── AUTOMATIONS - visual workflow with sub-tasked stages (for the runner) ──
+  const autoData = [
+    { id:'auto_onboard', label:'New starter onboarding', icon:'🚀', cat:'Automation', createdAt:new Date().toISOString(), steps:[
+      {id:1,title:'Offer & contract',timeframe:'On acceptance',owner:'HR',desc:'Issue the contract and confirm start details.',subs:[
+        {id:'a',title:'Send signed contract for return',owner:'HR',email:{subject:'Your contract - {employee}',body:'Hi {employee},\n\nPlease find your contract attached. Sign and return it at your earliest convenience and let us know if you have any questions.\n\nWelcome aboard!\nHR'}},
+        {id:'b',title:'Confirm start date and first-day logistics',owner:'HR'},
+        {id:'c',title:'Add to HR system and payroll',owner:'HR'}
+      ]},
+      {id:2,title:'Right to work',timeframe:'Before day 1',owner:'HR',desc:'Complete the statutory right-to-work check before the first day.',subs:[
+        {id:'a',title:'Email new starter to bring ID on day 1',owner:'HR',email:{subject:'Your first day - please bring your ID',body:'Hi {employee},\n\nWe are looking forward to welcoming you. So we can complete a quick right-to-work check, please bring your original passport (or other right-to-work documents) on your first day.\n\nBest wishes,\nHR'}},
+        {id:'b',title:'Verify original documents in person',owner:'HR'},
+        {id:'c',title:'Take and date-stamp copies for the file',owner:'HR'}
+      ]},
+      {id:3,title:'IT & equipment',timeframe:'Before day 1',owner:'IT',desc:'Set up accounts and hardware ready for day one.',subs:[
+        {id:'a',title:'Request accounts, logins and laptop',owner:'IT',email:{subject:'New starter IT setup - {employee}',body:'Hi IT team,\n\nPlease set up the following for our new starter, {employee}:\n\n- Email and system logins\n- Laptop and peripherals\n- Access to relevant tools and shared drives\n\nStart date to follow. Thank you.'}},
+        {id:'b',title:'Prepare desk or remote-work kit',owner:'Facilities'}
+      ]},
+      {id:4,title:'Background screening',timeframe:'Before day 1',owner:'HR',desc:'Complete references and any role-specific checks.',subs:[
+        {id:'a',title:'Request references',owner:'HR'},
+        {id:'b',title:'Complete any role-specific checks (DBS etc.)',owner:'HR'}
+      ]},
+      {id:5,title:'First day & induction',timeframe:'Day 1',owner:'Line manager',desc:'Welcome, induction and buddy introductions.',subs:[
+        {id:'a',title:'Send welcome email and first-day agenda',owner:'HR',email:{subject:'Welcome to the team, {employee}!',body:'Hi {employee},\n\nA warm welcome to the team! Here is what your first day looks like, and who you will be meeting.\n\nWe are really glad to have you with us.\nThe team'}},
+        {id:'b',title:'Assign a buddy and book induction sessions',owner:'Line manager'},
+        {id:'c',title:'Issue handbook and key policies',owner:'HR'}
+      ]},
+      {id:6,title:'30-day check-in',timeframe:'Week 4',owner:'Line manager',desc:'Probation kick-off and first review.',subs:[
+        {id:'a',title:'Book 30-day review',owner:'Line manager'},
+        {id:'b',title:'Confirm objectives for probation',owner:'Line manager'}
+      ]}
+    ]}
+  ];
+  const autoJson = JSON.stringify(autoData);
+  const { data: autoEx } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','SETTING:Automations').maybeSingle();
+  if (autoEx) await sb.from('policies').update({ content: autoJson }).eq('id', autoEx.id);
+  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'SETTING:Automations', content: autoJson });
+
   // Reset in-memory state so next navigation re-fetches from DB
-  wfCases = null; mpRecords = null; ppPlan = null; hcRoles = null;
+  wfCases = null; mpRecords = null; ppPlan = null; hcRoles = null; automations = null;
   alert('Done! Navigate to Trackers, People Plan or Headcount to see the sample data.');
 };
 
