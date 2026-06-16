@@ -10361,6 +10361,10 @@ function renderPPTimeline() {
 
     gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD + (LANE_H - BAR_H) / 2}px;" onclick="ppAddEvent('${cat.id}')"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
 
+    // Fractional fill within a month based on the specific day (e.g. ends 15th -> fills half the month)
+    const daysIn = (mo) => new Date(year, mo, 0).getDate();
+    const dayOf  = (ds) => { if (!ds) return null; const p = String(ds).split('-'); const mo = parseInt(p[1]), day = parseInt(p[2]); return (mo && day) ? { mo, day } : null; };
+
     for (let m = 1; m <= 12; m++) {
       const activeEvts = catEvents.filter(e => e.startMonth <= m && e.endMonth >= m);
       let inner = '';
@@ -10372,10 +10376,18 @@ function renderPPTimeline() {
         const isSingle = ev.startMonth === ev.endMonth;
         const rL = (isStart || isSingle) ? '6px' : '0';
         const rR = (isEnd   || isSingle) ? '6px' : '0';
-        const left  = (isStart || isSingle) ? '3px' : '0';
-        const right = (isEnd   || isSingle) ? '3px' : '-1px';
+        // Day-of-month offsets: start at (day-1)/daysInMonth, end at day/daysInMonth of this month's cell
+        const sd = dayOf(ev.startDate), ed = dayOf(ev.endDate);
+        const startFrac = (isStart && sd && sd.mo === m) ? (sd.day - 1) / daysIn(m) : 0;
+        const endFrac   = (isEnd   && ed && ed.mo === m) ? ed.day / daysIn(m)       : 1;
+        const leftPct  = (isStart || isSingle) ? startFrac * 100 : 0;
+        const rightPct = (isEnd   || isSingle) ? (1 - endFrac) * 100 : 0;
+        const gapL = (isStart || isSingle) ? 3 : 0;
+        const gapR = (isEnd   || isSingle) ? 3 : -1;
+        const left  = `calc(${leftPct}% + ${gapL}px)`;
+        const right = `calc(${rightPct}% + ${gapR}px)`;
         const label = isStart ? escapeHtml(ev.title) : '';
-        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:10px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 7px;line-height:${BAR_H}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
+        inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};font-size:9px;font-weight:600;color:white;overflow:hidden;white-space:nowrap;text-overflow:ellipsis;padding:0 5px;line-height:${BAR_H}px;cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}">${label}</div>`;
       });
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
@@ -10416,7 +10428,7 @@ function ppAddEvent(defaultCat) {
   const monthOptions = PP_MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
   const inp = ppModalInputStyle();
   overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:#1B2D50;padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add event</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Specific dates only appear in the Details view</div></div>
+    <div style="background:#1B2D50;padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Add event</div><div style="font-size:11px;color:rgba(255,255,255,0.45);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:13px;max-height:70vh;overflow-y:auto;">
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEvtTitle" placeholder="e.g. Annual performance review" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEvtCat" style="${inp}">${catOptions}</select></div>
@@ -10429,8 +10441,8 @@ function ppAddEvent(defaultCat) {
         </div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:13px;">
-        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px;">Specific dates <span style="background:var(--accent-bg);color:var(--accent);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;">Details view only</span></div>
-        <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">These won't show on the visual calendar</div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px;">Specific dates <span style="background:var(--accent-bg);color:var(--accent);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;">Refines calendar</span></div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">e.g. ending on the 15th fills half the month; the 7th to the 21st fills the middle of the bar</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start date</div><input type="date" id="ppEvtStartDate" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
           <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End / deadline</div><input type="date" id="ppEvtEndDate" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
@@ -10478,7 +10490,7 @@ function ppEditEvent(id) {
   overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const inp = ppModalInputStyle();
   overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="background:${cat?.color||'#1B2D50'};padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Edit event</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Specific dates only appear in the Details view</div></div>
+    <div style="background:${cat?.color||'#1B2D50'};padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:white;">Edit event</div><div style="font-size:11px;color:rgba(255,255,255,0.5);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
     <div style="padding:20px 24px;display:flex;flex-direction:column;gap:13px;max-height:70vh;overflow-y:auto;">
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Event name</div><input id="ppEditTitle" value="${escapeHtml(ev.title)}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Category</div><select id="ppEditCat" style="${inp}">${catOptions}</select></div>
@@ -10491,8 +10503,8 @@ function ppEditEvent(id) {
         </div>
       </div>
       <div style="border-top:1px solid var(--border);padding-top:13px;">
-        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px;">Specific dates <span style="background:var(--accent-bg);color:var(--accent);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;">Details view only</span></div>
-        <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">These won't show on the visual calendar</div>
+        <div style="font-size:11px;font-weight:600;color:var(--ink);margin-bottom:2px;">Specific dates <span style="background:var(--accent-bg);color:var(--accent);font-size:9px;padding:1px 6px;border-radius:8px;font-weight:600;margin-left:4px;">Refines calendar</span></div>
+        <div style="font-size:11px;color:var(--ink3);margin-bottom:10px;">e.g. ending on the 15th fills half the month; the 7th to the 21st fills the middle of the bar</div>
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
           <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">Start date</div><input type="date" id="ppEditStartDate" value="${ev.startDate||''}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
           <div><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">End / deadline</div><input type="date" id="ppEditEndDate" value="${ev.endDate||''}" style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
