@@ -32,8 +32,8 @@
   --accent-ink: #993C1D;
   --green: #15803D;
   --green-bg: #F0FAF3;
-  --amber: #CA8A04;
-  --amber-bg: #FEF3C7;
+  --amber: #E0A800;
+  --amber-bg: #FEF9C3;
   --red: #B42318;
   --red-bg: #FCF0EF;
   --teal: #1D9E75;
@@ -6026,7 +6026,7 @@ async function homeFill(){
   const segs = [
     { key:'people',  color:'var(--accent)', name:'People plan', count:d.ppSoon,
       desc: d.ppSoon ? `${d.ppSoon} event${d.ppSoon>1?'s':''} in the next 60 days` : 'No events coming up', view:'peopleplan' },
-    { key:'projects',color:'#BA7517', name:'Projects', count:d.projActive,
+    { key:'projects',color:'#E0A800', name:'Projects', count:d.projActive,
       desc: d.projActive ? `${d.projActive} active` : 'Nothing on right now', view:'projects',
       flag: d.projOverdue ? `${d.projOverdue} overdue` : '' },
     { key:'roles',   color:'#1D9E75', name:'Open roles', count:d.roles,
@@ -6140,7 +6140,7 @@ function homePaintBento(d){
   const launch = [
     { p:ic.chat,  c:'var(--accent)', bg:'rgba(216,90,48,0.10)', t:'Ask a question',   d:'Policy, process or guidance', v:'chat' },
     { p:ic.doc,   c:'#1D9E75', bg:'rgba(16,185,129,0.10)', t:'Draft a document', d:'Letters, contracts, offers',  v:'docs' },
-    { p:ic.proj,  c:'#BA7517', bg:'rgba(245,158,11,0.12)', t:'Start a project',  d:'Plan and track work',        v:'projects' },
+    { p:ic.proj,  c:'#E0A800', bg:'rgba(224,168,0,0.12)', t:'Start a project',  d:'Plan and track work',        v:'projects' },
     { p:ic.cal,   c:'#1D9E75', bg:'rgba(139,92,246,0.12)', t:'Plan your year',   d:'Build the people plan',      v:'peopleplan' },
   ];
   const card2 = `
@@ -14961,11 +14961,12 @@ async function submitAddRole(btn, existingId) {
   }
 }
 function hcToggleDetails(hdr){
-  const body=hdr.parentElement.querySelector('.hc-det-body');
-  const chev=hdr.querySelector('.hc-det-chev');
+  const body=hdr.parentElement.querySelector('.hc-sec-body');
+  const chev=hdr.querySelector('.hc-chev');
   if(!body) return;
+  const disp=body.getAttribute('data-disp')||'block';
   const open=body.style.display!=='none';
-  body.style.display=open?'none':'grid';
+  body.style.display=open?'none':disp;
   if(chev) chev.style.transform=open?'':'rotate(90deg)';
 }
 
@@ -15038,11 +15039,11 @@ function openRolePanel(id) {
       <!-- Quick details row (collapsed by default) -->
       <div style="border-bottom:1px solid var(--border);">
       <div onclick="hcToggleDetails(this)" style="padding:12px 22px;display:flex;align-items:center;gap:8px;cursor:pointer;user-select:none;">
-        <span class="hc-det-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+        <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
         <span style="font-size:12px;font-weight:700;color:var(--ink);">Role details</span>
         <span style="font-size:11px;font-weight:400;color:var(--ink3);">stage, comp, source, agency</span>
       </div>
-      <div class="hc-det-body" style="display:none;padding:0 22px 14px;grid-template-columns:repeat(3,1fr);gap:10px;">
+      <div class="hc-sec-body" data-disp="grid" style="display:none;padding:0 22px 14px;grid-template-columns:repeat(3,1fr);gap:10px;">
         <div><label style="${lbl}">Stage</label><select onchange="hcUpdateField('${id}','stage',this.value)" style="${sel}">${stageOpts}</select></div>
         <div><label style="${lbl}">Priority</label><select onchange="hcUpdateField('${id}','priority',this.value)" style="${sel}">${priorOpts}</select></div>
         <div><label style="${lbl}">Country</label><input value="${escapeHtml(r.country||'')}" onchange="hcUpdateField('${id}','country',this.value)" style="${inp}" placeholder="e.g. UK, USA, Germany..."></div>
@@ -15064,17 +15065,22 @@ function openRolePanel(id) {
         ${hcStageDurationHtml(r)}
       </div>
 
-      <!-- Candidates section -->
-      <div style="padding:16px 22px;border-bottom:1px solid var(--border);">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
-          <div style="font-size:12px;font-weight:700;color:var(--ink);">Candidates <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${cands.length} total · ${activeCandCount} active${hiredCount?' · '+hiredCount+' hired':''}${rejectedCount?' · '+rejectedCount+' rejected/withdrawn':''})</span></div>
-          <div style="display:flex;gap:6px;">
+      <!-- Candidates section (collapsible) -->
+      <div style="border-bottom:1px solid var(--border);">
+        <div onclick="hcToggleDetails(this)" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 22px;cursor:pointer;user-select:none;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+            <span style="font-size:12px;font-weight:700;color:var(--ink);">Candidates <span style="font-size:11px;font-weight:400;color:var(--ink3);">(${cands.length} total · ${activeCandCount} active${hiredCount?' · '+hiredCount+' hired':''}${rejectedCount?' · '+rejectedCount+' rejected/withdrawn':''})</span></span>
+          </div>
+          <div style="display:flex;gap:6px;flex-shrink:0;" onclick="event.stopPropagation();">
             ${activeCandCount>0?`<button onclick="hcScheduleAllInterviews('${id}')" style="font-size:11px;color:#D85A30;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;">📅 Schedule all</button>`:''}
             <button onclick="hcAddCandidateModal('${id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Add candidate</button>
           </div>
         </div>
-        ${activeCandCount>0?`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r);"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pipeline</div>${pipelineHtml}</div>`:''}
-        ${cands.length?candsByStage:`<div style="padding:20px 0;text-align:center;color:var(--ink3);font-size:12px;">No candidates yet - click <strong>+ Add candidate</strong> to start tracking.</div>`}
+        <div class="hc-sec-body" data-disp="block" style="display:none;padding:0 22px 16px;">
+          ${activeCandCount>0?`<div style="margin-bottom:14px;padding:12px;background:var(--surface2);border-radius:var(--r);"><div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:8px;">Pipeline</div>${pipelineHtml}</div>`:''}
+          ${cands.length?candsByStage:`<div style="padding:20px 0;text-align:center;color:var(--ink3);font-size:12px;">No candidates yet - click <strong>+ Add candidate</strong> to start tracking.</div>`}
+        </div>
       </div>
 
       <!-- Contact log -->
@@ -15428,16 +15434,16 @@ window.seedDemoData = async function() {
 let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
 
 const PROJ_STAGES = {
-  'not-started': { label: 'Not started', color: '#8A94A6' },
+  'not-started': { label: 'Not started', color: '#3B82F6' },
   'in-progress': { label: 'In progress', color: '#D85A30' },
-  'on-hold':     { label: 'On hold',     color: '#BA7517' },
+  'on-hold':     { label: 'On hold',     color: '#E0A800' },
   'blocked':     { label: 'Blocked',     color: '#B42318' },
   'complete':    { label: 'Complete',    color: '#30D158' }
 };
-const PROJ_RAG = { green: '#30D158', amber: '#BA7517', red: '#B42318' };
+const PROJ_RAG = { green: '#30D158', amber: '#E0A800', red: '#B42318' };
 const PROJ_CATEGORIES = ['Comp & reward','Employee relations','Policy','Wellbeing','DEI','Recruitment','Compliance','Systems','Other'];
 const PROJ_PRIORITIES = ['low','normal','high','urgent'];
-const MS_STATUS = { 'not-started':{label:'Not started',color:'#8A94A6'}, 'in-progress':{label:'In progress',color:'#D85A30'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
+const MS_STATUS = { 'not-started':{label:'Not started',color:'#3B82F6'}, 'in-progress':{label:'In progress',color:'#D85A30'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
 function projMsStatus(m){ return m.status || (m.done ? 'done' : 'not-started'); }
 function projMsDone(m){ return projMsStatus(m) === 'done'; }
 function projMsProgress(m){ const s = m.subtasks||[]; if (s.length) return Math.round(s.filter(x=>x.done).length / s.length * 100); return projMsDone(m) ? 100 : (projMsStatus(m)==='in-progress' ? 40 : 0); }
@@ -15635,7 +15641,7 @@ function renderProjectDetail(){
   const rag = projComputeRag(p); const pct = projPct(p);
   const onHold = p.stage==='on-hold';
   const stageColor = (PROJ_STAGES[p.stage]||PROJ_STAGES['not-started']).color;
-  const progColor = onHold ? '#BA7517' : projPctColor(pct);
+  const progColor = onHold ? '#E0A800' : projPctColor(pct);
   const stageOpts = Object.entries(PROJ_STAGES).map(([k,v])=>`<option value="${k}" ${p.stage===k?'selected':''}>${v.label}</option>`).join('');
   const ragOpts = ['auto','green','amber','red'].map(r=>`<option value="${r}" ${(p.rag||'auto')===r?'selected':''}>${r==='auto'?'Auto':r[0].toUpperCase()+r.slice(1)}</option>`).join('');
   const catOpts = PROJ_CATEGORIES.map(c=>`<option value="${c}" ${p.category===c?'selected':''}>${c}</option>`).join('');
@@ -15660,7 +15666,12 @@ function renderProjectDetail(){
           <div style="font-size:13px;color:var(--ink2);margin-top:4px;cursor:pointer;" onclick="projEditField('objective')" title="Click to edit">${escapeHtml(p.objective||'Add an objective…')}</div>
         </div>
       </div>
-      <div class="proj-meta">
+      <div onclick="hcToggleDetails(this)" style="display:flex;align-items:center;gap:8px;margin-top:16px;cursor:pointer;user-select:none;">
+        <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+        <span style="font-size:11px;font-weight:600;letter-spacing:0.04em;text-transform:uppercase;color:var(--ink3);">Details</span>
+        <span style="font-size:11px;font-weight:400;text-transform:none;letter-spacing:0;color:var(--ink3);">stage, category, owner, dates</span>
+      </div>
+      <div class="proj-meta hc-sec-body" data-disp="grid" style="display:none;">
         <label class="proj-meta-f"><span class="lbl">Stage</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('stage',this.value)">${stageOpts}</select></label>
         <label class="proj-meta-f"><span class="lbl">Category</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('category',this.value)">${catOpts}</select></label>
         <label class="proj-meta-f"><span class="lbl">Priority</span><select style="${sel}width:100%;box-sizing:border-box;" onchange="projSet('priority',this.value)">${priOpts}</select></label>
@@ -16208,24 +16219,35 @@ async function projConfirmEmailToTask(){
   var css = `
   #view-talent .manage-topbar{align-items:flex-start;}
   .tl-wrap{display:flex;flex-direction:column;flex:1;min-height:0;}
-  .tl-empty{flex:1;display:flex;flex-direction:column;align-items:center;padding:32px;overflow-y:auto;}
-  .tl-card-drop{max-width:600px;width:100%;margin:auto 0;text-align:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:44px 40px;box-shadow:var(--shadow);}
-  .tl-upicon{width:52px;height:52px;margin:0 auto 18px;border-radius:13px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;}
-  .tl-upicon svg{width:26px;height:26px;}
-  .tl-uptitle{font-size:20px;font-weight:700;color:var(--ink);letter-spacing:-.02em;}
-  .tl-upsub{font-size:13px;color:var(--ink2);margin:9px auto 0;line-height:1.6;max-width:470px;}
-  .tl-drop{border:1.5px dashed var(--border2);border-radius:var(--r);padding:26px 20px;margin:24px 0 16px;cursor:pointer;transition:.18s;background:var(--surface2);}
+  .tl-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:32px;overflow-y:auto;}
+  .tl-hero{max-width:880px;width:100%;margin:auto 0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-xl);box-shadow:var(--shadow);overflow:hidden;display:grid;grid-template-columns:1.18fr 0.82fr;}
+  .tl-hero-main{padding:40px 40px 34px;}
+  .tl-hero-side{background:linear-gradient(165deg,var(--surface2),var(--surface));border-left:1px solid var(--border);padding:40px 34px;display:flex;flex-direction:column;align-items:center;justify-content:center;}
+  .tl-eyebrow{display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);}
+  .tl-eyebrow svg{width:15px;height:15px;}
+  .tl-uptitle{font-size:23px;font-weight:800;color:var(--ink);letter-spacing:-.02em;line-height:1.18;margin-top:13px;}
+  .tl-upsub{font-size:13px;color:var(--ink2);margin-top:11px;line-height:1.65;max-width:440px;}
+  .tl-drop{border:1px solid var(--border);border-radius:var(--r);padding:18px 20px;margin-top:24px;cursor:pointer;transition:.18s;background:var(--surface2);display:flex;align-items:center;gap:14px;text-align:left;}
   .tl-drop:hover,.tl-drop.drag{border-color:var(--accent);background:var(--accent-bg);}
-  .tl-drop-ic{width:38px;height:38px;margin:0 auto 10px;color:var(--ink3);transition:.18s;}
-  .tl-drop-ic svg{width:38px;height:38px;}
-  .tl-drop:hover .tl-drop-ic,.tl-drop.drag .tl-drop-ic{color:var(--accent);}
-  .tl-drop .big{font-size:13.5px;font-weight:600;color:var(--ink);}
-  .tl-drop .small{font-size:12px;color:var(--ink3);margin-top:4px;}
-  .tl-upbtns{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;}
-  .tl-cols{margin-top:22px;text-align:left;font-size:11.5px;color:var(--ink2);line-height:1.6;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:12px 14px;}
-  .tl-cols .h{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:5px;}
-  .tl-priv{display:flex;align-items:flex-start;gap:8px;margin-top:14px;font-size:11px;color:var(--ink3);line-height:1.5;text-align:left;}
+  .tl-drop-ic{width:44px;height:44px;border-radius:11px;background:var(--surface);border:1px solid var(--border);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.18s;}
+  .tl-drop-ic svg{width:20px;height:20px;}
+  .tl-drop:hover .tl-drop-ic,.tl-drop.drag .tl-drop-ic{border-color:var(--accent-mid);}
+  .tl-drop .big{font-size:13.5px;font-weight:700;color:var(--ink);}
+  .tl-drop .small{font-size:12px;color:var(--ink3);margin-top:2px;}
+  .tl-upbtns{display:flex;gap:10px;flex-wrap:wrap;margin-top:16px;}
+  .tl-cols{margin-top:24px;padding-top:18px;border-top:1px solid var(--border);font-size:11.5px;color:var(--ink2);line-height:1.6;}
+  .tl-cols .h{display:block;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:6px;}
+  .tl-priv{display:flex;align-items:flex-start;gap:8px;margin-top:16px;font-size:11px;color:var(--ink3);line-height:1.5;}
   .tl-priv svg{width:14px;height:14px;flex-shrink:0;margin-top:1px;}
+  .tl-mini{width:100%;max-width:240px;}
+  .tl-mini-grid{display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);gap:7px;aspect-ratio:1;}
+  .tl-mini-cell{border-radius:9px;background:var(--surface);border:1px solid var(--border);}
+  .tl-mini-cell.mid{background:var(--surface2);border-color:var(--border2);}
+  .tl-mini-cell.hi{background:var(--accent-bg);border-color:var(--accent-mid);display:flex;align-items:center;justify-content:center;color:var(--accent);}
+  .tl-mini-cell.hi svg{width:18px;height:18px;}
+  .tl-mini-ax{display:flex;justify-content:space-between;margin-top:10px;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--ink3);}
+  .tl-mini-cap{font-size:11.5px;font-weight:600;color:var(--ink2);text-align:center;margin-top:14px;line-height:1.45;}
+  @media (max-width:760px){ .tl-hero{grid-template-columns:1fr;} .tl-hero-side{border-left:none;border-top:1px solid var(--border);padding:30px;} .tl-mini{max-width:200px;} }
   .tl-tabs{display:flex;gap:4px;padding:10px 18px 0;border-bottom:1px solid var(--border);background:var(--surface);overflow-x:auto;}
   .tl-tab{padding:8px 14px;font-size:13px;font-weight:600;color:var(--ink2);border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;border-radius:6px 6px 0 0;}
   .tl-tab:hover{color:var(--ink);background:var(--surface2);}
@@ -16533,19 +16555,33 @@ async function projConfirmEmailToTask(){
       actions.innerHTML='';
       body.innerHTML=
         '<input type="file" id="talentFileInput" accept=".xlsx,.xls,.csv" style="display:none" onchange="talentOnFile(this)">'+
-        '<div class="tl-empty"><div class="tl-card-drop">'+
-          '<div class="tl-upicon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2.5"/><line x1="9" y1="3" x2="9" y2="21"/><line x1="15" y1="3" x2="15" y2="21"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/></svg></div>'+
-          '<div class="tl-uptitle">Build a 9-box from your performance reviews</div>'+
-          '<div class="tl-upsub">Upload a performance review export with each person\'s review ratings. The AI reads the ratings, works out where everyone sits on the 9-box for performance and potential, drafts succession cover and writes a leadership summary. You can then adjust everything by hand.</div>'+
-          '<div class="tl-drop" id="talentDrop" onclick="talentPickFile()">'+
-            '<div class="tl-drop-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg></div>'+
-            '<div class="big">Click to upload, or drag a file here</div><div class="small">Excel or CSV (.xlsx, .xls, .csv)</div></div>'+
-          '<div class="tl-upbtns">'+
-            '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">Download template</button>'+
-            '<button class="btn btn-ghost btn-sm" onclick="talentLoadSample()">See it with sample data</button>'+
+        '<div class="tl-empty"><div class="tl-hero">'+
+          '<div class="tl-hero-main">'+
+            '<div class="tl-eyebrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2.5l1.9 6.1 6.1 1.9-6.1 1.9L12 18.5l-1.9-6.1L4 10.5l6.1-1.9z"/></svg>Talent review</div>'+
+            '<div class="tl-uptitle">Build a 9-box from your performance reviews</div>'+
+            '<div class="tl-upsub">Upload a performance review export with each person\'s ratings. The AI maps everyone onto the 9-box for performance and potential, drafts succession cover and writes a leadership summary. You can adjust everything by hand afterwards.</div>'+
+            '<div class="tl-drop" id="talentDrop" onclick="talentPickFile()">'+
+              '<div class="tl-drop-ic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 9 12 4 17 9"/><line x1="12" y1="4" x2="12" y2="16"/></svg></div>'+
+              '<div><div class="big">Click to upload, or drag a file here</div><div class="small">Excel or CSV (.xlsx, .xls, .csv)</div></div>'+
+            '</div>'+
+            '<div class="tl-upbtns">'+
+              '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">Download template</button>'+
+              '<button class="btn btn-ghost btn-sm" onclick="talentLoadSample()">See it with sample data</button>'+
+            '</div>'+
+            '<div class="tl-cols"><span class="h">Expected columns</span>Name, Job title, Department, Manager, Tenure, Latest review rating, Previous review rating, Goal achievement, Leadership / competency, Manager comments. Only a name and one review rating are required; column names are matched flexibly.</div>'+
+            '<div class="tl-priv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Private. Your data stays in this browser tab, is sent to the AI only to build the review, and is never saved. Refreshing clears it.</span></div>'+
           '</div>'+
-          '<div class="tl-cols"><span class="h">Expected columns</span>Name, Job title, Department, Manager, Tenure, Latest review rating, Previous review rating, Goal achievement, Leadership / competency, Manager comments. Only a name and one review rating are required; column names are matched flexibly.</div>'+
-          '<div class="tl-priv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Private. Your data stays in this browser tab, is sent to the AI only to build the review, and is never saved. Refreshing clears it.</span></div>'+
+          '<div class="tl-hero-side">'+
+            '<div class="tl-mini">'+
+              '<div class="tl-mini-grid">'+
+                '<div class="tl-mini-cell mid"></div><div class="tl-mini-cell mid"></div><div class="tl-mini-cell hi"><svg viewBox="0 0 24 24" fill="currentColor" stroke="none"><path d="M12 2.5l1.9 6.1 6.1 1.9-6.1 1.9L12 18.5l-1.9-6.1L4 10.5l6.1-1.9z"/></svg></div>'+
+                '<div class="tl-mini-cell"></div><div class="tl-mini-cell mid"></div><div class="tl-mini-cell mid"></div>'+
+                '<div class="tl-mini-cell"></div><div class="tl-mini-cell"></div><div class="tl-mini-cell mid"></div>'+
+              '</div>'+
+              '<div class="tl-mini-ax"><span>Low perf</span><span>High perf</span></div>'+
+              '<div class="tl-mini-cap">Performance &times; potential,<br>mapped for every person</div>'+
+            '</div>'+
+          '</div>'+
         '</div></div>';
       var drop=document.getElementById('talentDrop');
       if(drop){
@@ -16562,7 +16598,7 @@ async function projConfirmEmailToTask(){
           tabBtn('grid','9-box grid',talentState.people.length)+
           tabBtn('rating','Performance rating',null)+
           tabBtn('succession','Succession',talentState.succession.length)+
-          tabBtn('plans','Development plans',null)+
+          /* Development plans tab hidden for now - still being worked on */
           tabBtn('summary','CHRO summary',null)+
         '</div>'+
         '<div class="tl-panel" id="talentPanel"></div>'+
@@ -16573,7 +16609,7 @@ async function projConfirmEmailToTask(){
     return '<button class="tl-tab'+(talentTab===id?' active':'')+'" onclick="talentGoTab(\''+id+'\')">'+label+(count!=null?'<span class="pill">'+count+'</span>':'')+'</button>';
   }
   window.talentGoTab=function(t){ talentTab=t; document.querySelectorAll('#view-talent .tl-tab').forEach(function(b){b.classList.remove('active');}); talentRenderPanel();
-    var btns=document.querySelectorAll('#view-talent .tl-tab'); var order=['grid','rating','succession','plans','summary']; var i=order.indexOf(t); if(btns[i])btns[i].classList.add('active'); };
+    var btns=document.querySelectorAll('#view-talent .tl-tab'); var order=['grid','rating','succession','summary']; var i=order.indexOf(t); if(btns[i])btns[i].classList.add('active'); };
 
   function talentRenderLoading(n){
     var body=document.getElementById('talentBody'); if(!body) return;
