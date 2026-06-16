@@ -10602,11 +10602,21 @@ function renderPPTimeline() {
       segs.forEach(function(s){ var r = s.getBoundingClientRect(); if (r.right > barRight) barRight = r.right; if (r.left < barLeft) barLeft = r.left; });
       if (!barRight) return; // not laid out / hidden
       var lr = lbl.getBoundingClientRect();
+      var avail = barRight - lr.left - 8;   // usable px from the label start to the bar end
       if (lr.left + lbl.scrollWidth + 6 > barRight) {
-        // Doesn't fit inside -> place just past the bar end, in dark ink.
-        var parentLeft = lbl.offsetParent ? lbl.offsetParent.getBoundingClientRect().left : 0;
-        lbl.style.left = (barRight - parentLeft + 8) + 'px';
-        lbl.style.color = 'var(--ink)';
+        if (avail >= 30) {
+          // Shrink the title so it fits inside the pill (down to a readable floor).
+          var size = Math.max(7, Math.min(10, Math.floor(10 * avail / lbl.scrollWidth)));
+          lbl.style.fontSize = size + 'px';
+          lbl.style.maxWidth = avail + 'px';
+          lbl.style.overflow = 'hidden';
+          lbl.style.textOverflow = 'ellipsis';
+        } else {
+          // Bar too tiny even to shrink into -> place just past it, in dark ink.
+          var parentLeft = lbl.offsetParent ? lbl.offsetParent.getBoundingClientRect().left : 0;
+          lbl.style.left = (barRight - parentLeft + 8) + 'px';
+          lbl.style.color = 'var(--ink)';
+        }
       }
     });
 }
