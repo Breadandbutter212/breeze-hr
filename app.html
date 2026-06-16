@@ -16869,11 +16869,15 @@ async function projConfirmEmailToTask(){
   var TALENT_SYS='You are a panel of senior HR strategy directors and HRBPs with deep experience in talent management, 9-box calibration and succession planning. You are precise, commercially minded and honest about risk. You output ONLY valid minified JSON, no markdown, no commentary.';
 
   function talentChat(token,prompt,maxTokens){
-    return fetch('/api/chat',{ method:'POST',
+    // Guard against a hung backend - abort the request after 90s so the UI can never spin forever.
+    var ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
+    var timer=setTimeout(function(){ if(ctrl) ctrl.abort(); }, 90000);
+    return fetch('/api/chat',{ method:'POST', signal:ctrl?ctrl.signal:undefined,
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},
       body:JSON.stringify({ messages:[{role:'user',content:prompt}], system:TALENT_SYS, max_tokens:maxTokens }) })
       .then(function(res){ return res.json(); })
-      .then(function(data){ return (data&&data.content&&data.content[0]&&data.content[0].text)||''; });
+      .then(function(data){ return (data&&data.content&&data.content[0]&&data.content[0].text)||''; })
+      .finally(function(){ clearTimeout(timer); });
   }
 
   // Place one batch of people on the 9-box. Resolves to an array of {id,performance,potential,confidence,rationale}.
@@ -16933,7 +16937,9 @@ async function projConfirmEmailToTask(){
         });
       });
     }).then(function(ai){
-      talentMerge(people,ai,truncatedAt);
+      // No one placed = every AI call failed; surface it as a failure rather than a silent empty grid.
+      var failed=!ai.people||!ai.people.length;
+      talentMerge(people,ai,truncatedAt,failed);
     }).catch(function(err){
       console.error('[talent ai]',err);
       // Graceful fallback: leave people unplaced for manual placement.
