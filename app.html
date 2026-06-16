@@ -13,6 +13,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pptxgenjs@3.12.0/dist/pptxgen.bundle.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script src="https://cdn.merge.dev/initialize.js"></script>
 <script src="https://cdn.sheetjs.com/xlsx-0.20.3/package/dist/xlsx.full.min.js"></script>
 <style>
 :root {
@@ -8204,6 +8205,11 @@ async function loadIntegrations() {
       if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
     }
   } catch(e) {}
+  // Merge HRIS connection state lives in /api/merge-search, not Composio.
+  try {
+    const mr = await fetch('/api/merge-search?action=status', { headers: await _authH() });
+    if (mr.ok) { const ms = await mr.json(); status.hris = !!ms.connected; status.hrisIntegration = ms.integration || 'HRIS'; }
+  } catch(e) {}
   renderIntegrationsUI(status);
 }
 
@@ -8213,6 +8219,7 @@ function renderIntegrationsUI(status) {
     { id:'gmail',      label:'Gmail',      color:'#EA4335', bg:'#FEF2F2', desc:'Send and read HR emails via Gmail' },
     { id:'outlook',    label:'Outlook',    color:'#0078D4', bg:'#EBF5FB', desc:'Send and read HR emails via Outlook' },
     { id:'sharepoint', label:'SharePoint', color:'#038387', bg:'#E6F7F8', desc:'Search your SharePoint documents and files' },
+    { id:'hris',       label:'HRIS / Payroll', color:'#4F46E5', bg:'#EEF2FF', desc: status.hris ? `Connected to ${status.hrisIntegration} via Merge` : 'Connect Workday, BambooHR, Gusto + 200 more via Merge' },
     { id:'slack',      label:'Slack',      color:'#4A154B', bg:'#F9F0FF', desc:'HR alerts to your Slack channel', comingSoon: true },
   ];
   el.innerHTML = integrations.map(intg => {
@@ -8220,7 +8227,7 @@ function renderIntegrationsUI(status) {
     const accountId = status[`${intg.id}AccountId`] || '';
     return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border:1px solid ${connected?'var(--green)':'var(--border)'};border-radius:var(--r);background:${connected?'var(--green-bg)':'var(--surface)'};">
       <div style="width:36px;height:36px;background:${intg.bg};border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:18px;">
-        ${intg.id==='gmail'?'✉️':intg.id==='outlook'?'📧':intg.id==='sharepoint'?'📁':'💬'}
+        ${intg.id==='gmail'?'✉️':intg.id==='outlook'?'📧':intg.id==='sharepoint'?'📁':intg.id==='hris'?'🏢':'💬'}
       </div>
       <div style="flex:1;">
         <div style="font-size:13px;font-weight:500;color:var(--ink);">${intg.label}</div>
@@ -8229,8 +8236,8 @@ function renderIntegrationsUI(status) {
       ${intg.comingSoon
         ? `<span style="font-size:10px;background:var(--surface2);color:var(--ink3);padding:3px 8px;border-radius:20px;border:1px solid var(--border);">Coming soon</span>`
         : connected
-          ? `<button onclick="disconnectIntegration('${intg.id}','${accountId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Disconnect</button>`
-          : `<button onclick="connectIntegration('${intg.id}')" class="btn btn-primary btn-sm" style="font-size:11px;">Connect</button>`
+          ? `<button onclick="${intg.id==='hris'?'disconnectMerge()':`disconnectIntegration('${intg.id}','${accountId}')`}" class="btn btn-secondary btn-sm" style="font-size:11px;">Disconnect</button>`
+          : `<button onclick="${intg.id==='hris'?'connectMerge()':`connectIntegration('${intg.id}')`}" class="btn btn-primary btn-sm" style="font-size:11px;">Connect</button>`
       }
     </div>`;
   }).join('');
@@ -8284,6 +8291,60 @@ async function disconnectIntegration(app, connectedAccountId) {
       body: JSON.stringify({ userId: currentUser.id, app, action: 'disconnect', connectedAccountId })
     });
   } catch(e) {}
+  loadIntegrations();
+}
+
+// ── MERGE HRIS (Link flow) ──
+async function connectMerge() {
+  if (!currentUser) return;
+  const btn = event?.target;
+  if (btn) { btn.textContent = 'Loading...'; btn.disabled = true; }
+  try {
+    if (typeof MergeLink === 'undefined') throw new Error('Merge Link did not load - check your connection');
+    // 1. Get a short-lived Link token from our backend.
+    const tr = await fetch('/api/merge-search', {
+      method: 'POST', headers: await _authH({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ action: 'link-token' })
+    });
+    const td = await tr.json();
+    if (!tr.ok) throw new Error(td.error || 'Could not start connection');
+    // 2. Open the Merge Link widget; on success swap the public token for a stored account token.
+    MergeLink.initialize({
+      linkToken: td.link_token,
+      onSuccess: async (public_token) => {
+        try {
+          const er = await fetch('/api/merge-search', {
+            method: 'POST', headers: await _authH({ 'Content-Type': 'application/json' }),
+            body: JSON.stringify({ action: 'exchange', public_token })
+          });
+          const ed = await er.json();
+          if (!er.ok) throw new Error(ed.error || 'Exchange failed');
+          mergeEmployeeCache = null; // force re-pull with the new account
+          showBreezeToast(`Connected to ${ed.integration || 'your HRIS'}`);
+          loadIntegrations();
+        } catch (e) { alert('Could not finish connecting: ' + e.message); loadIntegrations(); }
+      },
+      onExit: () => { if (btn) { btn.textContent = 'Connect'; btn.disabled = false; } },
+    });
+    MergeLink.openLink();
+    if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+  } catch (e) {
+    alert('Could not connect: ' + e.message);
+    if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
+  }
+}
+
+async function disconnectMerge() {
+  if (!currentUser) return;
+  const btn = event?.target;
+  if (btn) { btn.textContent = 'Disconnecting...'; btn.disabled = true; }
+  try {
+    await fetch('/api/merge-search', {
+      method: 'POST', headers: await _authH({ 'Content-Type': 'application/json' }),
+      body: JSON.stringify({ action: 'disconnect' })
+    });
+  } catch(e) {}
+  mergeEmployeeCache = null;
   loadIntegrations();
 }
 
@@ -16784,9 +16845,9 @@ async function projConfirmEmailToTask(){
     var delta=prevPct?curPct.map(function(v,i){ return v-prevPct[i]; }):[null,null,null];
 
     var PR=[
-      {title:'Below expectations', line:'#E89B53', txt:'#A8660C', bgT:'#FCEEE1', bgB:'#FDFBF9'},
-      {title:'Meets expectations',  line:'#34B7CC', txt:'#0E7F92', bgT:'#E3F4F9', bgB:'#FAFEFE'},
-      {title:'Exceeds expectations',line:'#5FBA66', txt:'#2F8B43', bgT:'#E8F5EA', bgB:'#FAFEFB'}
+      {title:'Below expectations', line:'#E0A800', txt:'#A8660C', bgT:'#FBF1D6', bgB:'#FDFCF8'},
+      {title:'Meets expectations',  line:'#3B82F6', txt:'#2563EB', bgT:'#E8F0FE', bgB:'#FAFBFF'},
+      {title:'Exceeds expectations',line:'#15803D', txt:'#15803D', bgT:'#E6F4EC', bgB:'#FAFCFB'}
     ];
 
     // geometry
@@ -16890,13 +16951,38 @@ async function projConfirmEmailToTask(){
       }).join('')+
     '</div>';
 
+    // Rule-based "AI read" of the distribution: shape, benchmark, flags, and movement.
+    var b=curPct[0], m=curPct[1], e=curPct[2], ins=[];
+    if(m>=55) ins.push('Most rated people ('+m+'%) sit in <strong>Meets expectations</strong> - the healthy centre of a normal curve.');
+    else if(m>=40) ins.push('<strong>Meets expectations</strong> is the largest group ('+m+'%), though the spread is flatter than a textbook curve.');
+    else ins.push('Ratings are spread fairly evenly rather than clustering in the middle, which is unusual for a settled team.');
+    ins.push('As a rule of thumb, teams aim for a clear middle (around 60-70% meeting), a small tail below (10-15%), and a focused top group exceeding (15-20%).');
+    if(e>30) ins.push('Your <strong>Exceeds</strong> share ('+e+'%) is above the usual 15-20% - worth a calibration check that top ratings are applied consistently.');
+    else if(e>0&&e<10&&total>=8) ins.push('Only '+e+'% are rated <strong>Exceeds</strong>; if that feels low, check strong performers are being recognised.');
+    if(b>25) ins.push('With '+b+'% <strong>below expectations</strong>, make sure support or development plans are in place for that group.');
+    else if(b>0&&b<=15) ins.push('The below-expectations tail ('+b+'%) sits in a healthy range.');
+    if(prevPct){
+      if(delta[2]>0) ins.push('Since last cycle, more people moved into the top band (+'+delta[2]+' pts) - development paying off, or ratings drifting up.');
+      else if(delta[0]>0) ins.push('The below-expectations group grew by '+delta[0]+' pts since last cycle - worth understanding what changed.');
+    }
+    var commentary='<div style="margin-top:18px;border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:16px 18px;">'+
+      '<div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">'+
+        '<span style="width:24px;height:24px;border-radius:7px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.5l1.9 6.1 6.1 1.9-6.1 1.9L12 18.5l-1.9-6.1L4 10.5l6.1-1.9z"/></svg></span>'+
+        '<span style="font-size:12px;font-weight:700;color:var(--ink);">What this tells you</span>'+
+      '</div>'+
+      '<div style="font-size:12px;color:var(--ink2);line-height:1.65;display:flex;flex-direction:column;gap:8px;">'+
+        ins.map(function(s){ return '<div style="display:flex;gap:9px;"><span style="color:var(--accent);flex-shrink:0;font-weight:700;">•</span><span>'+s+'</span></div>'; }).join('')+
+      '</div>'+
+    '</div>';
+
     panel.innerHTML='<div style="max-width:1080px;margin:0 auto;">'+
       '<div class="tl-bar" style="margin-bottom:4px;"><div style="font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;">Performance rating distribution <span class="tl-i" data-tip="How each person latest review maps to three bands. The curve shows the shape of the distribution; the panel on the right gives the exact split and the change since the last review cycle.">i</span></div></div>'+
       '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">'+sub+'</div>'+
       '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
-        '<div style="flex:1.5;min-width:340px;">'+svg+'</div>'+
-        '<div style="flex:1;min-width:250px;">'+companion+'</div>'+
+        '<div style="flex:1.5;min-width:340px;display:flex;">'+svg+'</div>'+
+        '<div style="flex:1;min-width:250px;display:flex;">'+companion+'</div>'+
       '</div>'+
+      commentary+
     '</div>';
   }
 
