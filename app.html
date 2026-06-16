@@ -10547,15 +10547,12 @@ function renderPPTimeline() {
         const gapR = (isEnd   || isSingle) ? 3 : -1;
         const left  = `calc(${leftPct}% + ${gapL}px)`;
         const right = `calc(${rightPct}% + ${gapR}px)`;
-        const label = isStart ? escapeHtml(ev.title) : '';
-        // Label is a separate, unclipped overlay so the full title always shows:
-        // multi-month bars carry a white label across the bar; single-month (narrow) bars
-        // show the title in dark ink just to the right of the pill.
+        // Consistent labelling: every event shows its title in dark ink just to the
+        // right of where its bar ends (rendered once, in the bar's end cell).
+        const label = isEnd ? escapeHtml(ev.title) : '';
         let labelHtml = '';
-        if (isStart && label) {
-          labelHtml = isSingle
-            ? `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 7px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">${label}</div>`
-            : `<div style="position:absolute;top:${top}px;left:calc(${leftPct}% + ${gapL}px + 9px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;pointer-events:none;z-index:4;">${label}</div>`;
+        if (isEnd && label) {
+          labelHtml = `<div style="position:absolute;top:${top}px;left:calc(100% - ${rightPct}% - ${gapR}px + 8px);height:${BAR_H}px;line-height:${BAR_H}px;font-size:10px;font-weight:600;color:var(--ink);white-space:nowrap;pointer-events:none;z-index:4;">${label}</div>`;
         }
         inner += `<div style="position:absolute;top:${top}px;left:${left};right:${right};height:${BAR_H}px;background:${cat.color};border-radius:${rL} ${rR} ${rR} ${rL};cursor:pointer;box-sizing:border-box;" onclick="ppEditEvent(${ev.id})" title="${escapeHtml(ev.title)}${ev.notes?' - '+ev.notes:''}"></div>${labelHtml}`;
       });
