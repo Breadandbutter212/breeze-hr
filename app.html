@@ -9321,6 +9321,53 @@ const COMPARE_MODE_INFO = {
   }
 };
 
+// Visual "How it works" flow — one row of numbered, icon-led steps per mode.
+const _cmpIcon = {
+  file:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>`,
+  fileEdit:`<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="12" y1="18" x2="12" y2="12"/><line x1="9" y1="15" x2="15" y2="15"/></svg>`,
+  diff:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="5" y1="8" x2="15" y2="8"/><line x1="10" y1="3" x2="10" y2="13"/><line x1="9" y1="18" x2="19" y2="18"/></svg>`,
+  grid:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><line x1="3" y1="9" x2="21" y2="9"/><line x1="3" y1="15" x2="21" y2="15"/><line x1="9" y1="3" x2="9" y2="21"/></svg>`,
+  letter: `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="8" y1="13" x2="16" y2="13"/><line x1="8" y1="17" x2="13" y2="17"/></svg>`,
+  flag:   `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"/><line x1="4" y1="22" x2="4" y2="15"/></svg>`,
+  check:  `<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>`,
+};
+const COMPARE_MODE_FLOW = {
+  general: [
+    { ic:'file',     t:'Original', s:'Upload the first version' },
+    { ic:'fileEdit', t:'Updated',  s:'Upload the changed version' },
+    { ic:'diff',     t:'Changes',  s:'Every add, removal & edit highlighted' },
+  ],
+  comp: [
+    { ic:'grid',   t:'Payroll data',   s:'Upload your HR / payroll spreadsheet' },
+    { ic:'letter', t:'Comp letters',   s:'Add statements in any format' },
+    { ic:'flag',   t:'Discrepancies',  s:'AI flags salary & bonus mismatches' },
+  ],
+  employee: [
+    { ic:'grid',  t:'Spreadsheet A', s:'e.g. HR system export' },
+    { ic:'grid',  t:'Spreadsheet B', s:'e.g. payroll export' },
+    { ic:'check', t:'Compared',      s:'Rows matched, shared columns checked' },
+  ],
+};
+function compareHowHtml(mode) {
+  const flow = COMPARE_MODE_FLOW[mode] || COMPARE_MODE_FLOW.general;
+  const info = COMPARE_MODE_INFO[mode] || {};
+  const arrow = `<div style="display:flex;align-items:center;padding-top:16px;flex-shrink:0;"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg></div>`;
+  const steps = flow.map((st, i) => `
+    <div style="display:flex;flex-direction:column;align-items:center;text-align:center;flex:1;min-width:110px;gap:8px;">
+      <div style="position:relative;width:42px;height:42px;border-radius:11px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;">
+        ${_cmpIcon[st.ic] || ''}
+        <span style="position:absolute;top:-6px;right:-6px;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;">${i + 1}</span>
+      </div>
+      <div style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(st.t)}</div>
+      <div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(st.s)}</div>
+    </div>`).join(arrow);
+  const notes = (info.steps || []).map(s => `<div style="margin-top:5px;color:var(--ink3);">· ${escapeHtml(s)}</div>`).join('');
+  return `
+    <div style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:16px;">${escapeHtml(info.desc || '')}</div>
+    <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">${steps}</div>
+    ${notes ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11.5px;">${notes}</div>` : ''}`;
+}
+
 function onCompareModeChange() {
   const mode = document.getElementById('compareMode')?.value || 'general';
   const isEmployee = mode !== 'general';
@@ -9349,8 +9396,7 @@ function onCompareModeChange() {
     if (subTitle) subTitle.textContent = info.helper || '';
     const howEl = document.getElementById('compareModeHow');
     if (howEl) {
-      howEl.innerHTML = `<div>${escapeHtml(info.desc)}</div>` +
-        info.steps.map(s => `<div style="margin-top:5px;color:var(--ink3);">· ${escapeHtml(s)}</div>`).join('');
+      howEl.innerHTML = compareHowHtml(mode);
       howEl.style.display = 'none';
     }
     const tg = document.getElementById('compareHowToggle');
