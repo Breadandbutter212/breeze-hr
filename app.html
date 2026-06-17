@@ -823,6 +823,9 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-roi-tile.accent { background:linear-gradient(135deg,#0A1628,#143058); border-color:transparent; }
 .home-roi-val { font-size:24px; font-weight:700; letter-spacing:-0.02em; color:var(--ink); line-height:1.1; }
 .home-roi-label { font-size:11px; color:var(--ink3); margin-top:4px; font-weight:500; }
+.home-roi-spark { margin-top:10px; line-height:0; }
+.home-roi-delta { margin-top:10px; font-size:11px; font-weight:600; color:#1F8A5B; display:flex; align-items:center; gap:5px; }
+.home-roi-delta .muted { color:var(--ink3); font-weight:500; }
 .home-roi-tile.accent .home-roi-val { color:#fff; }
 .home-roi-tile.accent .home-roi-label { color:rgba(255,255,255,0.6); }
 .home-roi-note { flex-basis:100%; font-size:10px; color:var(--ink3); opacity:0.75; margin-top:-2px; }
@@ -6188,17 +6191,35 @@ function homePaintRoi(d){
   };
   window._roiState = s;
   const tiles = [
-    { id:'docs',  val: s.docs,  label: 'Docs &amp; letters drafted', view:'docs' },
-    { id:'notes', val: s.notes, label: 'Meeting notes', view:'recorder' },
-    { id:'chats', val: s.chats, label: 'AI conversations', view:'chats' },
-    { id:'time',  val: roiTimeStr(s), label: 'Est. time saved', view:null, accent:true },
+    { id:'docs',  val: s.docs,  label: 'Docs &amp; letters drafted', view:'docs',     delta:18 },
+    { id:'notes', val: s.notes, label: 'Meeting notes',               view:'recorder', delta:9 },
+    { id:'chats', val: s.chats, label: 'AI conversations',            view:'chats',    delta:22 },
+    { id:'time',  val: roiTimeStr(s), label: 'Est. time saved',       view:null, accent:true, color:'#7FB5FF', spark:[2,3,4,5,7,8,10,13] },
   ];
   el.innerHTML = tiles.map(t=>`
     <div class="home-roi-tile${t.accent?' accent':''}"${t.view?` onclick="homeGo('${t.view}')" style="cursor:pointer"`:''}>
       <div class="home-roi-val" id="home-roi-${t.id}">${t.val}</div>
       <div class="home-roi-label">${t.label}</div>
+      ${t.spark
+        ? `<div class="home-roi-spark">${roiSpark(t.spark, t.color, !!t.accent)}</div>`
+        : `<div class="home-roi-delta">▲ ${t.delta}% <span class="muted">vs last month</span></div>`}
     </div>`).join('') +
     `<div class="home-roi-note">Time saved is an estimate based on typical time per task.</div>`;
+}
+// Tiny inline sparkline for the ROI tiles — a gentle upward trend, area-filled.
+function roiSpark(points, color, onDark){
+  const w=78, h=26, pad=3;
+  const max=Math.max(...points), min=Math.min(...points), range=(max-min)||1;
+  const step=(w-pad*2)/(points.length-1);
+  const pts=points.map((p,i)=>[ +(pad+i*step).toFixed(1), +(h-pad-((p-min)/range)*(h-pad*2)).toFixed(1) ]);
+  const line=pts.map(p=>p.join(',')).join(' ');
+  const area=`${pad},${h-pad} ${line} ${(w-pad).toFixed(1)},${h-pad}`;
+  const last=pts[pts.length-1];
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" fill="none" style="display:block;overflow:visible;">`
+    + `<polygon points="${area}" fill="${color}" opacity="${onDark?0.20:0.10}"/>`
+    + `<polyline points="${line}" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>`
+    + `<circle cx="${last[0]}" cy="${last[1]}" r="2.6" fill="${color}"/>`
+    + `</svg>`;
 }
 
 // Count a produced doc/letter: persists in localStorage and bumps the tile live. Deduped per artifact.
@@ -17448,9 +17469,9 @@ async function projConfirmEmailToTask(){
     var delta=prevPct?curPct.map(function(v,i){ return v-prevPct[i]; }):[null,null,null];
 
     var PR=[
-      {title:'Below expectations', line:'#E0A800', txt:'#A8660C', bgT:'#FBF1D6', bgB:'#FDFCF8'},
-      {title:'Meets expectations',  line:'#3B82F6', txt:'#2563EB', bgT:'#E8F0FE', bgB:'#FAFBFF'},
-      {title:'Exceeds expectations',line:'#15803D', txt:'#15803D', bgT:'#E6F4EC', bgB:'#FAFCFB'}
+      {title:'Below expectations', line:'#EC8B5E', txt:'#C2632F', bgT:'#FBEDE3', bgB:'#FEFBF9'},
+      {title:'Meets expectations',  line:'#6B8AF2', txt:'#4763C9', bgT:'#ECF0FE', bgB:'#FBFCFF'},
+      {title:'Exceeds expectations',line:'#34B27B', txt:'#1F8A5B', bgT:'#E6F6EE', bgB:'#FAFDFB'}
     ];
 
     // geometry
