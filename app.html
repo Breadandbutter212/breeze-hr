@@ -1025,10 +1025,10 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
         <div class="chat-history" id="chatHistory"></div>
         <div class="chat-input-area">
           <div class="chat-chips" id="chatChips">
-            <button class="chat-chip" onclick="useChip('Draft a letter for me')">Draft a letter</button>
-            <button class="chat-chip" onclick="useChip('What does ACAS guidance say about ')">ACAS guidance</button>
-            <button class="chat-chip" onclick="useChip('Walk me through the redundancy process step by step')">Redundancy process</button>
-            <button class="chat-chip" onclick="useChip('What do I need to know about maternity leave?')">Maternity leave</button>
+            <button class="chat-chip" onclick="useChip('Walk me through a fair disciplinary process step by step')">Disciplinary process</button>
+            <button class="chat-chip" onclick="useChip('How should I handle long-term sickness absence?')">Sickness absence</button>
+            <button class="chat-chip" onclick="useChip('What right to work checks do I need to do for a new hire?')">Right to work</button>
+            <button class="chat-chip" onclick="useChip('How do I calculate holiday entitlement for a part-time employee?')">Holiday entitlement</button>
           </div>
           <div id="chatAttachPreview" style="display:none;margin-bottom:6px;padding:6px 10px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);font-size:11px;color:var(--accent);display:none;align-items:center;gap:6px;">
             <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
@@ -1744,6 +1744,34 @@ const SUPABASE_URL = 'https://uxwmlxbsqhtwexpfcemu.supabase.co';
 const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV4d21seGJzcWh0d2V4cGZjZW11Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Nzg1MDcxODAsImV4cCI6MjA5NDA4MzE4MH0.XOqSQWU4JUnIGkZSNuVVMFYvfpQW9fAVKLtLoqpUqM8';
 const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let currentUser = null, currentProfile = null, authMode = 'signin';
+
+// ── BREEZE AUTOFILL BRIDGE ──
+// Hands an employee profile to the Breeze Autofill browser extension (if
+// installed) via postMessage. The extension's bridge.js picks it up.
+function breezeAutofillPush(encoded){
+  let profile;
+  try { profile = JSON.parse(decodeURIComponent(encoded)); }
+  catch(e){ breezeAutofillToast('Could not read profile'); return; }
+  window.postMessage({ source:'breeze-autofill', type:'profile', profile }, '*');
+  breezeAutofillToast('Sent "'+(profile.fullName||'profile')+'" to Breeze Autofill');
+}
+function breezeAutofillToast(msg){
+  let t = document.getElementById('bzAutofillToast');
+  if(!t){
+    t = document.createElement('div');
+    t.id = 'bzAutofillToast';
+    t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:#2E3D52;color:#fff;padding:10px 16px;border-radius:9px;font-size:13px;z-index:99999;box-shadow:0 10px 30px rgba(8,20,45,.25);transition:opacity .3s;opacity:0;';
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._h); t._h = setTimeout(()=>{ t.style.opacity = '0'; }, 2300);
+}
+// Optional: note when the extension is present (for future UI affordances).
+window.addEventListener('message', (e)=>{
+  if(e.source===window && e.data && e.data.source==='breeze-autofill' && e.data.type==='ready'){
+    window.__breezeAutofillReady = true;
+  }
+});
 
 function showWaitlist() {
   document.getElementById('signinForm').style.display = 'none';
@@ -15076,6 +15104,39 @@ function wfRunRender(){
 }
 function wfRunRefresh(){ if(_wfRunId && document.getElementById('automationsBody')) wfRunRender(); }
 
+// Pre-screening: hand the new starter's details to the Breeze Autofill extension.
+function wfScreeningAutofill(caseId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const name=(c.employeeName||'').trim();
+  const parts=name.split(/\s+/).filter(Boolean);
+  const profile={
+    fullName:name,
+    firstName:parts[0]||'',
+    lastName:parts.slice(1).join(' '),
+    email:c.employeeEmail||c.email||'',
+    jobTitle:c.jobTitle||c.roleTitle||c.role||''
+  };
+  breezeAutofillPush(encodeURIComponent(JSON.stringify(profile)));
+}
+function wfScreeningAutofillInfo(){
+  document.getElementById('wfAfInfo')?.remove();
+  const ov=document.createElement('div'); ov.id='wfAfInfo';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:992;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML='<div style="background:#fff;border-radius:var(--r-xl);max-width:390px;padding:20px 22px;box-shadow:var(--shadow-lg);font-family:inherit;">'+
+    '<div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:10px;">⚡ Pre-fill screening form</div>'+
+    '<div style="font-size:13px;color:var(--ink2);line-height:1.65;">This loads this new starter\'s details into the <b>Breeze Autofill</b> browser extension, so you do not have to re-type them into your screening provider:</div>'+
+    '<ol style="font-size:13px;color:var(--ink2);line-height:1.75;padding-left:18px;margin:10px 0;">'+
+      '<li>Click <b>⚡ Pre-fill screening form</b>.</li>'+
+      '<li>Open your background-screening provider (e.g. Credence) in the browser.</li>'+
+      '<li>Click the <b>Breeze Autofill</b> extension, then <b>Fill this page</b>.</li>'+
+    '</ol>'+
+    '<div style="font-size:11px;color:var(--ink3);line-height:1.55;">No portal passwords are stored - you stay logged in and Breeze just fills the form you are already on. Works even on providers with no integration.</div>'+
+    '<div style="display:flex;justify-content:flex-end;margin-top:14px;"><button class="btn btn-primary btn-sm" onclick="document.getElementById(\'wfAfInfo\').remove()">Got it</button></div>'+
+  '</div>';
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+
 // Step detail popup: lists a stage's sub-tasks (tick off), or a plain stage with a complete toggle.
 function wfOpenStepTasks(caseId, stepId) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
@@ -15095,9 +15156,12 @@ function wfOpenStepTasks(caseId, stepId) {
       const checked = subSet.has(k(su.id));
       const ob = su.owner?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(su.owner)}</span>`:'';
       const eb = su.email?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:#047857;">✉️ Draft email →</button>`:'';
+      const af = (su.autofill || /\b(screen|dbs|vetting)\b|background check/i.test(su.title))
+        ? `<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><button onclick="event.stopPropagation();wfScreeningAutofill('${caseId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:var(--accent);">⚡ Pre-fill screening form</button><span onclick="event.stopPropagation();wfScreeningAutofillInfo()" title="How it works" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--ink3);font-size:9px;font-style:italic;font-weight:700;cursor:pointer;flex-shrink:0;">i</span></span>`
+        : '';
       return `<div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
         <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
-        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>${(ob||eb)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}</div>`:''}</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>${(ob||eb||af)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}${af}</div>`:''}</div>
       </div>`;
     }).join('');
   } else {
@@ -16047,6 +16111,7 @@ window.seedDemoData = async function() {
         {id:'b',title:'Prepare desk or remote-work kit',owner:'Facilities'}
       ]},
       {id:4,title:'Background screening',timeframe:'Before day 1',owner:'HR',desc:'Complete references and any role-specific checks.',subs:[
+        {id:'pre',title:'Initiate pre-screening with provider',owner:'HR',autofill:true},
         {id:'a',title:'Request references',owner:'HR'},
         {id:'b',title:'Complete any role-specific checks (DBS etc.)',owner:'HR'}
       ]},

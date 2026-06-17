@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<title>Mock screening portal — Breeze Autofill test</title>
+<style>
+  body{font-family:-apple-system,system-ui,sans-serif;max-width:520px;margin:40px auto;color:#2E3D52;padding:0 16px}
+  h1{font-size:18px}
+  p.note{color:#6B6F76;font-size:13px}
+  label{display:block;font-size:12px;font-weight:600;margin:14px 0 4px}
+  input,select{width:100%;padding:9px 11px;border:1px solid #ccc;border-radius:7px;font-size:14px}
+  fieldset{border:1px solid #eee;border-radius:10px;margin-top:18px;padding:8px 16px 18px}
+  legend{font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:#9AA0A6}
+</style>
+</head>
+<body>
+  <h1>New candidate check</h1>
+  <p class="note">A mock portal with deliberately varied field names — open the Breeze Autofill
+  extension and click <b>Fill this page</b> to test the heuristics.</p>
+
+  <fieldset>
+    <legend>Candidate</legend>
+    <label for="fn">First name</label>
+    <input id="fn" name="applicant_first" autocomplete="given-name">
+    <label for="ln">Surname</label>
+    <input id="ln" name="applicant_surname">
+    <label for="em">Email address</label>
+    <input id="em" type="email" name="contact_email">
+    <label for="ph">Mobile number</label>
+    <input id="ph" type="tel" name="phone">
+    <label for="pos">Position applied for</label>
+    <input id="pos" name="role_title">
+    <label for="lvl">Level of check</label>
+    <select id="lvl" name="screening_level">
+      <option value="">Select…</option>
+      <option>Basic</option>
+      <option>Standard</option>
+      <option>Enhanced</option>
+    </select>
+  </fieldset>
+
+  <fieldset>
+    <legend>Sensitive (only fills when you tick the box)</legend>
+    <label for="dob">Date of birth</label>
+    <input id="dob" name="dob" placeholder="DD/MM/YYYY">
+    <label for="ni">National Insurance number</label>
+    <input id="ni" name="ni_number">
+    <label for="addr">Home address</label>
+    <input id="addr" name="street_address" autocomplete="street-address">
+    <label for="pc">Postcode</label>
+    <input id="pc" name="postcode" autocomplete="postal-code">
+  </fieldset>
+</body>
+</html>

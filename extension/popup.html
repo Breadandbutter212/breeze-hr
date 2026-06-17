@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <header class="hd">
+    <div class="logo"><span class="mk">HR</span>Breeze Autofill</div>
+  </header>
+
+  <div class="body">
+    <label class="lbl" for="profileSelect">Employee</label>
+    <select id="profileSelect"></select>
+
+    <div id="empty" class="empty" hidden>
+      No employees yet. Push one from Breeze (Recruitment → a candidate → <b>Autofill</b>),
+      or add one manually below.
+    </div>
+
+    <div id="fields" class="fields"></div>
+
+    <label class="toggle">
+      <input type="checkbox" id="sensitive">
+      Include sensitive fields (salary, DOB, NI number)
+    </label>
+
+    <button id="fillBtn" class="primary">Fill this page</button>
+    <div id="status" class="status"></div>
+
+    <button id="addToggle" class="link">+ Add / edit an employee manually</button>
+    <form id="addForm" class="addForm" hidden></form>
+  </div>
+</body>
+<script src="popup.js"></script>
+</html>

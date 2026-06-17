@@ -1,0 +1,26 @@
+{
+  "manifest_version": 3,
+  "name": "Breeze Autofill",
+  "version": "0.1.0",
+  "description": "Pre-fill an employee's details from Breeze HR into any onboarding or screening portal.",
+  "permissions": ["storage", "scripting", "activeTab", "clipboardWrite"],
+  "host_permissions": ["<all_urls>"],
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Breeze Autofill"
+  },
+  "background": { "service_worker": "background.js" },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://getbreeze.co.uk/*",
+        "https://*.getbreeze.co.uk/*",
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "file:///*"
+      ],
+      "js": ["bridge.js"],
+      "run_at": "document_idle"
+    }
+  ]
+}
