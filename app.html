@@ -14319,7 +14319,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● Active</span></td>
                 <td style="white-space:nowrap;">
                   <button data-wf-btn="${c.id}" onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:90px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist →</button>
-                  <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Details</button>
+                  <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;margin-left:8px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);margin-left:4px;" title="Delete">${_ICO_X}</button>
                 </td>
               </tr>`;
@@ -14335,7 +14335,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 <td><span class="trk-badge trk-badge-grey">✓ Closed</span></td>
                 <td style="white-space:nowrap;">
                   <button onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;min-width:90px;text-align:center;">Checklist →</button>
-                  <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Details</button>
+                  <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;margin-left:8px;">Details</button>
                   <button onclick="event.stopPropagation();wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="font-size:10px;color:var(--red);margin-left:4px;" title="Delete">${_ICO_X}</button>
                 </td>
               </tr>`;
