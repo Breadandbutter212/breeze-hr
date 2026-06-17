@@ -9350,6 +9350,59 @@ const COMPARE_MODE_FLOW = {
     { ic:'check', t:'Compared',      s:'Rows matched, shared columns checked' },
   ],
 };
+// Animated illustration of the diff for the General comparison mode.
+// Pure CSS, loops, and falls back to the finished diff under prefers-reduced-motion.
+function compareAnimHtml() {
+  return `
+  <style id="cmpAnimStyle">
+  .cmp-anim{max-width:520px;margin:2px auto 4px;font-family:inherit}
+  .cmp-src{display:flex;align-items:stretch;justify-content:center;gap:10px}
+  .cmp-arrow{align-self:center;flex-shrink:0;color:var(--ink3)}
+  .cmp-doc{position:relative;flex:1;max-width:198px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 10px;overflow:hidden}
+  .cmp-doc-h{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink2);margin-bottom:8px}
+  .cmp-dot{width:7px;height:7px;border-radius:50%;background:var(--ink3);flex-shrink:0}
+  .cmp-dot.u{background:var(--accent)}
+  .cmp-doc i{display:block;height:5px;border-radius:3px;background:#d7dee8;margin:7px 0}
+  .cmp-scan{position:absolute;left:6px;right:6px;height:16px;top:30px;border-radius:4px;color:var(--accent);background:linear-gradient(180deg,transparent,currentColor,transparent);opacity:0;animation:cmpScan 6.4s cubic-bezier(.4,0,.2,1) infinite}
+  .cmp-out{margin-top:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+  .cmp-out-h{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+  .cmp-count{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:2px 9px;text-transform:none;letter-spacing:0;opacity:0;animation:cmpCount 6.4s ease infinite;animation-delay:3.3s}
+  .cmp-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);padding:5px 8px;border-radius:6px;margin:3px 0;opacity:0;animation:cmpRow 6.4s ease infinite both}
+  .cmp-row b{width:13px;text-align:center;font-weight:800;flex-shrink:0;font-size:13px}
+  .cmp-row.add{background:rgba(22,163,74,.10);animation-delay:1.9s}.cmp-row.add b{color:#16a34a}
+  .cmp-row.del{background:rgba(220,38,38,.09);animation-delay:2.5s}.cmp-row.del b{color:#dc2626}
+  .cmp-row.del s{color:var(--ink3)}
+  .cmp-row.chg{background:rgba(245,158,11,.13);animation-delay:3.1s}.cmp-row.chg b{color:#d97706}
+  .cmp-more{font-size:10px;color:var(--ink3);padding:2px 8px;opacity:0;animation:cmpRow 6.4s ease infinite both;animation-delay:3.5s}
+  @keyframes cmpScan{0%{opacity:0;transform:translateY(-2px)}5%{opacity:.16}28%{opacity:.16;transform:translateY(58px)}33%{opacity:0;transform:translateY(64px)}100%{opacity:0}}
+  @keyframes cmpRow{0%{opacity:0;transform:translateY(7px)}7%{opacity:1;transform:none}62%{opacity:1;transform:none}72%{opacity:0;transform:translateY(-4px)}100%{opacity:0}}
+  @keyframes cmpCount{0%{opacity:0;transform:scale(.6)}5%{opacity:1;transform:scale(1)}62%{opacity:1}72%{opacity:0}100%{opacity:0}}
+  @media (prefers-reduced-motion:reduce){.cmp-scan{display:none}.cmp-row,.cmp-more,.cmp-count{animation:none;opacity:1;transform:none}}
+  </style>
+  <div class="cmp-anim" aria-hidden="true">
+    <div class="cmp-src">
+      <div class="cmp-doc">
+        <div class="cmp-doc-h"><span class="cmp-dot"></span>Original</div>
+        <i style="width:92%"></i><i style="width:74%"></i><i style="width:84%"></i><i style="width:60%"></i>
+        <div class="cmp-scan"></div>
+      </div>
+      <svg class="cmp-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <div class="cmp-doc">
+        <div class="cmp-doc-h"><span class="cmp-dot u"></span>Updated</div>
+        <i style="width:92%"></i><i style="width:88%"></i><i style="width:70%"></i><i style="width:78%"></i>
+        <div class="cmp-scan"></div>
+      </div>
+    </div>
+    <div class="cmp-out">
+      <div class="cmp-out-h">Changes<span class="cmp-count">7 changes</span></div>
+      <div class="cmp-row add"><b>+</b> Added clause 4.2 - data retention</div>
+      <div class="cmp-row del"><b>&minus;</b> Removed <s>"30 days' notice"</s></div>
+      <div class="cmp-row chg"><b>~</b> Salary £40,000 &rarr; £42,000</div>
+      <div class="cmp-more">&hellip; and 4 more changes</div>
+    </div>
+  </div>`;
+}
+
 function compareHowHtml(mode) {
   const flow = COMPARE_MODE_FLOW[mode] || COMPARE_MODE_FLOW.general;
   const info = COMPARE_MODE_INFO[mode] || {};
@@ -9364,9 +9417,12 @@ function compareHowHtml(mode) {
       <div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(st.s)}</div>
     </div>`).join(arrow);
   const notes = (info.steps || []).map(s => `<div style="margin-top:5px;color:var(--ink3);">· ${escapeHtml(s)}</div>`).join('');
+  const visual = mode === 'general'
+    ? compareAnimHtml()
+    : `<div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">${steps}</div>`;
   return `
     <div style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:16px;">${escapeHtml(info.desc || '')}</div>
-    <div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">${steps}</div>
+    ${visual}
     ${notes ? `<div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:11.5px;">${notes}</div>` : ''}`;
 }
 
