@@ -17605,7 +17605,7 @@ async function projConfirmEmailToTask(){
     var reveal='<clipPath id="prReveal"><rect x="'+chartL+'" y="0" width="0" height="'+H+'">'+
       '<animate attributeName="width" from="0" to="'+chartW+'" dur="1.05s" begin="0s" fill="freeze" calcMode="spline" keyTimes="0;1" keySplines="0.22 0.61 0.36 1"/></rect></clipPath>';
 
-    var svg='<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto;max-width:none;display:block;" preserveAspectRatio="xMidYMid meet">'+
+    var svg='<svg viewBox="0 '+top+' '+W+' '+pH+'" style="width:100%;height:auto;max-width:none;display:block;" preserveAspectRatio="xMidYMid meet">'+
       '<defs>'+defs+reveal+'</defs>'+
       panels+axis+
       '<g clip-path="url(#prReveal)">'+curve+'</g>'+
