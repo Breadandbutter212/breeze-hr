@@ -1057,6 +1057,9 @@ html:not(.js) .rev-bar span{transform:none!important}
 /* real photo as a tracker avatar */
 .trk2 .av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
 .trk2 .av:has(img){background:none}
+/* real photos in inbox + leave-view avatar circles */
+.lv-av img,.flow .email .av img{width:100%;height:100%;border-radius:50%;object-fit:cover;display:block}
+.lv-av:has(img),.flow .email .av:has(img){background:none}
 /* integration logos (real brand marks via favicon service) */
 .int-pill img.int-logo{width:18px;height:18px;border-radius:4px;object-fit:contain;flex-shrink:0}
 
