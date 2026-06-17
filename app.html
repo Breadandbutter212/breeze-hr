@@ -846,6 +846,15 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-greet { font-size:38px; letter-spacing:-0.025em; font-weight:700; }
 .home-roi-ic { width:24px; height:24px; margin-bottom:11px; }
 .home-roi-ic svg { width:100%; height:100%; display:block; }
+/* 2-column home layout: ring+legend left, stats+calendar right */
+.home-main { display:grid; grid-template-columns:1.05fr 1fr; gap:20px; align-items:start; margin-top:26px; }
+.home-main .home-hero { margin-top:0; display:flex; flex-direction:column; justify-content:flex-start; align-items:stretch; gap:4px; }
+.home-main .home-ring { margin:4px auto 12px; }
+.home-side { display:flex; flex-direction:column; gap:20px; min-width:0; }
+.home-roi { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-top:0; }
+.home-roi-note { grid-column:1 / -1; }
+@media (max-width:900px){ .home-main { grid-template-columns:1fr; } }
+@media (max-width:480px){ .home-roi { grid-template-columns:1fr; } }
 .home-roi-tile.accent .home-roi-val { color:#fff; }
 .home-roi-tile.accent .home-roi-label { color:rgba(255,255,255,0.6); }
 .home-roi-note { flex-basis:100%; font-size:10px; color:var(--ink3); opacity:0.75; margin-top:-2px; }
@@ -6049,12 +6058,17 @@ function renderHome(){
       </div>
       ${homeWeekHtml()}
     </div>
-    <div class="home-hero">
-      <div class="home-glow"></div>
-      <div class="home-ring" id="homeRing"></div>
-      <div class="home-legend" id="homeLegend"></div>
+    <div class="home-main">
+      <div class="home-hero">
+        <div class="home-glow"></div>
+        <div class="home-ring" id="homeRing"></div>
+        <div class="home-legend" id="homeLegend"></div>
+      </div>
+      <div class="home-side">
+        <div class="home-roi" id="homeRoi"></div>
+        <div id="homePlan"></div>
+      </div>
     </div>
-    <div class="home-roi" id="homeRoi"></div>
     <div class="home-bento" id="homeBento"></div>`;
   homePaintRing([], -1);            // skeleton ring while data loads
   homeFill();
@@ -6325,7 +6339,7 @@ function homePaintBento(d){
     resume = `<div class="home-empty"><div class="es-mini">${svg(ic.chat)}</div>No conversations yet. Ask a question, paste an email, or request a letter - Breeze picks up your tone as you go.</div>`;
   }
   const card1 = `
-    <div class="home-card span2">
+    <div class="home-card">
       <div class="home-card-eyebrow">${svg(ic.chat)} Pick up where you left off</div>
       ${resume}
       <div class="home-spacer"></div>
@@ -6368,7 +6382,7 @@ function homePaintBento(d){
     week = `<div class="home-empty"><div class="es-mini">${svg(ic.cal)}</div>Nothing on the calendar for the next 60 days. Map out reviews, comp cycles and key dates so they never sneak up.</div>`;
   }
   const card3 = `
-    <div class="home-card span2">
+    <div class="home-card">
       <div class="home-card-eyebrow">${svg(ic.cal)} Your next 60 days</div>
       ${week}
       ${(!d.ppList||!d.ppList.length)?`<button class="home-cta" onclick="homeGo('peopleplan')">Build your people plan</button>`:`<div class="home-spacer"></div><button class="home-cta" style="background:none;border-color:var(--border);color:var(--ink2);" onclick="homeGo('peopleplan')">Open people plan →</button>`}
@@ -6390,7 +6404,9 @@ function homePaintBento(d){
       </div>
     </div>`;
 
-  el.innerHTML = card1 + card2 + card3 + card4;
+  const planEl = document.getElementById('homePlan');
+  if (planEl) planEl.innerHTML = card3;
+  el.innerHTML = card1 + card2 + card4;
 }
 
 function homeRelTime(iso){
