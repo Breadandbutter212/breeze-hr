@@ -780,6 +780,19 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-greet { font-size:31px; font-weight:700; letter-spacing:-0.035em; color:var(--ink); margin-top:9px; line-height:1.08; }
 .home-sub { font-size:14px; color:var(--ink2); margin-top:10px; max-width:600px; line-height:1.55; }
 .home-sub b { color:var(--ink); font-weight:700; }
+.home-head { display:flex; align-items:flex-start; justify-content:space-between; gap:26px; flex-wrap:wrap; }
+.home-week { flex-shrink:0; background:var(--surface); border:1px solid var(--border); border-radius:16px; padding:12px 16px 10px; min-width:238px; box-shadow:0 1px 2px rgba(0,0,0,0.03); }
+.home-wk-h { display:flex; align-items:baseline; justify-content:space-between; margin-bottom:9px; }
+.home-wk-t { font-size:11px; font-weight:700; color:var(--ink3); text-transform:uppercase; letter-spacing:.05em; }
+.home-wk-tot { font-size:12px; font-weight:700; color:var(--ink); }
+.home-wk-bars { display:flex; align-items:flex-end; gap:7px; height:46px; }
+.home-wk-bar { flex:1; background:var(--accent); border-radius:4px 4px 2px 2px; opacity:.82; min-height:4px; transition:opacity .15s; }
+.home-wk-bar.today { opacity:1; box-shadow:0 0 0 3px var(--accent-bg); }
+.home-week:hover .home-wk-bar { opacity:1; }
+.home-wk-days { display:flex; gap:7px; margin-top:6px; }
+.home-wk-day { flex:1; text-align:center; font-size:9px; color:var(--ink3); }
+.home-wk-day.today { color:var(--accent); font-weight:700; }
+@media (max-width:680px){ .home-week { width:100%; } }
 
 /* hero: ring + legend */
 .home-hero { position:relative; display:grid; grid-template-columns:288px minmax(0,560px); justify-content:center; gap:38px; align-items:center;
@@ -6022,9 +6035,12 @@ function renderHome(){
   const dateStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
   el.innerHTML = `
     <div class="home-head">
-      <div class="home-greet-eyebrow">Today · ${dateStr}</div>
-      <div class="home-greet">${homeTimeGreeting()}, ${escapeHtml(first)}.</div>
-      <div class="home-sub" id="homeSub">Pulling your workspace together…</div>
+      <div>
+        <div class="home-greet-eyebrow">Today · ${dateStr}</div>
+        <div class="home-greet">${homeTimeGreeting()}, ${escapeHtml(first)}.</div>
+        <div class="home-sub" id="homeSub">Pulling your workspace together…</div>
+      </div>
+      ${homeWeekHtml()}
     </div>
     <div class="home-hero">
       <div class="home-glow"></div>
@@ -6179,6 +6195,23 @@ function roiTimeStr(s){
   const hrs = mins/60;
   return hrs >= 10 ? Math.round(hrs)+'h' : (hrs>0 ? (Math.round(hrs*10)/10)+'h' : '0h');
 }
+// "Activity this week" mini bar chart for the dashboard header (top-right).
+// Demo data gives it a healthy baseline; today's bar is highlighted.
+function homeWeekHtml(){
+  const base = [23,27,20,29,24,11,8];          // Mon..Sun baseline activity
+  const labels = ['M','T','W','T','F','S','S'];
+  const todayIdx = (new Date().getDay() + 6) % 7;  // JS Sun=0 -> Mon=0..Sun=6
+  const total = base.reduce((a,b)=>a+b,0);
+  const mx = Math.max(...base);
+  const bars = base.map((v,i)=>`<div class="home-wk-bar${i===todayIdx?' today':''}" style="height:${Math.max(Math.round(v/mx*44),4)}px" title="${v} actions"></div>`).join('');
+  const days = labels.map((d,i)=>`<div class="home-wk-day${i===todayIdx?' today':''}">${d}</div>`).join('');
+  return `<div class="home-week">
+    <div class="home-wk-h"><span class="home-wk-t">Activity · this week</span><span class="home-wk-tot">${total} actions</span></div>
+    <div class="home-wk-bars">${bars}</div>
+    <div class="home-wk-days">${days}</div>
+  </div>`;
+}
+
 // Small ROI strip: real counts + a conservative time-saved estimate. Re-runs on every dashboard visit.
 function homePaintRoi(d){
   const el = document.getElementById('homeRoi'); if(!el) return;
