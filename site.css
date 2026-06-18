@@ -1174,3 +1174,28 @@ html:not(.js) .rev-bar span{transform:none!important}
 .po-step:nth-child(1).done .po-dot{animation-delay:.15s}
 .po-step:nth-child(2).done .po-dot{animation-delay:.5s}
 @keyframes poPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
+
+/* ── Analytics mock search (bento) ── */
+.an-search{display:flex;align-items:center;gap:9px;margin-top:14px;padding:10px 13px;border:1px solid var(--hair);border-radius:11px;background:var(--surface2);font-size:12.5px;color:var(--ink-soft);font-weight:500}
+.an-search svg{width:14px;height:14px;color:var(--ink-soft);flex-shrink:0}
+.an-search>span:first-of-type{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.an-search .cur{width:1.5px;height:14px;background:var(--sky);margin-left:auto;flex-shrink:0;animation:anCur 1.05s step-end infinite}
+@keyframes anCur{50%{opacity:0}}
+
+/* ── Workflow node chart (bento) - nodes go green step by step ── */
+.wf{display:flex;align-items:center;margin-top:16px}
+.wf-node{width:24px;height:24px;border-radius:50%;background:#fff;border:2px solid var(--hair);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:transparent;box-shadow:0 1px 2px rgba(0,0,0,.05);animation-duration:4.5s;animation-iteration-count:infinite;animation-fill-mode:both}
+.wf-node svg{width:11px;height:11px}
+.wf-line{flex:1;height:3px;margin:0 3px;border-radius:2px;background:var(--hair);position:relative;overflow:hidden}
+.wf-line:after{content:"";position:absolute;inset:0;background:#1FA971;transform:scaleX(0);transform-origin:left;animation-duration:4.5s;animation-iteration-count:infinite;animation-fill-mode:both}
+.wf-labels{display:flex;margin-top:8px;font-size:9.5px;font-weight:600;color:var(--ink-soft)}
+.wf-labels span{flex:1;text-align:center}.wf-labels span:first-child{text-align:left}.wf-labels span:last-child{text-align:right}
+.wf-node.n1{animation-name:wfN1}.wf-node.n2{animation-name:wfN2}.wf-node.n3{animation-name:wfN3}.wf-node.n4{animation-name:wfN4}
+.wf-line.l1:after{animation-name:wfL1}.wf-line.l2:after{animation-name:wfL2}.wf-line.l3:after{animation-name:wfL3}
+@keyframes wfN1{0%,4%{background:#fff;border-color:var(--hair);color:transparent}9%,88%{background:#1FA971;border-color:#1FA971;color:#fff}95%,100%{background:#fff;border-color:var(--hair);color:transparent}}
+@keyframes wfN2{0%,26%{background:#fff;border-color:var(--hair);color:transparent}31%,88%{background:#1FA971;border-color:#1FA971;color:#fff}95%,100%{background:#fff;border-color:var(--hair);color:transparent}}
+@keyframes wfN3{0%,48%{background:#fff;border-color:var(--hair);color:transparent}53%,88%{background:#1FA971;border-color:#1FA971;color:#fff}95%,100%{background:#fff;border-color:var(--hair);color:transparent}}
+@keyframes wfN4{0%,70%{background:#fff;border-color:var(--hair);color:transparent}75%,88%{background:#1FA971;border-color:#1FA971;color:#fff}95%,100%{background:#fff;border-color:var(--hair);color:transparent}}
+@keyframes wfL1{0%,13%{transform:scaleX(0)}24%,88%{transform:scaleX(1)}95%,100%{transform:scaleX(0)}}
+@keyframes wfL2{0%,35%{transform:scaleX(0)}46%,88%{transform:scaleX(1)}95%,100%{transform:scaleX(0)}}
+@keyframes wfL3{0%,57%{transform:scaleX(0)}68%,88%{transform:scaleX(1)}95%,100%{transform:scaleX(0)}}
