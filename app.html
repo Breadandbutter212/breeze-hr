@@ -8913,6 +8913,9 @@ function normalizeHRISData(employees) {
       start_date: emp.start_date || null,
       salary: employment.pay_rate ? Number(employment.pay_rate) : null,
       pay_period: employment.pay_period || '',
+      location: (emp.work_location && (emp.work_location.name || emp.work_location.city))
+             || (emp.home_location && (emp.home_location.name || emp.home_location.city))
+             || emp.location || employment.work_location || '',
     };
   });
 }
@@ -9160,6 +9163,17 @@ function renderDashboard() {
       <button onclick="applyAnalyticsFilter()" class="btn btn-primary btn-sm">Apply</button>
       <button onclick="clearAnalyticsFilter()" class="btn btn-secondary btn-sm">Clear</button>
     </div>
+    <div style="margin-bottom:18px;background:var(--surface);border:1px solid var(--accent-mid);border-radius:var(--r-lg);padding:14px 16px;">
+      <div style="display:flex;align-items:center;gap:9px;">
+        <span style="font-size:15px;flex-shrink:0;">✨</span>
+        <input id="anAskInput" placeholder="Ask your data - e.g. average salary of a London employee, or a fair pay rise for someone" style="flex:1;min-width:0;border:none;outline:none;font-size:13px;font-family:inherit;background:transparent;color:var(--ink);" onkeydown="if(event.key==='Enter')anAskData()">
+        <button onclick="anAskData()" class="btn btn-primary btn-sm" style="flex-shrink:0;">Ask</button>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+        ${['Average salary by department','Which teams are highest and lowest paid?', (rows[0]&&rows[0].name)?('A fair pay rise for '+rows[0].name):'Gender split by department'].map(ex=>`<button onclick="document.getElementById('anAskInput').value=this.textContent;anAskData()" style="font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--border);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:inherit;">${escapeHtml(ex)}</button>`).join('')}
+      </div>
+      <div id="anAskResult" style="display:none;margin-top:12px;padding-top:12px;border-top:1px solid var(--border);font-size:13px;color:var(--ink);line-height:1.65;"></div>
+    </div>
     <div style="display:grid;grid-template-columns:repeat(${Math.min(kpiCols,4)},1fr);gap:12px;margin-bottom:20px;">${kpiHtml}</div>
     ${charts.length ? `<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">${chartGrid}</div>` : '<div style="color:var(--ink3);font-size:13px;padding:20px 0;">No chartable columns found. Make sure your CSV has headers and at least some categorical or numeric data.</div>'}`;
 
@@ -9169,6 +9183,32 @@ function renderDashboard() {
       if (el) analyticsCharts[ch.id] = new Chart(el, { type:ch.type, data:ch.data, options:ch.opts });
     });
   }, 60);
+}
+
+// Ask-your-data: send the (filtered) analytics dataset + a natural-language question to AI for an answer.
+async function anAskData() {
+  const inp = document.getElementById('anAskInput'), out = document.getElementById('anAskResult');
+  const q = (inp?.value || '').trim();
+  if (!q) { inp?.focus(); return; }
+  if (!analyticsData || !analyticsData.length) { if (out){ out.style.display='block'; out.textContent='Connect your HRIS or upload data first.'; } return; }
+  if (!out) return;
+  out.style.display = 'block';
+  out.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px;color:var(--ink3);"><span style="width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .8s linear infinite;"></span>Reading your data and working it out…</span>`;
+  // Send up to ~600 rows / 24k chars of the current dataset (respects any active filter, since analyticsData is the filtered set)
+  const sample = analyticsData.slice(0, 600);
+  let dataJson = JSON.stringify(sample);
+  if (dataJson.length > 24000) dataJson = JSON.stringify(sample.slice(0, 300)).substring(0, 24000);
+  const sys = 'You are a people-analytics assistant for a UK HR team. Answer the question using ONLY the employee dataset provided (a JSON array of rows). Compute any figures (averages, medians, counts, ranges, totals) yourself from the rows. Use GBP and round sensibly. For a pay-rise question, base your suggestion on the person\'s current pay versus peers in the same role, department and location within the data, give a sensible range with a one-line rationale, and note it is guidance for the manager to decide, not a decision. If the data does not contain a field needed to answer (for example no location or no salary), say so plainly rather than guessing. Be concise. Plain text, no markdown headings, no tables, no em dashes.';
+  const user = `QUESTION: ${q}\n\nEMPLOYEE DATASET (${analyticsData.length} rows in the current view; up to ${sample.length} included below) as JSON:\n${dataJson}`;
+  try {
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ messages:[{role:'user',content:user}], system: sys }) });
+    const data = await res.json();
+    const txt = (data.content?.[0]?.text || '').trim();
+    out.innerHTML = txt ? escapeHtml(txt).replace(/\n/g,'<br>') : 'No answer came back - try rephrasing the question.';
+  } catch(e) {
+    out.innerHTML = 'Sorry, could not answer just now. Please try again.';
+  }
 }
 
 function resetAnalytics() {
