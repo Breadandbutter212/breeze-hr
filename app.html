@@ -17092,18 +17092,18 @@ function projBoardCard(m,meta){
   const owner = (m.owner||'').trim(); const ownerInit = owner.charAt(0).toUpperCase();
   const lbl = _projCardLabel(m);
   const ic = p => `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="flex-shrink:0;">${p}</svg>`;
-  return `<div draggable="true" ondragstart="projBoardDragStart(event,'${m.id}')" ondragend="projBoardDragEnd(event)" onclick="projOpenCard('${m.id}')" style="background:white;border:1px solid var(--border);border-radius:8px;padding:8px 11px 9px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.06);" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.06)'">
+  const stack = _projAvatarStack(m);
+  return `<div draggable="true" ondragstart="projBoardDragStart(event,'${m.id}')" ondragend="projBoardDragEnd(event)" onclick="projOpenCard('${m.id}')" style="position:relative;background:white;border:1px solid var(--border);border-radius:8px;padding:8px 11px 9px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.06);" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.06)'">
     ${lbl?`<div style="display:inline-block;font-size:9px;font-weight:700;letter-spacing:0.03em;color:#fff;background:${lbl.color};border-radius:4px;padding:2px 7px;margin-bottom:6px;text-transform:uppercase;">${lbl.text}</div>`:''}
-    <div style="font-size:12px;font-weight:500;color:${done?'var(--ink3)':'var(--ink)'};${done?'text-decoration:line-through;':''}line-height:1.4;">${escapeHtml(m.title)}</div>
+    <div style="font-size:12px;font-weight:500;color:${done?'var(--ink3)':'var(--ink)'};${done?'text-decoration:line-through;':''}line-height:1.4;padding-right:${stack?'52px':'0'};">${escapeHtml(m.title)}</div>
     <div style="display:flex;align-items:center;gap:9px;margin-top:8px;min-height:24px;">
       ${m.description?`<span title="Has a description" style="color:var(--ink3);display:inline-flex;">${ic('<line x1="4" y1="7" x2="20" y2="7"/><line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="17" x2="14" y2="17"/>')}</span>`:''}
       ${subs.length?`<span title="Checklist" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;color:${checked===subs.length?'#15803D':'var(--ink3)'};${checked===subs.length?'background:#DCFCE7;border-radius:4px;padding:1px 5px;':''}">${ic('<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>')}${checked}/${subs.length}</span>`:''}
       ${atts.length?`<span title="Attachments" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--ink3);">${ic('<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>')}${atts.length}</span>`:''}
       ${dueStr?`<span title="Due date" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:${ov||done?'600':'400'};color:${ov?'#fff':done?'#15803D':'var(--ink3)'};${ov?'background:#EF4444;':done?'background:#DCFCE7;':''}border-radius:4px;padding:${ov||done?'1px 5px':'0'};">${ic('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>')}${dueStr}</span>`:''}
-      <span style="margin-left:auto;"></span>
-      ${_projAvatarStack(m)}
     </div>
     ${!subs.length?`<button id="brdbrk-${m.id}" onclick="event.stopPropagation();projAiBreakTasks('${m.id}')" title="Use AI to break this into steps" style="margin-top:8px;font-size:10px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:14px;padding:2px 9px;cursor:pointer;font-family:inherit;">✦ Break into steps</button>`:''}
+    ${stack?`<div style="position:absolute;bottom:9px;right:11px;">${stack}</div>`:''}
   </div>`;
 }
 let _projDragMsId = null, _projOpenCardId = null;
