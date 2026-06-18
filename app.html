@@ -16603,8 +16603,8 @@ function projDemoData(){
         ms('System configuration','Vendor',5),
         ms('Data migration & validation','James Okafor',8),
         ms('Payroll / SSO integration','IT',10),
-        ms('UAT testing','HR team',12),
-        ms('Comms & training','Sarah Mitchell',14),
+        ms('UAT testing','Sarah Mitchell, James Okafor, Priya Nair',12),
+        ms('Comms & training','Sarah Mitchell, Priya Nair',14),
         ms('Go-live / cutover','Sarah Mitchell',16)
       ],
       raid:[], raci:[], log:[ {date:projDateIn(-2), note:'Vendor demos complete - shortlisted 2 providers.'}, {date:projDateIn(-1), note:'Business case approved by HR Director.'} ], attachments:[] },
@@ -16641,9 +16641,9 @@ function projDemoData(){
 
     { id:'proj_wellbeing', name:'Wellbeing programme launch', objective:'Launch a wellbeing programme including EAP and mental health support.', owner:'Priya Nair', category:'Wellbeing', stage:'on-hold', rag:'auto', priority:'low', startDate:projDateIn(-1), targetDate:projDateIn(12), createdAt:projDateIn(-4),
       milestones:[
-        ms('Review EAP provider options','Priya Nair',2,'not-started','Compare EAP providers on cost and coverage.'),
-        ms('Train mental health first aiders','Priya Nair',6),
-        ms('Build wellbeing intranet hub','IT',9),
+        ms('Review EAP provider options','Priya Nair, Sarah Mitchell',2,'not-started','Compare EAP providers on cost and coverage.'),
+        ms('Train mental health first aiders','Priya Nair, James Okafor, Sarah Mitchell',6),
+        ms('Build wellbeing intranet hub','Priya Nair, James Okafor',9),
         ms('Launch to all staff','Priya Nair',12)
       ],
       raid:[], raci:[], log:[ {date:projDateIn(-1), note:'On hold pending budget confirmation for next quarter.'} ], attachments:[] }
@@ -17211,7 +17211,7 @@ async function projAiBreakTasks(id){
   }catch(e){}
   renderProjectDetail();
 }
-async function projEditMsOwner(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Owner for this milestone', m.owner||''); if(v===null) return; m.owner=v.trim(); await saveProjects(); renderProjectDetail(); }
+async function projEditMsOwner(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Owner(s) - separate multiple people with commas', m.owner||''); if(v===null) return; m.owner=v.trim(); await saveProjects(); renderProjectDetail(); }
 async function projEditSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return; const v=prompt('Edit task', s.text||''); if(v===null) return; if(!v.trim()){ m.subtasks=m.subtasks.filter(x=>x.id!==sid); } else { s.text=v.trim(); } await saveProjects(); renderProjectDetail(); }
 async function projAiSubtaskHelp(mid,sid){
   const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return;
