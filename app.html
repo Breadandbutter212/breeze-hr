@@ -5409,7 +5409,8 @@ async function viewPolicy(id, name) {
     for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
     const blob = new Blob([bytes], { type: 'application/pdf' });
     const blobUrl = URL.createObjectURL(blob);
-    bodyHtml = `<iframe src="${blobUrl}" style="flex:1;width:100%;border:none;min-height:0;" onload=""></iframe>`;
+    // Formatted PDF in the browser's native viewer. Search via the PDF viewer's own Ctrl/Cmd+F (we focus the frame so the shortcut lands here).
+    bodyHtml = `<iframe id="policyPdfFrame" src="${blobUrl}" style="flex:1;width:100%;border:none;min-height:0;"></iframe>`;
   } else if (isDocx) {
     const b64 = data.content.split('|||TEXT:')[0].replace('DOCX_BASE64:', '');
     const binaryStr = atob(b64);
@@ -5421,7 +5422,7 @@ async function viewPolicy(id, name) {
   } else {
     bodyHtml = `<div id="policyDocBody" style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(policyText(data.content))}</div>`;
   }
-  // PDFs render in an iframe (use the viewer's own Ctrl/Cmd+F); text & Word docs get an in-doc search bar.
+  // Text & Word docs get an in-doc search bar; PDFs use the native viewer's own Ctrl/Cmd+F.
   const searchBar = isPdf ? '' : `<div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
       <input id="policyDocSearch" type="text" placeholder="Find in policy..." oninput="policyDocSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();policyDocSearchNext(event.shiftKey?-1:1);}" style="flex:1;border:none;outline:none;font-size:12px;font-family:inherit;background:transparent;color:var(--ink);">
@@ -5436,6 +5437,7 @@ async function viewPolicy(id, name) {
         ${lastUpd?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;">Last updated ${lastUpd}</div>`:''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
+        ${isPdf?`<span style="font-size:11px;color:var(--ink3);display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Press ${navigator.platform.toLowerCase().includes('mac')?'⌘':'Ctrl'} F to search</span>`:''}
         <button class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${jsAttr(name)}')"> ${dlLabel}</button>
         <button onclick="document.getElementById('policyViewModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;padding:0 4px;">×</button>
       </div>
@@ -5444,7 +5446,9 @@ async function viewPolicy(id, name) {
     ${bodyHtml}
   </div>`;
   modal.onclick = e => { if (e.target===modal) modal.style.display='none'; };
-  if (!isPdf) setTimeout(()=>document.getElementById('policyDocSearch')?.focus({preventScroll:true}), 60);
+  // Focus the search box (text/Word) or the PDF frame (so Ctrl/Cmd+F lands on the PDF's own find bar).
+  if (isPdf) setTimeout(()=>document.getElementById('policyPdfFrame')?.focus(), 120);
+  else setTimeout(()=>document.getElementById('policyDocSearch')?.focus({preventScroll:true}), 60);
 }
 
 let _policyMarks = [], _policyMarkIdx = 0;
@@ -11289,12 +11293,6 @@ function renderPPDetails() {
         <option value=""${_ppFilterCat===''?' selected':''}>All categories</option>
         ${PP_CATS.map(c=>`<option value="${c.id}"${_ppFilterCat===c.id?' selected':''}>${escapeHtml(c.label)}</option>`).join('')}
       </select>
-      <select onchange="ppSetSort(this.value)" title="Sort by" style="font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
-        <option value="month"${_ppSort==='month'?' selected':''}>Sort: Month</option>
-        <option value="category"${_ppSort==='category'?' selected':''}>Sort: Category</option>
-        <option value="event"${_ppSort==='event'?' selected':''}>Sort: Event name</option>
-        <option value="owner"${_ppSort==='owner'?' selected':''}>Sort: Owner</option>
-      </select>
       <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
     </div>
     <div style="flex:1;overflow:auto;">
@@ -14547,12 +14545,6 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
           <option value="active"${_wfStatusFilter==='active'?' selected':''}>Active only</option>
           <option value="closed"${_wfStatusFilter==='closed'?' selected':''}>Closed only</option>
         </select>
-        <select onchange="wfSetSort(this.value)" title="Sort by" style="font-size:11px;padding:4px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
-          <option value="started_desc"${_wfSort==='started'&&_wfSortDir==='desc'?' selected':''}>Sort: Newest first</option>
-          <option value="started_asc"${_wfSort==='started'&&_wfSortDir==='asc'?' selected':''}>Sort: Oldest first</option>
-          <option value="name"${_wfSort==='name'?' selected':''}>Sort: Employee name</option>
-          <option value="progress"${_wfSort==='progress'?' selected':''}>Sort: Checklist %</option>
-        </select>
         <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         ${!opts.noGuidance?`<button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>`:''}
         ${opts.customTrackerId?`<button onclick="deleteCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">🗑 Delete tracker</button>`:''}
@@ -15856,14 +15848,6 @@ function renderHeadcount() {
           <option value=""${_hcFilterPriority===''?' selected':''}>All priorities</option>
           ${HC_PRIORITIES.map(p=>`<option value="${p.id}"${_hcFilterPriority===p.id?' selected':''}>${escapeHtml(p.label)}</option>`).join('')}
         </select>
-        <select onchange="hcSetSort(this.value)" title="Sort by" style="font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
-          <option value="priority"${_hcSort==='priority'?' selected':''}>Sort: Priority</option>
-          <option value="days"${_hcSort==='days'?' selected':''}>Sort: Days open</option>
-          <option value="target"${_hcSort==='target'?' selected':''}>Sort: Target start</option>
-          <option value="comp"${_hcSort==='comp'?' selected':''}>Sort: Comp</option>
-          <option value="title"${_hcSort==='title'?' selected':''}>Sort: Role name</option>
-          <option value="recent"${_hcSort==='recent'?' selected':''}>Sort: Recently added</option>
-        </select>
         <button onclick="downloadHCCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         <button onclick="openAddRoleModal()" class="btn btn-primary btn-sm">+ Add role</button>
       </div>
@@ -16912,11 +16896,17 @@ function projMilestonesBlock(p, sel, card){
         <button onclick="event.stopPropagation();projToggleExpand('${m.id}')" title="${expanded?'Collapse':'Open task'}" style="flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:${expanded?'var(--accent-bg)':'var(--surface2)'};color:${expanded?'var(--accent)':'var(--ink2)'};font-size:11px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s;transform:rotate(${expanded?'90':'0'}deg);">▶</button>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="projToggleExpand('${m.id}')">
           <div style="font-size:13px;font-weight:500;color:${projMsDone(m)?'var(--ink3)':'var(--ink)'};${projMsDone(m)?'text-decoration:line-through;':''}">${escapeHtml(m.title)}</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(stt.label)}${subs.length?` · ${subs.filter(s=>s.done).length}/${subs.length} steps`:''}${atts.length?` · ${atts.length} attached`:''}${ov?' · <span style="color:#B42318;font-weight:600;">OVERDUE</span>':''}</div>
+          <div style="display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;">
+            <span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;font-weight:600;color:${stt.color};background:${stt.color}1a;border-radius:20px;padding:2px 8px;"><span style="width:6px;height:6px;border-radius:50%;background:${stt.color};"></span>${escapeHtml(stt.label)}</span>
+            ${subs.length?`<span style="display:inline-flex;align-items:center;gap:6px;font-size:10px;color:var(--ink3);"><span style="width:46px;height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;display:inline-block;"><span style="display:block;height:100%;width:${prog}%;background:${stt.color};"></span></span>${subs.filter(s=>s.done).length}/${subs.length} steps</span>`:''}
+            ${atts.length?`<span style="font-size:10px;color:var(--ink3);">📎 ${atts.length}</span>`:''}
+            ${m.description?`<span style="font-size:10px;color:var(--ink3);">📝 note</span>`:''}
+            ${ov?'<span style="font-size:10px;font-weight:600;color:#B42318;background:#FEE4E2;border-radius:20px;padding:2px 8px;">OVERDUE</span>':''}
+          </div>
         </div>
+        ${(subs.length||expanded)?'':`<button id="brk-${m.id}" onclick="event.stopPropagation();projAiBreakTasks('${m.id}')" title="Use AI to break this into steps" style="flex-shrink:0;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:3px 10px;cursor:pointer;font-family:inherit;white-space:nowrap;">✦ Break into steps</button>`}
         <span onclick="event.stopPropagation();projEditMsOwner('${m.id}')" title="Owner - click to edit" style="font-size:11px;color:${m.owner?'var(--ink2)':'var(--ink3)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;max-width:120px;overflow:hidden;white-space:nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(m.owner||'Owner')}</span>
         <input type="date" value="${m.dueDate||''}" title="Due date" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;flex-shrink:0;${ov?'color:#B42318;border-color:#FECACA;':''}">
-        ${subs.length?`<div style="width:54px;flex-shrink:0;"><div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${prog}%;background:${stt.color};"></div></div></div>`:''}
       </div>
       ${expanded?`<div style="padding:2px 13px 13px 39px;border-top:1px solid var(--border);">
         <div style="margin-top:10px;font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description...</span>'}</div>
