@@ -17744,8 +17744,9 @@ async function projConfirmEmailToTask(){
   .tl-emp .who{min-width:0;flex:1;}
   .tl-emp .who .n{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;}
   .tl-emp .who .r{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
-  .tl-emp .tl-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.02em;overflow:hidden;position:relative;}
-  .tl-emp .tl-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .tl-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.02em;overflow:hidden;position:relative;}
+  .tl-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
+  .tl-av.sm{width:24px;height:24px;font-size:9px;}
   .tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .tl-dot.fr-h{background:#E5484D;box-shadow:0 0 0 3px rgba(229,72,77,.13);}
   .tl-dot.fr-m{background:#E8A317;box-shadow:0 0 0 3px rgba(232,163,23,.13);}
@@ -17854,6 +17855,14 @@ async function projConfirmEmailToTask(){
   // ---------- helpers ----------
   function esc(s){ return escapeHtml(s); }
   function initials(n){ return String(n||'?').trim().split(/\s+/).map(function(w){return w[0]||'';}).join('').slice(0,2).toUpperCase()||'?'; }
+  // Round avatar for a name; reuses the matching grid person's photo if there is one, else coloured initials.
+  function talentAvatar(name,cls){
+    var nm=String(name||'').trim();
+    if(!nm) return '<div class="tl-av'+(cls?' '+cls:'')+'" style="background:var(--surface3);border:1px dashed var(--border2);"></div>';
+    var p=(talentState&&talentState.people||[]).find(function(x){return String(x.name||'').toLowerCase()===nm.toLowerCase();});
+    var photo=p&&p.photo?p.photo:'';
+    return '<div class="tl-av'+(cls?' '+cls:'')+'" style="background:'+_projAvatarColor(nm||'?')+'">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+esc(initials(nm||'?'))+'</div>';
+  }
   function norm(s){ return String(s==null?'':s).trim().toLowerCase().replace(/[._-]+/g,' ').replace(/\s+/g,' '); }
   function rate(v){ // -> 1..3 or null
     if(v==null||v==='') return null;
@@ -18407,13 +18416,14 @@ async function projConfirmEmailToTask(){
       padSuccessors(s);
       html+='<div class="tl-succ">'+
         '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;">'+
+          talentAvatar(s.incumbent,'')+
           '<div style="flex:1"><input class="tl-input" style="font-size:14px;font-weight:700;border:none;padding:2px 0;" value="'+esc(s.role||'')+'" onchange="talentSucc('+i+',\'role\',this.value)" placeholder="Role">'+
           '<input class="tl-input" style="font-size:12px;color:var(--ink2);border:none;padding:2px 0;" value="'+esc(s.incumbent||'')+'" onchange="talentSucc('+i+',\'incumbent\',this.value)" placeholder="Incumbent"></div>'+
           (s.gap?'<span class="tl-chip chip-gap">Succession gap</span>':'')+
           '<button class="tl-x" style="font-size:16px" onclick="talentDelSucc('+i+')">&times;</button>'+
         '</div>';
       (s.successors||[]).forEach(function(su,j){
-        html+='<div class="succ-row"><span class="av tl-pip" style="display:none"></span>'+
+        html+='<div class="succ-row">'+talentAvatar(su.name,'sm')+
           '<input class="tl-input" style="border:none;flex:1;font-weight:600;" value="'+esc(su.name||'')+'" onchange="talentSuccName('+i+','+j+',this.value)" placeholder="Successor name">'+
           '<select class="tl-input" style="width:150px" onchange="talentSuccReady('+i+','+j+',this.value)">'+
             Object.keys(READY).map(function(k){return '<option value="'+k+'"'+(su.readiness===k?' selected':'')+'>'+READY[k]+'</option>';}).join('')+
@@ -18596,8 +18606,15 @@ async function projConfirmEmailToTask(){
       ['Chloe Bennett','Project Coordinator','Operations','Grace Owusu','2',1,2,'Low',false,'Diagnose blockers; set clearer objectives.','Underdelivering vs potential.'],
       ['Emma Clarke','Warehouse Supervisor','Operations','Grace Owusu','5',1,1,'Low',false,'Structured performance plan; 60-day review.','Performance concerns raised by manager.']
     ];
-    var people=raw.map(function(r,i){ return { id:'p'+i, name:r[0], role:r[1], dept:r[2], manager:r[3], tenure:r[4],
-      perf:r[5], pot:r[6], flightRisk:r[7], keyRole:r[8], action:r[9], notes:r[10], confidence:'given', rationale:'' }; });
+    // Give each sample person a photoreal face (gender-matched), same source as the org chart demo.
+    var TL_FEM={priya:1,aisha:1,grace:1,sofia:1,hannah:1,chloe:1,emma:1};
+    var _fi=21,_mi=21;
+    var people=raw.map(function(r,i){
+      var first=String(r[0]||'').trim().split(' ')[0].toLowerCase();
+      var isF=!!TL_FEM[first];
+      var photo='https://randomuser.me/api/portraits/'+(isF?'women':'men')+'/'+((isF?_fi++:_mi++)%100)+'.jpg';
+      return { id:'p'+i, name:r[0], role:r[1], dept:r[2], manager:r[3], tenure:r[4],
+      perf:r[5], pot:r[6], flightRisk:r[7], keyRole:r[8], action:r[9], notes:r[10], confidence:'given', rationale:'', photo:photo }; });
     var succession=[
       {role:'Head of Finance',incumbent:'Priya Sharma',successors:[{name:'Raj Patel',readiness:'1to2'}],gap:false,gapNote:''},
       {role:'Sales Director',incumbent:'Marcus Bell',successors:[{name:'James Whitaker',readiness:'emergency'}],gap:true,gapNote:'No ready-now successor. Build an internal pipeline or plan a future external hire.'},
