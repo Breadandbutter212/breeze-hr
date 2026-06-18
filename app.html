@@ -17062,8 +17062,15 @@ async function projLoadFaces(){
 }
 // An owner field may name several people ("Sarah, James & Robert").
 function _projAssignees(m){ return (m.owner||'').split(/\s*(?:,|&|\/| and )\s*/i).map(s=>s.trim()).filter(Boolean); }
+// Stable demo portrait per name (same source as the org chart's mock faces).
+function _projMockFace(name){
+  let h = 0; const s = (name||'').trim();
+  for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
+  return `https://randomuser.me/api/portraits/${h%2?'men':'women'}/${h%100}.jpg`;
+}
 function _projFaceAvatar(name, i){
-  const photo = _projEmpIndex ? _projEmpIndex.get((name||'').toLowerCase().trim()) : null;
+  const real = _projEmpIndex ? _projEmpIndex.get((name||'').toLowerCase().trim()) : null;
+  const photo = real || _projMockFace(name);
   const init = (name||'').charAt(0).toUpperCase();
   return `<span title="${jsAttr(name)}" style="position:relative;width:24px;height:24px;border-radius:50%;background:${_projAvatarColor(name)};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.08);overflow:hidden;${i>0?'margin-left:-8px;':''}z-index:${20-i};">${init}${photo?`<img src="${escapeHtml(photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">`:''}</span>`;
 }
