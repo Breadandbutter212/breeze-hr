@@ -16538,7 +16538,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'list', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'board', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#3B82F6' },
@@ -16949,11 +16949,10 @@ function projMilestonesBlock(p, sel, card){
     <div style="font-size:13px;font-weight:600;color:var(--ink);">Tasks <span style="color:var(--ink3);font-weight:400;">(${ms.filter(projMsDone).length}/${ms.length})</span></div>
     <div style="display:flex;gap:8px;align-items:center;">
       <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;">
-        <button onclick="projSetView('list')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='list'?'white':'transparent'};color:${_projDetailView==='list'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='list'?'var(--shadow-sm)':'none'};">List</button>
         <button onclick="projSetView('board')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='board'?'white':'transparent'};color:${_projDetailView==='board'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='board'?'var(--shadow-sm)':'none'};">Board</button>
         <button onclick="projSetView('timeline')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='timeline'?'white':'transparent'};color:${_projDetailView==='timeline'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='timeline'?'var(--shadow-sm)':'none'};">Timeline</button>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="(document.getElementById('projQuickAdd')||{focus:projAddMilestone}).focus()">+ Add</button>
+      <button class="btn btn-secondary btn-sm" onclick="(document.getElementById('projBoardAdd-not-started')||{focus:projAddMilestone}).focus()">+ Add</button>
     </div>
   </div>`;
   // Inline quick-add row: type a task and press Enter (no popup). Shown in list view.
@@ -17030,11 +17029,10 @@ function projRenderBoard(p){
   const colHtml = Object.entries(MS_STATUS).map(([key,meta])=>{
     const items = ms.filter(m=>projMsStatus(m)===key);
     const cards = items.map(m=>projBoardCard(m,meta)).join('') || `<div style="font-size:11px;color:var(--ink3);padding:10px 4px;text-align:center;">Drop tasks here</div>`;
-    return `<div ondragover="event.preventDefault();this.style.boxShadow='inset 0 0 0 2px var(--accent-mid)'" ondragleave="this.style.boxShadow='none'" ondrop="event.preventDefault();this.style.boxShadow='none';projBoardDrop('${key}')" style="flex:0 0 250px;width:250px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;max-height:600px;box-sizing:border-box;">
-      <div style="display:flex;align-items:center;gap:7px;padding:0 2px 4px;">
-        <span style="width:8px;height:8px;border-radius:50%;background:${meta.color};"></span>
+    return `<div ondragover="event.preventDefault();this.style.boxShadow='inset 0 0 0 2px var(--accent-mid)'" ondragleave="this.style.boxShadow='none'" ondrop="event.preventDefault();this.style.boxShadow='none';projBoardDrop('${key}')" style="flex:0 0 256px;width:256px;background:var(--surface2);border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:8px;max-height:600px;box-sizing:border-box;">
+      <div style="display:flex;align-items:center;gap:7px;padding:2px 4px 4px;">
         <span style="font-size:12px;font-weight:700;color:var(--ink);">${meta.label}</span>
-        <span style="font-size:11px;color:var(--ink3);">${items.length}</span>
+        <span style="font-size:11px;color:var(--ink3);background:var(--surface3);border-radius:10px;padding:0 7px;line-height:18px;">${items.length}</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:30px;">${cards}</div>
       <div style="display:flex;align-items:center;gap:6px;border-top:1px solid var(--border);padding-top:8px;">
@@ -17049,7 +17047,7 @@ function projBoardCard(m,meta){
   const prog = projMsProgress(m); const done = projMsDone(m);
   const dueStr = m.dueDate?projFmtDate(m.dueDate):'';
   const ownerInit = (m.owner||'').trim().charAt(0).toUpperCase();
-  return `<div draggable="true" ondragstart="projBoardDragStart(event,'${m.id}')" ondragend="projBoardDragEnd(event)" onclick="projOpenCard('${m.id}')" style="background:white;border:1px solid var(--border);border-left:3px solid ${meta.color};border-radius:8px;padding:9px 11px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)'">
+  return `<div draggable="true" ondragstart="projBoardDragStart(event,'${m.id}')" ondragend="projBoardDragEnd(event)" onclick="projOpenCard('${m.id}')" style="background:white;border:1px solid var(--border);border-radius:8px;padding:9px 11px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.06);" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.06)'">
     <div style="font-size:12px;font-weight:500;color:${done?'var(--ink3)':'var(--ink)'};${done?'text-decoration:line-through;':''}line-height:1.4;">${escapeHtml(m.title)}</div>
     <div style="display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap;">
       ${subs.length?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:34px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;display:inline-block;"><span style="display:block;height:100%;width:${prog}%;background:${meta.color};"></span></span>${subs.filter(s=>s.done).length}/${subs.length}</span>`:''}
@@ -17136,7 +17134,7 @@ function projRenderTimeline(p){
     const top = HEAD + i*ROW; const barTop = 13;
     return `<div style="position:absolute;left:0;top:${top}px;height:${ROW}px;width:100%;${i%2?'background:rgba(46,61,82,0.025);':''}border-radius:6px;">
       <div title="${jsAttr(m.title)}" style="position:absolute;left:12px;top:6px;width:${LBL-22}px;font-size:11px;color:var(--ink);line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${escapeHtml(m.title)}</div>
-      <div onclick="projSetView('list');projToggleExpand('${m.id}')" title="${jsAttr(m.title)} - ${escapeHtml(stt.label)}, ${prog}% done, due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(l)};width:${wc(w)};top:${barTop}px;height:18px;background:${col}2e;border:1px solid ${col}80;border-radius:9px;cursor:pointer;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.08);" onmouseover="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.08)'">
+      <div onclick="projOpenCard('${m.id}')" title="${jsAttr(m.title)} - ${escapeHtml(stt.label)}, ${prog}% done, due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(l)};width:${wc(w)};top:${barTop}px;height:18px;background:${col}2e;border:1px solid ${col}80;border-radius:9px;cursor:pointer;overflow:hidden;box-shadow:0 1px 2px rgba(0,0,0,0.08);" onmouseover="this.style.boxShadow='0 2px 6px rgba(0,0,0,0.18)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.08)'">
         <div style="height:100%;width:${prog}%;background:${col};border-radius:9px;"></div>
       </div>
       ${(projMsStatus(m)==='in-progress' && !projMsDone(m)) ? `<div title="Active task - due ${projFmtDate(m.dueDate)}" style="position:absolute;left:${xc(pct(due))};top:${barTop+1}px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid ${col};transform:translateX(-50%);box-shadow:0 1px 2px rgba(0,0,0,0.15);cursor:pointer;z-index:1;"></div>` : ''}
