@@ -5391,9 +5391,9 @@ async function deletePolicy(id) {
 
 async function viewPolicy(id, name) {
   if (!currentProfile) return;
-  const { data } = await sb.from('policies').select('content,created_at,updated_at').eq('id', id).single();
+  const { data } = await sb.from('policies').select('content,created_at').eq('id', id).single();
   if (!data) return;
-  const updTs = data.updated_at || data.created_at;
+  const updTs = data.created_at;
   const lastUpd = updTs ? new Date(updTs).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
   let modal = document.getElementById('policyViewModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'policyViewModal'; document.body.appendChild(modal); }
@@ -5444,6 +5444,7 @@ async function viewPolicy(id, name) {
     ${bodyHtml}
   </div>`;
   modal.onclick = e => { if (e.target===modal) modal.style.display='none'; };
+  if (!isPdf) setTimeout(()=>document.getElementById('policyDocSearch')?.focus({preventScroll:true}), 60);
 }
 
 let _policyMarks = [], _policyMarkIdx = 0;
@@ -10972,9 +10973,16 @@ function renderPPTimeline() {
 
 let ppView = 'timeline'; // 'timeline' | 'details'
 let _ppFilterCat = '';   // '' = all categories
-let _ppSort = 'month';   // 'month' | 'category' | 'event' | 'owner'
+let _ppSort = 'month';   // month | category | event | startDate | endDate | owner
+let _ppSortDir = 'asc';  // 'asc' | 'desc'
 function ppSetFilter(v){ _ppFilterCat = v; renderPPDetails(); }
-function ppSetSort(v){ _ppSort = v; renderPPDetails(); }
+function ppSetSort(v){ _ppSort = v; _ppSortDir = 'asc'; renderPPDetails(); }
+// Excel-style header click: re-clicking a column toggles direction.
+function ppSortBy(key){
+  if (_ppSort === key) _ppSortDir = _ppSortDir === 'asc' ? 'desc' : 'asc';
+  else { _ppSort = key; _ppSortDir = 'asc'; }
+  renderPPDetails();
+}
 
 function ppModalInputStyle() {
   return 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
@@ -11220,14 +11228,19 @@ function renderPPDetails() {
   const { events } = ppPlan;
   const filtered = _ppFilterCat ? events.filter(e => e.catId === _ppFilterCat) : events;
   const catLabel = id => (PP_CATS.find(c=>c.id===id)||{}).label || '';
+  const _ppDir = _ppSortDir === 'desc' ? -1 : 1;
   const sorted = [...filtered].sort((a,b) => {
-    if (_ppSort === 'category') return catLabel(a.catId).localeCompare(catLabel(b.catId)) || a.startMonth - b.startMonth;
-    if (_ppSort === 'event')    return (a.title||'').localeCompare(b.title||'');
-    if (_ppSort === 'owner')    return (a.owner||'').localeCompare(b.owner||'') || a.startMonth - b.startMonth;
-    // default: month
-    if (a.startMonth !== b.startMonth) return a.startMonth - b.startMonth;
-    if (a.startDate && b.startDate) return a.startDate.localeCompare(b.startDate);
-    return 0;
+    let r;
+    if (_ppSort === 'category')       r = catLabel(a.catId).localeCompare(catLabel(b.catId)) || a.startMonth - b.startMonth;
+    else if (_ppSort === 'event')     r = (a.title||'').localeCompare(b.title||'');
+    else if (_ppSort === 'owner')     r = (a.owner||'').localeCompare(b.owner||'') || a.startMonth - b.startMonth;
+    else if (_ppSort === 'startDate') r = (a.startDate||'9999-99').localeCompare(b.startDate||'9999-99') || a.startMonth - b.startMonth;
+    else if (_ppSort === 'endDate')   r = (a.endDate||'9999-99').localeCompare(b.endDate||'9999-99') || a.startMonth - b.startMonth;
+    else { // default: month
+      r = a.startMonth - b.startMonth;
+      if (r === 0 && a.startDate && b.startDate) r = a.startDate.localeCompare(b.startDate);
+    }
+    return r * _ppDir;
   });
   const rows = sorted.map(ev => {
     const cat = PP_CATS.find(c => c.id === ev.catId) || PP_CATS[PP_CATS.length-1];
@@ -11257,6 +11270,14 @@ function renderPPDetails() {
   const withDates = events.filter(e => e.startDate || e.endDate).length;
   const without = events.length - withDates;
 
+  // Excel-style sortable header cell.
+  const ppCaret = key => _ppSort === key
+    ? `<span style="margin-left:4px;color:var(--accent);">${_ppSortDir==='asc'?'▲':'▼'}</span>`
+    : `<span style="margin-left:4px;color:#cbd5e1;">↕</span>`;
+  const ppTh = (label,key) => key
+    ? `<th onclick="ppSortBy('${key}')" title="Sort by ${label.toLowerCase()}" style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:${_ppSort===key?'var(--accent)':'var(--ink3)'};letter-spacing:0.06em;white-space:nowrap;cursor:pointer;user-select:none;">${label}${ppCaret(key)}</th>`
+    : `<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">${label}</th>`;
+
   body.innerHTML = `
     <div style="padding:18px 20px 12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
       <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
@@ -11280,13 +11301,13 @@ function renderPPDetails() {
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
         <thead>
           <tr style="background:var(--bg);border-bottom:1px solid var(--border);position:sticky;top:0;z-index:2;">
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">CATEGORY</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;">EVENT</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">MONTH</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">START DATE</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">END / DEADLINE</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;">OWNER</th>
-            <th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;">NOTES</th>
+            ${ppTh('CATEGORY','category')}
+            ${ppTh('EVENT','event')}
+            ${ppTh('MONTH','month')}
+            ${ppTh('START DATE','startDate')}
+            ${ppTh('END / DEADLINE','endDate')}
+            ${ppTh('OWNER','owner')}
+            ${ppTh('NOTES',null)}
             <th style="padding:10px 14px;"></th>
           </tr>
         </thead>
@@ -14249,10 +14270,24 @@ function wfTagBadge(tag) {
 
 let _wfCurrentTabScenarios = [];
 let _wfCurrentTabBody = null, _wfCurrentTabOpts = {};
-let _wfSort = 'started_desc';      // started_desc | started_asc | name | progress
+let _wfSort = 'started';           // started | name | type | progress
+let _wfSortDir = 'desc';           // 'asc' | 'desc'
 let _wfStatusFilter = 'all';       // all | active | closed
-function wfSetSort(v){ _wfSort = v; if(_wfCurrentTabBody) renderWfCategoryTab(_wfCurrentTabBody, _wfCurrentTabScenarios, _wfCurrentTabOpts); }
-function wfSetStatusFilter(v){ _wfStatusFilter = v; if(_wfCurrentTabBody) renderWfCategoryTab(_wfCurrentTabBody, _wfCurrentTabScenarios, _wfCurrentTabOpts); }
+const _WF_DEFAULT_DIR = { started:'desc', name:'asc', type:'asc', progress:'desc' };
+function _wfRerender(){ if(_wfCurrentTabBody) renderWfCategoryTab(_wfCurrentTabBody, _wfCurrentTabScenarios, _wfCurrentTabOpts); }
+// Dropdown still uses combined values (started_desc etc.); map them to key + direction.
+function wfSetSort(v){
+  const map = { started_desc:['started','desc'], started_asc:['started','asc'], name:['name','asc'], progress:['progress','desc'] };
+  const [k,d] = map[v] || ['started','desc'];
+  _wfSort = k; _wfSortDir = d; _wfRerender();
+}
+// Excel-style header click: re-clicking a column toggles direction.
+function wfSortBy(key){
+  if (_wfSort === key) _wfSortDir = _wfSortDir === 'asc' ? 'desc' : 'asc';
+  else { _wfSort = key; _wfSortDir = _WF_DEFAULT_DIR[key]||'asc'; }
+  _wfRerender();
+}
+function wfSetStatusFilter(v){ _wfStatusFilter = v; _wfRerender(); }
 
 // ── CALENDAR / .ICS ──
 let _pendingCalEvents = null;
@@ -14411,13 +14446,17 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
   const closedCases = allCases.filter(c => c.status === 'closed');
   // Filter + sort (KPI tiles above still reflect the full set).
   const _pctOf = c => { const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]}; return sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0; };
+  const _scLabel = c => (WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{}).label || '';
+  const _wfDir = _wfSortDir === 'desc' ? -1 : 1;
   const _sortCases = arr => [...arr].sort((a,b)=>{
+    let r;
     switch(_wfSort){
-      case 'started_asc': return new Date(a.startedAt) - new Date(b.startedAt);
-      case 'name': return (a.employeeName||'').localeCompare(b.employeeName||'');
-      case 'progress': return _pctOf(b) - _pctOf(a);
-      default: return new Date(b.startedAt) - new Date(a.startedAt);
+      case 'name':     r = (a.employeeName||'').localeCompare(b.employeeName||''); break;
+      case 'type':     r = _scLabel(a).localeCompare(_scLabel(b)); break;
+      case 'progress': r = _pctOf(a) - _pctOf(b); break;
+      default:         r = new Date(a.startedAt) - new Date(b.startedAt); // started
     }
+    return r * _wfDir;
   });
   const activeDisplay = _wfStatusFilter==='closed' ? [] : _sortCases(activeCases);
   const closedDisplay = _wfStatusFilter==='active' ? [] : _sortCases(closedCases);
@@ -14441,7 +14480,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
   const rowsHtml = activeDisplay.length || closedDisplay.length
     ? `<div class="trk-card" style="overflow-x:auto;">
         <table class="trk-table">
-          <thead><tr><th>Employee</th><th>Type</th><th>Started</th><th>Checklist</th><th>Status</th><th></th></tr></thead>
+          <thead><tr>${(()=>{const c=k=>_wfSort===k?`<span style="margin-left:3px;color:var(--accent);">${_wfSortDir==='asc'?'▲':'▼'}</span>`:`<span style="margin-left:3px;color:#cbd5e1;">↕</span>`;const t=(l,k)=>`<th onclick="wfSortBy('${k}')" title="Sort by ${l.toLowerCase()}" style="cursor:pointer;user-select:none;white-space:nowrap;${_wfSort===k?'color:var(--accent);':''}">${l}${c(k)}</th>`;return t('Employee','name')+t('Type','type')+t('Started','started')+t('Checklist','progress')+'<th>Status</th><th></th>';})()}</tr></thead>
           <tbody>
             ${activeDisplay.map(c => {
               const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{icon:'📋',label:'Unknown',steps:[]};
@@ -14509,8 +14548,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
           <option value="closed"${_wfStatusFilter==='closed'?' selected':''}>Closed only</option>
         </select>
         <select onchange="wfSetSort(this.value)" title="Sort by" style="font-size:11px;padding:4px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
-          <option value="started_desc"${_wfSort==='started_desc'?' selected':''}>Sort: Newest first</option>
-          <option value="started_asc"${_wfSort==='started_asc'?' selected':''}>Sort: Oldest first</option>
+          <option value="started_desc"${_wfSort==='started'&&_wfSortDir==='desc'?' selected':''}>Sort: Newest first</option>
+          <option value="started_asc"${_wfSort==='started'&&_wfSortDir==='asc'?' selected':''}>Sort: Oldest first</option>
           <option value="name"${_wfSort==='name'?' selected':''}>Sort: Employee name</option>
           <option value="progress"${_wfSort==='progress'?' selected':''}>Sort: Checklist %</option>
         </select>
@@ -15714,10 +15753,17 @@ function hcStageDurationHtml(r) {
   return `<div>${bars}<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);">Total time open: <strong style="color:var(--ink);">${totalDays} days</strong></div></div>`;
 }
 
-let _hcFilterStage = '', _hcFilterPriority = '', _hcSort = 'priority';
+let _hcFilterStage = '', _hcFilterPriority = '', _hcSort = 'priority', _hcSortDir = 'asc';
+const _HC_DEFAULT_DIR = { priority:'asc', days:'desc', target:'asc', comp:'desc', title:'asc', recent:'desc', stage:'asc', country:'asc', cands:'desc' };
 function hcSetFilterStage(v){ _hcFilterStage = v; renderHeadcount(); }
 function hcSetFilterPriority(v){ _hcFilterPriority = v; renderHeadcount(); }
-function hcSetSort(v){ _hcSort = v; renderHeadcount(); }
+function hcSetSort(v){ _hcSort = v; _hcSortDir = _HC_DEFAULT_DIR[v]||'asc'; renderHeadcount(); }
+// Excel-style header click: re-clicking a column toggles direction.
+function hcSortBy(key){
+  if (_hcSort === key) _hcSortDir = _hcSortDir === 'asc' ? 'desc' : 'asc';
+  else { _hcSort = key; _hcSortDir = _HC_DEFAULT_DIR[key]||'asc'; }
+  renderHeadcount();
+}
 const _HC_PRIO_RANK = { urgent:0, high:1, normal:2, low:3 };
 
 function renderHeadcount() {
@@ -15741,15 +15787,21 @@ function renderHeadcount() {
     if (_hcFilterPriority && r.priority !== _hcFilterPriority) return false;
     return true;
   });
+  const _hcDir = _hcSortDir === 'desc' ? -1 : 1;
   displayRoles = [...displayRoles].sort((a,b)=>{
+    let r;
     switch(_hcSort){
-      case 'days': return hcDaysOpen(b) - hcDaysOpen(a);
-      case 'target': return (a.targetStart||'9999').localeCompare(b.targetStart||'9999');
-      case 'comp': return (b.compMax||b.compMin||0) - (a.compMax||a.compMin||0);
-      case 'title': return (a.title||'').localeCompare(b.title||'');
-      case 'recent': return new Date(b.createdAt||0) - new Date(a.createdAt||0);
-      default: return (_HC_PRIO_RANK[a.priority]??2) - (_HC_PRIO_RANK[b.priority]??2) || hcDaysOpen(b)-hcDaysOpen(a);
+      case 'days':    r = hcDaysOpen(a) - hcDaysOpen(b); break;
+      case 'target':  r = (a.targetStart||'9999').localeCompare(b.targetStart||'9999'); break;
+      case 'comp':    r = (a.compMax||a.compMin||0) - (b.compMax||b.compMin||0); break;
+      case 'title':   r = (a.title||'').localeCompare(b.title||''); break;
+      case 'recent':  r = new Date(a.createdAt||0) - new Date(b.createdAt||0); break;
+      case 'stage':   r = HC_STAGES.findIndex(s=>s.id===a.stage) - HC_STAGES.findIndex(s=>s.id===b.stage); break;
+      case 'country': r = (a.country||'').localeCompare(b.country||''); break;
+      case 'cands':   r = ((a.candidates||[]).length) - ((b.candidates||[]).length); break;
+      default:        r = (_HC_PRIO_RANK[a.priority]??2) - (_HC_PRIO_RANK[b.priority]??2) || hcDaysOpen(b)-hcDaysOpen(a);
     }
+    return r * _hcDir;
   });
 
   const rows = displayRoles.map(r=>{
@@ -15775,6 +15827,14 @@ function renderHeadcount() {
       </td>
     </tr>`;
   }).join('');
+
+  // Excel-style sortable header cell (trk-table inherits base th styling from CSS).
+  const hcCaret = key => _hcSort === key
+    ? `<span style="margin-left:3px;color:var(--accent);">${_hcSortDir==='asc'?'▲':'▼'}</span>`
+    : `<span style="margin-left:3px;color:#cbd5e1;">↕</span>`;
+  const hcTh = (label,key) => key
+    ? `<th onclick="hcSortBy('${key}')" title="Sort by ${label.toLowerCase()}" style="cursor:pointer;user-select:none;white-space:nowrap;${_hcSort===key?'color:var(--accent);':''}">${label}${hcCaret(key)}</th>`
+    : `<th></th>`;
 
   body.innerHTML = `<div style="position:absolute;inset:0;overflow-y:auto;padding:20px;box-sizing:border-box;background:var(--bg);">
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;margin-bottom:16px;">
@@ -15809,7 +15869,7 @@ function renderHeadcount() {
       </div>
     </div>
     ${hcRoles.length ? (displayRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
-      <thead><tr><th>Role</th><th>Stage</th><th>Location</th><th>Comp range</th><th>Target start</th><th>Candidates</th><th>Days open</th><th></th></tr></thead>
+      <thead><tr>${hcTh('Role','title')}${hcTh('Stage','stage')}${hcTh('Location','country')}${hcTh('Comp range','comp')}${hcTh('Target start','target')}${hcTh('Candidates','cands')}${hcTh('Days open','days')}<th></th></tr></thead>
       <tbody>${rows}</tbody>
     </table></div>` : `<div class="trk-card" style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No roles match these filters. <button onclick="_hcFilterStage='';_hcFilterPriority='';renderHeadcount();" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;">Clear filters</button></div>`) : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.<br><br><button onclick="hcLoadDemoData()" style="font-size:12px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:5px 14px;cursor:pointer;font-family:inherit;">Load sample data</button></div>`}
   </div>`;
@@ -16672,6 +16732,9 @@ function renderProjectDetail(){
     </div>
 
     ${projMilestonesBlock(p, sel, card)}`;
+
+  // Re-focus an inline quick-add input after the re-render so tasks/steps can be added in quick succession.
+  if (_projFocusEl){ const id = _projFocusEl; _projFocusEl = null; setTimeout(()=>{ const i = document.getElementById(id); if(i) i.focus(); }, 0); }
 }
 
 // ── Mutations ──
@@ -16800,6 +16863,26 @@ async function projAttachEmailChosen(i){
 function projSetView(v){ _projDetailView = v; renderProjectDetail(); }
 function projToggleExpand(id){ _projExpandedMs[id] = !_projExpandedMs[id]; renderProjectDetail(); }
 
+// Inline quick-add: type a task/step and press Enter, input keeps focus so several can be added in a row.
+let _projFocusEl = null;
+async function projQuickAddMilestone(){
+  const inp = document.getElementById('projQuickAdd'); if(!inp) return;
+  const t = inp.value.trim(); if(!t){ inp.focus(); return; }
+  const p = projActive(); if(!p) return;
+  p.milestones = p.milestones||[]; const id = projUid('m');
+  p.milestones.push({id,title:t,owner:'',dueDate:projDateIn(2),status:'not-started',description:'',subtasks:[],attachments:[]});
+  _projFocusEl = 'projQuickAdd';
+  await saveProjects(); renderProjectDetail();
+}
+async function projQuickAddSubtask(mid){
+  const inp = document.getElementById('projStepAdd-'+mid); if(!inp) return;
+  const t = inp.value.trim(); if(!t){ inp.focus(); return; }
+  const p = projActive(); const m = (p.milestones||[]).find(x=>x.id===mid); if(!m) return;
+  m.subtasks = m.subtasks||[]; m.subtasks.push({id:projUid('s'),text:t,done:false});
+  projSyncMsStatus(m); _projExpandedMs[mid] = true; _projFocusEl = 'projStepAdd-'+mid;
+  await saveProjects(); renderProjectDetail();
+}
+
 function projMilestonesBlock(p, sel, card){
   const ms = p.milestones||[];
   const head = `<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
@@ -16809,11 +16892,17 @@ function projMilestonesBlock(p, sel, card){
         <button onclick="projSetView('list')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='list'?'white':'transparent'};color:${_projDetailView==='list'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='list'?'var(--shadow-sm)':'none'};">List</button>
         <button onclick="projSetView('timeline')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='timeline'?'white':'transparent'};color:${_projDetailView==='timeline'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='timeline'?'var(--shadow-sm)':'none'};">Timeline</button>
       </div>
-      <button class="btn btn-secondary btn-sm" onclick="projAddMilestone()">+ Add</button>
+      <button class="btn btn-secondary btn-sm" onclick="(document.getElementById('projQuickAdd')||{focus:projAddMilestone}).focus()">+ Add</button>
     </div>
   </div>`;
-  if (!ms.length) return `<div style="${card}">${head}<div style="font-size:12px;color:var(--ink3);padding:6px 0;">No tasks yet. Add one, or create the project with AI to generate a full plan.</div></div>`;
+  // Inline quick-add row: type a task and press Enter (no popup). Shown in list view.
+  const quickAdd = `<div style="display:flex;align-items:center;gap:9px;margin-top:8px;padding:10px 12px;border:1px dashed var(--border);border-radius:var(--r);background:var(--surface2);">
+    <span style="color:var(--ink3);font-size:16px;line-height:1;flex-shrink:0;">+</span>
+    <input id="projQuickAdd" placeholder="Add a task and press Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();projQuickAddMilestone();}" style="flex:1;border:none;background:transparent;outline:none;font-size:13px;font-family:inherit;color:var(--ink);">
+    <button onclick="projQuickAddMilestone()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Add</button>
+  </div>`;
   if (_projDetailView === 'timeline') return `<div style="${card}">${head}${projRenderTimeline(p)}</div>`;
+  if (!ms.length) return `<div style="${card}">${head}<div style="font-size:12px;color:var(--ink3);padding:4px 0 2px;">No tasks yet. Add your first below, or create the project with AI to generate a full plan.</div>${quickAdd}</div>`;
   const cards = ms.map(m=>{
     const ov = projMilestoneOverdue(m); const stt = MS_STATUS[projMsStatus(m)]; const prog = projMsProgress(m);
     const expanded = !!_projExpandedMs[m.id]; const subs = m.subtasks||[]; const atts = m.attachments||[];
@@ -16838,7 +16927,10 @@ function projMilestonesBlock(p, sel, card){
             <span style="flex:1;font-size:12px;color:${s.done?'var(--ink3)':'var(--ink)'};${s.done?'text-decoration:line-through;':''}cursor:text;" onclick="projEditSubtask('${m.id}','${s.id}')" title="Click to edit">${escapeHtml(s.text)}</span>
             <button onclick="projDeleteSubtask('${m.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
           </div>`).join('')}
-          <button onclick="projAddSubtask('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Add step</button>
+          <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+            <span style="color:var(--ink3);font-size:14px;width:14px;text-align:center;flex-shrink:0;line-height:1;">+</span>
+            <input id="projStepAdd-${m.id}" placeholder="Add a step and press Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();projQuickAddSubtask('${m.id}');}" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;font-family:inherit;color:var(--ink);">
+          </div>
         </div>
         <div style="margin-top:12px;">
           <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Attachments</div>
@@ -16857,7 +16949,7 @@ function projMilestonesBlock(p, sel, card){
       </div>`:''}
     </div>`;
   }).join('');
-  return `<div style="${card}">${head}${cards}</div>`;
+  return `<div style="${card}">${head}${cards}${quickAdd}</div>`;
 }
 
 function projRenderTimeline(p){
