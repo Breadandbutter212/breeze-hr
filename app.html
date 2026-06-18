@@ -5401,16 +5401,16 @@ async function viewPolicy(id, name) {
   const isPdf  = data.content && data.content.startsWith('PDF_BASE64:');
   const isDocx = data.content && data.content.startsWith('DOCX_BASE64:');
   const dlLabel = isPdf ? '⬇ Download PDF' : isDocx ? '⬇ Download .docx' : '⬇ Download .doc';
-  let bodyHtml;
+  let bodyHtml, _pdfBytes = null;
   if (isPdf) {
     const b64 = data.content.split('|||TEXT:')[0].replace('PDF_BASE64:', '');
     const binaryStr = atob(b64);
     const bytes = new Uint8Array(binaryStr.length);
     for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
-    const blob = new Blob([bytes], { type: 'application/pdf' });
-    const blobUrl = URL.createObjectURL(blob);
-    // Formatted PDF in the browser's native viewer. Search via the PDF viewer's own Ctrl/Cmd+F (we focus the frame so the shortcut lands here).
-    bodyHtml = `<iframe id="policyPdfFrame" src="${blobUrl}" style="flex:1;width:100%;border:none;min-height:0;"></iframe>`;
+    _pdfBytes = bytes;
+    // Render the PDF ourselves (PDF.js) so the in-popup "Find in policy" bar can highlight matches on the formatted pages
+    // (a native PDF iframe can't be searched by our JS, and Ctrl/Cmd+F is captured by the main page).
+    bodyHtml = `<div id="policyDocBody" style="flex:1;overflow:auto;background:#525659;padding:16px 0;min-height:0;"></div>`;
   } else if (isDocx) {
     const b64 = data.content.split('|||TEXT:')[0].replace('DOCX_BASE64:', '');
     const binaryStr = atob(b64);
@@ -5422,10 +5422,11 @@ async function viewPolicy(id, name) {
   } else {
     bodyHtml = `<div id="policyDocBody" style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(policyText(data.content))}</div>`;
   }
-  // Text & Word docs get an in-doc search bar; PDFs use the native viewer's own Ctrl/Cmd+F.
-  const searchBar = isPdf ? '' : `<div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);">
+  // Every doc type gets an in-popup search bar. PDFs are rendered by us (PDF.js) so matches can be highlighted on the page.
+  const searchFn = isPdf ? 'policyPdfSearch' : 'policyDocSearch';
+  const searchBar = `<div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);">
       <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
-      <input id="policyDocSearch" type="text" placeholder="Find in policy..." oninput="policyDocSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();policyDocSearchNext(event.shiftKey?-1:1);}" style="flex:1;border:none;outline:none;font-size:12px;font-family:inherit;background:transparent;color:var(--ink);">
+      <input id="policyDocSearch" type="text" placeholder="Find in policy..." oninput="${searchFn}(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();policyDocSearchNext(event.shiftKey?-1:1);}" style="flex:1;border:none;outline:none;font-size:12px;font-family:inherit;background:transparent;color:var(--ink);">
       <span id="policySearchCount" style="font-size:11px;color:var(--ink3);white-space:nowrap;"></span>
       <button onclick="policyDocSearchNext(-1)" title="Previous" style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--ink2);width:22px;height:22px;line-height:1;">↑</button>
       <button onclick="policyDocSearchNext(1)" title="Next" style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--ink2);width:22px;height:22px;line-height:1;">↓</button>
@@ -5437,7 +5438,6 @@ async function viewPolicy(id, name) {
         ${lastUpd?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;">Last updated ${lastUpd}</div>`:''}
       </div>
       <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
-        ${isPdf?`<span style="font-size:11px;color:var(--ink3);display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>Press ${navigator.platform.toLowerCase().includes('mac')?'⌘':'Ctrl'} F to search</span>`:''}
         <button class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${jsAttr(name)}')"> ${dlLabel}</button>
         <button onclick="document.getElementById('policyViewModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;padding:0 4px;">×</button>
       </div>
@@ -5446,9 +5446,8 @@ async function viewPolicy(id, name) {
     ${bodyHtml}
   </div>`;
   modal.onclick = e => { if (e.target===modal) modal.style.display='none'; };
-  // Focus the search box (text/Word) or the PDF frame (so Ctrl/Cmd+F lands on the PDF's own find bar).
-  if (isPdf) setTimeout(()=>document.getElementById('policyPdfFrame')?.focus(), 120);
-  else setTimeout(()=>document.getElementById('policyDocSearch')?.focus({preventScroll:true}), 60);
+  setTimeout(()=>document.getElementById('policyDocSearch')?.focus({preventScroll:true}), 60);
+  if (isPdf && _pdfBytes) renderPolicyPdf(_pdfBytes);
 }
 
 let _policyMarks = [], _policyMarkIdx = 0;
@@ -5493,6 +5492,80 @@ function policyDocSearchNext(dir){
   _policyHighlightCurrent();
   const info = document.getElementById('policySearchCount');
   if (info) info.textContent = `${_policyMarkIdx+1} of ${_policyMarks.length}`;
+}
+
+// Render a PDF policy to canvas pages with an invisible text layer, so policyPdfSearch can highlight matches on the formatting.
+async function renderPolicyPdf(bytes){
+  const container = document.getElementById('policyDocBody'); if (!container) return;
+  _policyMarks = []; _policyMarkIdx = 0;
+  const info = document.getElementById('policySearchCount'); if (info) info.textContent = '';
+  if (!document.getElementById('policyPdfCss')){
+    const st = document.createElement('style'); st.id = 'policyPdfCss';
+    st.textContent = '#policyDocBody .textLayer{position:absolute;inset:0;overflow:hidden;line-height:1;}#policyDocBody .textLayer span{color:transparent;position:absolute;white-space:pre;transform-origin:0 0;}#policyDocBody .textLayer mark{color:transparent;padding:0;}';
+    document.head.appendChild(st);
+  }
+  container.innerHTML = '<div style="padding:34px;text-align:center;color:#cbd5e1;font-size:12px;">Loading PDF…</div>';
+  try {
+    if (typeof pdfjsLib === 'undefined') throw new Error('pdfjs not loaded');
+    if (pdfjsLib.GlobalWorkerOptions && !pdfjsLib.GlobalWorkerOptions.workerSrc)
+      pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+    const pdf = await pdfjsLib.getDocument({ data: bytes }).promise;
+    container.innerHTML = '';
+    const cw = container.clientWidth || 820;
+    for (let n = 1; n <= pdf.numPages; n++){
+      const page = await pdf.getPage(n);
+      const base = page.getViewport({ scale: 1 });
+      const scale = Math.min(2, Math.max(0.5, (cw - 28) / base.width));
+      const viewport = page.getViewport({ scale });
+      const pageDiv = document.createElement('div');
+      pageDiv.style.cssText = `position:relative;width:${Math.floor(viewport.width)}px;height:${Math.floor(viewport.height)}px;margin:0 auto 14px;background:white;box-shadow:0 1px 8px rgba(0,0,0,0.3);`;
+      const canvas = document.createElement('canvas');
+      canvas.width = viewport.width; canvas.height = viewport.height;
+      canvas.style.cssText = 'display:block;width:100%;height:100%;';
+      pageDiv.appendChild(canvas);
+      const textDiv = document.createElement('div');
+      textDiv.className = 'textLayer';
+      textDiv.style.setProperty('--scale-factor', scale);
+      pageDiv.appendChild(textDiv);
+      container.appendChild(pageDiv);
+      await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+      const tc = await page.getTextContent();
+      await pdfjsLib.renderTextLayer({ textContent: tc, textContentSource: tc, container: textDiv, viewport, textDivs: [] }).promise;
+    }
+  } catch(e){
+    container.innerHTML = '<div style="padding:34px;text-align:center;color:#e5e7eb;font-size:12px;line-height:1.7;">Could not render this PDF in the viewer.<br>Use <strong>Download</strong> to open it.</div>';
+  }
+}
+
+// Search the rendered PDF's invisible text layer and highlight matches over the page.
+function policyPdfSearch(q){
+  // Clear previous highlights without touching the canvases.
+  _policyMarks.forEach(mk => { const p = mk.parentNode; if (p){ p.replaceChild(document.createTextNode(mk.textContent), mk); p.normalize(); } });
+  _policyMarks = []; _policyMarkIdx = 0;
+  const info = document.getElementById('policySearchCount');
+  const term = (q||'').trim();
+  if (!term){ if (info) info.textContent = ''; return; }
+  const lc = term.toLowerCase();
+  document.querySelectorAll('#policyDocBody .textLayer span').forEach(span => {
+    if (span.children.length) return; // already wrapped / non-text
+    const text = span.textContent; if (!text) return;
+    const lower = text.toLowerCase();
+    if (!lower.includes(lc)) return;
+    const frag = document.createDocumentFragment();
+    let i = 0, idx;
+    while ((idx = lower.indexOf(lc, i)) !== -1){
+      if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
+      const mark = document.createElement('mark');
+      mark.textContent = text.slice(idx, idx + term.length);
+      mark.style.cssText = 'background:#FEF08A;color:transparent;border-radius:2px;';
+      frag.appendChild(mark); _policyMarks.push(mark);
+      i = idx + term.length;
+    }
+    if (i < text.length) frag.appendChild(document.createTextNode(text.slice(i)));
+    span.textContent = ''; span.appendChild(frag);
+  });
+  if (info) info.textContent = _policyMarks.length ? `1 of ${_policyMarks.length}` : 'No matches';
+  if (_policyMarks.length){ _policyMarkIdx = 0; _policyHighlightCurrent(); }
 }
 
 async function downloadPolicyFile(id, name) {
