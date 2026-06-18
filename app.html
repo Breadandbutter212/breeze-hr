@@ -5471,7 +5471,7 @@ function policyDocSearch(q){
       if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
       const mark = document.createElement('mark');
       mark.textContent = text.slice(idx, idx + term.length);
-      mark.style.cssText = 'background:#FEF08A;color:inherit;border-radius:2px;';
+      mark.style.cssText = 'background:rgba(253,224,71,0.5);color:inherit;border-radius:2px;';
       frag.appendChild(mark); _policyMarks.push(mark);
       i = idx + term.length;
     }
@@ -5482,7 +5482,7 @@ function policyDocSearch(q){
   if (_policyMarks.length) { _policyMarkIdx = 0; _policyHighlightCurrent(); }
 }
 function _policyHighlightCurrent(){
-  _policyMarks.forEach((m,i)=>m.style.background = i===_policyMarkIdx ? '#FB923C' : '#FEF08A');
+  _policyMarks.forEach((m,i)=>m.style.background = i===_policyMarkIdx ? 'rgba(251,146,60,0.6)' : 'rgba(253,224,71,0.5)');
   const cur = _policyMarks[_policyMarkIdx];
   if (cur) cur.scrollIntoView({block:'center', behavior:'smooth'});
 }
@@ -5557,8 +5557,8 @@ function policyPdfSearch(q){
       if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
       const mark = document.createElement('mark');
       mark.textContent = text.slice(idx, idx + term.length);
-      // mix-blend-mode lets the highlight tint the page text underneath instead of covering it with a solid block.
-      mark.style.cssText = 'background:#FEF08A;color:transparent;border-radius:2px;mix-blend-mode:multiply;';
+      // Semi-transparent so the page text underneath shows through the highlight.
+      mark.style.cssText = 'background:rgba(253,224,71,0.5);color:transparent;border-radius:2px;';
       frag.appendChild(mark); _policyMarks.push(mark);
       i = idx + term.length;
     }
