@@ -13507,21 +13507,36 @@ const ocNid = id => 'ocn_' + String(id).replace(/[^a-zA-Z0-9]/g,'_');
 function ocDrawEdges(node, lines) {
   const ch = node.children||[]; if(!ch.length || _ocCollapsed.has(node.id)) return;
   const pp=ocPos(node), px=pp.x+OC_W/2, py=pp.y+OC_H;
-  const ey=py+Math.round(OC_VG*0.42); // elbow Y
   const S='stroke="var(--border2)" stroke-width="1.5"';
-  // Stem down from parent to elbow
-  lines.push(`<line x1="${px}" y1="${py}" x2="${px}" y2="${ey}" ${S}/>`);
-  if(ch.length===1){
-    const cp=ocPos(ch[0]), cx=cp.x+OC_W/2;
-    if(Math.abs(px-cx)>1) lines.push(`<line x1="${px}" y1="${ey}" x2="${cx}" y2="${ey}" ${S}/>`);
-    lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);
+  // Group children by row - a grid (wrapped) layout has children on several rows.
+  const rows=new Map();
+  ch.forEach(c=>{ const cy=Math.round(ocPos(c).y); if(!rows.has(cy)) rows.set(cy,[]); rows.get(cy).push(c); });
+  const rowYs=[...rows.keys()].sort((a,b)=>a-b);
+  if(rowYs.length===1){
+    // Single row - classic bus connector.
+    const ey=py+Math.round(OC_VG*0.42);
+    lines.push(`<line x1="${px}" y1="${py}" x2="${px}" y2="${ey}" ${S}/>`);
+    if(ch.length===1){
+      const cp=ocPos(ch[0]), cx=cp.x+OC_W/2;
+      if(Math.abs(px-cx)>1) lines.push(`<line x1="${px}" y1="${ey}" x2="${cx}" y2="${ey}" ${S}/>`);
+      lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);
+    } else {
+      const cxs=ch.map(c=>ocPos(c).x+OC_W/2);
+      lines.push(`<line x1="${Math.min(...cxs)}" y1="${ey}" x2="${Math.max(...cxs)}" y2="${ey}" ${S}/>`);
+      ch.forEach(c=>{const cp=ocPos(c),cx=cp.x+OC_W/2;lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);});
+    }
   } else {
-    const cxs=ch.map(c=>ocPos(c).x+OC_W/2);
-    const minX=Math.min(...cxs), maxX=Math.max(...cxs);
-    // Horizontal bus
-    lines.push(`<line x1="${minX}" y1="${ey}" x2="${maxX}" y2="${ey}" ${S}/>`);
-    // Drop to each child
-    ch.forEach(c=>{const cp=ocPos(c),cx=cp.x+OC_W/2;lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);});
+    // Grid (wrapped) - one vertical spine from the parent, with a bus per row.
+    let prevY=py;
+    rowYs.forEach(ry=>{
+      const rowCh=rows.get(ry), ey=ry-Math.round(OC_VG*0.42);
+      const cxs=rowCh.map(c=>ocPos(c).x+OC_W/2);
+      const minX=Math.min(px,...cxs), maxX=Math.max(px,...cxs);
+      lines.push(`<line x1="${px}" y1="${prevY}" x2="${px}" y2="${ey}" ${S}/>`); // spine down to this row
+      lines.push(`<line x1="${minX}" y1="${ey}" x2="${maxX}" y2="${ey}" ${S}/>`); // row bus
+      rowCh.forEach(c=>{const cp=ocPos(c),cx=cp.x+OC_W/2;lines.push(`<line x1="${cx}" y1="${ey}" x2="${cx}" y2="${cp.y}" ${S}/>`);});
+      prevY=ey;
+    });
   }
   ch.forEach(c=>ocDrawEdges(c,lines));
 }
@@ -13769,6 +13784,10 @@ function ocMgrSearch(q, excludeId) {
 
 function ocSetManager(nodeId, newManagerId) {
   _ocRelations[nodeId]=newManagerId;
+  // Expand the new manager (and clear any stale drag offset on the moved node) so the
+  // re-parented node is actually visible under its new manager, with a clean connector.
+  if(newManagerId) _ocCollapsed.delete(newManagerId);
+  delete _ocOffsets[nodeId];
   document.getElementById('ocNodeMenu')?.remove();
   if(_ocEmps) ocBuild();
 }
