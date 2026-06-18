@@ -8098,17 +8098,12 @@ function renderEmailList(emails) {
       <div class="email-item-subject">${escapeHtml(e.subject)}</div>
       ${e.snippet ? `<div class="email-item-snippet">${escapeHtml(e.snippet)}</div>` : ''}
       ${e.attachments && e.attachments.length ? `<div style="font-size:10px;color:var(--ink3);margin-top:6px;display:flex;align-items:center;gap:5px;"><span>📎</span>${escapeHtml(e.attachments.map(a=>a.filename).join(', '))}</div>` : ''}
-      <button onclick="aiAnalyseEmail('${(e.id||'').replace(/'/g,"\\'")}')" title="Let AI read this email and log it, tick the matching step and save any attachment to the right case"
-        style="width:100%;margin-top:8px;font-size:11px;font-weight:700;padding:7px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
-        onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
-        ✨ Smart action - log to the right case
-      </button>
-      <div style="display:flex;gap:6px;margin-top:6px;">
-        ${window._emailProvider === 'test' ? '' : `<button onclick="openEmailExternal('${e.id}')"
-          style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--ink2);cursor:pointer;font-family:inherit;"
-          onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
-          ${window._emailProvider === 'outlook' ? 'Open in Outlook ↗' : 'Open in Gmail ↗'}
-        </button>`}
+      <div style="display:flex;gap:6px;margin-top:8px;">
+        <button onclick="aiAnalyseEmail('${(e.id||'').replace(/'/g,"\\'")}')" title="Let AI read this email and log it, tick the matching step and save any attachment to the right case"
+          style="flex:1;font-size:11px;font-weight:700;padding:5px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
+          onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
+          ✨ Smart action
+        </button>
         <button onclick="selectEmailForChat(${i})"
           style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
           onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
@@ -8418,6 +8413,12 @@ function smartActionShell(innerHtml){
   mo.onclick=e=>{ if(e.target===mo) mo.remove(); };
 }
 function smartActionClose(){ document.getElementById('smartActionModal')?.remove(); }
+// Edit: skip the auto-apply and just open the matched case so it can be handled by hand.
+function editSmartActionCase(){
+  const a=_smartAnalysis; if(!a||!a.caseId) return;
+  smartActionClose();
+  setTimeout(()=>{ try{ openWfCasePanel(a.caseId); }catch(e){} }, 80);
+}
 
 function showSmartActionModal(email, a){
   const matchedCase = a.caseId ? (wfCases||[]).find(c=>c.id===a.caseId) : null;
@@ -8441,7 +8442,7 @@ function showSmartActionModal(email, a){
     actions.push(`<div style="font-size:13px;color:var(--ink3);padding:7px 0;">No matching open case found - open Trackers to handle this manually.</div>`);
   }
   let primary='';
-  if(matchedCase) primary=`<button onclick="applySmartAction()" class="btn btn-primary btn-sm">Apply</button>`;
+  if(matchedCase) primary=`<button onclick="editSmartActionCase()" class="btn btn-secondary btn-sm">Edit</button><button onclick="applySmartAction()" class="btn btn-primary btn-sm">Apply</button>`;
   else if(a.createScenario) primary=`<button onclick="applySmartCreate()" class="btn btn-primary btn-sm">Create &amp; log</button>`;
   smartActionShell(`<div style="padding:20px 22px 22px;">
     <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;">
@@ -17743,6 +17744,8 @@ async function projConfirmEmailToTask(){
   .tl-emp .who{min-width:0;flex:1;}
   .tl-emp .who .n{font-size:12px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.01em;}
   .tl-emp .who .r{font-size:10px;color:var(--ink2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;}
+  .tl-emp .tl-av{width:28px;height:28px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:700;letter-spacing:.02em;overflow:hidden;position:relative;}
+  .tl-emp .tl-av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;}
   .tl-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .tl-dot.fr-h{background:#E5484D;box-shadow:0 0 0 3px rgba(229,72,77,.13);}
   .tl-dot.fr-m{background:#E8A317;box-shadow:0 0 0 3px rgba(232,163,23,.13);}
@@ -18159,8 +18162,9 @@ async function projConfirmEmailToTask(){
   function empCard(p){
     var star=p.keyRole?'<span class="tl-key" title="Key role">Key</span>':'';
     var low=p.confidence==='low';
+    var av='<div class="tl-av" style="background:'+_projAvatarColor(p.name||'')+'">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'')+esc(initials(p.name))+'</div>';
     return '<div class="tl-emp'+(low?' lowconf':'')+'" draggable="true" data-id="'+p.id+'"'+(low?' title="AI inferred, review placement"':'')+' ondragstart="talentDragStart(event,\''+p.id+'\')" ondragend="talentDragEnd(this)" onclick="talentEditCard(\''+p.id+'\')">'+
-      '<div class="who"><div class="n">'+esc(p.name)+star+'</div><div class="r">'+esc(p.role||'')+'</div></div></div>';
+      av+'<div class="who"><div class="n">'+esc(p.name)+star+'</div><div class="r">'+esc(p.role||'')+'</div></div></div>';
   }
   // ---------- PERFORMANCE RATING (bell curve) ----------
   // Maps a free-text / numeric rating to a 1-3 band (1 below, 2 meets, 3 exceeds).
