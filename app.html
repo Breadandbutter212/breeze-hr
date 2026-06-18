@@ -17072,12 +17072,12 @@ function _projFaceAvatar(name, i){
   const real = _projEmpIndex ? _projEmpIndex.get((name||'').toLowerCase().trim()) : null;
   const photo = real || _projMockFace(name);
   const init = (name||'').charAt(0).toUpperCase();
-  return `<span title="${jsAttr(name)}" style="position:relative;width:24px;height:24px;border-radius:50%;background:${_projAvatarColor(name)};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.08);overflow:hidden;${i>0?'margin-left:-8px;':''}z-index:${20-i};">${init}${photo?`<img src="${escapeHtml(photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">`:''}</span>`;
+  return `<span title="${jsAttr(name)}" style="position:relative;width:24px;height:24px;border-radius:50%;background:${_projAvatarColor(name)};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.08);overflow:hidden;${i>0?'margin-left:-12px;':''}z-index:${20-i};">${init}${photo?`<img src="${escapeHtml(photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">`:''}</span>`;
 }
 function _projAvatarStack(m){
   const people = _projAssignees(m); if(!people.length) return '';
   const shown = people.slice(0,3); const extra = people.length - shown.length;
-  return `<span style="display:inline-flex;align-items:center;">${shown.map((nm,i)=>_projFaceAvatar(nm,i)).join('')}${extra>0?`<span style="margin-left:-8px;width:24px;height:24px;border-radius:50%;background:var(--surface3);color:var(--ink2);font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;border:2px solid #fff;z-index:1;">+${extra}</span>`:''}</span>`;
+  return `<span style="display:inline-flex;align-items:center;">${shown.map((nm,i)=>_projFaceAvatar(nm,i)).join('')}${extra>0?`<span style="margin-left:-12px;width:24px;height:24px;border-radius:50%;background:var(--surface3);color:var(--ink2);font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;border:2px solid #fff;z-index:1;">+${extra}</span>`:''}</span>`;
 }
 // Coloured label chip at the top of a card, driven by due status.
 function _projCardLabel(m){
