@@ -17083,7 +17083,7 @@ function projEmailStatus(){
 
 // ── Attach email picker ──
 function projAttachEmail(){
-  let emails=(window._allEmails&&window._allEmails.length)?window._allEmails:(window._isTestAccount?getTestEmails():[]);
+  let emails=(_allEmails&&_allEmails.length)?_allEmails:(window._isTestAccount?getTestEmails():[]);
   if(!emails.length){ alert('Open your inbox first (the email icon, top right) so there are emails to attach.'); return; }
   _projEmailPick=emails;
   let m=document.getElementById('projEmailPickModal'); if(!m){ m=document.createElement('div'); m.id='projEmailPickModal'; document.body.appendChild(m); }
@@ -17430,7 +17430,7 @@ async function projAddTaskLink(id){ const p=projActive(); const m=(p.milestones|
 async function projRemoveTaskAttachment(id,ai){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; (m.attachments||[]).splice(ai,1); await saveProjects(); renderProjectDetail(); }
 
 async function projAddEmailFromInbox(idx){
-  const emails=(window._allEmails&&window._allEmails.length)?window._allEmails:(window._isTestAccount?getTestEmails():[]);
+  const emails=(_allEmails&&_allEmails.length)?_allEmails:(window._isTestAccount?getTestEmails():[]);
   const e=emails[idx]; if(!e) return;
   if(!projectsData) await loadProjects();
   if(!projectsData||!projectsData.length){ alert('Create a project first, then you can attach emails to its tasks.'); return; }
