@@ -4802,7 +4802,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Download</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Word</button><button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
@@ -5139,9 +5139,9 @@ async function downloadAsDocx() {
       const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();
       URL.revokeObjectURL(url);
     }
-    if(btn){btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Download .docx',3000);}
+    if(btn){btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);}
   } catch(e){
-    if(btn){btn.textContent='⬇ Download .docx';btn.disabled=false;}
+    if(btn){btn.textContent='⬇ Word';btn.disabled=false;}
   }
 }
 
@@ -5160,13 +5160,38 @@ async function downloadDocx() {
       payload={plainText:dpBody?htmlToMarkdownText(dpBody.innerHTML):'',templateName:selTmpl.name};
     }
     const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(!res.ok){const err=await res.json();alert('Error: '+err.error);btn.textContent='⬇ Download .docx';btn.disabled=false;return;}
+    if(!res.ok){const err=await res.json();alert('Error: '+err.error);btn.textContent='⬇ Word';btn.disabled=false;return;}
     const blob=await res.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
     // Server sends .doc for plainText path, .docx for template path
     a.download=selTmpl.base64?`${buildDocFileName()}.docx`:`${buildDocFileName()}.doc`;
     a.click();URL.revokeObjectURL(url);
-    btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Download .docx',3000);
-  } catch(e){alert('Download failed');btn.textContent='⬇ Download .docx';btn.disabled=false;}
+    btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);
+  } catch(e){alert('Download failed');btn.textContent='⬇ Word';btn.disabled=false;}
+}
+
+// PDF download: render the live preview in a print window and let the browser save it as PDF.
+function downloadDocAsPdf() {
+  const body = document.getElementById('dpBody'); if (!body) return;
+  if (typeof roiAddDoc==='function') roiAddDoc(1);
+  const docPage = body.querySelector('.doc-page, .mammoth-doc') || body;
+  const title = (typeof buildDocFileName==='function') ? buildDocFileName() : (selTmpl?.name || 'document');
+  const w = window.open('', '_blank');
+  if (!w) { alert('Please allow pop-ups to download as PDF.'); return; }
+  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+    <style>
+      @page { margin: 20mm; }
+      body { font-family: Georgia, 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #111; max-width: 720px; margin: 0 auto; padding: 24px; }
+      h1,h2,h3 { font-family: inherit; }
+      table { border-collapse: collapse; width: 100%; }
+      td,th { border: 1px solid #9CA3AF; padding: 6px 8px; }
+      img { max-width: 100%; }
+    </style></head><body>${docPage.innerHTML}</body></html>`);
+  w.document.close();
+  // Give the new window a moment to lay out, then open the print/save-as-PDF dialog (once).
+  let printed = false;
+  const doPrint = () => { if (printed) return; printed = true; try { w.focus(); w.print(); } catch(e){} };
+  w.onload = doPrint;
+  setTimeout(doPrint, 500);
 }
 
 function downloadTxt() {
@@ -5215,8 +5240,8 @@ async function renderManage() {
   const handbook = dbPolicies.find(p=>p.name.startsWith('HANDBOOK:'));
   // Exclude internal/system records (settings, trackers, meeting notes, style, templates, chats) - only show genuine uploaded policies
   const INTERNAL_PREFIX = /^(HANDBOOK|TEMPLATE|CHAT|MEETING|SETTING|STYLE|TRACKER):/i;
-  const regularDb = dbPolicies.filter(p=>!INTERNAL_PREFIX.test(p.name));
-  const allPolicies=policies.map(p=>{const up=regularDb.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};});
+  const regularDb = dbPolicies.filter(p=>!INTERNAL_PREFIX.test(p.name)).sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'}));
+  const allPolicies=policies.map(p=>{const up=regularDb.find(d=>d.name.toLowerCase().includes(p.name.toLowerCase().split(' ')[0]));return{...p,status:up?'uploaded':p.status,dbId:up?.id};}).sort((a,b)=>a.name.localeCompare(b.name,undefined,{sensitivity:'base'}));
   const uc=allPolicies.filter(p=>p.status==='uploaded').length;
 
   const handbookHtml = `
@@ -5239,9 +5264,21 @@ async function renderManage() {
       </div>
     </div>
     <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Policies</div>
-    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${uc} of ${policies.length} uploaded - Breeze HR uses these to answer employee questions accurately</div>`;
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:12px;">${uc} of ${policies.length} uploaded - Breeze HR uses these to answer employee questions accurately</div>
+    <div style="position:relative;max-width:340px;margin-bottom:16px;">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2" style="position:absolute;left:12px;top:50%;transform:translateY(-50%);"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="policySearch" type="text" placeholder="Search policies..." oninput="filterPolicies(this.value)" style="width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;font-family:inherit;background:var(--surface);color:var(--ink);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    </div>`;
 
-  body.innerHTML=`${handbookHtml}<div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card"><div class="pc-icon">${policyIco(p.name)}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${jsAttr(p.name)}')">${_ICO_DL}</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${jsAttr(p.name)}','${p.dbId||''}')"></label></div></div></div>`).join('')}</div>${regularDb.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${regularDb.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${escapeHtml(p.name)}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${jsAttr(p.name)}')">${_ICO_DL}</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+  body.innerHTML=`${handbookHtml}<div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card" data-pname="${escapeHtml(p.name)}"><div class="pc-icon">${policyIco(p.name)}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${jsAttr(p.name)}')">${_ICO_DL}</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${jsAttr(p.name)}','${p.dbId||''}')"></label></div></div></div>`).join('')}</div>${regularDb.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${regularDb.map(p=>`<div class="uploaded-policy-row" data-pname="${escapeHtml(p.name)}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${escapeHtml(p.name)}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${jsAttr(p.name)}')">${_ICO_DL}</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+}
+
+function filterPolicies(q){
+  const term=(q||'').trim().toLowerCase();
+  document.querySelectorAll('.policy-card, .uploaded-policy-row').forEach(el=>{
+    const name=(el.dataset.pname||'').toLowerCase();
+    el.style.display = !term || name.includes(term) ? '' : 'none';
+  });
 }
 
 async function uploadHandbook(event, existingId) {
@@ -5354,8 +5391,10 @@ async function deletePolicy(id) {
 
 async function viewPolicy(id, name) {
   if (!currentProfile) return;
-  const { data } = await sb.from('policies').select('content').eq('id', id).single();
+  const { data } = await sb.from('policies').select('content,created_at,updated_at').eq('id', id).single();
   if (!data) return;
+  const updTs = data.updated_at || data.created_at;
+  const lastUpd = updTs ? new Date(updTs).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
   let modal = document.getElementById('policyViewModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'policyViewModal'; document.body.appendChild(modal); }
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -5378,21 +5417,77 @@ async function viewPolicy(id, name) {
     for (let i = 0; i < binaryStr.length; i++) bytes[i] = binaryStr.charCodeAt(i);
     let html = '';
     try { const r = await mammoth.convertToHtml({ arrayBuffer: bytes.buffer }); html = r.value; } catch(e) {}
-    bodyHtml = `<div class="mammoth-doc" style="flex:1;overflow-y:auto;padding:28px 40px;">${html}</div>`;
+    bodyHtml = `<div id="policyDocBody" class="mammoth-doc" style="flex:1;overflow-y:auto;padding:28px 40px;">${html}</div>`;
   } else {
-    bodyHtml = `<div style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(policyText(data.content))}</div>`;
+    bodyHtml = `<div id="policyDocBody" style="flex:1;overflow-y:auto;padding:20px;font-size:12px;line-height:1.85;color:var(--ink);white-space:pre-wrap;font-family:inherit;">${escapeHtml(policyText(data.content))}</div>`;
   }
+  // PDFs render in an iframe (use the viewer's own Ctrl/Cmd+F); text & Word docs get an in-doc search bar.
+  const searchBar = isPdf ? '' : `<div style="display:flex;align-items:center;gap:8px;padding:8px 20px;border-bottom:1px solid var(--border);flex-shrink:0;background:var(--surface);">
+      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="var(--ink3)" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input id="policyDocSearch" type="text" placeholder="Find in policy..." oninput="policyDocSearch(this.value)" onkeydown="if(event.key==='Enter'){event.preventDefault();policyDocSearchNext(event.shiftKey?-1:1);}" style="flex:1;border:none;outline:none;font-size:12px;font-family:inherit;background:transparent;color:var(--ink);">
+      <span id="policySearchCount" style="font-size:11px;color:var(--ink3);white-space:nowrap;"></span>
+      <button onclick="policyDocSearchNext(-1)" title="Previous" style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--ink2);width:22px;height:22px;line-height:1;">↑</button>
+      <button onclick="policyDocSearchNext(1)" title="Next" style="background:none;border:1px solid var(--border);border-radius:4px;cursor:pointer;color:var(--ink2);width:22px;height:22px;line-height:1;">↓</button>
+    </div>`;
   modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:860px;height:90vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-shrink:0;">
-      <div style="font-size:14px;font-weight:600;color:var(--ink);">${escapeHtml(name)}</div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="min-width:0;">
+        <div style="font-size:14px;font-weight:600;color:var(--ink);">${escapeHtml(name)}</div>
+        ${lastUpd?`<div style="font-size:11px;color:var(--ink3);margin-top:2px;">Last updated ${lastUpd}</div>`:''}
+      </div>
+      <div style="display:flex;gap:8px;align-items:center;flex-shrink:0;">
         <button class="btn btn-secondary btn-sm" onclick="downloadPolicyFile('${id}','${jsAttr(name)}')"> ${dlLabel}</button>
         <button onclick="document.getElementById('policyViewModal').style.display='none'" style="background:none;border:none;cursor:pointer;font-size:22px;color:var(--ink3);line-height:1;padding:0 4px;">×</button>
       </div>
     </div>
+    ${searchBar}
     ${bodyHtml}
   </div>`;
   modal.onclick = e => { if (e.target===modal) modal.style.display='none'; };
+}
+
+let _policyMarks = [], _policyMarkIdx = 0;
+function policyDocSearch(q){
+  const c = document.getElementById('policyDocBody'); if (!c) return;
+  if (c._origHtml === undefined) c._origHtml = c.innerHTML;
+  c.innerHTML = c._origHtml;
+  _policyMarks = []; _policyMarkIdx = 0;
+  const info = document.getElementById('policySearchCount');
+  const term = (q||'').trim();
+  if (!term) { if (info) info.textContent = ''; return; }
+  const lc = term.toLowerCase();
+  const walker = document.createTreeWalker(c, NodeFilter.SHOW_TEXT, null);
+  const nodes = []; let n; while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(node => {
+    const text = node.nodeValue, lower = text.toLowerCase();
+    if (!lower.includes(lc)) return;
+    const frag = document.createDocumentFragment();
+    let i = 0, idx;
+    while ((idx = lower.indexOf(lc, i)) !== -1) {
+      if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
+      const mark = document.createElement('mark');
+      mark.textContent = text.slice(idx, idx + term.length);
+      mark.style.cssText = 'background:#FEF08A;color:inherit;border-radius:2px;';
+      frag.appendChild(mark); _policyMarks.push(mark);
+      i = idx + term.length;
+    }
+    if (i < text.length) frag.appendChild(document.createTextNode(text.slice(i)));
+    node.parentNode.replaceChild(frag, node);
+  });
+  if (info) info.textContent = _policyMarks.length ? `1 of ${_policyMarks.length}` : 'No matches';
+  if (_policyMarks.length) { _policyMarkIdx = 0; _policyHighlightCurrent(); }
+}
+function _policyHighlightCurrent(){
+  _policyMarks.forEach((m,i)=>m.style.background = i===_policyMarkIdx ? '#FB923C' : '#FEF08A');
+  const cur = _policyMarks[_policyMarkIdx];
+  if (cur) cur.scrollIntoView({block:'center', behavior:'smooth'});
+}
+function policyDocSearchNext(dir){
+  if (!_policyMarks.length) return;
+  _policyMarkIdx = (_policyMarkIdx + dir + _policyMarks.length) % _policyMarks.length;
+  _policyHighlightCurrent();
+  const info = document.getElementById('policySearchCount');
+  if (info) info.textContent = `${_policyMarkIdx+1} of ${_policyMarks.length}`;
 }
 
 async function downloadPolicyFile(id, name) {
@@ -6184,8 +6279,16 @@ async function homeFill(){
   if (!document.getElementById('homeRing')) return;   // user navigated away
   const attention = (d.projOverdue||0) + (d.ppSoon||0) + (d.rolesUrgent||0);
   const sub = document.getElementById('homeSub');
+  // Spell out exactly what the number is made of so it's self-explanatory.
+  const bits = [];
+  if (d.projOverdue) bits.push(`<b>${d.projOverdue}</b> overdue task${d.projOverdue>1?'s':''}`);
+  if (d.ppSoon)      bits.push(`<b>${d.ppSoon}</b> event${d.ppSoon>1?'s':''} in the next 60 days`);
+  if (d.rolesUrgent) bits.push(`<b>${d.rolesUrgent}</b> urgent role${d.rolesUrgent>1?'s':''}`);
+  const breakdown = bits.length===1 ? bits[0]
+    : bits.length===2 ? `${bits[0]} and ${bits[1]}`
+    : `${bits.slice(0,-1).join(', ')} and ${bits[bits.length-1]}`;
   if (sub) sub.innerHTML = attention>0
-    ? `You've got <b>${attention}</b> thing${attention>1?'s':''} that need a look. Here's where they are.`
+    ? `${breakdown.charAt(0).toUpperCase()+breakdown.slice(1)} need a look.`
     : `You're all caught up - nothing overdue. Here's your workspace at a glance.`;
 
   const segs = [
@@ -10868,6 +10971,10 @@ function renderPPTimeline() {
 }
 
 let ppView = 'timeline'; // 'timeline' | 'details'
+let _ppFilterCat = '';   // '' = all categories
+let _ppSort = 'month';   // 'month' | 'category' | 'event' | 'owner'
+function ppSetFilter(v){ _ppFilterCat = v; renderPPDetails(); }
+function ppSetSort(v){ _ppSort = v; renderPPDetails(); }
 
 function ppModalInputStyle() {
   return 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
@@ -10992,10 +11099,13 @@ function ppSaveEditEvent(id, btn) {
   ev.owner = document.getElementById('ppEditOwner')?.value?.trim() || '';
   ev.startDate = document.getElementById('ppEditStartDate')?.value || '';
   ev.endDate = document.getElementById('ppEditEndDate')?.value || '';
-  // Specific dates win: derive the months from them so the bar lands where the dates say.
-  const sM = ev.startDate ? parseInt(ev.startDate.split('-')[1]) : s;
-  const eM = ev.endDate ? parseInt(ev.endDate.split('-')[1]) : e2;
-  ev.startMonth = Math.min(sM,eM); ev.endMonth = Math.max(sM,eM);
+  // Month dropdowns are authoritative for the bar's span. Specific dates only refine the
+  // position within those months - so drop any stale date that now falls outside the range
+  // (otherwise changing the months alone would get silently overridden by old dates).
+  const lo = Math.min(s,e2), hi = Math.max(s,e2);
+  if (ev.startDate) { const m = parseInt(ev.startDate.split('-')[1]); if (m<lo||m>hi) ev.startDate=''; }
+  if (ev.endDate)   { const m = parseInt(ev.endDate.split('-')[1]);   if (m<lo||m>hi) ev.endDate=''; }
+  ev.startMonth = lo; ev.endMonth = hi;
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
@@ -11039,10 +11149,13 @@ function ppSaveEditAndInvite(id, btn) {
   ev.owner = document.getElementById('ppEditOwner')?.value?.trim() || '';
   ev.startDate = document.getElementById('ppEditStartDate')?.value || '';
   ev.endDate = document.getElementById('ppEditEndDate')?.value || '';
-  // Specific dates win: derive the months from them so the bar lands where the dates say.
-  const sM = ev.startDate ? parseInt(ev.startDate.split('-')[1]) : s;
-  const eM = ev.endDate ? parseInt(ev.endDate.split('-')[1]) : e2;
-  ev.startMonth = Math.min(sM,eM); ev.endMonth = Math.max(sM,eM);
+  // Month dropdowns are authoritative for the bar's span. Specific dates only refine the
+  // position within those months - so drop any stale date that now falls outside the range
+  // (otherwise changing the months alone would get silently overridden by old dates).
+  const lo = Math.min(s,e2), hi = Math.max(s,e2);
+  if (ev.startDate) { const m = parseInt(ev.startDate.split('-')[1]); if (m<lo||m>hi) ev.startDate=''; }
+  if (ev.endDate)   { const m = parseInt(ev.endDate.split('-')[1]);   if (m<lo||m>hi) ev.endDate=''; }
+  ev.startMonth = lo; ev.endMonth = hi;
   renderPeoplePlanSave();
   btn.closest('div[style*=fixed]').remove();
   ppView === 'details' ? renderPPDetails() : renderPPTimeline();
@@ -11105,8 +11218,13 @@ function renderPPDetails() {
   const body = document.getElementById('peoplePlanBody');
   if (!body || !ppPlan) return;
   const { events } = ppPlan;
-  // Sort by startMonth then startDate
-  const sorted = [...events].sort((a,b) => {
+  const filtered = _ppFilterCat ? events.filter(e => e.catId === _ppFilterCat) : events;
+  const catLabel = id => (PP_CATS.find(c=>c.id===id)||{}).label || '';
+  const sorted = [...filtered].sort((a,b) => {
+    if (_ppSort === 'category') return catLabel(a.catId).localeCompare(catLabel(b.catId)) || a.startMonth - b.startMonth;
+    if (_ppSort === 'event')    return (a.title||'').localeCompare(b.title||'');
+    if (_ppSort === 'owner')    return (a.owner||'').localeCompare(b.owner||'') || a.startMonth - b.startMonth;
+    // default: month
     if (a.startMonth !== b.startMonth) return a.startMonth - b.startMonth;
     if (a.startDate && b.startDate) return a.startDate.localeCompare(b.startDate);
     return 0;
@@ -11145,8 +11263,18 @@ function renderPPDetails() {
         <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Calendar</button>
         <button onclick="ppSwitchView('details')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Details</button>
       </div>
-      <div style="font-size:12px;color:var(--ink3);margin-left:4px;">${events.length} events · ${withDates} with specific dates${without ? ' · ' + without + ' without dates' : ''}</div>
-      <button class="btn btn-secondary btn-sm" style="margin-left:auto;" onclick="ppAddEvent()">+ Add event</button>
+      <div style="font-size:12px;color:var(--ink3);margin-left:4px;">${sorted.length}${_ppFilterCat?` of ${events.length}`:''} events${_ppFilterCat?'':` · ${withDates} with specific dates${without ? ' · ' + without + ' without dates' : ''}`}</div>
+      <select onchange="ppSetFilter(this.value)" title="Filter by category" style="margin-left:auto;font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+        <option value=""${_ppFilterCat===''?' selected':''}>All categories</option>
+        ${PP_CATS.map(c=>`<option value="${c.id}"${_ppFilterCat===c.id?' selected':''}>${escapeHtml(c.label)}</option>`).join('')}
+      </select>
+      <select onchange="ppSetSort(this.value)" title="Sort by" style="font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+        <option value="month"${_ppSort==='month'?' selected':''}>Sort: Month</option>
+        <option value="category"${_ppSort==='category'?' selected':''}>Sort: Category</option>
+        <option value="event"${_ppSort==='event'?' selected':''}>Sort: Event name</option>
+        <option value="owner"${_ppSort==='owner'?' selected':''}>Sort: Owner</option>
+      </select>
+      <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
     </div>
     <div style="flex:1;overflow:auto;">
       <table style="width:100%;border-collapse:collapse;font-size:13px;">
@@ -14120,6 +14248,11 @@ function wfTagBadge(tag) {
 }
 
 let _wfCurrentTabScenarios = [];
+let _wfCurrentTabBody = null, _wfCurrentTabOpts = {};
+let _wfSort = 'started_desc';      // started_desc | started_asc | name | progress
+let _wfStatusFilter = 'all';       // all | active | closed
+function wfSetSort(v){ _wfSort = v; if(_wfCurrentTabBody) renderWfCategoryTab(_wfCurrentTabBody, _wfCurrentTabScenarios, _wfCurrentTabOpts); }
+function wfSetStatusFilter(v){ _wfStatusFilter = v; if(_wfCurrentTabBody) renderWfCategoryTab(_wfCurrentTabBody, _wfCurrentTabScenarios, _wfCurrentTabOpts); }
 
 // ── CALENDAR / .ICS ──
 let _pendingCalEvents = null;
@@ -14271,10 +14404,23 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     wfPolicies = wfPolicies || [];
   }
   _wfCurrentTabScenarios = scenarioIds;
+  _wfCurrentTabBody = body; _wfCurrentTabOpts = opts;
   const tabScenarios = WF_SCENARIOS.filter(s => scenarioIds.includes(s.id));
   const allCases = (wfCases||[]).filter(c => scenarioIds.includes(c.scenarioId));
   const activeCases = allCases.filter(c => c.status !== 'closed');
   const closedCases = allCases.filter(c => c.status === 'closed');
+  // Filter + sort (KPI tiles above still reflect the full set).
+  const _pctOf = c => { const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]}; return sc.steps.length ? Math.round((c.checkedSteps.length/sc.steps.length)*100) : 0; };
+  const _sortCases = arr => [...arr].sort((a,b)=>{
+    switch(_wfSort){
+      case 'started_asc': return new Date(a.startedAt) - new Date(b.startedAt);
+      case 'name': return (a.employeeName||'').localeCompare(b.employeeName||'');
+      case 'progress': return _pctOf(b) - _pctOf(a);
+      default: return new Date(b.startedAt) - new Date(a.startedAt);
+    }
+  });
+  const activeDisplay = _wfStatusFilter==='closed' ? [] : _sortCases(activeCases);
+  const closedDisplay = _wfStatusFilter==='active' ? [] : _sortCases(closedCases);
 
   // --- FULL-WIDTH LAYOUT ---
   // For Family Leave: show mat/pat tracker as the main content
@@ -14292,12 +14438,12 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
   const _allSameCat = tabScenarios.length > 1 && tabScenarios.every(s=>s.cat===tabScenarios[0]?.cat);
   const catName = _allSameCat ? tabScenarios[0].cat : (tabScenarios[0]?.label || 'Cases');
   const guidanceTopic = scenarioIds[0]?.split('-')[0] || 'leave';
-  const rowsHtml = activeCases.length || closedCases.length
+  const rowsHtml = activeDisplay.length || closedDisplay.length
     ? `<div class="trk-card" style="overflow-x:auto;">
         <table class="trk-table">
           <thead><tr><th>Employee</th><th>Type</th><th>Started</th><th>Checklist</th><th>Status</th><th></th></tr></thead>
           <tbody>
-            ${activeCases.map(c => {
+            ${activeDisplay.map(c => {
               const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{icon:'📋',label:'Unknown',steps:[]};
               const pct = sc.steps.length ? Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)) : 0;
               const started = new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
@@ -14324,7 +14470,7 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 </td>
               </tr>`;
             }).join('')}
-            ${closedCases.map(c => {
+            ${closedDisplay.map(c => {
               const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{icon:'📋',label:'Unknown',steps:[]};
               const pct = sc.steps.length ? Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)) : 0;
               return `<tr style="opacity:0.55;cursor:pointer;" onclick="openWfCasePanel('${c.id}')">
@@ -14343,6 +14489,8 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
           </tbody>
         </table>
       </div>`
+    : (activeCases.length || closedCases.length)
+    ? `<div class="trk-card" style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No cases match these filters. <button onclick="_wfStatusFilter='all';renderWfCategoryTab(_wfCurrentTabBody,_wfCurrentTabScenarios,_wfCurrentTabOpts);" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;">Show all</button></div>`
     : `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:48px;text-align:center;">
         <div style="width:48px;height:48px;border-radius:12px;background:var(--surface2);color:var(--ink3);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;">${tabScenarios[0]?scenarioIco(tabScenarios[0],24):''}</div>
         <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;">No active cases</div>
@@ -14354,7 +14502,18 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
     ${buildTabKpisHtml(activeCases, closedCases, scenarioIds)}
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
       <div style="font-size:15px;font-weight:700;color:var(--ink);">${catName.replace(' leave','').replace(' /','/')} cases <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${activeCases.length} active${closedCases.length?' · '+closedCases.length+' closed':''})</span></div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select onchange="wfSetStatusFilter(this.value)" title="Filter by status" style="font-size:11px;padding:4px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+          <option value="all"${_wfStatusFilter==='all'?' selected':''}>All cases</option>
+          <option value="active"${_wfStatusFilter==='active'?' selected':''}>Active only</option>
+          <option value="closed"${_wfStatusFilter==='closed'?' selected':''}>Closed only</option>
+        </select>
+        <select onchange="wfSetSort(this.value)" title="Sort by" style="font-size:11px;padding:4px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+          <option value="started_desc"${_wfSort==='started_desc'?' selected':''}>Sort: Newest first</option>
+          <option value="started_asc"${_wfSort==='started_asc'?' selected':''}>Sort: Oldest first</option>
+          <option value="name"${_wfSort==='name'?' selected':''}>Sort: Employee name</option>
+          <option value="progress"${_wfSort==='progress'?' selected':''}>Sort: Checklist %</option>
+        </select>
         <button onclick="downloadTabCSVByScenarios('${scenarioIds.join(',')}','${catName} tracker')" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         ${!opts.noGuidance?`<button onclick="openTrackerGuidance('${scenarioIds[0]?.includes('absence')?'absence':scenarioIds[0]?.includes('leave')?'leave':scenarioIds[0]?.includes('resignation')?'leavers':scenarioIds[0]?.includes('performance')?'performance':scenarioIds[0]?.includes('disciplinary')||scenarioIds[0]?.includes('grievance')?'conduct':scenarioIds.some(id=>id.includes('immigration')||id.includes('rtw')||id.includes('visa')||id.includes('ilr'))?'immigration':'leave'}')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>`:''}
         ${opts.customTrackerId?`<button onclick="deleteCustomTracker('${opts.customTrackerId}')" style="font-size:11px;color:var(--red);background:var(--red-bg);border:1px solid var(--red);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">🗑 Delete tracker</button>`:''}
@@ -15555,6 +15714,12 @@ function hcStageDurationHtml(r) {
   return `<div>${bars}<div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--border);font-size:11px;color:var(--ink3);">Total time open: <strong style="color:var(--ink);">${totalDays} days</strong></div></div>`;
 }
 
+let _hcFilterStage = '', _hcFilterPriority = '', _hcSort = 'priority';
+function hcSetFilterStage(v){ _hcFilterStage = v; renderHeadcount(); }
+function hcSetFilterPriority(v){ _hcFilterPriority = v; renderHeadcount(); }
+function hcSetSort(v){ _hcSort = v; renderHeadcount(); }
+const _HC_PRIO_RANK = { urgent:0, high:1, normal:2, low:3 };
+
 function renderHeadcount() {
   const body = document.getElementById('headcountBody');
   if (!body || !hcRoles) return;
@@ -15569,7 +15734,25 @@ function renderHeadcount() {
   const hiredTY = hcRoles.filter(r=>r.stage==='hired'&&new Date(r.updatedAt||r.createdAt).getFullYear()===thisYear);
   const avgDays = active.length ? Math.round(active.reduce((s,r)=>s+hcDaysOpen(r),0)/active.length) : 0;
 
-  const rows = hcRoles.map(r=>{
+  // Apply filters + sort for the table (KPI tiles above still reflect the full set).
+  let displayRoles = hcRoles.filter(r=>{
+    if (_hcFilterStage === 'active' && closed.includes(r.stage)) return false;
+    if (_hcFilterStage && _hcFilterStage !== 'active' && r.stage !== _hcFilterStage) return false;
+    if (_hcFilterPriority && r.priority !== _hcFilterPriority) return false;
+    return true;
+  });
+  displayRoles = [...displayRoles].sort((a,b)=>{
+    switch(_hcSort){
+      case 'days': return hcDaysOpen(b) - hcDaysOpen(a);
+      case 'target': return (a.targetStart||'9999').localeCompare(b.targetStart||'9999');
+      case 'comp': return (b.compMax||b.compMin||0) - (a.compMax||a.compMin||0);
+      case 'title': return (a.title||'').localeCompare(b.title||'');
+      case 'recent': return new Date(b.createdAt||0) - new Date(a.createdAt||0);
+      default: return (_HC_PRIO_RANK[a.priority]??2) - (_HC_PRIO_RANK[b.priority]??2) || hcDaysOpen(b)-hcDaysOpen(a);
+    }
+  });
+
+  const rows = displayRoles.map(r=>{
     const st = HC_STAGES.find(x=>x.id===r.stage)||{label:r.stage,color:'var(--ink2)',bg:'#F3F4F6'};
     const stageOpts = HC_STAGES.map(s=>`<option value="${s.id}"${r.stage===s.id?' selected':''}>${s.label}</option>`).join('');
     return `<tr onclick="openRolePanel('${r.id}')" style="cursor:pointer;">
@@ -15602,16 +15785,33 @@ function renderHeadcount() {
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${avgDays}d</div><div class="trk-kpi-label">Avg days open</div><div class="trk-kpi-sub">Active roles</div></div>
     </div>
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-      <div style="font-size:15px;font-weight:700;color:var(--ink);">Open roles <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${active.length} active${hiredTY.length?' · '+hiredTY.length+' hired this year':''})</span></div>
-      <div style="display:flex;gap:8px;align-items:center;">
+      <div style="font-size:15px;font-weight:700;color:var(--ink);">Open roles <span style="font-size:13px;font-weight:400;color:var(--ink3);">(${displayRoles.length}${(_hcFilterStage||_hcFilterPriority)?' of '+hcRoles.length:''} shown · ${active.length} active${hiredTY.length?' · '+hiredTY.length+' hired this year':''})</span></div>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <select onchange="hcSetFilterStage(this.value)" title="Filter by stage" style="font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+          <option value=""${_hcFilterStage===''?' selected':''}>All stages</option>
+          <option value="active"${_hcFilterStage==='active'?' selected':''}>Active only</option>
+          ${HC_STAGES.map(s=>`<option value="${s.id}"${_hcFilterStage===s.id?' selected':''}>${escapeHtml(s.label)}</option>`).join('')}
+        </select>
+        <select onchange="hcSetFilterPriority(this.value)" title="Filter by priority" style="font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+          <option value=""${_hcFilterPriority===''?' selected':''}>All priorities</option>
+          ${HC_PRIORITIES.map(p=>`<option value="${p.id}"${_hcFilterPriority===p.id?' selected':''}>${escapeHtml(p.label)}</option>`).join('')}
+        </select>
+        <select onchange="hcSetSort(this.value)" title="Sort by" style="font-size:11px;padding:5px 9px;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface);color:var(--ink2);font-family:inherit;cursor:pointer;">
+          <option value="priority"${_hcSort==='priority'?' selected':''}>Sort: Priority</option>
+          <option value="days"${_hcSort==='days'?' selected':''}>Sort: Days open</option>
+          <option value="target"${_hcSort==='target'?' selected':''}>Sort: Target start</option>
+          <option value="comp"${_hcSort==='comp'?' selected':''}>Sort: Comp</option>
+          <option value="title"${_hcSort==='title'?' selected':''}>Sort: Role name</option>
+          <option value="recent"${_hcSort==='recent'?' selected':''}>Sort: Recently added</option>
+        </select>
         <button onclick="downloadHCCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
         <button onclick="openAddRoleModal()" class="btn btn-primary btn-sm">+ Add role</button>
       </div>
     </div>
-    ${hcRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
+    ${hcRoles.length ? (displayRoles.length ? `<div class="trk-card" style="overflow-x:auto;"><table class="trk-table">
       <thead><tr><th>Role</th><th>Stage</th><th>Location</th><th>Comp range</th><th>Target start</th><th>Candidates</th><th>Days open</th><th></th></tr></thead>
       <tbody>${rows}</tbody>
-    </table></div>` : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.<br><br><button onclick="hcLoadDemoData()" style="font-size:12px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:5px 14px;cursor:pointer;font-family:inherit;">Load sample data</button></div>`}
+    </table></div>` : `<div class="trk-card" style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No roles match these filters. <button onclick="_hcFilterStage='';_hcFilterPriority='';renderHeadcount();" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline;">Clear filters</button></div>`) : `<div class="trk-card" style="padding:48px;text-align:center;color:var(--ink3);font-size:13px;">No roles yet. Click <strong>+ Add role</strong> to track your first open position.<br><br><button onclick="hcLoadDemoData()" style="font-size:12px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:5px 14px;cursor:pointer;font-family:inherit;">Load sample data</button></div>`}
   </div>`;
 }
 function openAddRoleModal(existing) {
@@ -16220,7 +16420,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'timeline', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'list', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#3B82F6' },
@@ -16620,6 +16820,7 @@ function projMilestonesBlock(p, sel, card){
     return `<div style="border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;overflow:hidden;background:var(--surface);">
       <div style="display:flex;align-items:center;gap:10px;padding:11px 13px;">
         <input type="checkbox" ${projMsDone(m)?'checked':''} title="Mark complete" onclick="event.stopPropagation()" onchange="projToggleMilestone('${m.id}')" style="width:16px;height:16px;cursor:pointer;flex-shrink:0;">
+        <button onclick="event.stopPropagation();projToggleExpand('${m.id}')" title="${expanded?'Collapse':'Open task'}" style="flex-shrink:0;width:24px;height:24px;border-radius:6px;border:1px solid var(--border);background:${expanded?'var(--accent-bg)':'var(--surface2)'};color:${expanded?'var(--accent)':'var(--ink2)'};font-size:11px;line-height:1;display:inline-flex;align-items:center;justify-content:center;cursor:pointer;transition:transform .15s;transform:rotate(${expanded?'90':'0'}deg);">▶</button>
         <div style="flex:1;min-width:0;cursor:pointer;" onclick="projToggleExpand('${m.id}')">
           <div style="font-size:13px;font-weight:500;color:${projMsDone(m)?'var(--ink3)':'var(--ink)'};${projMsDone(m)?'text-decoration:line-through;':''}">${escapeHtml(m.title)}</div>
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(stt.label)}${subs.length?` · ${subs.filter(s=>s.done).length}/${subs.length} steps`:''}${atts.length?` · ${atts.length} attached`:''}${ov?' · <span style="color:#B42318;font-weight:600;">OVERDUE</span>':''}</div>
@@ -16627,7 +16828,6 @@ function projMilestonesBlock(p, sel, card){
         <span onclick="event.stopPropagation();projEditMsOwner('${m.id}')" title="Owner - click to edit" style="font-size:11px;color:${m.owner?'var(--ink2)':'var(--ink3)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;max-width:120px;overflow:hidden;white-space:nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(m.owner||'Owner')}</span>
         <input type="date" value="${m.dueDate||''}" title="Due date" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;flex-shrink:0;${ov?'color:#B42318;border-color:#FECACA;':''}">
         ${subs.length?`<div style="width:54px;flex-shrink:0;"><div style="height:5px;background:var(--surface3);border-radius:3px;overflow:hidden;"><div style="height:100%;width:${prog}%;background:${stt.color};"></div></div></div>`:''}
-        <span onclick="projToggleExpand('${m.id}')" style="color:var(--ink3);font-size:10px;flex-shrink:0;cursor:pointer;display:inline-block;transform:rotate(${expanded?'90':'0'}deg);">▶</span>
       </div>
       ${expanded?`<div style="padding:2px 13px 13px 39px;border-top:1px solid var(--border);">
         <div style="margin-top:10px;font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description...</span>'}</div>
