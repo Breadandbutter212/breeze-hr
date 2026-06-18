@@ -16791,6 +16791,8 @@ function renderProjectDetail(){
 
     ${projMilestonesBlock(p, sel, card)}`;
 
+  // Load real faces (HRIS / org chart) once, then re-render the board so owner avatars show photos.
+  if (_projDetailView === 'board' && _projEmpIndex === null && !_projFacesLoading) projLoadFaces().then(()=>{ if (_projDetailView === 'board') renderProjectDetail(); });
   // Keep the open board card modal in sync after a mutation (it closes itself if the task was deleted).
   if (_projOpenCardId) projRenderCardModal(_projOpenCardId);
   // Re-focus an inline quick-add input after the re-render so tasks/steps can be added in quick succession.
@@ -17049,6 +17051,27 @@ function _projAvatarColor(name){
   for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
   return palette[h % palette.length];
 }
+// Index of name -> face photo, built from the HRIS list and the org chart so board cards can show real faces.
+let _projEmpIndex = null, _projFacesLoading = false;
+async function projLoadFaces(){
+  _projFacesLoading = true;
+  const idx = new Map();
+  try { (await loadMergeEmployees()).forEach(e => { const nm=(e.display_full_name||'').toLowerCase().trim(); if(nm) idx.set(nm, e.photo||e.avatar||e.employments?.[0]?.avatar||null); }); } catch(_){}
+  try { (_ocEmps||[]).forEach(e => { const nm=(e.display_full_name||'').toLowerCase().trim(); if(nm && !idx.get(nm)) idx.set(nm, e.photo||e.avatar||null); }); } catch(_){}
+  _projEmpIndex = idx; _projFacesLoading = false; return idx;
+}
+// An owner field may name several people ("Sarah, James & Robert").
+function _projAssignees(m){ return (m.owner||'').split(/\s*(?:,|&|\/| and )\s*/i).map(s=>s.trim()).filter(Boolean); }
+function _projFaceAvatar(name, i){
+  const photo = _projEmpIndex ? _projEmpIndex.get((name||'').toLowerCase().trim()) : null;
+  const init = (name||'').charAt(0).toUpperCase();
+  return `<span title="${jsAttr(name)}" style="position:relative;width:24px;height:24px;border-radius:50%;background:${_projAvatarColor(name)};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.08);overflow:hidden;${i>0?'margin-left:-8px;':''}z-index:${20-i};">${init}${photo?`<img src="${escapeHtml(photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">`:''}</span>`;
+}
+function _projAvatarStack(m){
+  const people = _projAssignees(m); if(!people.length) return '';
+  const shown = people.slice(0,3); const extra = people.length - shown.length;
+  return `<span style="display:inline-flex;align-items:center;">${shown.map((nm,i)=>_projFaceAvatar(nm,i)).join('')}${extra>0?`<span style="margin-left:-8px;width:24px;height:24px;border-radius:50%;background:var(--surface3);color:var(--ink2);font-size:9px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;border:2px solid #fff;z-index:1;">+${extra}</span>`:''}</span>`;
+}
 // Coloured label chip at the top of a card, driven by due status.
 function _projCardLabel(m){
   if (projMilestoneOverdue(m)) return { text:'Overdue', color:'#EF4444' };
@@ -17071,7 +17094,7 @@ function projBoardCard(m,meta){
       ${atts.length?`<span title="Attachments" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;color:var(--ink3);">${ic('<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>')}${atts.length}</span>`:''}
       ${dueStr?`<span title="Due date" style="display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:${ov||done?'600':'400'};color:${ov?'#fff':done?'#15803D':'var(--ink3)'};${ov?'background:#EF4444;':done?'background:#DCFCE7;':''}border-radius:4px;padding:${ov||done?'1px 5px':'0'};">${ic('<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>')}${dueStr}</span>`:''}
       <span style="margin-left:auto;"></span>
-      ${ownerInit?`<span title="${jsAttr(owner)}" style="width:24px;height:24px;border-radius:50%;background:${_projAvatarColor(owner)};color:#fff;font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;border:2px solid #fff;box-shadow:0 0 0 1px rgba(0,0,0,0.06);">${ownerInit}</span>`:''}
+      ${_projAvatarStack(m)}
     </div>
     ${!subs.length?`<button id="brdbrk-${m.id}" onclick="event.stopPropagation();projAiBreakTasks('${m.id}')" title="Use AI to break this into steps" style="margin-top:8px;font-size:10px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:14px;padding:2px 9px;cursor:pointer;font-family:inherit;">✦ Break into steps</button>`:''}
   </div>`;
