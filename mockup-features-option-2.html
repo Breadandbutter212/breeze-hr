@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 2 - Grouped capabilities | Breeze</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap">
+<style>
+  :root{
+    --navy:#16284A;--ink:#0F1B30;--soft:#5b5c63;
+    --terra:#C2603F;--terra-bg:#FCEFE8;
+    --navy-bg:#EAF0FA;--mint:#1FA971;--mint-bg:#E4F7EE;
+    --bg:#FBFAF8;--hair:rgba(15,27,48,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55}
+  .flag{background:var(--navy);color:#fff;text-align:center;font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px}
+  .flag span{opacity:.7;font-weight:500}
+  .wrap{max-width:1120px;margin:0 auto;padding:64px 28px 96px}
+  .head{text-align:center;max-width:60ch;margin:0 auto}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);margin-bottom:14px}
+  h1{font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(30px,4vw,46px);line-height:1.05;letter-spacing:-.02em;color:var(--navy)}
+  .sub{font-size:16.5px;color:var(--soft);margin:16px auto 0;max-width:52ch}
+
+  /* hero ask strip */
+  .ask{margin:44px auto 0;max-width:760px;background:#fff;border:1px solid var(--hair);border-radius:20px;padding:20px 22px;box-shadow:0 26px 50px -36px rgba(15,27,48,.3)}
+  .ask .row{display:flex;gap:11px;align-items:flex-start;margin-bottom:13px}
+  .ask .row:last-child{margin-bottom:0}
+  .av{width:30px;height:30px;border-radius:9px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+  .av.you{background:var(--navy)} .av.bz{background:var(--terra)}
+  .bub{font-size:14.5px;line-height:1.55}
+  .bub.q{color:var(--navy);font-weight:600}
+  .bub small{display:inline-block;margin-top:8px;font-size:11.5px;font-weight:600;color:var(--terra);background:var(--terra-bg);border-radius:20px;padding:4px 11px}
+
+  .grid{display:grid;grid-template-columns:repeat(3,1fr);gap:20px;margin-top:34px}
+  .col{background:#fff;border:1px solid var(--hair);border-radius:20px;padding:24px 22px;position:relative;overflow:hidden}
+  .col:before{content:"";position:absolute;left:0;top:0;right:0;height:4px}
+  .col.a:before{background:var(--terra)} .col.b:before{background:var(--navy)} .col.c:before{background:var(--mint)}
+  .ic{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:15px}
+  .ic svg{width:22px;height:22px;stroke-width:2;fill:none}
+  .a .ic{background:var(--terra-bg);color:var(--terra)} .b .ic{background:var(--navy-bg);color:var(--navy)} .c .ic{background:var(--mint-bg);color:var(--mint)}
+  .col h3{font-family:'Clash Display',sans-serif;font-size:19px;font-weight:700;color:var(--navy);letter-spacing:-.01em}
+  .col .lead{font-size:13.5px;color:var(--soft);margin:6px 0 16px;line-height:1.5}
+  .feat{display:flex;gap:10px;align-items:flex-start;padding:11px 0;border-top:1px solid var(--hair)}
+  .feat .ck{flex-shrink:0;width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;margin-top:1px}
+  .feat .ck svg{width:11px;height:11px;stroke-width:3.2}
+  .a .ck{background:var(--terra-bg);color:var(--terra)} .b .ck{background:var(--navy-bg);color:var(--navy)} .c .ck{background:var(--mint-bg);color:var(--mint)}
+  .feat b{font-size:13.5px;font-weight:700;color:var(--ink);display:block;line-height:1.3}
+  .feat span{font-size:12px;color:var(--soft);display:block;margin-top:2px;line-height:1.4}
+  @media(max-width:880px){.grid{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="flag">MOCKUP · OPTION 2 — grouped capabilities&nbsp;&nbsp;<span>concept preview, not live</span></div>
+<div class="wrap">
+  <div class="head">
+    <div class="eyebrow">What Breeze does</div>
+    <h1>One assistant. The whole HR job.</h1>
+    <p class="sub">Ask in plain English and Breeze acts on the answer - grouped into the three jobs you actually do.</p>
+  </div>
+
+  <div class="ask">
+    <div class="row">
+      <span class="av you">You</span>
+      <div class="bub q">Amelia's probation ends next week - what do we need to do?</div>
+    </div>
+    <div class="row">
+      <span class="av bz">BZ</span>
+      <div class="bub">She's passed every check-in, so confirm her in writing. I've drafted the letter and flagged her review date.
+        <small>📄 Probation confirmation letter, ready · Review &amp; send →</small></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- group 1 -->
+    <div class="col a">
+      <div class="ic"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+      <h3>Draft &amp; document</h3>
+      <p class="lead">Every letter, note and answer - in your words, from your files.</p>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Letters from your templates</b><span>Formatting kept, fields filled for you</span></div></div>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Reads your handbook first</b><span>Answers reflect your rules, not generic advice</span></div></div>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Auto-written meeting notes</b><span>Summarised and filed to the right case</span></div></div>
+    </div>
+    <!-- group 2 -->
+    <div class="col b">
+      <div class="ic"><svg viewBox="0 0 24 24" stroke="currentColor"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+      <h3>Track &amp; comply</h3>
+      <p class="lead">Nothing falls through - every case with its next step and date.</p>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Case tracking with deadlines</b><span>Maternity, absence, right to work and more</span></div></div>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Reads your inbox &amp; acts</b><span>Spots a maternity email, opens the tracker</span></div></div>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Built for UK employment law</b><span>ACAS-aware reminders, never a guess</span></div></div>
+    </div>
+    <!-- group 3 -->
+    <div class="col c">
+      <div class="ic"><svg viewBox="0 0 24 24" stroke="currentColor"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg></div>
+      <h3>See your people</h3>
+      <p class="lead">Your reviews and pay data, turned into decisions.</p>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>9-box talent grid</b><span>Built straight from your performance reviews</span></div></div>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Calibrated analytics</b><span>Scores on a fair curve, high-potential flagged</span></div></div>
+      <div class="feat"><span class="ck"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="20 6 9 17 4 12"/></svg></span><div><b>Pay reviews &amp; benchmarking</b><span>Benchmark roles, keep the review on budget</span></div></div>
+    </div>
+  </div>
+</div>
+</body>
+</html>

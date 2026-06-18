@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mockup 1 - Comparison table | Breeze</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<link rel="stylesheet" href="https://api.fontshare.com/v2/css?f[]=clash-display@600,700&display=swap">
+<style>
+  :root{
+    --navy:#16284A;--ink:#0F1B30;--soft:#5b5c63;
+    --terra:#C2603F;--terra-d:#9A4A2E;--terra-bg:#FCEFE8;
+    --mint:#1FA971;--coral:#FF6B5B;--bg:#FBFAF8;--hair:rgba(15,27,48,.09);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased;line-height:1.55}
+  .flag{background:var(--navy);color:#fff;text-align:center;font-size:12px;font-weight:600;letter-spacing:.03em;padding:8px}
+  .flag span{opacity:.7;font-weight:500}
+  .wrap{max-width:1080px;margin:0 auto;padding:64px 28px 90px}
+  .eyebrow{font-size:12px;font-weight:700;letter-spacing:.12em;text-transform:uppercase;color:var(--terra);margin-bottom:14px}
+  h1{font-family:'Clash Display',sans-serif;font-weight:700;font-size:clamp(30px,4vw,46px);line-height:1.04;letter-spacing:-.02em;color:var(--navy);max-width:16ch}
+  .sub{font-size:16.5px;color:var(--soft);margin-top:16px;max-width:54ch}
+
+  .tbl{margin-top:46px;border:1px solid var(--hair);border-radius:22px;background:#fff;overflow:hidden;box-shadow:0 30px 60px -38px rgba(15,27,48,.28)}
+  table{width:100%;border-collapse:collapse}
+  th,td{text-align:center;padding:0}
+  thead th{padding:20px 12px 18px;font-weight:700;font-size:13.5px;color:var(--soft);border-bottom:1px solid var(--hair);vertical-align:bottom}
+  thead th.cap{text-align:left;padding-left:26px;font-family:'Clash Display',sans-serif;font-size:15px;color:var(--navy);font-weight:600}
+  thead th .logo{display:block;font-family:'Clash Display',sans-serif;font-size:11px;color:#9aa0a6;font-weight:600;margin-bottom:3px;letter-spacing:.02em}
+  /* Breeze column highlight */
+  .bz-col{position:relative}
+  thead th.bz{background:var(--terra);color:#fff;border-radius:14px 14px 0 0;padding:16px 12px}
+  thead th.bz b{font-family:'Clash Display',sans-serif;font-size:17px;font-weight:700;display:block}
+  thead th.bz small{font-size:10.5px;opacity:.85;font-weight:500}
+  tbody td.bz{background:var(--terra-bg)}
+  tbody tr:last-child td.bz{border-radius:0 0 14px 14px}
+
+  tbody td{border-bottom:1px solid var(--hair);padding:15px 12px}
+  tbody tr:last-child td{border-bottom:none}
+  td.cap{text-align:left;padding:15px 18px 15px 26px;font-weight:600;font-size:14.5px;color:var(--ink)}
+  td.cap small{display:block;font-weight:500;font-size:12px;color:var(--soft);margin-top:2px}
+
+  .mk{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%}
+  .mk svg{width:14px;height:14px;stroke-width:3}
+  .yes{background:rgba(31,169,113,.14);color:var(--mint)}
+  .bz .yes{background:#fff;color:var(--terra);box-shadow:0 1px 2px rgba(0,0,0,.08)}
+  .no{background:rgba(15,27,48,.05);color:#b9bdc4}
+  .part{font-size:18px;font-weight:800;color:#E0A92E}
+
+  .foot{display:flex;align-items:center;justify-content:space-between;gap:18px;flex-wrap:wrap;padding:22px 26px;background:linear-gradient(140deg,#fff,#fbf3ee)}
+  .foot p{font-size:14px;color:var(--soft)}
+  .foot b{color:var(--navy)}
+  .cta{background:var(--terra);color:#fff;font-weight:700;font-size:14px;border:none;border-radius:12px;padding:12px 22px;cursor:pointer;font-family:inherit}
+  .legend{display:flex;gap:20px;flex-wrap:wrap;margin-top:18px;font-size:12.5px;color:var(--soft)}
+  .legend span{display:inline-flex;align-items:center;gap:7px}
+  .legend .mk{width:20px;height:20px}.legend .mk svg{width:11px}
+  @media(max-width:760px){
+    td.cap small{display:none}
+    thead th{font-size:11px}
+    td.cap,thead th.cap{padding-left:14px}
+    .mk{width:22px;height:22px}
+  }
+</style>
+</head>
+<body>
+<div class="flag">MOCKUP · OPTION 1 — comparison table&nbsp;&nbsp;<span>concept preview, not live</span></div>
+<div class="wrap">
+  <div class="eyebrow">Why Breeze</div>
+  <h1>One tool instead of five.</h1>
+  <p class="sub">Spreadsheets, your HRIS and a generic chatbot each do a slice of the job. Breeze does the whole thing - grounded in your own policies, templates and data.</p>
+
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th class="cap">Capability</th>
+          <th><span class="logo">Today</span>Spreadsheets<br>&amp; email</th>
+          <th><span class="logo">Software</span>Generic<br>HRIS</th>
+          <th><span class="logo">AI</span>ChatGPT</th>
+          <th class="bz bz-col"><b>Breeze</b><small>HR, done for you</small></th>
+        </tr>
+      </thead>
+      <tbody>
+        <!-- rows -->
+        <tr>
+          <td class="cap">Drafts letters from <em>your</em> templates<small>Keeps your wording and formatting</small></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="part">~</span></td>
+          <td><span class="part">~</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cap">Answers from <em>your</em> policies<small>Reads your handbook first - never a guess</small></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="part">~</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cap">Tracks cases with deadlines<small>Maternity, absence, right to work - next step &amp; date</small></td>
+          <td><span class="part">~</span></td>
+          <td><span class="mk yes">✓</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cap">Reads your inbox and acts<small>Spots a maternity email, opens the tracker</small></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cap">Talent &amp; 9-box from reviews<small>Built straight from your performance data</small></td>
+          <td><span class="part">~</span></td>
+          <td><span class="part">~</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cap">Built for UK employment law<small>ACAS-aware, not generic US advice</small></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="part">~</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+        <tr>
+          <td class="cap">Gets smarter the more you use it<small>Learns your team, your rules, your tone</small></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td><span class="mk no">✕</span></td>
+          <td class="bz"><span class="mk yes">✓</span></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="foot">
+      <p><b>Less admin. More HR.</b> &nbsp;Everything above, in one place.</p>
+      <button class="cta">Get started →</button>
+    </div>
+  </div>
+
+  <div class="legend">
+    <span><span class="mk yes">✓</span> Does it properly</span>
+    <span><span class="part" style="width:20px;text-align:center;display:inline-block">~</span> Partly / clunky</span>
+    <span><span class="mk no">✕</span> Can't</span>
+  </div>
+</div>
+</body>
+</html>
