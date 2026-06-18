@@ -1161,3 +1161,16 @@ html:not(.js) .rev-bar span{transform:none!important}
 .cmp-legend span{display:inline-flex;align-items:center;gap:8px}
 .cmp-legend .mk{width:20px;height:20px;font-size:12px}
 @media(max-width:760px){.cmp td.cap small{display:none}.cmp thead th{font-size:11px}.cmp td.cap,.cmp thead th.cap{padding-left:14px}.cmp .mk{width:22px;height:22px}}
+
+/* ── Reviews -> plans pipeline (bento) ── */
+.po{display:flex;flex-direction:column;gap:9px;margin-top:14px}
+.po-step{display:flex;align-items:center;gap:10px;font-size:13px;font-weight:600;color:var(--ink)}
+.po-dot{width:21px;height:21px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#fff;color:#1FA971;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.po-dot svg{width:11px;height:11px}
+.po-step.build{color:var(--ink-soft)}
+.po-spin{width:11px;height:11px;border:2px solid rgba(31,169,113,.35);border-top-color:#1FA971;border-radius:50%;animation:poSpin .85s linear infinite}
+@keyframes poSpin{to{transform:rotate(360deg)}}
+.po-step.done .po-dot{animation:poPop .5s ease both}
+.po-step:nth-child(1).done .po-dot{animation-delay:.15s}
+.po-step:nth-child(2).done .po-dot{animation-delay:.5s}
+@keyframes poPop{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12)}100%{transform:scale(1);opacity:1}}
