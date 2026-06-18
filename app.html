@@ -4704,7 +4704,7 @@ async function renderTmpls(filter) {
       const visible = showAll ? ts : ts.slice(0,UPLOADS_PREVIEW);
       visible.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        div.innerHTML=`<div class="ti-ico" style="background:var(--accent-bg)">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
       if(isUploads && ts.length>UPLOADS_PREVIEW){
@@ -4762,7 +4762,7 @@ function renderTmplsLocal() {
     if(!isCollapsed){
       ts.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-        div.innerHTML=`<div class="ti-ico" style="background:${t.isCustom?'var(--amber-bg)':'var(--accent-bg)'}">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        div.innerHTML=`<div class="ti-ico" style="background:var(--accent-bg)">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
     }
