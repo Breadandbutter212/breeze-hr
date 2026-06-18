@@ -7940,7 +7940,8 @@ function getTestEmails() {
       body: 'Hello,\n\nI have been looking at my payslip and I wanted to understand how the company pension scheme works. Specifically:\n\n1. How much does the company contribute on top of my own contributions?\n2. Can I increase my own contribution percentage, and how do I do that?\n3. Is there a maximum the company will match?\n\nThanks in advance,\nJames Okafor\nFinance' },
     { id: 'test-3', threadId: 'test-3', from: 'Dr. Reception <reception@medicalpractice.example>', subject: 'Fit note for Tom Bradley - long term sickness', date: d(2, 8, 5),
       snippet: 'Please find attached a fit note covering Tom Bradley for a further 4 weeks. The reason given is stress-related illness.',
-      body: 'Dear HR,\n\nPlease find attached a fit note covering your employee Tom Bradley for a further 4 weeks from today. The reason given is a stress-related illness and he is signed off as not fit for work.\n\nThis follows two previous fit notes. Please contact us if you require any further information.\n\nKind regards,\nThe Practice' },
+      body: 'Dear HR,\n\nPlease find attached a fit note covering your employee Tom Bradley for a further 4 weeks from today. The reason given is a stress-related illness and he is signed off as not fit for work.\n\nThis follows two previous fit notes. Please contact us if you require any further information.\n\nKind regards,\nThe Practice',
+      attachments: [{ filename: 'fit-note-tom-bradley.txt', mimeType: 'text/plain', base64: 'RklUIE5PVEUKUGF0aWVudDogVG9tIEJyYWRsZXkKU2lnbmVkIG9mZiBhcyBub3QgZml0IGZvciB3b3JrIGZvciA0IHdlZWtzLgpSZWFzb246IHN0cmVzcy1yZWxhdGVkIGlsbG5lc3MuCihEZW1vIGRvY3VtZW50KQ==' }] },
     { id: 'test-4', threadId: 'test-4', from: 'Priya Nair <priya.nair@example.com>', subject: 'Flexible working request', date: d(3, 16, 47),
       snippet: 'I would like to formally request a change to my working pattern to compress my hours into a four-day week.',
       body: 'Hi,\n\nI would like to formally request a change to my working pattern. I would like to compress my full-time hours into a four-day week (working Monday to Thursday).\n\nI believe this would not affect my output and I am happy to discuss how to manage handovers on Fridays. This is my first flexible working request.\n\nCould you let me know the process and timescales?\n\nMany thanks,\nPriya Nair\nCustomer Success' },
@@ -7970,7 +7971,11 @@ function getTestEmails() {
       body: 'Hi,\n\nMy pay looked a bit different this month and I am not sure why. Can you help me understand what changed?\n\nThanks,\nAmir Khan' },
     { id: 'test-13', threadId: 'test-13', from: 'Maya Patel <maya.patel@example.com>', subject: 'Headcount and attrition for the board pack', date: d(5, 16, 30),
       snippet: 'Could you pull together current headcount by team and our attrition rate for the last 12 months? Needed for Thursday.',
-      body: 'Hi,\n\nCould you pull together our current headcount by team and the attrition rate for the last 12 months? I need it for the board pack going out on Thursday, so a clear summary would be ideal.\n\nThanks,\nMaya Patel\nVP Product' }
+      body: 'Hi,\n\nCould you pull together our current headcount by team and the attrition rate for the last 12 months? I need it for the board pack going out on Thursday, so a clear summary would be ideal.\n\nThanks,\nMaya Patel\nVP Product' },
+    { id: 'test-14', threadId: 'test-14', from: 'Hayden Cole <hayden.cole@example.com>', subject: 'My P45 and right-to-work documents for onboarding', date: d(0, 8, 40),
+      snippet: 'Ahead of my start date next Monday, please find my P45 attached. Let me know if you need anything else for onboarding.',
+      body: 'Hi,\n\nI\'m starting next Monday and wanted to get my paperwork over early. Please find my P45 attached.\n\nI\'ve also got my passport ready for the right-to-work check - let me know if you need a copy of that too, or anything else for onboarding.\n\nThanks,\nHayden Cole',
+      attachments: [{ filename: 'P45-hayden-cole.pdf', mimeType: 'application/pdf', base64: 'JVBERi0xLjEKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgMzAwIDIwMF0vQ29udGVudHMgNCAwIFIvUmVzb3VyY2VzPDwvRm9udDw8L0YxIDUgMCBSPj4+Pj4+ZW5kb2JqCjQgMCBvYmo8PC9MZW5ndGggNjQ+PnN0cmVhbQpCVCAvRjEgMTQgVGYgMzAgMTIwIFRkIChQNDUgLSBkZW1vIGRvY3VtZW50KSBUaiBFVAplbmRzdHJlYW0gZW5kb2JqCjUgMCBvYmo8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PmVuZG9iagp0cmFpbGVyPDwvUm9vdCAxIDAgUj4+' }] }
   ];
 }
 
@@ -8092,7 +8097,13 @@ function renderEmailList(emails) {
       </div>
       <div class="email-item-subject">${escapeHtml(e.subject)}</div>
       ${e.snippet ? `<div class="email-item-snippet">${escapeHtml(e.snippet)}</div>` : ''}
-      <div style="display:flex;gap:6px;margin-top:8px;">
+      ${e.attachments && e.attachments.length ? `<div style="font-size:10px;color:var(--ink3);margin-top:6px;display:flex;align-items:center;gap:5px;"><span>📎</span>${escapeHtml(e.attachments.map(a=>a.filename).join(', '))}</div>` : ''}
+      <button onclick="aiAnalyseEmail('${(e.id||'').replace(/'/g,"\\'")}')" title="Let AI read this email and log it, tick the matching step and save any attachment to the right case"
+        style="width:100%;margin-top:8px;font-size:11px;font-weight:700;padding:7px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
+        onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
+        ✨ Smart action - log to the right case
+      </button>
+      <div style="display:flex;gap:6px;margin-top:6px;">
         ${window._emailProvider === 'test' ? '' : `<button onclick="openEmailExternal('${e.id}')"
           style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--ink2);cursor:pointer;font-family:inherit;"
           onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
@@ -8341,6 +8352,155 @@ function bzToast(msg) {
   t.innerHTML = msg;
   document.body.appendChild(t);
   setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3400);
+}
+
+// ════════════ AI SMART INBOX ACTIONS ════════════
+// Read an email with AI, match it to an open case / automation run, then offer to
+// log it, tick the matching checklist step and save any attachment - in one click.
+
+// Resolve a case's label + steps whether it's a built-in tracker, an automation run, or a custom tracker.
+function wfScenarioFor(c) {
+  let sc = (typeof WF_SCENARIOS!=='undefined'?WF_SCENARIOS:[]).find(s=>s.id===c.scenarioId);
+  if (sc) return { label: sc.label, steps: sc.steps||[] };
+  const a = (typeof automations!=='undefined'?(automations||[]):[]).find(x=>x.id===c.scenarioId);
+  if (a) return { label: a.label||'Automation', steps: a.steps||[] };
+  const ct = (typeof customTrackers!=='undefined'?(customTrackers||[]):[]).find(x=>x.id===c.scenarioId);
+  if (ct) return { label: ct.label||ct.name||'Tracker', steps: ct.steps||[] };
+  return { label:'case', steps: c.stepsOverride||[] };
+}
+
+let _smartEmail = null, _smartAnalysis = null;
+
+async function aiAnalyseEmail(emailId) {
+  const email = (_allEmails||[]).find(x=>x.id===emailId); if (!email) return;
+  _smartEmail = email; _smartAnalysis = null;
+  // Load the data we match against
+  try { if (typeof wfCases!=='undefined' && wfCases===null && typeof loadWfCases==='function') await loadWfCases(); } catch(e){}
+  try { if (typeof automations!=='undefined' && automations===null && typeof loadAutomations==='function') await loadAutomations(); } catch(e){}
+  try { if (typeof customTrackers!=='undefined' && customTrackers===null && typeof loadCustomTrackers==='function') await loadCustomTrackers(); } catch(e){}
+
+  smartActionShell(`<div style="padding:22px;">
+    <div style="display:flex;align-items:center;gap:9px;font-size:14px;font-weight:700;color:var(--ink);margin-bottom:6px;"><span style="font-size:16px;">✨</span>Smart action</div>
+    <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(email.subject||'this email')}</div>
+    <div style="display:flex;align-items:center;gap:10px;color:var(--ink2);font-size:13px;"><span style="width:15px;height:15px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .8s linear infinite;flex-shrink:0;"></span>Reading the email and matching it to your cases…</div>
+  </div>`);
+
+  const openCases = (wfCases||[]).filter(c=>c.status!=='closed').map(c=>{
+    const {label,steps} = wfScenarioFor(c);
+    return { caseId:c.id, employee:c.employeeName, type:label, steps:(steps||[]).map(s=>({id:s.id,title:s.title})), doneStepIds:c.checkedSteps||[] };
+  });
+  const senderName = (email.from||'').replace(/<[^>]+>/,'').replace(/"/g,'').trim();
+  const attNames = (email.attachments&&email.attachments.length) ? email.attachments.map(a=>a.filename).join(', ') : 'none';
+  const sys = 'You are an HR operations assistant. You are given one inbound email and a list of the open HR cases in the system (each with checklist steps). Decide who the email is about, which open case it belongs to (if any), and which single checklist step it most likely completes (if any). Reply with ONLY a compact JSON object and no other text.';
+  const user = `EMAIL\nFrom: ${senderName}\nSubject: ${email.subject||''}\n\n${(email.body||email.snippet||'').substring(0,2500)}\n\nATTACHMENTS: ${attNames}\n\nOPEN_CASES (JSON array):\n${JSON.stringify(openCases).substring(0,6000)}\n\nReturn JSON exactly with these keys: {"employee":"<who the email is about>","topic":"<short topic eg performance, maternity, sickness, onboarding document>","summary":"<one sentence to log on the record>","caseId":<matching caseId string from the list, or null>,"stepId":<the matching step id number, or null>,"createScenario":<one of maternity-leave|paternity-leave|adoption-leave|short-term-absence|long-term-absence|resignation|performance-concern|disciplinary|grievance|rtw-new-starter, or null>,"confidence":"high|medium|low"}`;
+
+  let analysis = null;
+  try {
+    const token = await getAuthToken();
+    const res = await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({messages:[{role:'user',content:user}],system:sys})});
+    const data = await res.json();
+    const txt = (data.content?.[0]?.text||'').trim();
+    const m = txt.match(/\{[\s\S]*\}/);
+    if (m) analysis = JSON.parse(m[0]);
+  } catch(e){}
+  if (!analysis) {
+    smartActionShell(`<div style="padding:22px;"><div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px;">Couldn't analyse this email</div><div style="font-size:13px;color:var(--ink3);margin-bottom:16px;">Please try again in a moment.</div><div style="text-align:right;"><button onclick="smartActionClose()" class="btn btn-secondary btn-sm">Close</button></div></div>`);
+    return;
+  }
+  _smartAnalysis = analysis;
+  showSmartActionModal(email, analysis);
+}
+
+function smartActionShell(innerHtml){
+  let mo=document.getElementById('smartActionModal'); if(!mo){mo=document.createElement('div');mo.id='smartActionModal';document.body.appendChild(mo);}
+  mo.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mo.innerHTML=`<div onclick="event.stopPropagation()" style="background:white;border-radius:14px;width:100%;max-width:480px;box-shadow:var(--shadow-lg);overflow:hidden;">${innerHtml}</div>`;
+  mo.onclick=e=>{ if(e.target===mo) mo.remove(); };
+}
+function smartActionClose(){ document.getElementById('smartActionModal')?.remove(); }
+
+function showSmartActionModal(email, a){
+  const matchedCase = a.caseId ? (wfCases||[]).find(c=>c.id===a.caseId) : null;
+  const sc = matchedCase ? wfScenarioFor(matchedCase) : null;
+  const step = (matchedCase && a.stepId!=null) ? (sc.steps||[]).find(s=>String(s.id)===String(a.stepId)) : null;
+  const atts = email.attachments||[];
+  const conf = (a.confidence||'').toLowerCase();
+  const confCol = conf==='high'?'var(--green)':conf==='low'?'var(--ink3)':'#D97706';
+  const actions=[];
+  const tick = `<span style="color:var(--green);flex-shrink:0;">✓</span>`;
+  const plus = `<span style="color:var(--accent);flex-shrink:0;">+</span>`;
+  if(matchedCase){
+    actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${tick}Log to <strong>${escapeHtml(matchedCase.employeeName)}</strong>'s ${escapeHtml((sc.label||'case').toLowerCase())} record</div>`);
+    if(step) actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${tick}Tick step: <strong>${escapeHtml(step.title)}</strong></div>`);
+    atts.forEach(at=>actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${tick}Save <strong>${escapeHtml(at.filename)}</strong> to the case</div>`));
+  } else if(a.createScenario){
+    const newSc=(typeof WF_SCENARIOS!=='undefined'?WF_SCENARIOS:[]).find(s=>s.id===a.createScenario);
+    actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${plus}Create a <strong>${escapeHtml(newSc?newSc.label:a.createScenario)}</strong> tracker for ${escapeHtml(a.employee||'this person')}</div>`);
+    atts.forEach(at=>actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${plus}Attach <strong>${escapeHtml(at.filename)}</strong></div>`));
+  } else {
+    actions.push(`<div style="font-size:13px;color:var(--ink3);padding:7px 0;">No matching open case found - open Trackers to handle this manually.</div>`);
+  }
+  let primary='';
+  if(matchedCase) primary=`<button onclick="applySmartAction()" class="btn btn-primary btn-sm">Apply</button>`;
+  else if(a.createScenario) primary=`<button onclick="applySmartCreate()" class="btn btn-primary btn-sm">Create &amp; log</button>`;
+  smartActionShell(`<div style="padding:20px 22px 22px;">
+    <div style="display:flex;gap:10px;align-items:flex-start;margin-bottom:12px;">
+      <div style="width:34px;height:34px;border-radius:9px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">✨</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:14px;font-weight:700;color:var(--ink);">Relates to ${escapeHtml(a.employee||'someone')}</div>
+        <div style="font-size:12px;color:var(--ink3);margin-top:2px;">${escapeHtml(a.topic||'')}${conf?` · <span style="color:${confCol};text-transform:capitalize;font-weight:600;">${conf} confidence</span>`:''}</div>
+      </div>
+      <button onclick="smartActionClose()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;flex-shrink:0;">×</button>
+    </div>
+    <div style="font-size:13px;color:var(--ink2);line-height:1.55;background:var(--surface2);border-radius:10px;padding:11px 13px;margin-bottom:14px;">${escapeHtml(a.summary||'')}</div>
+    <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px 0;margin-bottom:16px;">${actions.join('')}</div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;">
+      <button onclick="smartActionClose()" class="btn btn-secondary btn-sm">Dismiss</button>${primary}
+    </div>
+  </div>`);
+}
+
+function _smartSaveAttachments(c, email){
+  const atts = email.attachments||[]; if(!atts.length) return null;
+  if(!c.docs) c.docs=[];
+  atts.forEach((at,i)=>{ c.docs.push({ id:'doc_'+Date.now()+'_'+i, filename:at.filename, type:'Email attachment', base64:at.base64, mimeType:at.mimeType||'application/octet-stream', uploadedAt:new Date().toISOString() }); });
+  return atts[0];
+}
+
+async function applySmartAction(){
+  const a=_smartAnalysis, email=_smartEmail; if(!a||!email) return;
+  const c=(wfCases||[]).find(x=>x.id===a.caseId); if(!c){ smartActionClose(); return; }
+  if(!c.contactLog) c.contactLog=[];
+  const entry={ date:new Date().toISOString(), type:'email', note: a.summary || ('Email received from '+(a.employee||'employee')+'.') };
+  const firstAtt = _smartSaveAttachments(c, email);
+  if(firstAtt){ entry.docFilename=firstAtt.filename; entry.docBase64=firstAtt.base64; entry.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
+  c.contactLog.push(entry);
+  let ticked='';
+  const sid = Number(a.stepId); // AI may return the id as a string; tracker step ids are numbers
+  if(a.stepId!=null && Number.isFinite(sid) && !(c.checkedSteps||[]).map(String).includes(String(sid))){
+    if(!c.checkedSteps) c.checkedSteps=[];
+    c.checkedSteps.push(sid); ticked=' · step ticked';
+  }
+  try{ await saveWfCases(); }catch(e){}
+  smartActionClose();
+  bzToast(`Logged to ${escapeHtml(c.employeeName)}'s record${firstAtt?' · attachment saved':''}${ticked}.`);
+  setTimeout(()=>{ try{ openWfCasePanel(c.id); }catch(e){} }, 200);
+}
+
+async function applySmartCreate(){
+  const a=_smartAnalysis, email=_smartEmail; if(!a||!a.createScenario) return;
+  if(typeof wfCases==='undefined') return;
+  if(!wfCases) wfCases=[];
+  const id='wfc_'+Date.now();
+  const newCase={ id, employeeName:a.employee||'New employee', scenarioId:a.createScenario, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
+  newCase.contactLog.push({ date:new Date().toISOString(), type:'email', note:a.summary||'Email received.' });
+  const firstAtt = _smartSaveAttachments(newCase, email);
+  if(firstAtt){ const e=newCase.contactLog[0]; e.docFilename=firstAtt.filename; e.docBase64=firstAtt.base64; e.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
+  wfCases.push(newCase);
+  try{ await saveWfCases(); }catch(e){}
+  smartActionClose();
+  bzToast(`Created a tracker for ${escapeHtml(newCase.employeeName)}${firstAtt?' · attachment saved':''}.`);
+  setTimeout(()=>{ try{ openWfCasePanel(id); }catch(e){} }, 200);
 }
 
 function openAddMatPatModalPrefilled(name, type) {
