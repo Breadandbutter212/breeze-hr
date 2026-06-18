@@ -5557,7 +5557,8 @@ function policyPdfSearch(q){
       if (idx > i) frag.appendChild(document.createTextNode(text.slice(i, idx)));
       const mark = document.createElement('mark');
       mark.textContent = text.slice(idx, idx + term.length);
-      mark.style.cssText = 'background:#FEF08A;color:transparent;border-radius:2px;';
+      // mix-blend-mode lets the highlight tint the page text underneath instead of covering it with a solid block.
+      mark.style.cssText = 'background:#FEF08A;color:transparent;border-radius:2px;mix-blend-mode:multiply;';
       frag.appendChild(mark); _policyMarks.push(mark);
       i = idx + term.length;
     }
@@ -16790,6 +16791,8 @@ function renderProjectDetail(){
 
     ${projMilestonesBlock(p, sel, card)}`;
 
+  // Keep the open board card modal in sync after a mutation (it closes itself if the task was deleted).
+  if (_projOpenCardId) projRenderCardModal(_projOpenCardId);
   // Re-focus an inline quick-add input after the re-render so tasks/steps can be added in quick succession.
   if (_projFocusEl){ const id = _projFocusEl; _projFocusEl = null; setTimeout(()=>{ const i = document.getElementById(id); if(i) i.focus(); }, 0); }
 }
@@ -16947,6 +16950,7 @@ function projMilestonesBlock(p, sel, card){
     <div style="display:flex;gap:8px;align-items:center;">
       <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;">
         <button onclick="projSetView('list')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='list'?'white':'transparent'};color:${_projDetailView==='list'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='list'?'var(--shadow-sm)':'none'};">List</button>
+        <button onclick="projSetView('board')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='board'?'white':'transparent'};color:${_projDetailView==='board'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='board'?'var(--shadow-sm)':'none'};">Board</button>
         <button onclick="projSetView('timeline')" style="font-size:11px;padding:4px 11px;border:none;border-radius:4px;cursor:pointer;font-family:inherit;background:${_projDetailView==='timeline'?'white':'transparent'};color:${_projDetailView==='timeline'?'var(--ink)':'var(--ink3)'};box-shadow:${_projDetailView==='timeline'?'var(--shadow-sm)':'none'};">Timeline</button>
       </div>
       <button class="btn btn-secondary btn-sm" onclick="(document.getElementById('projQuickAdd')||{focus:projAddMilestone}).focus()">+ Add</button>
@@ -16958,6 +16962,7 @@ function projMilestonesBlock(p, sel, card){
     <input id="projQuickAdd" placeholder="Add a task and press Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();projQuickAddMilestone();}" style="flex:1;border:none;background:transparent;outline:none;font-size:13px;font-family:inherit;color:var(--ink);">
     <button onclick="projQuickAddMilestone()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">Add</button>
   </div>`;
+  if (_projDetailView === 'board') return `<div style="${card}">${head}${projRenderBoard(p)}</div>`;
   if (_projDetailView === 'timeline') return `<div style="${card}">${head}${projRenderTimeline(p)}</div>`;
   if (!ms.length) return `<div style="${card}">${head}<div style="font-size:12px;color:var(--ink3);padding:4px 0 2px;">No tasks yet. Add your first below, or create the project with AI to generate a full plan.</div>${quickAdd}</div>`;
   const cards = ms.map(m=>{
@@ -16981,39 +16986,124 @@ function projMilestonesBlock(p, sel, card){
         <span onclick="event.stopPropagation();projEditMsOwner('${m.id}')" title="Owner - click to edit" style="font-size:11px;color:${m.owner?'var(--ink2)':'var(--ink3)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;max-width:120px;overflow:hidden;white-space:nowrap;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(m.owner||'Owner')}</span>
         <input type="date" value="${m.dueDate||''}" title="Due date" onclick="event.stopPropagation()" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;flex-shrink:0;${ov?'color:#B42318;border-color:#FECACA;':''}">
       </div>
-      ${expanded?`<div style="padding:2px 13px 13px 39px;border-top:1px solid var(--border);">
-        <div style="margin-top:10px;font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description...</span>'}</div>
-        <div style="margin-top:12px;">
-          <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Checklist</div>
-          ${subs.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-            <input type="checkbox" ${s.done?'checked':''} onchange="projToggleSubtask('${m.id}','${s.id}')" style="width:14px;height:14px;cursor:pointer;flex-shrink:0;">
-            <span style="flex:1;font-size:12px;color:${s.done?'var(--ink3)':'var(--ink)'};${s.done?'text-decoration:line-through;':''}cursor:text;" onclick="projEditSubtask('${m.id}','${s.id}')" title="Click to edit">${escapeHtml(s.text)}</span>
-            <button onclick="projDeleteSubtask('${m.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
-          </div>`).join('')}
-          <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
-            <span style="color:var(--ink3);font-size:14px;width:14px;text-align:center;flex-shrink:0;line-height:1;">+</span>
-            <input id="projStepAdd-${m.id}" placeholder="Add a step and press Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();projQuickAddSubtask('${m.id}');}" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;font-family:inherit;color:var(--ink);">
-          </div>
-        </div>
-        <div style="margin-top:12px;">
-          <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Attachments</div>
-          ${atts.map((a,ai)=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;">
-            <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':'📝'}</span>
-            <div style="flex:1;min-width:0;">${a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
-            <button onclick="projRemoveTaskAttachment('${m.id}',${ai})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
-          </div>`).join('')}
-          <div style="display:flex;gap:12px;margin-top:2px;"><button onclick="projAddTaskNote('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Note</button><button onclick="projAddTaskLink('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Document / link</button></div>
-        </div>
-        <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center;">
-          <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">${subs.length?'✦ Suggest more steps':'✦ Break into steps'}</button>
-          <button class="btn btn-secondary btn-sm" onclick="projTaskHelp('${m.id}')">✦ Need help?</button>
-          <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto;" onclick="projDeleteMilestone('${m.id}')">Delete task</button>
-        </div>
-      </div>`:''}
+      ${expanded?`<div style="padding:8px 13px 13px 39px;border-top:1px solid var(--border);">${projTaskDetailBody(m)}</div>`:''}
     </div>`;
   }).join('');
   return `<div style="${card}">${head}${cards}${quickAdd}</div>`;
 }
+
+// Shared task detail (description, checklist, attachments, AI actions) - used by the list (expanded) and the board card modal.
+function projTaskDetailBody(m){
+  const subs = m.subtasks||[]; const atts = m.attachments||[];
+  return `<div style="font-size:12px;color:var(--ink2);line-height:1.6;min-height:18px;cursor:text;" onclick="projEditMsDesc('${m.id}')" title="Click to edit">${m.description?escapeHtml(m.description).replace(/\n/g,'<br>'):'<span style="color:var(--ink3);">Add a description...</span>'}</div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Checklist</div>
+      ${subs.map(s=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+        <input type="checkbox" ${s.done?'checked':''} onchange="projToggleSubtask('${m.id}','${s.id}')" style="width:14px;height:14px;cursor:pointer;flex-shrink:0;">
+        <span style="flex:1;font-size:12px;color:${s.done?'var(--ink3)':'var(--ink)'};${s.done?'text-decoration:line-through;':''}cursor:text;" onclick="projEditSubtask('${m.id}','${s.id}')" title="Click to edit">${escapeHtml(s.text)}</span>
+        <button onclick="projDeleteSubtask('${m.id}','${s.id}')" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
+      </div>`).join('')}
+      <div style="display:flex;align-items:center;gap:8px;padding:3px 0;">
+        <span style="color:var(--ink3);font-size:14px;width:14px;text-align:center;flex-shrink:0;line-height:1;">+</span>
+        <input id="projStepAdd-${m.id}" placeholder="Add a step and press Enter" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();projQuickAddSubtask('${m.id}');}" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;font-family:inherit;color:var(--ink);">
+      </div>
+    </div>
+    <div style="margin-top:12px;">
+      <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Attachments</div>
+      ${atts.map((a,ai)=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;">
+        <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':'📝'}</span>
+        <div style="flex:1;min-width:0;">${a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
+        <button onclick="projRemoveTaskAttachment('${m.id}',${ai})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
+      </div>`).join('')}
+      <div style="display:flex;gap:12px;margin-top:2px;"><button onclick="projAddTaskNote('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Note</button><button onclick="projAddTaskLink('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Document / link</button></div>
+    </div>
+    <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center;">
+      <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">${subs.length?'✦ Suggest more steps':'✦ Break into steps'}</button>
+      <button class="btn btn-secondary btn-sm" onclick="projTaskHelp('${m.id}')">✦ Need help?</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);margin-left:auto;" onclick="projDeleteMilestone('${m.id}')">Delete task</button>
+    </div>`;
+}
+
+// ── Trello-style board view ──
+function projRenderBoard(p){
+  const ms = p.milestones||[];
+  const colHtml = Object.entries(MS_STATUS).map(([key,meta])=>{
+    const items = ms.filter(m=>projMsStatus(m)===key);
+    const cards = items.map(m=>projBoardCard(m,meta)).join('') || `<div style="font-size:11px;color:var(--ink3);padding:10px 4px;text-align:center;">Drop tasks here</div>`;
+    return `<div ondragover="event.preventDefault();this.style.boxShadow='inset 0 0 0 2px var(--accent-mid)'" ondragleave="this.style.boxShadow='none'" ondrop="event.preventDefault();this.style.boxShadow='none';projBoardDrop('${key}')" style="flex:0 0 250px;width:250px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);padding:10px;display:flex;flex-direction:column;gap:8px;max-height:600px;box-sizing:border-box;">
+      <div style="display:flex;align-items:center;gap:7px;padding:0 2px 4px;">
+        <span style="width:8px;height:8px;border-radius:50%;background:${meta.color};"></span>
+        <span style="font-size:12px;font-weight:700;color:var(--ink);">${meta.label}</span>
+        <span style="font-size:11px;color:var(--ink3);">${items.length}</span>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:30px;">${cards}</div>
+      <div style="display:flex;align-items:center;gap:6px;border-top:1px solid var(--border);padding-top:8px;">
+        <input id="projBoardAdd-${key}" placeholder="+ Add a card" autocomplete="off" onkeydown="if(event.key==='Enter'){event.preventDefault();projBoardAddCard('${key}');}" style="flex:1;border:none;background:transparent;outline:none;font-size:12px;font-family:inherit;color:var(--ink);">
+      </div>
+    </div>`;
+  }).join('');
+  return `<div style="display:flex;gap:12px;overflow-x:auto;padding-bottom:6px;align-items:flex-start;">${colHtml}</div>`;
+}
+function projBoardCard(m,meta){
+  const subs = m.subtasks||[]; const atts = m.attachments||[]; const ov = projMilestoneOverdue(m);
+  const prog = projMsProgress(m); const done = projMsDone(m);
+  const dueStr = m.dueDate?projFmtDate(m.dueDate):'';
+  const ownerInit = (m.owner||'').trim().charAt(0).toUpperCase();
+  return `<div draggable="true" ondragstart="projBoardDragStart(event,'${m.id}')" ondragend="projBoardDragEnd(event)" onclick="projOpenCard('${m.id}')" style="background:white;border:1px solid var(--border);border-left:3px solid ${meta.color};border-radius:8px;padding:9px 11px;cursor:pointer;box-shadow:0 1px 2px rgba(0,0,0,0.05);" onmouseover="this.style.boxShadow='0 2px 8px rgba(0,0,0,0.12)'" onmouseout="this.style.boxShadow='0 1px 2px rgba(0,0,0,0.05)'">
+    <div style="font-size:12px;font-weight:500;color:${done?'var(--ink3)':'var(--ink)'};${done?'text-decoration:line-through;':''}line-height:1.4;">${escapeHtml(m.title)}</div>
+    <div style="display:flex;align-items:center;gap:8px;margin-top:7px;flex-wrap:wrap;">
+      ${subs.length?`<span style="display:inline-flex;align-items:center;gap:5px;font-size:10px;color:var(--ink3);"><span style="width:34px;height:4px;background:var(--surface3);border-radius:2px;overflow:hidden;display:inline-block;"><span style="display:block;height:100%;width:${prog}%;background:${meta.color};"></span></span>${subs.filter(s=>s.done).length}/${subs.length}</span>`:''}
+      ${atts.length?`<span style="font-size:10px;color:var(--ink3);">📎 ${atts.length}</span>`:''}
+      ${m.description?`<span style="font-size:10px;color:var(--ink3);">📝</span>`:''}
+      ${dueStr?`<span style="font-size:10px;color:${ov?'#B42318':'var(--ink3)'};font-weight:${ov?'600':'400'};">📅 ${dueStr}</span>`:''}
+      <span style="margin-left:auto;"></span>
+      ${ownerInit?`<span title="${jsAttr(m.owner)}" style="width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:inline-flex;align-items:center;justify-content:center;flex-shrink:0;">${ownerInit}</span>`:''}
+    </div>
+    ${!subs.length?`<button id="brdbrk-${m.id}" onclick="event.stopPropagation();projAiBreakTasks('${m.id}')" title="Use AI to break this into steps" style="margin-top:8px;font-size:10px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:14px;padding:2px 9px;cursor:pointer;font-family:inherit;">✦ Break into steps</button>`:''}
+  </div>`;
+}
+let _projDragMsId = null, _projOpenCardId = null;
+function projBoardDragStart(e,id){ _projDragMsId = id; e.dataTransfer.effectAllowed = 'move'; try{ e.dataTransfer.setData('text/plain', id); }catch(_){} }
+function projBoardDragEnd(){ _projDragMsId = null; }
+function projBoardDrop(status){ const id = _projDragMsId; _projDragMsId = null; if (id) projSetMsStatus(id, status); }
+async function projBoardAddCard(status){
+  const inp = document.getElementById('projBoardAdd-'+status); if(!inp) return;
+  const t = inp.value.trim(); if(!t){ inp.focus(); return; }
+  const p = projActive(); if(!p) return;
+  p.milestones = p.milestones||[]; const id = projUid('m');
+  p.milestones.push({id,title:t,owner:'',dueDate:projDateIn(2),status,done:status==='done',description:'',subtasks:[],attachments:[]});
+  _projFocusEl = 'projBoardAdd-'+status;
+  await saveProjects(); renderProjectDetail();
+}
+// Trello-style card detail modal (re-rendered by renderProjectDetail after any mutation).
+function projOpenCard(id){ projRenderCardModal(id); }
+function projCloseCard(){ _projOpenCardId = null; document.getElementById('projCardModal')?.remove(); }
+function projRenderCardModal(id){
+  const p = projActive(); const m = (p?.milestones||[]).find(x=>x.id===id);
+  if (!m){ projCloseCard(); return; }
+  _projOpenCardId = id;
+  let mo = document.getElementById('projCardModal'); if(!mo){ mo = document.createElement('div'); mo.id='projCardModal'; document.body.appendChild(mo); }
+  mo.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:980;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;';
+  const sel = 'border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 8px;font-size:12px;font-family:inherit;background:var(--surface2);outline:none;cursor:pointer;';
+  const statusOpts = Object.entries(MS_STATUS).map(([k,v])=>`<option value="${k}" ${projMsStatus(m)===k?'selected':''}>${v.label}</option>`).join('');
+  mo.innerHTML = `<div onclick="event.stopPropagation()" style="background:white;border-radius:14px;width:100%;max-width:560px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;margin:auto;">
+    <div style="display:flex;align-items:flex-start;gap:10px;padding:16px 20px;border-bottom:1px solid var(--border);">
+      <input type="checkbox" ${projMsDone(m)?'checked':''} title="Mark complete" onchange="projToggleMilestone('${m.id}')" style="width:17px;height:17px;cursor:pointer;margin-top:3px;flex-shrink:0;">
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:15px;font-weight:700;color:var(--ink);cursor:text;" onclick="projEditMsTitle('${m.id}')" title="Click to edit">${escapeHtml(m.title)}</div>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:9px;flex-wrap:wrap;">
+          <select onchange="projSetMsStatus('${m.id}',this.value)" style="${sel}">${statusOpts}</select>
+          <input type="date" value="${m.dueDate||''}" onchange="projSetMsField('${m.id}','dueDate',this.value)" style="${sel}cursor:text;">
+          <span onclick="projEditMsOwner('${m.id}')" title="Owner - click to edit" style="font-size:11px;color:${m.owner?'var(--ink2)':'var(--ink3)'};cursor:pointer;display:inline-flex;align-items:center;gap:4px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(m.owner||'Add owner')}</span>
+        </div>
+      </div>
+      <button onclick="projCloseCard()" style="background:none;border:none;font-size:22px;color:var(--ink3);cursor:pointer;line-height:1;flex-shrink:0;">×</button>
+    </div>
+    <div style="padding:16px 20px;">${projTaskDetailBody(m)}</div>
+  </div>`;
+  mo.onclick = e => { if (e.target===mo) projCloseCard(); };
+}
+async function projEditMsTitle(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Task name', m.title||''); if(v===null) return; if(v.trim()){ m.title=v.trim(); await saveProjects(); renderProjectDetail(); } }
 
 function projRenderTimeline(p){
   const ms = (p.milestones||[]).filter(m=>m.dueDate).slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
