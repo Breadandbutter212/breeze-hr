@@ -9628,30 +9628,118 @@ async function loadChatList() {
   }));
 }
 
+// Chat-list grouping state: 'date' (most recent) or 'topic' (stacked by HR theme).
+let chatGroupMode = 'date';
+let _chatPageItems = [];            // the items currently shown (respects search filter)
+const chatExpandedGroups = new Set(); // group labels the user has expanded past the first 10
+const CHAT_GROUP_LIMIT = 10;
+
+// Bucket a chat by recency: Today / Yesterday / Previous 7 / Previous 30 days, then by month.
+function chatDateBucket(created_at) {
+  const d = new Date(created_at), now = new Date();
+  const startOf = x => new Date(x.getFullYear(), x.getMonth(), x.getDate()).getTime();
+  const days = Math.floor((startOf(now) - startOf(d)) / 86400000);
+  if (days <= 0) return { key:'today', label:'Today', order:0 };
+  if (days === 1) return { key:'yday', label:'Yesterday', order:1 };
+  if (days <= 7) return { key:'w', label:'Previous 7 days', order:2 };
+  if (days <= 30) return { key:'m', label:'Previous 30 days', order:3 };
+  const label = d.toLocaleDateString('en-GB', { month:'long', year:'numeric' });
+  return { key:'mo-'+d.getFullYear()+'-'+d.getMonth(), label, order: 10 + (now.getFullYear()*12+now.getMonth()) - (d.getFullYear()*12+d.getMonth()) };
+}
+
+// Classify a chat into an HR topic from its title, so chats can be stacked by theme.
+function chatTopic(title) {
+  const t = (title || '').toLowerCase();
+  const T = [
+    [/maternit|paternit|parental|adoption|family leave|shared parental|keeping in touch|kit day/, 'Family & parental leave'],
+    [/sick|absence|fit note|long.?term|occupational health|wellbeing|wellness|self.?cert/, 'Sickness & absence'],
+    [/disciplin|grievance|misconduct|gross|investigat|suspen|dismiss|warning|capability|appeal/, 'Disciplinary & grievance'],
+    [/performance|probation|\bpip\b|appraisal|objective|review meeting|1.?1|one.?to.?one/, 'Performance & probation'],
+    [/\bpay\b|salary|bonus|reward|pension|payroll|remuneration|compensation|benefit|increase|raise/, 'Pay, reward & pension'],
+    [/recruit|hiring|onboard|new starter|new hire|offer letter|interview|candidate|job description|\bjd\b|job spec/, 'Recruitment & onboarding'],
+    [/contract|terms|variation|tupe|settlement|notice period|secondment/, 'Contracts & terms'],
+    [/right to work|\brtw\b|visa|immigration|sponsor|cos\b|skilled worker/, 'Right to work & immigration'],
+    [/redundan|restructur|layoff|lay.?off|at.risk/, 'Redundancy & restructuring'],
+    [/holiday|annual leave|time off|sabbatical|bank holiday|day off/, 'Holiday & time off'],
+    [/flexible|remote|hybrid|working from home|\bwfh\b|compressed hours/, 'Flexible & remote working'],
+    [/policy|policies|handbook|complian|gdpr|data protection|\bacas\b|procedure/, 'Policies & compliance'],
+  ];
+  for (let i=0;i<T.length;i++) if (T[i][0].test(t)) return { key:'tp'+i, label:T[i][1], order:i };
+  return { key:'tp-other', label:'General & other', order:99 };
+}
+
 async function renderChatsPage() {
   const body = document.getElementById('chatsBody'); if (!body) return;
   body.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--ink3);">Loading...</div>';
   await loadChatList();
   body.innerHTML = `
-    <div style="margin-bottom:16px;max-width:440px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
       <input id="chatPageSearch" placeholder="Search chats..." oninput="filterChatsPage(this.value)"
-        style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);"
+        style="flex:1;min-width:200px;max-width:440px;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 12px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);"
         onfocus="this.style.borderColor='var(--accent)';this.style.background='white'"
         onblur="this.style.borderColor='var(--border)';this.style.background='var(--surface2)'">
+      <div id="chatGroupToggle" style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;flex-shrink:0;">
+        <button onclick="setChatGroupMode('date')" data-mode="date" style="font-size:12px;padding:6px 12px;border:none;border-radius:5px;cursor:pointer;font-family:inherit;">Recent</button>
+        <button onclick="setChatGroupMode('topic')" data-mode="topic" style="font-size:12px;padding:6px 12px;border:none;border-radius:5px;cursor:pointer;font-family:inherit;">By topic</button>
+      </div>
     </div>
     <div id="chatPageList"></div>`;
+  updateChatGroupToggle();
   renderChatPageItems(chatList);
   backfillChatTitles(); // fire-and-forget: tidy up old raw titles in the background
 }
 
+function updateChatGroupToggle() {
+  document.querySelectorAll('#chatGroupToggle button').forEach(b => {
+    const on = b.dataset.mode === chatGroupMode;
+    b.style.background = on ? 'var(--accent)' : 'transparent';
+    b.style.color = on ? '#fff' : 'var(--ink2)';
+    b.style.fontWeight = on ? '600' : '500';
+  });
+}
+
+function setChatGroupMode(mode) {
+  if (chatGroupMode === mode) return;
+  chatGroupMode = mode;
+  chatExpandedGroups.clear();
+  updateChatGroupToggle();
+  renderChatPageItems(_chatPageItems);
+}
+
+function toggleChatGroup(label) {
+  if (chatExpandedGroups.has(label)) chatExpandedGroups.delete(label); else chatExpandedGroups.add(label);
+  renderChatPageItems(_chatPageItems);
+}
+
 function filterChatsPage(q) {
   const filtered = q ? chatList.filter(c => c.title.toLowerCase().includes(q.toLowerCase())) : chatList;
+  chatExpandedGroups.clear();
   renderChatPageItems(filtered);
 }
 
+function chatItemHtml(c) {
+  const date = new Date(c.created_at).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
+  return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;"
+    onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'"
+    onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'"
+    onclick="openChatHistory('${c.id}')">
+    <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+    </div>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.title)}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${date}</div>
+    </div>
+    <button onclick="event.stopPropagation();deleteChatHistory('${c.id}')"
+      style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0;transition:background 0.1s;"
+      onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">Delete</button>
+  </div>`;
+}
+
 function renderChatPageItems(items) {
+  _chatPageItems = items || [];
   const el = document.getElementById('chatPageList'); if (!el) return;
-  if (!items.length) {
+  if (!_chatPageItems.length) {
     el.innerHTML = `<div style="text-align:center;padding:60px 20px;">
       <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2" style="display:block;margin:0 auto 12px;opacity:0.25;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
       <div style="font-size:13px;font-weight:500;color:var(--ink2);margin-bottom:4px;">No chats yet</div>
@@ -9659,22 +9747,30 @@ function renderChatPageItems(items) {
     </div>`;
     return;
   }
-  el.innerHTML = items.map(c => {
-    const date = new Date(c.created_at).toLocaleDateString('en-GB', {day:'numeric', month:'short', year:'numeric'});
-    return `<div style="display:flex;align-items:center;gap:12px;padding:13px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:box-shadow 0.15s,border-color 0.15s;"
-      onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'"
-      onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'"
-      onclick="openChatHistory('${c.id}')">
-      <div style="width:36px;height:36px;border-radius:var(--r-sm);background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--accent)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+  // Build groups (already sorted newest-first within each, since chatList is created_at desc)
+  const groups = new Map();
+  _chatPageItems.forEach(c => {
+    const g = chatGroupMode === 'topic' ? chatTopic(c.title) : chatDateBucket(c.created_at);
+    if (!groups.has(g.label)) groups.set(g.label, { label:g.label, order:g.order, items:[] });
+    groups.get(g.label).items.push(c);
+  });
+  const ordered = [...groups.values()].sort((a,b) => a.order - b.order);
+
+  el.innerHTML = ordered.map(g => {
+    const expanded = chatExpandedGroups.has(g.label);
+    const shown = expanded ? g.items : g.items.slice(0, CHAT_GROUP_LIMIT);
+    const moreCount = g.items.length - shown.length;
+    const moreBtn = g.items.length > CHAT_GROUP_LIMIT
+      ? `<button onclick="toggleChatGroup('${jsAttr(g.label)}')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px dashed var(--border2);border-radius:var(--r-sm);padding:7px 12px;font-size:12px;font-weight:500;color:var(--accent);cursor:pointer;font-family:inherit;margin:2px 0 4px;width:100%;justify-content:center;transition:background 0.1s;" onmouseover="this.style.background='var(--accent-bg)'" onmouseout="this.style.background='none'">${expanded ? '− Show less' : '+ Show '+moreCount+' more'}</button>`
+      : '';
+    return `<div style="margin-bottom:20px;">
+      <div style="display:flex;align-items:center;gap:8px;margin:0 2px 9px;">
+        <span style="font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:0.02em;">${escapeHtml(g.label)}</span>
+        <span style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 8px;">${g.items.length}</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
       </div>
-      <div style="flex:1;min-width:0;">
-        <div style="font-size:13px;font-weight:500;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(c.title)}</div>
-        <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${date}</div>
-      </div>
-      <button onclick="event.stopPropagation();deleteChatHistory('${c.id}')"
-        style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0;transition:background 0.1s;"
-        onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">Delete</button>
+      ${shown.map(chatItemHtml).join('')}
+      ${moreBtn}
     </div>`;
   }).join('');
 }
