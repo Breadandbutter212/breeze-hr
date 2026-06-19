@@ -17460,11 +17460,12 @@ function renderProjectDetail(){
     <div style="${card}">
       <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;">Files &amp; links</div>
       ${(p.attachments||[]).length ? (p.attachments||[]).map((a,ai)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
-        <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':'📝'}</span>
-        <div style="flex:1;min-width:0;">${a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
+        <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':a.type==='file'?projFileIcon(a.title):'📝'}</span>
+        <div style="flex:1;min-width:0;">${a.type==='file'?`<a onclick="projDownloadFile(${ai})" style="color:var(--accent);text-decoration:none;cursor:pointer;">${escapeHtml(a.title)}</a>${a.size?`<span style="color:var(--ink3);"> · ${projFmtSize(a.size)}</span>`:''}`:(a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`)}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
+        ${a.type==='file'?`<button onclick="projDownloadFile(${ai})" title="Download" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;flex-shrink:0;">⬇</button>`:''}
         <button onclick="projRemoveAttachment(${ai})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
-      </div>`).join('') : '<div style="font-size:12px;color:var(--ink3);">No files or links yet. Attach an email from the inbox, or add a link.</div>'}
-      <div style="margin-top:8px;"><button onclick="projAddLink()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Document / link</button></div>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--ink3);">No files or links yet. Upload a file, attach an email from the inbox, or add a link.</div>'}
+      <div style="margin-top:8px;display:flex;gap:14px;align-items:center;flex-wrap:wrap;"><label style="font-size:11px;color:var(--accent);cursor:pointer;font-family:inherit;padding:4px 0;">+ Upload file<input type="file" style="display:none" onchange="projUploadFile(this)"></label><button onclick="projAddLink()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Add link</button></div>
     </div>`;
 
   // Load real faces (HRIS / org chart) once, then re-render the board so owner avatars show photos.
@@ -17488,6 +17489,19 @@ async function projDeleteRaci(id){ const p=projActive(); if(!p) return; p.raci=(
 async function projAddLog(){ const p=projActive(); if(!p) return; const note=prompt('Add an update'); if(!note) return; p.log=p.log||[]; p.log.push({date:new Date().toISOString().slice(0,10),note:note.trim()}); await saveProjects(); renderProjectDetail(); }
 async function projAddLink(){ const p=projActive(); if(!p) return; const title=prompt('Document / link title'); if(!title) return; const url=prompt('URL (optional)','')||''; p.attachments=p.attachments||[]; p.attachments.push({type:'link',title:title.trim(),url:url.trim()}); await saveProjects(); renderProjectDetail(); }
 async function projRemoveAttachment(i){ const p=projActive(); if(!p) return; (p.attachments||[]).splice(i,1); await saveProjects(); renderProjectDetail(); }
+
+// ── File attachments (real upload + download), stored base64 inline like case docs ──
+const PROJ_FILE_MAX = 1.5 * 1024 * 1024; // 1.5 MB per file
+function projFmtSize(n){ return !n?'':n>1048576?(n/1048576).toFixed(1)+' MB':n>1024?Math.round(n/1024)+' KB':n+' B'; }
+function projFileIcon(name){ name=(name||'').toLowerCase(); return /\.pdf$/.test(name)?'📄':/\.(docx?|doc|rtf|odt)$/.test(name)?'📝':/\.(xlsx?|csv)$/.test(name)?'📊':/\.(png|jpe?g|gif|webp|svg)$/.test(name)?'🖼️':/\.(pptx?)$/.test(name)?'📈':'📎'; }
+function _projReadB64(file){ return new Promise(r=>{ const fr=new FileReader(); fr.onload=e=>r(e.target.result.split(',')[1]); fr.readAsDataURL(file); }); }
+function _projDownloadAtt(a){ if(!a||!a.base64) return; const bytes=Uint8Array.from(atob(a.base64),c=>c.charCodeAt(0)); const blob=new Blob([bytes],{type:a.mimeType||'application/octet-stream'}); const el=document.createElement('a'); el.href=URL.createObjectURL(blob); el.download=a.title||'file'; el.click(); URL.revokeObjectURL(el.href); }
+
+async function projUploadFile(input){ const p=projActive(); if(!p) return; const file=input.files[0]; if(!file){ return; } if(file.size>PROJ_FILE_MAX){ alert('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; } const base64=await _projReadB64(file); p.attachments=p.attachments||[]; p.attachments.push({type:'file',title:file.name,base64,mimeType:file.type,size:file.size,uploadedAt:new Date().toISOString()}); input.value=''; await saveProjects(); renderProjectDetail(); if(typeof showBreezeToast==='function') showBreezeToast('File uploaded'); }
+function projDownloadFile(i){ const p=projActive(); if(!p) return; _projDownloadAtt((p.attachments||[])[i]); }
+
+async function projUploadTaskFile(id,input){ const p=projActive(); const m=(p?.milestones||[]).find(x=>x.id===id); if(!m) return; const file=input.files[0]; if(!file){ return; } if(file.size>PROJ_FILE_MAX){ alert('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; } const base64=await _projReadB64(file); m.attachments=m.attachments||[]; m.attachments.push({type:'file',title:file.name,base64,mimeType:file.type,size:file.size,uploadedAt:new Date().toISOString()}); input.value=''; await saveProjects(); renderProjectDetail(); if(typeof showBreezeToast==='function') showBreezeToast('File uploaded'); }
+function projDownloadTaskFile(id,i){ const p=projActive(); const m=(p?.milestones||[]).find(x=>x.id===id); if(!m) return; _projDownloadAtt((m.attachments||[])[i]); }
 async function projDeleteProject(id){ if(!confirm('Delete this project? This cannot be undone.')) return; projectsData=(projectsData||[]).filter(p=>p.id!==id); await saveProjects(); renderProjects(); }
 
 // ── New project modal ──
@@ -17688,11 +17702,12 @@ function projTaskDetailBody(m){
     <div style="margin-top:12px;">
       <div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:6px;">Attachments</div>
       ${atts.map((a,ai)=>`<div style="display:flex;align-items:center;gap:8px;padding:3px 0;font-size:12px;">
-        <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':'📝'}</span>
-        <div style="flex:1;min-width:0;">${a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
+        <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':a.type==='file'?projFileIcon(a.title):'📝'}</span>
+        <div style="flex:1;min-width:0;">${a.type==='file'?`<a onclick="projDownloadTaskFile('${m.id}',${ai})" style="color:var(--accent);text-decoration:none;cursor:pointer;">${escapeHtml(a.title)}</a>${a.size?`<span style="color:var(--ink3);"> · ${projFmtSize(a.size)}</span>`:''}`:(a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`)}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
+        ${a.type==='file'?`<button onclick="projDownloadTaskFile('${m.id}',${ai})" title="Download" style="background:none;border:none;cursor:pointer;color:var(--accent);font-size:13px;flex-shrink:0;">⬇</button>`:''}
         <button onclick="projRemoveTaskAttachment('${m.id}',${ai})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
       </div>`).join('')}
-      <div style="display:flex;gap:12px;margin-top:2px;"><button onclick="projAddTaskNote('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Note</button><button onclick="projAddTaskLink('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Document / link</button></div>
+      <div style="display:flex;gap:12px;margin-top:2px;flex-wrap:wrap;align-items:center;"><button onclick="projAddTaskNote('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Note</button><label style="font-size:11px;color:var(--accent);cursor:pointer;font-family:inherit;padding:4px 0;">+ Upload file<input type="file" style="display:none" onchange="projUploadTaskFile('${m.id}',this)"></label><button onclick="projAddTaskLink('${m.id}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Add link</button></div>
     </div>
     <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap;align-items:center;">
       <button class="btn btn-secondary btn-sm" id="brk-${m.id}" onclick="projAiBreakTasks('${m.id}')">${subs.length?'✦ Suggest more steps':'✦ Break into steps'}</button>
