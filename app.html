@@ -7147,6 +7147,7 @@ When producing ANY EMPLOYEE-FACING letter or email, always use the 📧 DRAFT FO
 (The HR Actions section is internal guidance for HR only - it is never shown or sent to the employee. Label it simply "HR Actions", with no "not for the employee" caption.)
 
 When producing ANY INTERNAL HR DOCUMENT (i.e. a document for HR or managers, not a letter to one employee), always use the 📄 DOCUMENT: format so it appears in the right-hand panel where HR can edit and download as a Word doc - NEVER paste the document body into the chat. This covers: frameworks (360, performance, competency, pay), policies and procedures, process guides, manager toolkits, checklists in prose form, terms of reference, multi-section templates - anything structured and longer than a short answer. Write the body in markdown: use ## and ### for section headings, | pipe tables for tables, - or • for bullets, **bold** and *italic*. End with an HR Actions section for any setup/decisions HR must make.
+THEME / COLOUR: the document is styled into a polished Word file automatically (a coloured title, section headings and table header). The default accent is navy. If the user asks for a particular colour or brand style (e.g. "in orange", "make it green", "use our brand colour #C2410C"), make the FIRST line of the document body "THEME: <colour>" (a colour name like orange/green/teal/purple/red, or a #hex) - it is read for styling and removed from the document, so do not mention it in the prose. Omit the THEME line entirely when no colour is requested.
 
 📄 DOCUMENT: [short title]
 [document body in markdown]
@@ -7209,7 +7210,9 @@ function _mdTableCells(row) {
 
 // Render a markdown draft to formatted HTML for the artifact panel:
 // headings (#/##/###), **bold**, *italic*, bullets, [PLACEHOLDER] chips and | tables.
-function formatArtifactContent(text) {
+function formatArtifactContent(text, accent) {
+  const theme = resolveAccentHex(accent);
+  const ACC = '#' + theme.accent, TINT = theme.tint;
   const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
   const inline = s => esc(s)
     .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
@@ -7226,8 +7229,8 @@ function formatArtifactContent(text) {
       const header = _mdTableCells(rows[0]);
       const body = rows.slice(2).map(_mdTableCells);
       html += '<table style="border-collapse:collapse;width:100%;margin:10px 0;font-size:12px;">';
-      html += '<tr>' + header.map(c => `<th style="border:1px solid #D5D9E0;background:#1B2D50;color:#fff;padding:6px 9px;text-align:left;font-weight:600;">${inline(c)}</th>`).join('') + '</tr>';
-      body.forEach(r => { html += '<tr>' + r.map((c,ci) => `<td style="border:1px solid #D5D9E0;padding:6px 9px;${ci===0?'background:#F8FAFC;':''}">${inline(c)}</td>`).join('') + '</tr>'; });
+      html += '<tr>' + header.map(c => `<th style="border:1px solid #D5D9E0;background:${ACC};color:#fff;padding:6px 9px;text-align:left;font-weight:600;">${inline(c)}</th>`).join('') + '</tr>';
+      body.forEach((r,ri) => { const zeb = ri%2===0?TINT:'#fff'; html += '<tr>' + r.map((c,ci) => `<td style="border:1px solid #D5D9E0;padding:6px 9px;background:${zeb};${ci===0&&r.length>1?`color:${ACC};font-weight:600;`:''}">${inline(c)}</td>`).join('') + '</tr>'; });
       html += '</table>';
       i = j - 1;
       continue;
@@ -7240,7 +7243,8 @@ function formatArtifactContent(text) {
     const h = trimmed.match(/^[a-z]?(#{1,6})\s+(.+)$/);
     if (h) {
       const lvl = h[1].length, size = lvl <= 1 ? 18 : lvl === 2 ? 15 : 13, mt = lvl <= 2 ? 18 : 13;
-      html += `<div style="font-weight:700;color:#1D1D1F;font-size:${size}px;margin:${mt}px 0 6px;letter-spacing:-0.01em;">${inline(h[2].trim())}</div>`;
+      const hcol = lvl <= 2 ? ACC : '#1D1D1F';
+      html += `<div style="font-weight:700;color:${hcol};font-size:${size}px;margin:${mt}px 0 6px;letter-spacing:-0.01em;">${inline(h[2].trim())}</div>`;
       continue;
     }
     // Bullet (•, -, or *), including a bare marker with its text on the next line
@@ -7400,11 +7404,15 @@ function parseArtifact(text) {
     const dIdx = text.indexOf(docMatch[0]);
     const dAfter = text.substring(dIdx + docMatch[0].length);
     const dStop = dAfter.search(HR_ACTIONS_SPLIT);
-    const draft = dStop > -1 ? dAfter.substring(0, dStop).trim() : dAfter.trim();
+    let draft = dStop > -1 ? dAfter.substring(0, dStop).trim() : dAfter.trim();
     const dHr = dStop > -1 ? dAfter.substring(dStop).trim() : '';
     const advice = text.substring(0, dIdx).trim();
     const title = (docMatch[1] || '').trim() || 'Document';
-    return { type: 'Document', title, draft, advice: [advice, dHr].filter(Boolean).join('\n\n') };
+    // Optional theme directive the model emits when a colour/style was requested (stripped from the body)
+    let accent = null;
+    const themeMatch = draft.match(/^\s*(?:THEME|ACCENT|COLOU?R)\s*[:=]\s*([^\n]+)\n?/i);
+    if (themeMatch) { accent = themeMatch[1].trim(); draft = draft.slice(themeMatch[0].length).trim(); }
+    return { type: 'Document', title, draft, accent, advice: [advice, dHr].filter(Boolean).join('\n\n') };
   }
   // Match 📧 DRAFT FOR EMPLOYEE: in various formats the AI might use
   const markerMatch = text.match(/\*{0,2}📧\s*(?:DRAFT\s+FOR\s+EMPLOYEE|EMPLOYEE\s+DRAFT|DRAFT\s+EMAIL)[^:\n]*:?\*{0,2}\s*\n/i);
@@ -7450,7 +7458,7 @@ function showArtifact(artifact, msgIdx) {
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
     ${!isDoc && emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
-  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft)}</div>`;
+  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft, artifact.accent)}</div>`;
   // Keep the original markdown so an unedited download renders headings/tables cleanly
   currentArtifact._md = artifact.draft;
   // Mark as hand-edited (and capture the plain text) only when the user actually types
@@ -7487,7 +7495,7 @@ async function downloadArtifact() {
     const res = await fetch('/api/generate-doc', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ plainText: mdToDocSource(src), templateName: 'Draft response' })
+      body: JSON.stringify({ plainText: mdToDocSource(src), templateName: 'Draft response', accent: currentArtifact.accent || null })
     });
     if (res.ok) {
       const blob = await res.blob();
@@ -7782,6 +7790,30 @@ function isHeavyDocRequest(msg) {
   return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
 }
 
+// Detect a colour/theme the user asked for ("in orange", "green theme", "#C2410C") so a
+// generated document can be produced in that accent. Returns a colour name/hex or null.
+// Client-side colour resolver (mirrors the server) so the preview accent matches the download.
+function resolveAccentHex(accent) {
+  const map = {navy:'1F3864',blue:'1D4ED8',teal:'0F766E',green:'15803D',emerald:'047857',orange:'C2410C',amber:'B45309',gold:'92400E',red:'B91C1C',burgundy:'7F1D1D',maroon:'7F1D1D',purple:'6D28D9',violet:'6D28D9',pink:'BE185D',magenta:'BE185D',charcoal:'374151',grey:'374151',gray:'374151',black:'1F2937',slate:'334155'};
+  if (!accent) return { accent: '1B2D50', tint: '#F8FAFC' };
+  const raw = String(accent).trim().toLowerCase();
+  const hx = raw.replace('#','');
+  if (/^[0-9a-f]{6}$/.test(hx)) return { accent: hx.toUpperCase(), tint: '#F4F7FB' };
+  for (const name of Object.keys(map)) { if (raw === name || raw.includes(name)) return { accent: map[name], tint: '#F6F8FB' }; }
+  return { accent: '1B2D50', tint: '#F8FAFC' };
+}
+
+function detectAccentWord(text) {
+  const t = (text || '').toLowerCase();
+  const hex = t.match(/#([0-9a-f]{6})\b/);
+  if (hex) return '#' + hex[1];
+  const colours = ['navy','blue','teal','green','emerald','orange','amber','gold','red','burgundy','maroon','purple','violet','pink','magenta','charcoal','grey','gray','black','slate'];
+  // Only treat it as a theme request when paired with a colour/style cue, not any stray mention
+  if (!/\b(colou?r|theme|style|accent|in|make it|brand|palette)\b/.test(t)) return null;
+  for (const c of colours) { if (new RegExp('\\b'+c+'\\b').test(t)) return c; }
+  return null;
+}
+
 function extractSharePointQuery(msg) {
   let m;
   m = msg.match(/(?:job description|job spec|jd|position description) for (?:a |an |the )?([a-zA-Z &,()-]{3,50})/i);
@@ -7971,6 +8003,11 @@ function renderChatHistory() {
     </div>`;
     const artifact = parseArtifact(m.content);
     if (artifact) window._chatArtifacts = window._chatArtifacts || {};
+    // If the model didn't tag a theme, fall back to a colour the user asked for in the prior message
+    if (artifact && artifact.type === 'Document' && !artifact.accent) {
+      const prevUser = [...chatMessages.slice(0, i)].reverse().find(x => x.role === 'user');
+      if (prevUser) artifact.accent = detectAccentWord(prevUser.content);
+    }
     if (artifact) window._chatArtifacts[i] = artifact;
     const isSheet = artifact && artifact.type === 'Spreadsheet';
     const isDoc = artifact && artifact.type === 'Document';

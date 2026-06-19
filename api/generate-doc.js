@@ -4,6 +4,50 @@ import { createClient } from '@supabase/supabase-js';
 
 const enc = s => String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
+// ── DOCUMENT THEME ──
+// Resolve a requested accent (a colour name or #hex) into a dark accent + a light tint
+// for zebra rows / rules. Defaults to navy. Lets a doc be produced "in orange", "in green", etc.
+const THEME_PALETTE = {
+  navy:    { accent: '1F3864', tint: 'EAF1F8' },
+  blue:    { accent: '1D4ED8', tint: 'E6EEFF' },
+  teal:    { accent: '0F766E', tint: 'E1F4F1' },
+  green:   { accent: '15803D', tint: 'E7F6EC' },
+  emerald: { accent: '047857', tint: 'E3F5EE' },
+  orange:  { accent: 'C2410C', tint: 'FCEDE2' },
+  amber:   { accent: 'B45309', tint: 'FDF1DD' },
+  gold:    { accent: '92400E', tint: 'FBEFD9' },
+  red:     { accent: 'B91C1C', tint: 'FCEAEA' },
+  burgundy:{ accent: '7F1D1D', tint: 'F6E7E7' },
+  maroon:  { accent: '7F1D1D', tint: 'F6E7E7' },
+  purple:  { accent: '6D28D9', tint: 'F1EAFC' },
+  violet:  { accent: '6D28D9', tint: 'F1EAFC' },
+  pink:    { accent: 'BE185D', tint: 'FBE7F0' },
+  magenta: { accent: 'BE185D', tint: 'FBE7F0' },
+  charcoal:{ accent: '374151', tint: 'EEF1F4' },
+  grey:    { accent: '374151', tint: 'EEF1F4' },
+  gray:    { accent: '374151', tint: 'EEF1F4' },
+  black:   { accent: '1F2937', tint: 'EEF1F4' },
+  slate:   { accent: '334155', tint: 'EDF1F6' }
+};
+function lightenHex(hex, amt = 0.88) {
+  const h = String(hex||'').replace('#','');
+  if (!/^[0-9a-fA-F]{6}$/.test(h)) return 'EAF1F8';
+  const mix = (c) => Math.round(c + (255 - c) * amt).toString(16).padStart(2, '0');
+  return (mix(parseInt(h.slice(0,2),16)) + mix(parseInt(h.slice(2,4),16)) + mix(parseInt(h.slice(4,6),16))).toUpperCase();
+}
+function resolveTheme(accentReq) {
+  if (!accentReq) return { ...THEME_PALETTE.navy };
+  const raw = String(accentReq).trim().toLowerCase();
+  // direct colour-name match (also catches "burnt orange", "dark green" -> first known word)
+  for (const name of Object.keys(THEME_PALETTE)) {
+    if (raw === name || raw.includes(name)) return { ...THEME_PALETTE[name] };
+  }
+  // hex value (#RRGGBB or RRGGBB)
+  const hx = raw.replace('#','');
+  if (/^[0-9a-f]{6}$/.test(hx)) return { accent: hx.toUpperCase(), tint: lightenHex(hx) };
+  return { ...THEME_PALETTE.navy };
+}
+
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return null;
@@ -42,7 +86,7 @@ function cellParasXml(cellText) {
 
 // Generate Word XML for a table from marker format
 // rowsData: array of arrays of cell strings (already has **bold** markers, \n for line breaks)
-function tableToXml(rowsData) {
+function tableToXml(rowsData, theme = { accent: '1F3864', tint: 'EAF1F8' }) {
   if (!rowsData.length) return '';
   const bdr = (side) => `<w:${side} w:val="single" w:sz="4" w:space="0" w:color="9CA3AF"/>`;
   const tblBorders = `<w:tblBorders>${['top','left','bottom','right','insideH','insideV'].map(bdr).join('')}</w:tblBorders>`;
@@ -59,11 +103,11 @@ function tableToXml(rowsData) {
     const colCount = Math.max(...rowsData.map(r => r.length));
     const colW = isWide ? 9360 : Math.floor(9360 / (cells.length || 1));
 
-    // Full-row zebra striping (light blue / white) under a navy header, matching a designed one-pager.
+    // Full-row zebra striping (light tint / white) under an accent header, matching a designed one-pager.
     const dataIdx = hasHeaderRow ? rowIdx - 1 : rowIdx;
-    const zebra = (dataIdx % 2 === 0) ? 'EAF1F8' : 'FFFFFF';
+    const zebra = (dataIdx % 2 === 0) ? theme.tint : 'FFFFFF';
     const tcXml = cells.map((cell, ci) => {
-      const fill = isHdrRow ? '1F3864' : zebra;
+      const fill = isHdrRow ? theme.accent : zebra;
       const bdrXml = `<w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="2" w:space="0" w:color="CCCCCC"/>`).join('')}</w:tcBorders>`;
       const spanAttr = isWide ? `<w:gridSpan w:val="${colCount}"/>` : '';
       const tcW = isWide ? 9360 : colW;
@@ -75,9 +119,9 @@ function tableToXml(rowsData) {
         const runs = parseInlineRuns(cell);
         parasXml = `<w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr>${runs.map(r=>`<w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`).join('')}</w:p>`;
       } else if (ci === 0 && cells.length > 1) {
-        // First column reads as a row label: bold navy
+        // First column reads as a row label: bold accent colour
         const runs = parseInlineRuns(cell);
-        parasXml = `<w:p><w:pPr><w:spacing w:before="50" w:after="50"/></w:pPr>${runs.map(r=>`<w:r><w:rPr><w:b/><w:color w:val="1F3864"/></w:rPr><w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`).join('')}</w:p>`;
+        parasXml = `<w:p><w:pPr><w:spacing w:before="50" w:after="50"/></w:pPr>${runs.map(r=>`<w:r><w:rPr><w:b/><w:color w:val="${theme.accent}"/></w:rPr><w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`).join('')}</w:p>`;
       } else {
         parasXml = cellParasXml(cell);
       }
@@ -92,7 +136,7 @@ function tableToXml(rowsData) {
   return `<w:tbl><w:tblPr><w:tblW w:w="9360" w:type="dxa"/>${tblBorders}<w:tblLook w:val="0000"/></w:tblPr><w:tblGrid>${gridCols}</w:tblGrid>${rowXml}</w:tbl><w:p><w:pPr><w:spacing w:before="0" w:after="160"/></w:pPr></w:p>`;
 }
 
-function textToDocxBuffer(text) {
+function textToDocxBuffer(text, theme = { accent: '1F3864', tint: 'EAF1F8' }) {
   // Segment into text and [TABLE] blocks
   const segments = [];
   let remaining = text || '';
@@ -106,8 +150,8 @@ function textToDocxBuffer(text) {
   if (lastIdx < remaining.length) segments.push({type:'text', content: remaining.slice(lastIdx)});
 
   let paras = '';
-  // Document accent colour (navy) and a muted tone for metadata - matches a designed one-pager.
-  const NAVY = '1F3864', MUTED = '595959';
+  // Document accent colour (from the requested theme) and a muted tone for metadata.
+  const NAVY = theme.accent || '1F3864', MUTED = '595959', TINT_RULE = lightenHex(NAVY, 0.7);
   let titleDone = false;       // the first heading becomes the document Title
   let expectSubtitle = false;  // a metadata strip directly under the title renders muted
   let pendingHeaderRule = false; // emit a divider rule under the whole title/subtitle block, once
@@ -124,7 +168,7 @@ function textToDocxBuffer(text) {
     }
     if (level <= 2) {
       // Section heading: navy, all-caps, with a rule underneath
-      return `<w:p><w:pPr><w:spacing w:before="280" w:after="80"/><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="3" w:color="BFD3E6"/></w:pBdr></w:pPr>`
+      return `<w:p><w:pPr><w:spacing w:before="280" w:after="80"/><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="3" w:color="${TINT_RULE}"/></w:pBdr></w:pPr>`
         + `<w:r><w:rPr><w:b/><w:caps/><w:color w:val="${NAVY}"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
     }
     // Subheading: navy, mixed case, no rule
@@ -141,7 +185,7 @@ function textToDocxBuffer(text) {
       const rowsData = seg.content.split('\n')
         .map(l => l.trim()).filter(Boolean)
         .map(l => l.split('§CELL§').map(c => c));
-      if (rowsData.length) paras += tableToXml(rowsData);
+      if (rowsData.length) paras += tableToXml(rowsData, theme);
       continue;
     }
 
@@ -251,10 +295,10 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { templateBase64, fields, plainText, templateName } = req.body;
+    const { templateBase64, fields, plainText, templateName, accent } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';
     if (!templateBase64 && plainText) {
-      const buf = textToDocxBuffer(plainText);
+      const buf = textToDocxBuffer(plainText, resolveTheme(accent));
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
       return res.status(200).send(buf);
