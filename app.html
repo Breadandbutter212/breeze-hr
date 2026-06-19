@@ -9114,7 +9114,8 @@ async function loadAnalyticsFile(event) {
     let rows;
     if (/\.(xlsx|xls)$/i.test(file.name) && typeof XLSX !== 'undefined') {
       const buf = await file.arrayBuffer();
-      const wb = XLSX.read(buf);
+      // cellDates: true so date columns parse as real dates, not Excel serial numbers (e.g. 43172)
+      const wb = XLSX.read(buf, { cellDates: true });
       const ws = wb.Sheets[wb.SheetNames[0]];
       // Read as raw rows (header:1) so blank header cells don't become "__EMPTY"
       const matrix = XLSX.utils.sheet_to_json(ws, { header:1, defval:'', blankrows:false });
@@ -9149,7 +9150,13 @@ function parseAnalyticsCSV(text) {
 // Turn a raw 2D cell grid into clean row-objects: skip title/banner rows that sit
 // above the real header, name blank-header columns sensibly, and de-dupe keys.
 function rowsFromMatrix(matrix) {
-  const grid = (matrix||[]).map(r => (r||[]).map(c => String(c==null?'':c).trim()))
+  // Format real Date cells (from cellDates) as YYYY-MM-DD instead of a verbose Date.toString()
+  const fmtCell = c => {
+    if (c == null) return '';
+    if (c instanceof Date && !isNaN(c)) { const p=n=>String(n).padStart(2,'0'); return `${c.getFullYear()}-${p(c.getMonth()+1)}-${p(c.getDate())}`; }
+    return String(c).trim();
+  };
+  const grid = (matrix||[]).map(r => (r||[]).map(fmtCell))
                            .filter(r => r.some(c => c !== ''));
   if (grid.length < 2) return [];
   const isNum = c => c !== '' && !isNaN(parseFloat(c.replace(/[£$€,\s%]/g,'')));
@@ -9174,6 +9181,18 @@ function rowsFromMatrix(matrix) {
   }).filter(r => Object.values(r).some(v => v));
 }
 
+// Excel stores dates as a serial number of days since 1899-12-30. Convert to a real Date.
+function excelSerialToDate(n) { return new Date(Math.round((n - 25569) * 86400000)); }
+// Parse an analytics cell into a Date, tolerating both date strings and Excel serial numbers.
+function analyticsParseDate(v) {
+  const s = String(v==null?'':v).trim();
+  if (!s) return null;
+  if (/^\d{4,6}$/.test(s)) { const n = parseInt(s,10); if (n >= 20000 && n <= 60000) return excelSerialToDate(n); }
+  const d = new Date(s); return isNaN(d) ? null : d;
+}
+// Column names that denote a date, used to catch date columns stored as raw serial numbers.
+const ANALYTICS_DATE_NAME_RX = /(date|dob|hired?|joined?|start(ed)?|leav(e|er|ing)|termination|terminated|expir|review|birth|anniversary|tenure)/i;
+
 function detectColumnTypes(rows) {
   const cols = Object.keys(rows[0]||{});
   const result = {};
@@ -9182,7 +9201,10 @@ function detectColumnTypes(rows) {
     const vals = rows.map(r => String(r[col]||'').trim()).filter(v => v && v !== 'null' && v !== 'undefined');
     if (!vals.length) { result[col] = 'empty'; return; }
     const cleaned = vals.map(v => parseFloat(v.replace(/[£$€,\s%]/g,'')));
-    if (cleaned.filter(n=>!isNaN(n)).length > vals.length * 0.85) { result[col] = 'numeric'; return; }
+    const nums = cleaned.filter(n=>!isNaN(n));
+    // A date-named column of integers in the Excel-serial range is a date, not a number to average.
+    if (ANALYTICS_DATE_NAME_RX.test(col) && nums.length > vals.length*0.85 && nums.every(n=>Number.isInteger(n)&&n>=20000&&n<=60000)) { result[col] = 'date'; return; }
+    if (nums.length > vals.length * 0.85) { result[col] = 'numeric'; return; }
     if (vals.filter(v=>dateRx.test(v)||(!isNaN(Date.parse(v))&&v.length>=8)).length > vals.length * 0.7) { result[col] = 'date'; return; }
     const unique = new Set(vals.map(v=>v.toLowerCase())).size;
     if (unique <= Math.min(25, rows.length * 0.6) && unique >= 2) { result[col] = 'categorical'; return; }
@@ -9279,7 +9301,7 @@ function renderDashboard() {
   dateCols.slice(0,1).forEach(col => {
     const months = {};
     rows.forEach(r => {
-      const d = new Date(r[col]); if (isNaN(d)) return;
+      const d = analyticsParseDate(r[col]); if (!d) return;
       const key = d.toLocaleDateString('en-GB',{year:'numeric',month:'short'});
       months[key] = (months[key]||0)+1;
     });
@@ -9382,12 +9404,25 @@ async function anAskData() {
   if (!out) return;
   out.style.display = 'block';
   out.innerHTML = `<span style="display:inline-flex;align-items:center;gap:8px;color:var(--ink3);"><span style="width:13px;height:13px;border:2px solid var(--border);border-top-color:var(--accent);border-radius:50%;display:inline-block;animation:spin .8s linear infinite;"></span>Reading your data and working it out…</span>`;
-  // Send up to ~600 rows / 24k chars of the current dataset (respects any active filter, since analyticsData is the filtered set)
-  const sample = analyticsData.slice(0, 600);
-  let dataJson = JSON.stringify(sample);
-  if (dataJson.length > 24000) dataJson = JSON.stringify(sample.slice(0, 300)).substring(0, 24000);
-  const sys = 'You are a people-analytics assistant for a UK HR team. Answer the question using ONLY the employee dataset provided (a JSON array of rows). Compute any figures (averages, medians, counts, ranges, totals) yourself from the rows. Use GBP and round sensibly. For a pay-rise question, base your suggestion on the person\'s current pay versus peers in the same role, department and location within the data, give a sensible range with a one-line rationale, and note it is guidance for the manager to decide, not a decision. If the data does not contain a field needed to answer (for example no location or no salary), say so plainly rather than guessing. Be concise. Plain text, no markdown headings, no tables, no em dashes.';
-  const user = `QUESTION: ${q}\n\nEMPLOYEE DATASET (${analyticsData.length} rows in the current view; up to ${sample.length} included below) as JSON:\n${dataJson}`;
+  // Include as many WHOLE rows as fit in the char budget (never truncate mid-record - that
+  // breaks the JSON and makes the model think the data "cuts off"). Respects any active filter.
+  const CHAR_BUDGET = 90000;
+  let included = analyticsData.length;
+  let dataJson = JSON.stringify(analyticsData);
+  if (dataJson.length > CHAR_BUDGET) {
+    while (included > 1 && JSON.stringify(analyticsData.slice(0, included)).length > CHAR_BUDGET) included = Math.floor(included * 0.85);
+    dataJson = JSON.stringify(analyticsData.slice(0, included));
+  }
+  const completeNote = included >= analyticsData.length
+    ? `This is the COMPLETE dataset: all ${analyticsData.length} rows are included below.`
+    : `${included} of ${analyticsData.length} rows are included below (a representative sample). Answer from these; do not say the data is missing or ask for more.`;
+  const sys = 'You are a people-analytics assistant for a UK HR team. Answer the question using ONLY the employee dataset provided (a JSON array of rows). Compute any figures (averages, medians, counts, ranges, totals) yourself from the rows. '
+    + 'CRITICAL OUTPUT RULES: Give only the finished answer a busy HR manager can read at a glance. Do NOT show your reasoning or workings, do NOT narrate your counting ("let me go row by row"), and NEVER list, quote or reference individual employees, row numbers or employee IDs (e.g. E1001). Do not correct yourself in the output. '
+    + 'Lead with the headline answer in one sentence. If a per-group breakdown helps, follow with a short sorted list of "Group - figure" lines (highest to lowest), then one closing line naming the highest and lowest. '
+    + 'Use GBP and round sensibly. If the salary/pay figures clearly mix multiple currencies, add ONE short sentence noting the totals mix currencies so the ranking is directional, then still give the answer - do not refuse. '
+    + 'For a pay-rise question, base your suggestion on the person\'s pay versus peers in the same role, department and location, give a sensible range with a one-line rationale, and note it is guidance for the manager to decide. '
+    + 'If a field needed to answer is genuinely absent from the data, say so in one line. Never claim the dataset is cut off or truncated. Be concise (aim under 150 words). Plain text, no markdown headings, no tables, no em dashes.';
+  const user = `QUESTION: ${q}\n\n${completeNote}\nEMPLOYEE DATASET as JSON:\n${dataJson}`;
   try {
     const token = await getAuthToken();
     const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ messages:[{role:'user',content:user}], system: sys }) });
