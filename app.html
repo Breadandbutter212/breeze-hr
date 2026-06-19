@@ -7128,11 +7128,10 @@ You only answer HR, employment law, people management and business-related quest
 ━━━ RESPONSE FORMAT ━━━
 You are in a chat with an HR professional. Be direct and practical.
 For Tier 1 (simple policy questions): answer in 2-4 sentences. No draft needed.
-When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: format so it appears in the right-hand panel where HR can edit and download as a Word doc - NEVER paste letter or document content into the chat:
+When producing ANY EMPLOYEE-FACING letter or email, always use the 📧 DRAFT FOR EMPLOYEE: format so it appears in the right-hand panel where HR can edit and download as a Word doc - NEVER paste letter content into the chat:
 • Email drafts to employees
 • Reference letters (mortgage, rental, employment, visa)
 • Letter templates (blank or pre-filled)
-• Any HR letter or document
 
 📧 DRAFT FOR EMPLOYEE:
 [draft text]
@@ -7143,7 +7142,17 @@ When producing ANY of the following, always use the 📧 DRAFT FOR EMPLOYEE: for
 • [what to check/do]
 (The HR Actions section is internal guidance for HR only - it is never shown or sent to the employee. Label it simply "HR Actions", with no "not for the employee" caption.)
 
-FILES YOU CAN PRODUCE: You can generate real downloadable files - Word documents via the 📧 DRAFT FOR EMPLOYEE format, and Excel spreadsheets via the 📊 SPREADSHEET format below. Never tell the user you can only produce text, or that you cannot create files or spreadsheets.
+When producing ANY INTERNAL HR DOCUMENT (i.e. a document for HR or managers, not a letter to one employee), always use the 📄 DOCUMENT: format so it appears in the right-hand panel where HR can edit and download as a Word doc - NEVER paste the document body into the chat. This covers: frameworks (360, performance, competency, pay), policies and procedures, process guides, manager toolkits, checklists in prose form, terms of reference, multi-section templates - anything structured and longer than a short answer. Write the body in markdown: use ## and ### for section headings, | pipe tables for tables, - or • for bullets, **bold** and *italic*. End with an HR Actions section for any setup/decisions HR must make.
+
+📄 DOCUMENT: [short title]
+[document body in markdown]
+
+---
+
+**HR Actions**:
+• [what HR must decide/do before using this]
+
+FILES YOU CAN PRODUCE: You can generate real downloadable files - employee letters via the 📧 DRAFT FOR EMPLOYEE format, internal HR documents via the 📄 DOCUMENT format, and Excel spreadsheets via the 📊 SPREADSHEET format below. Never tell the user you can only produce text, or that you cannot create files, documents or spreadsheets.
 
 When the user asks for data as a spreadsheet or in Excel, a report in table form, a board pack, or a reusable spreadsheet template (for example a headcount or absence summary, a pay or holiday report, a new starter checklist, an audit or tracker template), output it using the 📊 SPREADSHEET format so it appears in the right-hand panel with one-click download to a real, formatted .xlsx file. Do not put spreadsheet data in a 📧 draft. Do not wrap it in code fences. Keep the data-protection cautions in HR Actions.
 Structure: a "📊 SPREADSHEET:" line with the workbook title, then one or more TABS. Start each tab with "## Tab name" on its own line, followed by its table (one row per line, columns separated by | (pipe), first row = header).
@@ -7184,26 +7193,98 @@ CHART: line
 Use **bold** for headings. Use • bullet points for lists. Keep responses proportionate.${policyContext}${learningContext}${ratingContext}`;
 }
 
+// True when lines[i] starts a markdown table: a "| ... |" row followed by a
+// "|---|---|" separator row. Documents (frameworks, guides) lean on these heavily.
+function _isMdTableStart(lines, i) {
+  const cur = lines[i] || '', nxt = lines[i+1] || '';
+  return cur.includes('|') && nxt.includes('|') && /-/.test(nxt) && /^\s*\|?[\s:|-]+\|[\s:|-]*$/.test(nxt);
+}
+function _mdTableCells(row) {
+  return row.replace(/^\s*\|/,'').replace(/\|\s*$/,'').split('|').map(c => c.trim());
+}
+
+// Render a markdown draft to formatted HTML for the artifact panel:
+// headings (#/##/###), **bold**, *italic*, bullets, [PLACEHOLDER] chips and | tables.
 function formatArtifactContent(text) {
-  const lines = text.split('\n');
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inline = s => esc(s)
+    .replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g, '$1<em>$2</em>')
+    .replace(/\[([A-Z][A-Z0-9 _\/.-]*)\]/g, '<span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:3px;font-size:12px;">[$1]</span>');
+
+  const lines = (text || '').split('\n');
   let html = '';
   for (let i = 0; i < lines.length; i++) {
-    let line = lines[i]
-      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-      .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-      .replace(/\[([A-Z][A-Z\s]+)\]/g,'<span style="background:#FFF3CD;color:#856404;padding:1px 5px;border-radius:3px;font-size:12px;">[$1]</span>');
-    const trimmed = lines[i].trim();
-    if (!trimmed) {
-      html += '<br>';
-    } else if (trimmed.startsWith('• ') || trimmed.startsWith('- ')) {
-      html += `<div style="display:flex;gap:8px;padding:2px 0;"><span style="flex-shrink:0;color:#D85A30;">•</span><span>${line.replace(/^[•\-]\s+/,'')}</span></div>`;
-    } else if (/^\*\*[^*]+\*\*$/.test(trimmed)) {
-      html += `<div style="font-weight:600;color:#1D1D1F;margin-top:14px;margin-bottom:4px;font-size:13px;">${line.replace(/\*\*/g,'')}</div>`;
-    } else {
-      html += `<div style="margin-bottom:2px;">${line}</div>`;
+    // Table block
+    if (_isMdTableStart(lines, i)) {
+      const rows = []; let j = i;
+      while (j < lines.length && lines[j].includes('|')) { rows.push(lines[j]); j++; }
+      const header = _mdTableCells(rows[0]);
+      const body = rows.slice(2).map(_mdTableCells);
+      html += '<table style="border-collapse:collapse;width:100%;margin:10px 0;font-size:12px;">';
+      html += '<tr>' + header.map(c => `<th style="border:1px solid #D5D9E0;background:#1B2D50;color:#fff;padding:6px 9px;text-align:left;font-weight:600;">${inline(c)}</th>`).join('') + '</tr>';
+      body.forEach(r => { html += '<tr>' + r.map((c,ci) => `<td style="border:1px solid #D5D9E0;padding:6px 9px;${ci===0?'background:#F8FAFC;':''}">${inline(c)}</td>`).join('') + '</tr>'; });
+      html += '</table>';
+      i = j - 1;
+      continue;
     }
+    const trimmed = lines[i].trim();
+    if (!trimmed) { html += '<br>'; continue; }
+    // Horizontal rule (section divider)
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(trimmed)) { html += '<hr style="border:none;border-top:1px solid var(--border);margin:14px 0;">'; continue; }
+    // Heading (tolerate a single stray leading char before the #, e.g. "a# Title")
+    const h = trimmed.match(/^[a-z]?(#{1,6})\s+(.+)$/);
+    if (h) {
+      const lvl = h[1].length, size = lvl <= 1 ? 18 : lvl === 2 ? 15 : 13, mt = lvl <= 2 ? 18 : 13;
+      html += `<div style="font-weight:700;color:#1D1D1F;font-size:${size}px;margin:${mt}px 0 6px;letter-spacing:-0.01em;">${inline(h[2].trim())}</div>`;
+      continue;
+    }
+    // Bullet (•, -, or *), including a bare marker with its text on the next line
+    if ((trimmed === '•' || trimmed === '-' || trimmed === '*') && (lines[i+1]||'').trim()) {
+      html += `<div style="display:flex;gap:8px;padding:2px 0;"><span style="flex-shrink:0;color:#D85A30;">•</span><span>${inline(lines[++i].trim())}</span></div>`;
+      continue;
+    }
+    if (/^[•\-]\s+/.test(trimmed) || /^\*\s+/.test(trimmed)) {
+      html += `<div style="display:flex;gap:8px;padding:2px 0;"><span style="flex-shrink:0;color:#D85A30;">•</span><span>${inline(trimmed.replace(/^[•\-*]\s+/,''))}</span></div>`;
+      continue;
+    }
+    // Bold-only line, or a short numbered "1. Heading" line => sub-heading
+    if (/^\*\*[^*]+\*\*$/.test(trimmed) || (/^\d+\.\s+\S/.test(trimmed) && trimmed.length < 60 && !/[.!?]$/.test(trimmed))) {
+      html += `<div style="font-weight:600;color:#1D1D1F;margin-top:14px;margin-bottom:4px;font-size:13px;">${inline(trimmed)}</div>`;
+      continue;
+    }
+    html += `<div style="margin-bottom:2px;">${inline(trimmed)}</div>`;
   }
   return html;
+}
+
+// Convert a markdown draft into the canonical text the Word builder (/api/generate-doc)
+// understands: [TABLE]…§CELL§… blocks, **bold** headings, plain bullets, no raw # or *.
+function mdToDocSource(md) {
+  const stripItalic = s => s.replace(/(^|[^*])\*([^*\n]+)\*/g, '$1$2');
+  const lines = (md || '').split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    if (_isMdTableStart(lines, i)) {
+      const rows = []; let j = i;
+      while (j < lines.length && lines[j].includes('|')) { rows.push(lines[j]); j++; }
+      const header = _mdTableCells(rows[0]).map(c => `**${c.replace(/\*/g,'')}**`);
+      const body = rows.slice(2).map(_mdTableCells);
+      out.push('[TABLE]', header.join('§CELL§'));
+      body.forEach(r => out.push(r.join('§CELL§')));
+      out.push('[/TABLE]');
+      i = j - 1;
+      continue;
+    }
+    const tr = lines[i].trim();
+    if (/^(-{3,}|\*{3,}|_{3,})$/.test(tr)) { out.push(''); continue; } // drop rules
+    const h = tr.match(/^[a-z]?(#{1,6})\s+(.+)$/);
+    if (h) { out.push('**' + h[2].replace(/\*/g,'').trim() + '**'); continue; }
+    if ((tr === '•' || tr === '-' || tr === '*') && (lines[i+1]||'').trim()) { out.push('• ' + stripItalic(lines[++i].trim())); continue; }
+    if (/^\*\s+/.test(tr)) { out.push('- ' + stripItalic(tr.replace(/^\*\s+/,''))); continue; }
+    out.push(stripItalic(lines[i]));
+  }
+  return out.join('\n');
 }
 
 // ── ARTIFACT PANEL ──
@@ -7290,7 +7371,7 @@ function autoChartType(rows) {
 // use "---" as a section divider, and splitting on the first one truncates the draft
 // down to just its title block. Only a "---" that immediately precedes an HR Actions
 // heading - or the heading itself - counts as the real boundary.
-const HR_ACTIONS_SPLIT = /\n(?:-{3,}[ \t]*\n+[ \t]*)?(?:\*\*\s*HR Actions?\s*\*\*[ \t]*:?|HR Actions?[ \t]*[:(])/i;
+const HR_ACTIONS_SPLIT = /\n(?:-{3,}[ \t]*\n+[ \t]*)?\*{0,2}[ \t]*HR Actions?[ \t]*\*{0,2}[ \t]*(?::|\(|(?=\n)|$)/i;
 
 function parseArtifact(text) {
   // Spreadsheet artifact: 📊 SPREADSHEET: <title>, optional ## Tab sections, each with a table and optional CHART:
@@ -7307,6 +7388,18 @@ function parseArtifact(text) {
       const advice = text.substring(0, sIdx).trim();
       return { type: 'Spreadsheet', title, sheets, draft: block.trim(), advice: [advice, sHr].filter(Boolean).join('\n\n') };
     }
+  }
+  // Document artifact: 📄 DOCUMENT: <title> - internal HR documents (frameworks, policies, guides, templates)
+  const docMatch = text.match(/\*{0,2}📄\s*(?:DOCUMENT|DOC)[^:\n]*:\*{0,2}\s*([^\n]*)\n/i);
+  if (docMatch) {
+    const dIdx = text.indexOf(docMatch[0]);
+    const dAfter = text.substring(dIdx + docMatch[0].length);
+    const dStop = dAfter.search(HR_ACTIONS_SPLIT);
+    const draft = dStop > -1 ? dAfter.substring(0, dStop).trim() : dAfter.trim();
+    const dHr = dStop > -1 ? dAfter.substring(dStop).trim() : '';
+    const advice = text.substring(0, dIdx).trim();
+    const title = (docMatch[1] || '').trim() || 'Document';
+    return { type: 'Document', title, draft, advice: [advice, dHr].filter(Boolean).join('\n\n') };
   }
   // Match 📧 DRAFT FOR EMPLOYEE: in various formats the AI might use
   const markerMatch = text.match(/\*{0,2}📧\s*(?:DRAFT\s+FOR\s+EMPLOYEE|EMPLOYEE\s+DRAFT|DRAFT\s+EMAIL)[^:\n]*:?\*{0,2}\s*\n/i);
@@ -7343,19 +7436,22 @@ function showArtifact(artifact, msgIdx) {
     return;
   }
   const emailProvider = window._emailProvider || null;
+  const isDoc = artifact.type === 'Document';
   head.innerHTML = `
-    <span class="artifact-type">${artifact.type}</span>
-    <span class="artifact-title">Draft response</span>
+    <span class="artifact-type">${isDoc ? 'Document' : artifact.type}</span>
+    <span class="artifact-title">${isDoc ? escapeHtml(artifact.title || 'Document') : 'Draft response'}</span>
     <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
-    ${emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
+    ${!isDoc && emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
   body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft)}</div>`;
-  // Update currentArtifact.draft when user edits
+  // Keep the original markdown so an unedited download renders headings/tables cleanly
+  currentArtifact._md = artifact.draft;
+  // Mark as hand-edited (and capture the plain text) only when the user actually types
   setTimeout(() => {
     const doc = document.getElementById('artifactDoc');
-    if (doc) doc.addEventListener('input', () => { currentArtifact.draft = doc.innerText; });
+    if (doc) doc.addEventListener('input', () => { currentArtifact._edited = true; currentArtifact.draft = doc.innerText; });
   }, 50);
   if (msgIdx !== undefined && currentProfile) saveResponse(null, artifact.draft, artifact.draft);
 }
@@ -7381,10 +7477,12 @@ async function downloadArtifact() {
   const btn = document.querySelector('.artifact-btn.primary');
   if (btn) { btn.textContent = 'Generating...'; btn.disabled = true; }
   try {
+    // Use the original markdown (with headings/tables) unless the user hand-edited the panel
+    const src = currentArtifact._edited ? (document.getElementById('artifactDoc')?.innerText || currentArtifact.draft) : (currentArtifact._md || currentArtifact.draft);
     const res = await fetch('/api/generate-doc', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ plainText: (document.getElementById('artifactDoc')?.innerText || currentArtifact.draft), templateName: 'Draft response' })
+      body: JSON.stringify({ plainText: mdToDocSource(src), templateName: 'Draft response' })
     });
     if (res.ok) {
       const blob = await res.blob();
@@ -7856,7 +7954,8 @@ function renderChatHistory() {
     if (artifact) window._chatArtifacts = window._chatArtifacts || {};
     if (artifact) window._chatArtifacts[i] = artifact;
     const isSheet = artifact && artifact.type === 'Spreadsheet';
-    const bubbleText = artifact ? (artifact.advice || (isSheet ? 'Spreadsheet ready - download below.' : 'Draft generated - see panel on the right.')) : m.content;
+    const isDoc = artifact && artifact.type === 'Document';
+    const bubbleText = artifact ? (artifact.advice || (isSheet ? 'Spreadsheet ready - download below.' : isDoc ? 'Document ready - see panel on the right.' : 'Draft generated - see panel on the right.')) : m.content;
     // Auto-open the preview panel for letters/docs only; spreadsheets download straight from the chat
     if (artifact && !isSheet && i === chatMessages.length - 1) setTimeout(() => showArtifact(window._chatArtifacts[i], i), 50);
     return `<div class="chat-msg">
@@ -7867,7 +7966,7 @@ function renderChatHistory() {
           oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent?escapeHtml(m._editedContent).replace(/\n/g,'<br>'):bubbleText)}</div>
         ${artifact ? `<div style="margin:7px 0 4px 44px;display:flex;gap:8px;flex-wrap:wrap;">${isSheet
           ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatSheetDownload(${i})">⬇ .xlsx</button><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="chatSheetRich(${i},this)" title="Charts and full formatting">✦ Rich Excel</button>`
-          : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 View draft</button>`
+          : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 ${isDoc ? 'View document' : 'View draft'}</button>`
         }</div>` : ''}
         ${m._spLinks && m._spLinks.length ? `<div style="margin:8px 0 4px 44px;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${escapeHtml(/^https?:\/\//i.test(l.path||'')?l.path:'#')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${escapeHtml(l.path||'')}">📄 ${escapeHtml(l.title||'')}${l.ext?' ['+escapeHtml(l.ext)+']':''}</a>`).join('')}</div>` : ''}
         <div class="chat-actions">
