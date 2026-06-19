@@ -12035,18 +12035,67 @@ async function saveCustomTrackers() {
   if (ex) await sb.from('policies').update({content:json}).eq('id', ex.id);
   else await sb.from('policies').insert({company_id:currentProfile.company_id, name:'SETTING:CustomTrackers', content:json});
 }
+// Custom trackers live behind one "Custom ▾" dropdown so the tab bar never grows or breaks,
+// no matter how many you create. The button shows the active tracker's name when one is open.
 function renderTrackerCustomTabs() {
   const wrap = document.getElementById('trackerCustomTabs'); if (!wrap) return;
-  wrap.innerHTML = '';
-  (customTrackers||[]).forEach(ct => {
-    const btn = document.createElement('button');
-    btn.id = `tt-custom-${ct.id}`;
-    btn.className = 'tracker-tab-btn';
-    btn.textContent = (ct.icon||'📋') + ' ' + ct.label;
-    btn.onclick = () => showTrackerTab('custom:'+ct.id);
-    if (trackerTab === 'custom:'+ct.id) btn.classList.add('active-tt');
-    wrap.appendChild(btn);
-  });
+  const cts = customTrackers || [];
+  if (!cts.length) { wrap.innerHTML = ''; return; }
+  const active = cts.find(ct => trackerTab === 'custom:'+ct.id);
+  const label = active ? `${active.icon||'📋'} ${active.label}` : 'Custom';
+  wrap.innerHTML = `<button id="customTrackerDd" class="tracker-tab-btn${active?' active-tt':''}" onclick="toggleCustomTrackerMenu(event)" style="display:inline-flex;align-items:center;gap:6px;max-width:210px;">
+    <span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(label)}</span>
+    <span style="font-size:11px;min-width:16px;text-align:center;background:var(--accent-bg);color:var(--accent);border-radius:8px;padding:0 5px;font-weight:600;">${cts.length}</span>
+    <span style="font-size:8px;opacity:0.6;">▼</span>
+  </button>`;
+}
+function ctMenuItems(cts) {
+  if (!cts.length) return `<div style="padding:14px;text-align:center;color:var(--ink3);font-size:12px;">No custom trackers yet</div>`;
+  return cts.map(ct => {
+    const on = trackerTab === 'custom:'+ct.id;
+    return `<div data-ctname="${escapeHtml((ct.label||'').toLowerCase())}" onclick="closeCustomTrackerMenu();showTrackerTab('custom:${ct.id}')"
+      style="display:flex;align-items:center;gap:9px;padding:9px 10px;border-radius:var(--r-sm);cursor:pointer;background:${on?'var(--accent-bg)':'transparent'};"
+      onmouseover="if('${on}'!=='true')this.style.background='var(--surface2)'" onmouseout="this.style.background='${on?'var(--accent-bg)':'transparent'}'">
+      <span style="font-size:15px;flex-shrink:0;">${ct.icon||'📋'}</span>
+      <span style="flex:1;min-width:0;font-size:12px;font-weight:${on?'600':'500'};color:${on?'var(--accent)':'var(--ink)'};overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(ct.label)}</span>
+      <span onclick="event.stopPropagation();closeCustomTrackerMenu();deleteCustomTracker('${ct.id}')" title="Delete tracker"
+        style="font-size:13px;color:var(--red);opacity:0.45;padding:2px 5px;border-radius:4px;flex-shrink:0;" onmouseover="this.style.opacity='1';this.style.background='var(--red-bg)'" onmouseout="this.style.opacity='0.45';this.style.background='none'">✕</span>
+    </div>`;
+  }).join('');
+}
+function closeCustomTrackerMenu() {
+  document.getElementById('customTrackerMenu')?.remove();
+  document.removeEventListener('click', _closeCtMenuOutside);
+}
+function _closeCtMenuOutside(e) {
+  const m = document.getElementById('customTrackerMenu'), b = document.getElementById('customTrackerDd');
+  if (m && !m.contains(e.target) && b && !b.contains(e.target)) closeCustomTrackerMenu();
+}
+function filterCtMenu(q) {
+  const ql = (q||'').toLowerCase().trim();
+  document.querySelectorAll('#ctMenuList [data-ctname]').forEach(el => { el.style.display = el.dataset.ctname.includes(ql) ? 'flex' : 'none'; });
+}
+function toggleCustomTrackerMenu(e) {
+  e.stopPropagation();
+  if (document.getElementById('customTrackerMenu')) { closeCustomTrackerMenu(); return; }
+  const btn = document.getElementById('customTrackerDd'); if (!btn) return;
+  const r = btn.getBoundingClientRect();
+  const cts = customTrackers || [];
+  const showSearch = cts.length > 6;
+  const menu = document.createElement('div');
+  menu.id = 'customTrackerMenu';
+  const left = Math.max(12, Math.min(r.left, window.innerWidth - 296));
+  menu.style.cssText = `position:fixed;top:${r.bottom+6}px;left:${left}px;z-index:1200;background:white;border:1px solid var(--border);border-radius:var(--r);box-shadow:var(--shadow-lg);width:284px;max-height:64vh;display:flex;flex-direction:column;overflow:hidden;`;
+  menu.innerHTML = `
+    ${showSearch ? `<div style="padding:8px;border-bottom:1px solid var(--border);flex-shrink:0;"><input id="ctMenuSearch" placeholder="Search trackers..." oninput="filterCtMenu(this.value)" onclick="event.stopPropagation()" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;"></div>` : ''}
+    <div id="ctMenuList" style="overflow-y:auto;flex:1;padding:6px;">${ctMenuItems(cts)}</div>
+    <div style="border-top:1px solid var(--border);padding:6px;flex-shrink:0;">
+      <div onclick="closeCustomTrackerMenu();openCreateTrackerModal()" style="display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;font-weight:600;color:var(--accent);" onmouseover="this.style.background='var(--accent-bg)'" onmouseout="this.style.background='none'">+ New custom tracker</div>
+    </div>`;
+  menu.onclick = ev => ev.stopPropagation();
+  document.body.appendChild(menu);
+  setTimeout(() => document.getElementById('ctMenuSearch')?.focus(), 30);
+  setTimeout(() => document.addEventListener('click', _closeCtMenuOutside), 0);
 }
 let _pendingCustomTracker = null;
 function openCreateTrackerModal() {
@@ -12682,9 +12731,15 @@ function mpFmt(d) {
 function showTrackerTab(tab) {
   trackerTab = tab;
   document.querySelectorAll('.tracker-tab-btn').forEach(b => b.classList.remove('active-tt'));
-  // Custom-tracker buttons use id "tt-custom-<id>" but the tab arg is "custom:<id>".
-  const btn = document.getElementById(tab.startsWith('custom:') ? 'tt-custom-'+tab.slice(7) : 'tt-'+tab);
-  if (btn) btn.classList.add('active-tt');
+  // Built-in tabs activate by id; custom trackers live behind the "Custom ▾" dropdown,
+  // so rebuild it to show the active tracker's name and highlight the dropdown button.
+  if (tab.startsWith('custom:')) {
+    renderTrackerCustomTabs();
+  } else {
+    const btn = document.getElementById('tt-'+tab);
+    if (btn) btn.classList.add('active-tt');
+    renderTrackerCustomTabs(); // clear the dropdown's active state when a built-in tab is chosen
+  }
   renderTrackersBody();
 }
 
