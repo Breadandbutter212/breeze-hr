@@ -31,12 +31,16 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized', detail: authError });
   }
 
-  const { messages, system, max_tokens, model } = req.body;
+  const { messages, system, max_tokens, model, temperature } = req.body;
 
   // Allow callers to request a larger budget (e.g. document mode), capped server-side.
   // Document generation can run long, so the ceiling is 16k - quick chat still defaults to 2048.
   const reqTokens = Number(max_tokens);
   const safeTokens = Number.isFinite(reqTokens) ? Math.min(Math.max(reqTokens, 256), 16000) : 2048;
+
+  // Optional temperature (e.g. analytics wants near-deterministic, no rambling). Clamp to [0,1].
+  const reqTemp = Number(temperature);
+  const safeTemp = Number.isFinite(reqTemp) ? Math.min(Math.max(reqTemp, 0), 1) : null;
 
   // Whitelist the model. Quick chat stays on Sonnet (cheap); document mode may opt into Opus.
   const MODELS = { 'claude-sonnet-4-6': 1, 'claude-opus-4-8': 1 };
@@ -60,6 +64,7 @@ export default async function handler(req, res) {
         max_tokens: safeTokens,
         system: system,
         messages: messages,
+        ...(safeTemp !== null ? { temperature: safeTemp } : {}),
         ...(useStream ? { stream: true } : {})
       })
     });

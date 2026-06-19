@@ -9395,6 +9395,24 @@ function renderDashboard() {
   }, 60);
 }
 
+// Safety net: strip any working-out the model slips into an analytics answer (self-corrections,
+// "let me count" narration, per-employee enumeration), so the user only sees the clean summary.
+function cleanAnalyticsAnswer(txt) {
+  if (!txt) return txt;
+  const narrateRx = /^\s*(let me|i'?ll|i will|recount|recounting|counting|going (through|row)|let'?s|now (let me|i'?ll)|working through|to count|first,? i)\b/i;
+  const lines = txt.split('\n')
+    // First, strip dangling working-out asides inside a line (keeps the real data on that line)
+    .map(line => line.replace(/\s*\([^)]*\b(wait|counted under|recount)\b[^)]*\)/gi, '').replace(/\s*[—-]?\s*\bwait\b\.?\s*$/i, '').trimEnd())
+    .filter(line => {
+      const l = line.trim();
+      if (!l) return true;
+      if (narrateRx.test(l)) return false;                          // pure narration lines
+      if ((l.match(/\bE\d{3,}\b/g) || []).length >= 2) return false; // lines enumerating employee IDs
+      return true;
+    });
+  return lines.join('\n').replace(/\n{3,}/g,'\n\n').trim();
+}
+
 // Ask-your-data: send the (filtered) analytics dataset + a natural-language question to AI for an answer.
 async function anAskData() {
   const inp = document.getElementById('anAskInput'), out = document.getElementById('anAskResult');
@@ -9425,9 +9443,10 @@ async function anAskData() {
   const user = `QUESTION: ${q}\n\n${completeNote}\nEMPLOYEE DATASET as JSON:\n${dataJson}`;
   try {
     const token = await getAuthToken();
-    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ messages:[{role:'user',content:user}], system: sys }) });
+    const res = await fetch('/api/chat', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+token}, body: JSON.stringify({ messages:[{role:'user',content:user}], system: sys, temperature: 0 }) });
     const data = await res.json();
-    const txt = (data.content?.[0]?.text || '').trim();
+    let txt = (data.content?.[0]?.text || '').trim();
+    txt = cleanAnalyticsAnswer(txt);
     out.innerHTML = txt ? escapeHtml(txt).replace(/\n/g,'<br>') : 'No answer came back - try rephrasing the question.';
   } catch(e) {
     out.innerHTML = 'Sorry, could not answer just now. Please try again.';
