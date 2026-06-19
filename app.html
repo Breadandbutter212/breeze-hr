@@ -6943,13 +6943,17 @@ async function _authH(extra) {
   return Object.assign({ 'Authorization': 'Bearer ' + (await getAuthToken()) }, extra || {});
 }
 
-async function callClaude(messages, systemPrompt) {
+async function callClaude(messages, systemPrompt, opts) {
   try {
     const token = await getAuthToken();
+    const body = { messages, system: systemPrompt };
+    // Document mode opts into a larger output budget and the Opus model for richer drafts.
+    if (opts && opts.max_tokens) body.max_tokens = opts.max_tokens;
+    if (opts && opts.model) body.model = opts.model;
     const res = await fetch('/api/chat', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ messages, system: systemPrompt })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
     if (data.content && data.content[0]) {
@@ -7767,6 +7771,16 @@ function isDocumentRequest(msg) {
   return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
 }
 
+// Detect a request for a substantial, document-style output (a plan, framework, policy,
+// strategy, handbook, guide, report...). These get the Opus model and a large output budget
+// so the result reads like a real document, not a short chat reply.
+function isHeavyDocRequest(msg) {
+  const lower = (msg || '').toLowerCase();
+  const actions = ['write','create','draft','generate','build','produce','put together','design','prepare','develop','outline','make me','give me a','need a','need an','help me write'];
+  const docs = ['plan','framework','strategy','policy','handbook','guide','playbook','proposal','report','process','procedure','template','presentation','document','programme','program','charter','roadmap','toolkit','checklist','people plan','360','onboarding','training plan','job description','job spec','review','contract','agreement','letter'];
+  return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
+}
+
 function extractSharePointQuery(msg) {
   let m;
   m = msg.match(/(?:job description|job spec|jd|position description) for (?:a |an |the )?([a-zA-Z &,()-]{3,50})/i);
@@ -7881,7 +7895,11 @@ async function sendChat(overrideMsg) {
   }
 
   const apiMessages = chatMessages.map(m=>({role:m.role==='user'?'user':'assistant',content:m.content}));
-  const reply = await callClaude(apiMessages, chatSystemPrompt + spContext);
+  // Document-style requests get the Opus model and a large output budget so the draft
+  // reads like a proper document; quick chat stays on the cheaper, faster default.
+  const heavyDoc = isHeavyDocRequest(msg);
+  const reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
+    heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 } : null);
   chatLoading = false;
   window._spSearchingForChat = false;
   if (btn) btn.disabled = false;

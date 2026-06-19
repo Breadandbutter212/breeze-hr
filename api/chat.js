@@ -31,11 +31,21 @@ export default async function handler(req, res) {
     return res.status(401).json({ error: 'Unauthorized', detail: authError });
   }
 
-  const { messages, system, max_tokens } = req.body;
+  const { messages, system, max_tokens, model } = req.body;
 
-  // Allow callers to request a larger budget (e.g. the Talent suite), capped server-side.
+  // Allow callers to request a larger budget (e.g. document mode), capped server-side.
+  // Document generation can run long, so the ceiling is 16k - quick chat still defaults to 2048.
   const reqTokens = Number(max_tokens);
-  const safeTokens = Number.isFinite(reqTokens) ? Math.min(Math.max(reqTokens, 256), 8192) : 2048;
+  const safeTokens = Number.isFinite(reqTokens) ? Math.min(Math.max(reqTokens, 256), 16000) : 2048;
+
+  // Whitelist the model. Quick chat stays on Sonnet (cheap); document mode may opt into Opus.
+  const MODELS = { 'claude-sonnet-4-6': 1, 'claude-opus-4-8': 1 };
+  const safeModel = MODELS[model] ? model : 'claude-sonnet-4-6';
+
+  // Stream large generations so the long Opus document response keeps the connection alive
+  // (avoids Anthropic's non-streaming long-request limit). We reassemble the full text
+  // server-side and return the same JSON shape the client already expects.
+  const useStream = safeTokens > 8192;
 
   try {
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -46,15 +56,46 @@ export default async function handler(req, res) {
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
-        model: 'claude-sonnet-4-6',
+        model: safeModel,
         max_tokens: safeTokens,
         system: system,
-        messages: messages
+        messages: messages,
+        ...(useStream ? { stream: true } : {})
       })
     });
 
-    const data = await response.json();
-    return res.status(200).json(data);
+    if (!useStream) {
+      const data = await response.json();
+      return res.status(response.ok ? 200 : response.status).json(data);
+    }
+
+    // Accumulate the SSE stream into one text block.
+    if (!response.ok || !response.body) {
+      const errData = await response.json().catch(() => ({ error: 'Upstream error' }));
+      return res.status(response.status || 500).json(errData);
+    }
+    let text = '', stopReason = null, usage = null, buffer = '';
+    const decoder = new TextDecoder();
+    for await (const chunk of response.body) {
+      buffer += decoder.decode(chunk, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop(); // keep the partial last line for the next chunk
+      for (const line of lines) {
+        if (!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        let evt; try { evt = JSON.parse(payload); } catch { continue; }
+        if (evt.type === 'content_block_delta' && evt.delta?.type === 'text_delta') text += evt.delta.text;
+        else if (evt.type === 'message_delta') { if (evt.delta?.stop_reason) stopReason = evt.delta.stop_reason; if (evt.usage) usage = evt.usage; }
+        else if (evt.type === 'error') return res.status(500).json({ error: evt.error?.message || 'Stream error' });
+      }
+    }
+    return res.status(200).json({
+      content: [{ type: 'text', text }],
+      stop_reason: stopReason,
+      model: safeModel,
+      usage
+    });
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
