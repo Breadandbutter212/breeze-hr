@@ -59,19 +59,25 @@ function tableToXml(rowsData) {
     const colCount = Math.max(...rowsData.map(r => r.length));
     const colW = isWide ? 9360 : Math.floor(9360 / (cells.length || 1));
 
+    // Full-row zebra striping (light blue / white) under a navy header, matching a designed one-pager.
+    const dataIdx = hasHeaderRow ? rowIdx - 1 : rowIdx;
+    const zebra = (dataIdx % 2 === 0) ? 'EAF1F8' : 'FFFFFF';
     const tcXml = cells.map((cell, ci) => {
-      const fill = isHdrRow ? '1B2D50' : (ci === 0 && cells.length > 1 ? 'F8FAFC' : 'FFFFFF');
-      const textColor = isHdrRow ? '<w:color w:val="FFFFFF"/>' : '';
-      const bdrXml = `<w:tcBorders>${['top','left','bottom','right'].map(bdr).join('')}</w:tcBorders>`;
+      const fill = isHdrRow ? '1F3864' : zebra;
+      const bdrXml = `<w:tcBorders>${['top','left','bottom','right'].map(s=>`<w:${s} w:val="single" w:sz="2" w:space="0" w:color="CCCCCC"/>`).join('')}</w:tcBorders>`;
       const spanAttr = isWide ? `<w:gridSpan w:val="${colCount}"/>` : '';
       const tcW = isWide ? 9360 : colW;
-      const cellPr = `<w:tcPr><w:tcW w:w="${tcW}" w:type="dxa"/>${spanAttr}<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>${bdrXml}</w:tcPr>`;
+      const cellPr = `<w:tcPr><w:tcW w:w="${tcW}" w:type="dxa"/>${spanAttr}<w:shd w:val="clear" w:color="auto" w:fill="${fill}"/>${bdrXml}<w:vAlign w:val="center"/></w:tcPr>`;
 
       let parasXml;
       if (isHdrRow) {
         // Bold white text in header
         const runs = parseInlineRuns(cell);
         parasXml = `<w:p><w:pPr><w:spacing w:before="60" w:after="60"/></w:pPr>${runs.map(r=>`<w:r><w:rPr><w:b/><w:color w:val="FFFFFF"/></w:rPr><w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`).join('')}</w:p>`;
+      } else if (ci === 0 && cells.length > 1) {
+        // First column reads as a row label: bold navy
+        const runs = parseInlineRuns(cell);
+        parasXml = `<w:p><w:pPr><w:spacing w:before="50" w:after="50"/></w:pPr>${runs.map(r=>`<w:r><w:rPr><w:b/><w:color w:val="1F3864"/></w:rPr><w:t xml:space="preserve">${enc(r.text)}</w:t></w:r>`).join('')}</w:p>`;
       } else {
         parasXml = cellParasXml(cell);
       }
@@ -100,29 +106,38 @@ function textToDocxBuffer(text) {
   if (lastIdx < remaining.length) segments.push({type:'text', content: remaining.slice(lastIdx)});
 
   let paras = '';
-  // Document accent colour (matches the in-app doc panel) and a muted tone for metadata.
-  const NAVY = '1B2D50', MUTED = '6B7280';
-  let titleDone = false;     // the first heading becomes the document Title
-  let expectSubtitle = false; // a metadata strip directly under the title renders muted
+  // Document accent colour (navy) and a muted tone for metadata - matches a designed one-pager.
+  const NAVY = '1F3864', MUTED = '595959';
+  let titleDone = false;       // the first heading becomes the document Title
+  let expectSubtitle = false;  // a metadata strip directly under the title renders muted
+  let pendingHeaderRule = false; // emit a divider rule under the whole title/subtitle block, once
 
-  // A styled heading paragraph. level 0 = Title, 1 = H1, 2 = H2, 3+ = H3.
+  // Flush a thin horizontal divider under the header block (between the title area and the body).
+  const headerRule = () => `<w:p><w:pPr><w:pBdr><w:bottom w:val="single" w:sz="6" w:space="4" w:color="${NAVY}"/></w:pBdr><w:spacing w:before="40" w:after="180"/></w:pPr></w:p>`;
+
+  // Styled heading. level 0 = Title; 1-2 = section heading (CAPS, navy, underlined); 3+ = subheading.
   const headingXml = (textPlain, level) => {
     const t = enc(textPlain.trim());
     if (level === 0) {
-      return `<w:p><w:pPr><w:spacing w:before="0" w:after="60"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="6" w:color="${NAVY}"/></w:pBdr></w:pPr>`
-        + `<w:r><w:rPr><w:b/><w:color w:val="${NAVY}"/><w:sz w:val="40"/><w:szCs w:val="40"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
+      return `<w:p><w:pPr><w:spacing w:before="0" w:after="40"/></w:pPr>`
+        + `<w:r><w:rPr><w:b/><w:color w:val="${NAVY}"/><w:sz w:val="34"/><w:szCs w:val="34"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
     }
-    const sz = level === 1 ? 30 : level === 2 ? 26 : 23;
-    const color = level >= 3 ? '374151' : NAVY;
-    const before = level === 1 ? 280 : level === 2 ? 220 : 160;
-    return `<w:p><w:pPr><w:spacing w:before="${before}" w:after="70"/></w:pPr>`
-      + `<w:r><w:rPr><w:b/><w:color w:val="${color}"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
+    if (level <= 2) {
+      // Section heading: navy, all-caps, with a rule underneath
+      return `<w:p><w:pPr><w:spacing w:before="280" w:after="80"/><w:pBdr><w:bottom w:val="single" w:sz="4" w:space="3" w:color="BFD3E6"/></w:pBdr></w:pPr>`
+        + `<w:r><w:rPr><w:b/><w:caps/><w:color w:val="${NAVY}"/><w:sz w:val="22"/><w:szCs w:val="22"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
+    }
+    // Subheading: navy, mixed case, no rule
+    return `<w:p><w:pPr><w:spacing w:before="160" w:after="50"/></w:pPr>`
+      + `<w:r><w:rPr><w:b/><w:color w:val="${NAVY}"/><w:sz w:val="21"/><w:szCs w:val="21"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
   };
-  const looksLikeMeta = s => /\|/.test(s) || /^\s*(version|owner|review|date|prepared|author|status|confidential|classification|reference|ref|effective)\b/i.test(s) || /\[year\]/i.test(s);
+  const looksLikeMeta = s => /\|/.test(s) || /^\s*(version|owner|review|date|prepared|author|status|confidential|classification|reference|ref|effective|one-page|prepared by)\b/i.test(s) || /\[year\]/i.test(s);
+  // Emit the header divider exactly once, before the first body element after the title block.
+  const flushHeader = () => { if (pendingHeaderRule) { paras += headerRule(); pendingHeaderRule = false; } expectSubtitle = false; };
 
   for (const seg of segments) {
     if (seg.type === 'table') {
-      expectSubtitle = false;
+      flushHeader();
       const rowsData = seg.content.split('\n')
         .map(l => l.trim()).filter(Boolean)
         .map(l => l.split('§CELL§').map(c => c));
@@ -149,19 +164,20 @@ function textToDocxBuffer(text) {
       if (hMatch || boldHeadingText) {
         const text = hMatch ? hMatch[2].replace(/\*/g,'').trim() : boldHeadingText;
         const mdLevel = hMatch ? hMatch[1].length : 2;
-        if (!titleDone) { paras += headingXml(text, 0); titleDone = true; expectSubtitle = true; }
-        else { paras += headingXml(text, mdLevel); expectSubtitle = false; }
+        if (!titleDone) { paras += headingXml(text, 0); titleDone = true; expectSubtitle = true; pendingHeaderRule = true; }
+        else { flushHeader(); paras += headingXml(text, mdLevel); }
         continue;
       }
 
-      // Metadata strip immediately under the title -> muted subtitle
+      // Metadata strip immediately under the title -> muted subtitle (stays inside the header block)
       if (expectSubtitle) {
         expectSubtitle = false;
         if (looksLikeMeta(trimmed)) {
-          paras += `<w:p><w:pPr><w:spacing w:before="20" w:after="160"/></w:pPr><w:r><w:rPr><w:color w:val="${MUTED}"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">${enc(trimmed.replace(/\*\*/g,''))}</w:t></w:r></w:p>`;
+          paras += `<w:p><w:pPr><w:spacing w:before="20" w:after="0"/></w:pPr><w:r><w:rPr><w:color w:val="${MUTED}"/><w:sz w:val="18"/><w:szCs w:val="18"/></w:rPr><w:t xml:space="preserve">${enc(trimmed.replace(/\*\*/g,''))}</w:t></w:r></w:p>`;
           continue;
         }
       }
+      flushHeader();
 
       const bulletMatch = trimmed.match(/^[•\-]\s+([\s\S]*)/);
       if (bulletMatch) {
@@ -186,17 +202,21 @@ function textToDocxBuffer(text) {
             xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships">
 <w:body>${paras}<w:sectPr>
 <w:pgSz w:w="12240" w:h="15840"/>
-<w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:header="720" w:footer="720"/>
+<w:pgMar w:top="1080" w:right="1440" w:bottom="1080" w:left="1440" w:header="708" w:footer="708"/>
 </w:sectPr></w:body></w:document>`;
 
-  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/></Types>`;
+  // Default the whole document to Arial 10pt (clean, professional) - headings override size/colour.
+  const stylesXml = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="100" w:line="264" w:lineRule="auto"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>`;
+
+  const contentTypes = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types"><Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/><Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/><Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>`;
   const rels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>`;
-  const wordRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>`;
+  const wordRels = `<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/></Relationships>`;
 
   const zip = new PizZip();
   zip.file('[Content_Types].xml', contentTypes);
   zip.file('_rels/.rels', rels);
   zip.file('word/document.xml', docXml);
+  zip.file('word/styles.xml', stylesXml);
   zip.file('word/_rels/document.xml.rels', wordRels);
   return zip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
 }
