@@ -1225,8 +1225,8 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
             onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();presAiEdit();}"></textarea>
           <button id="pres-chat-btn" onclick="presAiEdit()" class="btn btn-primary btn-sm" style="width:100%;margin-top:6px;">✦ Apply edit</button>
           <div id="pres-chat-status" style="display:none;font-size:11px;color:var(--ink3);margin-top:5px;word-break:break-word;"></div>
-          <button onclick="togglePresLog()" style="margin-top:6px;width:100%;font-size:10px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px;cursor:pointer;font-family:inherit;">📋 Show debug log</button>
-          <div id="presLogPanel" style="display:none;margin-top:6px;background:#1E293B;color:#94A3B8;border-radius:var(--r-sm);padding:10px;font-size:10px;font-family:monospace;max-height:200px;overflow-y:auto;line-height:1.6;white-space:pre-wrap;word-break:break-all;"></div>
+          <!-- Hidden debug sink: keeps presLog() calls working without showing a debug log to users -->
+          <div id="presLogPanel" style="display:none;"></div>
         </div>
 
       </div>
@@ -3627,9 +3627,6 @@ function _stopGenProgress() {
 }
 
 async function _downloadPresentationPythonGenerate(btn) {
-  // Force debug log open so messages are visible
-  const _lp = document.getElementById('presLogPanel');
-  if (_lp) { _lp.style.display = 'block'; }
   _startGenProgress(presSlides);
   try {
     presLog('Generating deck via Anthropic pptx skill...', 'ok');
@@ -3677,8 +3674,6 @@ async function _downloadPresentationPythonGenerate(btn) {
     _stopGenProgress();
     document.getElementById('pres-slides').style.display = 'flex';
     presLog('AI skill failed: ' + e.message, 'error');
-    const logPanel = document.getElementById('presLogPanel');
-    if (logPanel) { logPanel.style.display = 'block'; logPanel.scrollTop = logPanel.scrollHeight; }
     btn.textContent = '⬇ Download .pptx'; btn.disabled = false;
   }
 }
