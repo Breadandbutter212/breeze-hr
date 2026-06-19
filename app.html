@@ -9630,9 +9630,9 @@ async function loadChatList() {
 
 // Chat-list grouping state: 'date' (most recent) or 'topic' (stacked by HR theme).
 let chatGroupMode = 'date';
-let _chatPageItems = [];            // the items currently shown (respects search filter)
-const chatExpandedGroups = new Set(); // group labels the user has expanded past the first 10
-const CHAT_GROUP_LIMIT = 10;
+let _chatPageItems = [];      // the items currently shown (respects search filter)
+let chatVisible = 10;         // how many chats are revealed in total (one + at the bottom reveals more)
+const CHAT_BATCH = 10;
 
 // Bucket a chat by recency: Today / Yesterday / Previous 7 / Previous 30 days, then by month.
 function chatDateBucket(created_at) {
@@ -9671,6 +9671,7 @@ function chatTopic(title) {
 async function renderChatsPage() {
   const body = document.getElementById('chatsBody'); if (!body) return;
   body.innerHTML = '<div style="padding:20px;font-size:12px;color:var(--ink3);">Loading...</div>';
+  chatVisible = CHAT_BATCH; // always start showing the first 10
   await loadChatList();
   body.innerHTML = `
     <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;flex-wrap:wrap;">
@@ -9701,19 +9702,17 @@ function updateChatGroupToggle() {
 function setChatGroupMode(mode) {
   if (chatGroupMode === mode) return;
   chatGroupMode = mode;
-  chatExpandedGroups.clear();
+  chatVisible = CHAT_BATCH;
   updateChatGroupToggle();
   renderChatPageItems(_chatPageItems);
 }
 
-function toggleChatGroup(label) {
-  if (chatExpandedGroups.has(label)) chatExpandedGroups.delete(label); else chatExpandedGroups.add(label);
-  renderChatPageItems(_chatPageItems);
-}
+function chatShowMore() { chatVisible += CHAT_BATCH; renderChatPageItems(_chatPageItems); }
+function chatShowLess() { chatVisible = CHAT_BATCH; renderChatPageItems(_chatPageItems); document.getElementById('chatPageList')?.scrollIntoView({behavior:'smooth',block:'start'}); }
 
 function filterChatsPage(q) {
   const filtered = q ? chatList.filter(c => c.title.toLowerCase().includes(q.toLowerCase())) : chatList;
-  chatExpandedGroups.clear();
+  chatVisible = CHAT_BATCH;
   renderChatPageItems(filtered);
 }
 
@@ -9747,32 +9746,39 @@ function renderChatPageItems(items) {
     </div>`;
     return;
   }
-  // Build groups (already sorted newest-first within each, since chatList is created_at desc)
+  // Only reveal the first `chatVisible` chats overall, in group order (one + at the bottom shows more)
+  const total = _chatPageItems.length;
+  const visibleItems = _chatPageItems.slice(0, chatVisible);
+
+  // Bucket the visible items into their groups (already newest-first, since chatList is created_at desc)
   const groups = new Map();
-  _chatPageItems.forEach(c => {
+  visibleItems.forEach(c => {
     const g = chatGroupMode === 'topic' ? chatTopic(c.title) : chatDateBucket(c.created_at);
     if (!groups.has(g.label)) groups.set(g.label, { label:g.label, order:g.order, items:[] });
     groups.get(g.label).items.push(c);
   });
   const ordered = [...groups.values()].sort((a,b) => a.order - b.order);
 
-  el.innerHTML = ordered.map(g => {
-    const expanded = chatExpandedGroups.has(g.label);
-    const shown = expanded ? g.items : g.items.slice(0, CHAT_GROUP_LIMIT);
-    const moreCount = g.items.length - shown.length;
-    const moreBtn = g.items.length > CHAT_GROUP_LIMIT
-      ? `<button onclick="toggleChatGroup('${jsAttr(g.label)}')" style="display:inline-flex;align-items:center;gap:6px;background:none;border:1px dashed var(--border2);border-radius:var(--r-sm);padding:7px 12px;font-size:12px;font-weight:500;color:var(--accent);cursor:pointer;font-family:inherit;margin:2px 0 4px;width:100%;justify-content:center;transition:background 0.1s;" onmouseover="this.style.background='var(--accent-bg)'" onmouseout="this.style.background='none'">${expanded ? '− Show less' : '+ Show '+moreCount+' more'}</button>`
-      : '';
-    return `<div style="margin-bottom:20px;">
+  const groupsHtml = ordered.map(g => `<div style="margin-bottom:20px;">
       <div style="display:flex;align-items:center;gap:8px;margin:0 2px 9px;">
         <span style="font-size:12px;font-weight:600;color:var(--ink2);letter-spacing:0.02em;">${escapeHtml(g.label)}</span>
         <span style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 8px;">${g.items.length}</span>
         <div style="flex:1;height:1px;background:var(--border);"></div>
       </div>
-      ${shown.map(chatItemHtml).join('')}
-      ${moreBtn}
-    </div>`;
-  }).join('');
+      ${g.items.map(chatItemHtml).join('')}
+    </div>`).join('');
+
+  // One expander at the very bottom: "+ Show more" while more remain, "Show less" once fully expanded
+  let footer = '';
+  if (total > chatVisible) {
+    const moreCount = Math.min(CHAT_BATCH, total - chatVisible);
+    footer = `<button onclick="chatShowMore()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:11px;font-size:13px;font-weight:600;color:var(--accent);cursor:pointer;font-family:inherit;transition:background 0.12s,border-color 0.12s;" onmouseover="this.style.background='var(--accent-bg)';this.style.borderColor='var(--accent-mid)'" onmouseout="this.style.background='var(--surface)';this.style.borderColor='var(--border)'">
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+      Show ${moreCount} more <span style="color:var(--ink3);font-weight:500;">(${total - chatVisible} remaining)</span></button>`;
+  } else if (chatVisible > CHAT_BATCH && total > CHAT_BATCH) {
+    footer = `<button onclick="chatShowLess()" style="display:flex;align-items:center;justify-content:center;gap:7px;width:100%;background:none;border:1px dashed var(--border2);border-radius:var(--r);padding:10px;font-size:12px;font-weight:500;color:var(--ink3);cursor:pointer;font-family:inherit;">Show less</button>`;
+  }
+  el.innerHTML = groupsHtml + footer;
 }
 
 async function newChat() {
