@@ -12085,19 +12085,32 @@ function openCreateTrackerModal() {
   ov.onclick = e => { if(e.target===ov) ov.remove(); };
   setTimeout(() => document.getElementById('ct-name')?.focus(), 60);
 }
+// Strip imperative phrasing ("create a ... tracker") so the tracker is named by its SUBJECT,
+// not the instruction - e.g. "create a ftc tracker" -> "ftc". The AI returns a tidy title too.
+function cleanTrackerSubject(raw) {
+  let s = (raw || '').trim();
+  // Strip a leading instruction verb + article (longest article alternatives first so "an" wins over "a")
+  s = s.replace(/^(please\s+)?(can you\s+|could you\s+)?(create|set[\s-]?up|make(\s+me)?|build|add|generate|put\s+together|draft|i\s+want|i\s+need|i'?d\s+like)\s+(me\s+an|me\s+a|an|a|the)?\s*/i, '');
+  s = s.replace(/\s+(tracker|checklist|process|register|workflow|log)s?\b\.?$/i, '').trim();
+  s = s.replace(/\s+/g, ' ').trim();
+  return s ? s.charAt(0).toUpperCase() + s.slice(1) : (raw || '').trim();
+}
 async function submitCreateTracker(btn) {
   const name = document.getElementById('ct-name')?.value?.trim();
   const errEl = document.getElementById('ct-error');
   if (!name) { document.getElementById('ct-name').style.borderColor='var(--red)'; return; }
+  const subject = cleanTrackerSubject(name);
   const desc = document.getElementById('ct-desc')?.value?.trim() || '';
   btn.textContent = '⏳ Generating - up to 1 min...'; btn.disabled = true;
   if (errEl) errEl.style.display = 'none';
   try {
     const token = await getAuthToken();
-    const userPrompt = `Generate a practical HR process checklist for tracking: "${name}".${desc?' Context: '+desc:''}
+    const userPrompt = `Generate a practical, ongoing HR process checklist for tracking and managing: "${subject}".${desc?' Context: '+desc:''}
+
+IMPORTANT: This checklist belongs to a tracker that ALREADY EXISTS in our HR system. Do NOT include any step about creating, setting up or configuring the tracker, checklist, spreadsheet or HR system itself - that step is done. Every step must be a real-world HR action, compliance requirement or decision for managing "${subject}" over its lifecycle, grounded in current UK employment law and good practice.
 
 Return ONLY a valid JSON object, no markdown fences, no explanation:
-{"icon":"<one emoji>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance.","timeframe":"When to do it","tag":"legal"},…]}
+{"icon":"<one emoji>","title":"<concise tracker name in Title Case, e.g. FTC & Contractor Management>","steps":[{"id":1,"title":"Short action title","desc":"2-3 sentences of practical UK HR guidance.","timeframe":"When to do it","tag":"legal"},…]}
 
 Generate 7-10 steps. tag must be one of: legal, recommended, best-practice.`;
     const res = await fetch('/api/chat', {method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
@@ -12105,7 +12118,8 @@ Generate 7-10 steps. tag must be one of: legal, recommended, best-practice.`;
     const raw = d.content?.[0]?.text || '';
     const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
     const parsed = JSON.parse(jsonStr);
-    const tracker = {id:'ct_'+Date.now(), label:name, icon:parsed.icon||'📋', cat:'Custom', steps:(parsed.steps||[]).map((s,i)=>({...s,id:i+1})), createdAt:new Date().toISOString()};
+    const cleanTitle = (parsed.title || '').trim() || subject;
+    const tracker = {id:'ct_'+Date.now(), label:cleanTitle, icon:parsed.icon||'📋', cat:'Custom', steps:(parsed.steps||[]).map((s,i)=>({...s,id:i+1})), createdAt:new Date().toISOString()};
     _pendingCustomTracker = tracker;
     btn.closest('div[style*=fixed]').remove();
     showTrackerPreviewModal(tracker);
