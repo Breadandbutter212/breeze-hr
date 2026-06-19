@@ -118,7 +118,9 @@ body.nav-slim .slimbar { display:flex; }
 .sg-badge { min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .sg-items { max-height:0; overflow:hidden; transition:max-height 0.18s ease-out; }
 .sg.open .sg-items { max-height:340px; }
-.sgi { display:block; width:100%; text-align:left; padding:6px 10px 6px 37px; border:none; background:none; color:rgba(255,255,255,0.62); font-size:12px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sgi { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:6px 10px 6px 37px; border:none; background:none; color:rgba(255,255,255,0.62); font-size:12px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; }
+.sgi .sgi-lbl { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+.sgi-badge { min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:none; align-items:center; justify-content:center; flex-shrink:0; }
 .sgi:hover { background:rgba(255,255,255,0.07); color:#fff; }
 .sgi.active { color:#fff; font-weight:500; }
 .sgi .beta { font-size:10px; color:rgba(255,255,255,0.45); margin-left:2px; }
@@ -18056,9 +18058,9 @@ async function projConfirmEmailToTask(){
       html+='<div class="sg'+(isOpen?' open':'')+'" data-g="'+g+'">';
       html+='<button class="sg-head'+(isOpen?' active':'')+'" onclick="slimToggle(\''+g+'\')" aria-expanded="'+isOpen+'">'+ic(c.icon)+'<span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>';
       html+='<div class="sg-items">'+c.items.map(function(it){
-        if(it.soon) return '<button class="sgi" aria-disabled="true">'+it.label+' <span class="beta">soon</span></button>';
+        if(it.soon) return '<button class="sgi" aria-disabled="true"><span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
         var on=cur===it.view;
-        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</button>';
+        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')"><span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'">0</span></button>';
       }).join('')+'</div></div>';
     });
     box.innerHTML=html;
@@ -18077,9 +18079,15 @@ async function projConfirmEmailToTask(){
     try{
       var pd=(typeof projectsData!=='undefined')?projectsData:null;
       if(!pd && typeof loadProjects==='function'){ await loadProjects(); pd=(typeof projectsData!=='undefined')?projectsData:null; }
-      var overdue=0;
-      if(pd && typeof projOverdueList==='function'){ pd.forEach(function(p){ overdue+=projOverdueList(p).length; }); }
-      var b=document.getElementById('slimActionBadge'); if(b){ if(overdue>0){ b.textContent=overdue>9?'9+':overdue; b.style.display=''; } else b.style.display='none'; }
+      // Per-page counts so the badge sits next to the page that needs attention (not just the group)
+      var counts={};
+      if(pd && typeof projOverdueList==='function'){ var o=0; pd.forEach(function(p){ o+=projOverdueList(p).length; }); if(o) counts.projects=o; }
+      // Show a badge on each affected sub-item
+      document.querySelectorAll('.sgi-badge').forEach(function(el){ el.style.display='none'; });
+      Object.keys(counts).forEach(function(v){ var el=document.getElementById('slimItemBadge-'+v); if(el){ el.textContent=counts[v]>9?'9+':counts[v]; el.style.display='flex'; } });
+      // Roll the total up onto the group header too, so it's still visible when the group is collapsed
+      var total=Object.keys(counts).reduce(function(s,v){return s+counts[v];},0);
+      var b=document.getElementById('slimActionBadge'); if(b){ if(total>0){ b.textContent=total>9?'9+':total; b.style.display=''; } else b.style.display='none'; }
     }catch(e){}
   }
 
