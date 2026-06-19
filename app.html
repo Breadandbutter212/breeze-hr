@@ -7285,13 +7285,20 @@ function autoChartType(rows) {
   return 'column';
 }
 
+// Boundary between a draft/document and its internal "HR Actions" footer.
+// A bare "---" must NOT split here: multi-section documents (e.g. a 360 framework)
+// use "---" as a section divider, and splitting on the first one truncates the draft
+// down to just its title block. Only a "---" that immediately precedes an HR Actions
+// heading - or the heading itself - counts as the real boundary.
+const HR_ACTIONS_SPLIT = /\n(?:-{3,}[ \t]*\n+[ \t]*)?(?:\*\*\s*HR Actions?\s*\*\*[ \t]*:?|HR Actions?[ \t]*[:(])/i;
+
 function parseArtifact(text) {
   // Spreadsheet artifact: 📊 SPREADSHEET: <title>, optional ## Tab sections, each with a table and optional CHART:
   const sheetMatch = text.match(/\*{0,2}📊\s*SPREADSHEET[^:\n]*:\*{0,2}\s*([^\n]*)\n/i);
   if (sheetMatch) {
     const sIdx = text.indexOf(sheetMatch[0]);
     const sAfter = text.substring(sIdx + sheetMatch[0].length);
-    const sStop = sAfter.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i);
+    const sStop = sAfter.search(HR_ACTIONS_SPLIT);
     const block = sStop > -1 ? sAfter.substring(0, sStop) : sAfter;
     const sHr = sStop > -1 ? sAfter.substring(sStop).trim() : '';
     const sheets = parseSheetBlock(block);
@@ -7307,10 +7314,10 @@ function parseArtifact(text) {
   const markerIdx = text.indexOf(markerMatch[0]);
   const markerEnd = markerIdx + markerMatch[0].length;
   const afterMarker = text.substring(markerEnd);
-  // Split off HR actions / separator
-  const hrSplit = afterMarker.match(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i);
-  const draft = hrSplit ? afterMarker.substring(0, afterMarker.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i)).trim() : afterMarker.trim();
-  const hrSection = hrSplit ? afterMarker.substring(afterMarker.search(/\n-{3,}\n|\n\*\*HR Actions?\*\*|\nHR Actions?\s*\(|\nHR Actions?:/i)).trim() : '';
+  // Split off the internal HR Actions footer (never a bare section divider)
+  const hrIdx = afterMarker.search(HR_ACTIONS_SPLIT);
+  const draft = hrIdx > -1 ? afterMarker.substring(0, hrIdx).trim() : afterMarker.trim();
+  const hrSection = hrIdx > -1 ? afterMarker.substring(hrIdx).trim() : '';
   const advice = text.substring(0, markerIdx).trim();
   return { type: 'Draft', draft, advice: [advice, hrSection].filter(Boolean).join('\n\n') };
 }
@@ -8104,12 +8111,12 @@ function renderEmailList(emails) {
           onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
           ✨ Smart action
         </button>
-        <button onclick="selectEmailForChat(${i})"
+        <button onclick="selectEmailForChat('${(e.id||'').replace(/'/g,"\\'")}')"
           style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--accent-mid);border-radius:var(--r-sm);background:var(--accent-bg);color:var(--accent);cursor:pointer;font-family:inherit;"
           onmouseover="this.style.background='#daeaff'" onmouseout="this.style.background='var(--accent-bg)'">
           ✍ Draft reply
         </button>
-        <button onclick="projAddEmailFromInbox(${i})" title="Add this email to a project task"
+        <button onclick="projAddEmailFromInbox('${(e.id||'').replace(/'/g,"\\'")}')" title="Add this email to a project task"
           style="flex:1;font-size:11px;padding:5px 0;border:1px solid var(--border);border-radius:var(--r-sm);background:var(--surface2);color:var(--ink2);cursor:pointer;font-family:inherit;"
           onmouseover="this.style.background='var(--surface3)'" onmouseout="this.style.background='var(--surface2)'">
           📎 Add to task
@@ -8147,8 +8154,8 @@ function openEmailExternal(messageId) {
   }
 }
 
-function selectEmailForChat(idx) {
-  const email = _allEmails[idx]; if (!email) return;
+function selectEmailForChat(emailId) {
+  const email = (_allEmails||[]).find(x=>x.id===emailId); if (!email) return;
   // Store sender/thread so send modal can pre-fill To and reply in-thread
   window._replyToEmail = extractEmailAddress(email.from || '');
   window._replyToSubject = email.subject ? 'Re: ' + email.subject.replace(/^Re:\s*/i, '') : '';
@@ -9270,14 +9277,15 @@ Return only the JSON array, no explanation.`;
       analyticsData = _analyticsRawData.filter(row => {
         return conditions.every(({ col, op, val }) => {
           const rv = String(row[col] || '').trim().toLowerCase();
-          const nv = parseFloat(val);
+          const nv = parseFloat(String(val).replace(/[£$€,\s%]/g, ''));
+          const rvNum = parseFloat(rv.replace(/[£$€,\s%]/g, ''));
           switch (op) {
             case '=': return rv === String(val).toLowerCase();
             case '!=': return rv !== String(val).toLowerCase();
-            case '>': return parseFloat(rv) > nv;
-            case '<': return parseFloat(rv) < nv;
-            case '>=': return parseFloat(rv) >= nv;
-            case '<=': return parseFloat(rv) <= nv;
+            case '>': return rvNum > nv;
+            case '<': return rvNum < nv;
+            case '>=': return rvNum >= nv;
+            case '<=': return rvNum <= nv;
             case 'contains': return rv.includes(String(val).toLowerCase());
             case 'year=': { const d = new Date(row[col]); return !isNaN(d) && d.getFullYear() === parseInt(val); }
             default: return true;
@@ -12323,7 +12331,8 @@ function mpFmt(d) {
 function showTrackerTab(tab) {
   trackerTab = tab;
   document.querySelectorAll('.tracker-tab-btn').forEach(b => b.classList.remove('active-tt'));
-  const btn = document.getElementById('tt-'+tab);
+  // Custom-tracker buttons use id "tt-custom-<id>" but the tab arg is "custom:<id>".
+  const btn = document.getElementById(tab.startsWith('custom:') ? 'tt-custom-'+tab.slice(7) : 'tt-'+tab);
   if (btn) btn.classList.add('active-tt');
   renderTrackersBody();
 }
@@ -12586,10 +12595,12 @@ function renderLeaveTracker(body) {
       const cid = currentProfile?.company_id||'x';
       const dismissKey = 'breeze_dismissed_flags_'+cid;
       const dismissed = new Set(JSON.parse(localStorage.getItem(dismissKey)||'[]'));
-      const visible = flags.filter((f,fi)=>!dismissed.has(fi+':'+f.msg.substring(0,30)));
+      // Stable key from the flag's message (position-independent, no quotes to escape).
+      const fKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
+      const visible = flags.filter(f=>!dismissed.has(fKeyOf(f)));
       if (!visible.length) return '<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions.</div>';
-      return '<div style="display:flex;flex-direction:column;gap:8px;">'+visible.map((f,fi)=>{
-        const fkey = fi+':'+f.msg.substring(0,30);
+      return '<div style="display:flex;flex-direction:column;gap:8px;">'+visible.map(f=>{
+        const fkey = fKeyOf(f);
         return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#993C1D;'+'':''}">
           <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
           <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#993C1D':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
@@ -12751,7 +12762,7 @@ function openMatPatRecord(id) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(rec.employeeName)}</div>
             <span class="trk-badge trk-badge-grey">${rec.type}</span>
-            <span class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
+            <span id="mpStatusBadge" class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
           </div>
           <div style="font-size:12px;color:var(--ink3);">${escapeHtml(rec.jobTitle||'')}</div>
         </div>
@@ -12835,7 +12846,7 @@ function openMatPatRecord(id) {
               <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:8px;">Next Steps checklist</div>
               <div style="background:var(--surface2);border-radius:var(--r);padding:12px 14px;font-size:12px;color:var(--ink3);display:flex;align-items:center;justify-content:space-between;gap:10px;">
                 <span>No checklist linked to this record yet.</span>
-                <button onclick="document.getElementById('mpRecordPanel').remove();showTrackerTab('workflows');setTimeout(()=>wfNewCaseForScenario('${rec.type==='Maternity'?'maternity-leave':'paternity-leave'}'),200)" class="btn btn-primary btn-sm" style="font-size:10px;white-space:nowrap;">Start checklist →</button>
+                <button onclick="document.getElementById('mpRecordPanel').remove();showTrackerTab('family-leave');setTimeout(()=>wfNewCaseForScenario('${rec.type==='Maternity'?'maternity-leave':'paternity-leave'}'),200)" class="btn btn-primary btn-sm" style="font-size:10px;white-space:nowrap;">Start checklist →</button>
               </div>
             </div>`;
           }
@@ -12912,6 +12923,13 @@ async function mpUpdateField(id, field, value) {
   if (!rec) return;
   rec[field] = value;
   await saveMatPatRecords();
+  // Keep the open panel's status badge in sync (e.g. setting Actual return flips it to Returned)
+  const badge = document.getElementById('mpStatusBadge');
+  if (badge) {
+    const st = mpStatus(rec);
+    badge.className = 'trk-badge ' + (st==='active'?'trk-badge-green':st==='upcoming'?'trk-badge-blue':'trk-badge-grey');
+    badge.textContent = st==='active'?'● Active':st==='upcoming'?'● Upcoming':'Returned';
+  }
   // Refresh the table behind the panel
   renderTrackersBody();
 }
@@ -13161,7 +13179,6 @@ function renderCareersTracker(body) {
         <div style="display:flex;gap:8px;align-items:center;">
           <button onclick="downloadCareersCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
           <button onclick="openTrackerGuidance('careers')" style="font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">ℹ Guidance</button>
-          <button class="btn btn-primary btn-sm">+ Add employee</button>
         </div>
       </div>
       <div style="overflow-x:auto;"><table class="trk-table">
@@ -13533,7 +13550,7 @@ async function ocLoadData() {
   (hcRoles||[]).filter(r => !hcInactive.has(r.stage)).forEach(r => {
     const count = Math.max(1, r.headcount||1);
     const mgrName = (r.hiringManager||'').toLowerCase().trim();
-    const mgrEmp = mgrName ? _ocEmps.find(e => (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
+    const mgrEmp = mgrName ? _ocEmps.find(e => !e.isOpen && (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
     for (let i=0; i<count; i++) {
       _ocEmps.push({ id:`hc_open_${r.id}_${i}`, display_full_name:r.title+(count>1?` (${i+1}/${count})`:''), employments:[{job_title:r.title,department:r.dept||'General'}], manager:mgrEmp?String(mgrEmp.id):null, isOpen:true, hcRoleId:r.id, hcStage:r.stage });
     }
@@ -14153,7 +14170,11 @@ async function ocLoadCSV(event) {
     }
     const nk=k=>Object.keys(rows[0]||{}).find(h=>h.includes(k));
     const nameKey=nk('name')||'name',titleKey=nk('title')||nk('role')||nk('position')||'job_title',deptKey=nk('dept')||nk('team')||nk('division')||'department',mgrKey=nk('manager')||nk('reports')||'manager';
-    _ocEmps=rows.map((r,i)=>({id:'csv-'+i,display_full_name:r[nameKey]||r.name||'Person '+(i+1),employments:[{job_title:r[titleKey]||'',department:r[deptKey]||'General'}],manager:r[mgrKey]?'csv-'+rows.findIndex(x=>(x[nameKey]||x.name||'')===r[mgrKey]):null}));
+    _ocEmps=rows.map((r,i)=>{
+      const mgrRaw=(r[mgrKey]||'').trim().toLowerCase();
+      const mi=mgrRaw?rows.findIndex(x=>String(x[nameKey]||x.name||'').trim().toLowerCase()===mgrRaw):-1;
+      return {id:'csv-'+i,display_full_name:r[nameKey]||r.name||'Person '+(i+1),employments:[{job_title:r[titleKey]||'',department:r[deptKey]||'General'}],manager:mi>=0?'csv-'+mi:null};
+    });
     ocBuild();
   } catch(e){alert('Could not read file: '+e.message);}
   event.target.value='';
@@ -16233,6 +16254,12 @@ async function submitAddRole(btn, existingId) {
   else hcRoles.push(rec);
   await saveHCRoles();
   btn.closest('div[style*=fixed]').remove();
+  // If an active filter would hide the just-saved role, clear filters so it stays visible.
+  const _hcClosed = ['hired','withdrawn'];
+  const hiddenByStage = (_hcFilterStage === 'active' && _hcClosed.includes(rec.stage)) ||
+    (_hcFilterStage && _hcFilterStage !== 'active' && rec.stage !== _hcFilterStage);
+  const hiddenByPriority = _hcFilterPriority && rec.priority !== _hcFilterPriority;
+  if (hiddenByStage || hiddenByPriority) { _hcFilterStage=''; _hcFilterPriority=''; }
   renderHeadcount();
   // Sync to org chart if it's already loaded in memory
   if (_ocEmps) {
@@ -16241,7 +16268,7 @@ async function submitAddRole(btn, existingId) {
     if (!hcInactive.has(rec.stage)) {
       const count = Math.max(1, rec.headcount||1);
       const mgrName = (rec.hiringManager||'').toLowerCase().trim();
-      const mgrEmp = mgrName ? _ocEmps.find(e => (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
+      const mgrEmp = mgrName ? _ocEmps.find(e => !e.isOpen && (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
       for (let i=0; i<count; i++) {
         _ocEmps.push({ id:`hc_open_${rec.id}_${i}`, display_full_name:rec.title+(count>1?` (${i+1}/${count})`:''), employments:[{job_title:rec.title,department:rec.dept||'General'}], manager:mgrEmp?String(mgrEmp.id):null, isOpen:true, hcRoleId:rec.id, hcStage:rec.stage });
       }
@@ -16773,7 +16800,7 @@ const PROJ_PRIORITIES = ['low','normal','high','urgent'];
 const MS_STATUS = { 'not-started':{label:'Not started',color:'#3B82F6'}, 'in-progress':{label:'In progress',color:'#D85A30'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
 function projMsStatus(m){ return m.status || (m.done ? 'done' : 'not-started'); }
 function projMsDone(m){ return projMsStatus(m) === 'done'; }
-function projMsProgress(m){ const s = m.subtasks||[]; if (s.length) return Math.round(s.filter(x=>x.done).length / s.length * 100); return projMsDone(m) ? 100 : (projMsStatus(m)==='in-progress' ? 40 : 0); }
+function projMsProgress(m){ if (projMsDone(m)) return 100; const s = m.subtasks||[]; if (s.length) return Math.round(s.filter(x=>x.done).length / s.length * 100); return projMsStatus(m)==='in-progress' ? 40 : 0; }
 
 function projUid(p){ return p + Math.random().toString(36).slice(2,9); }
 function projToday(){ const d = new Date(); d.setHours(0,0,0,0); return d; }
@@ -16794,19 +16821,35 @@ function projComputeRag(p){
   return 'green';
 }
 
+let _projRowId = null;        // cached policies row id so we never double-INSERT
+let _projSaveChain = Promise.resolve();  // serialize saves: one write at a time
 async function loadProjects(){
   if (!currentProfile) { projectsData = []; return; }
-  const { data } = await sb.from('policies').select('content').eq('company_id', currentProfile.company_id).eq('name','TRACKER:Projects').maybeSingle();
+  // order+limit tolerates any legacy duplicate rows (maybeSingle alone returns null on >1 row, which would wrongly trigger the demo fallback below).
+  const { data } = await sb.from('policies').select('id,content').eq('company_id', currentProfile.company_id).eq('name','TRACKER:Projects').order('id').limit(1).maybeSingle();
+  if (data) _projRowId = data.id;
   try { projectsData = data?.content ? JSON.parse(data.content) : []; } catch(e){ projectsData = []; }
   if (!Array.isArray(projectsData) || !projectsData.length) projectsData = projDemoData();
   projectsData.forEach(p=>{ if(!p.createdAt) p.createdAt = p.startDate || ''; });
 }
-async function saveProjects(){
+async function _saveProjectsNow(){
   if (!currentProfile) return;
   const json = JSON.stringify(projectsData||[]);
-  const { data: ex } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','TRACKER:Projects').maybeSingle();
-  if (ex) await sb.from('policies').update({ content: json }).eq('id', ex.id);
-  else await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'TRACKER:Projects', content: json });
+  if (_projRowId == null) {
+    const { data: ex } = await sb.from('policies').select('id').eq('company_id', currentProfile.company_id).eq('name','TRACKER:Projects').order('id').limit(1).maybeSingle();
+    if (ex) _projRowId = ex.id;
+  }
+  if (_projRowId != null) {
+    await sb.from('policies').update({ content: json }).eq('id', _projRowId);
+  } else {
+    const { data: ins } = await sb.from('policies').insert({ company_id: currentProfile.company_id, name:'TRACKER:Projects', content: json }).select('id').maybeSingle();
+    if (ins) _projRowId = ins.id;
+  }
+}
+function saveProjects(){
+  // Chain so a second save can't start its SELECT before the first INSERT (and id caching) finishes.
+  _projSaveChain = _projSaveChain.then(_saveProjectsNow, _saveProjectsNow);
+  return _projSaveChain;
 }
 function projActive(){ return (projectsData||[]).find(p=>p.id===projectActiveId); }
 
@@ -17009,7 +17052,17 @@ function renderProjectDetail(){
       <div style="margin-top:16px;"><div style="height:8px;background:var(--surface3);border-radius:4px;overflow:hidden;"><div style="height:100%;width:${pct}%;background:${progColor};transition:width 0.2s;"></div></div><div style="font-size:11px;color:var(--ink3);margin-top:3px;">${pct}% complete · ${(p.milestones||[]).filter(projMsDone).length}/${(p.milestones||[]).length} tasks</div></div>
     </div>
 
-    ${projMilestonesBlock(p, sel, card)}`;
+    ${projMilestonesBlock(p, sel, card)}
+
+    <div style="${card}">
+      <div style="font-size:13px;font-weight:700;color:var(--ink);margin-bottom:10px;">Files &amp; links</div>
+      ${(p.attachments||[]).length ? (p.attachments||[]).map((a,ai)=>`<div style="display:flex;align-items:center;gap:8px;padding:4px 0;font-size:12px;">
+        <span style="flex-shrink:0;">${a.type==='email'?'✉':a.type==='link'?'🔗':'📝'}</span>
+        <div style="flex:1;min-width:0;">${a.url?`<a href="${escapeHtml(a.url)}" target="_blank" style="color:var(--accent);text-decoration:none;">${escapeHtml(a.title)}</a>`:`<span style="color:var(--ink);">${escapeHtml(a.title)}</span>`}${a.meta?`<span style="color:var(--ink3);"> · ${escapeHtml(a.meta)}</span>`:''}</div>
+        <button onclick="projRemoveAttachment(${ai})" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;flex-shrink:0;">✕</button>
+      </div>`).join('') : '<div style="font-size:12px;color:var(--ink3);">No files or links yet. Attach an email from the inbox, or add a link.</div>'}
+      <div style="margin-top:8px;"><button onclick="projAddLink()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;padding:4px 0;">+ Document / link</button></div>
+    </div>`;
 
   // Load real faces (HRIS / org chart) once, then re-render the board so owner avatars show photos.
   if (_projDetailView === 'board' && _projEmpIndex === null && !_projFacesLoading) projLoadFaces().then(()=>{ if (_projDetailView === 'board') renderProjectDetail(); });
@@ -17469,9 +17522,9 @@ async function projAddTaskNote(id){ const p=projActive(); const m=(p.milestones|
 async function projAddTaskLink(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=prompt('Document / link title'); if(!t) return; const u=prompt('URL (optional)','')||''; m.attachments=m.attachments||[]; m.attachments.push({type:'link',title:t.trim(),url:u.trim()}); await saveProjects(); renderProjectDetail(); }
 async function projRemoveTaskAttachment(id,ai){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; (m.attachments||[]).splice(ai,1); await saveProjects(); renderProjectDetail(); }
 
-async function projAddEmailFromInbox(idx){
+async function projAddEmailFromInbox(emailId){
   const emails=(_allEmails&&_allEmails.length)?_allEmails:(window._isTestAccount?getTestEmails():[]);
-  const e=emails[idx]; if(!e) return;
+  const e=emails.find(x=>x.id===emailId); if(!e) return;
   if(!projectsData) await loadProjects();
   if(!projectsData||!projectsData.length){ alert('Create a project first, then you can attach emails to its tasks.'); return; }
   _projEmailToAdd=e; if(!_projPickProject||!projectsData.find(p=>p.id===_projPickProject)) _projPickProject=projectsData[0].id;
@@ -17887,7 +17940,8 @@ async function projConfirmEmailToTask(){
     goals:['goal achievement','goals rating','objectives rating','goal attainment','objectives met','goals','objectives','goal','kpi'],
     competency:['leadership / competency','leadership competency','leadership','competency','competencies','values','behaviours','behaviors','capability','competency rating','potential indicator'],
     comments:['manager comments','manager comment','manager feedback','comments','comment','feedback','notes','remarks','context'],
-    key:['key role','key','key person','critical role','business critical','is key']
+    key:['key role','key','key person','critical role','business critical','is key'],
+    flight:['flight risk','flight','retention risk','attrition risk','risk of leaving','leaving risk','regretted risk','at risk']
   };
 
   // box = (pot-1)*3 + perf, perf/pot in 1..3
@@ -17963,14 +18017,14 @@ async function projConfirmEmailToTask(){
 
   // ---------- template download ----------
   window.talentDownloadTemplate=function(){
-    var headers=['Name','Job title','Department','Manager','Tenure (years)','Latest review rating','Previous review rating','Goal achievement','Leadership / competency','Manager comments'];
+    var headers=['Name','Job title','Department','Manager','Tenure (years)','Latest review rating','Previous review rating','Goal achievement','Leadership / competency','Flight risk (Low/Med/High)','Manager comments'];
     var rows=[
       headers,
-      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6','Outstanding','Exceeds','95%','Strong','Trusted by the board, ready for a wider remit.'],
-      ['Tom Reilly','Software Engineer','Engineering','Aisha Khan','2','Exceeds','Meets','90%','Developing','Fast growth this year, keen for more scope.'],
-      ['Grace Owusu','Customer Support Lead','Operations','Aisha Khan','4','Exceeds','Exceeds','88%','Strong','Deep product knowledge, very steady.'],
-      ['Daniel Foster','Operations Analyst','Operations','Grace Owusu','3','Meets','Meets','75%','Solid','Dependable, not currently seeking more.'],
-      ['Emma Clarke','Warehouse Supervisor','Operations','Grace Owusu','5','Below','Developing','55%','Limited','Quality issues raised, needs close support.']
+      ['Priya Sharma','Head of Finance','Finance','Dougie Gordon','6','Outstanding','Exceeds','95%','Strong','Low','Trusted by the board, ready for a wider remit.'],
+      ['Tom Reilly','Software Engineer','Engineering','Aisha Khan','2','Exceeds','Meets','90%','Developing','High','Fast growth this year, keen for more scope.'],
+      ['Grace Owusu','Customer Support Lead','Operations','Aisha Khan','4','Exceeds','Exceeds','88%','Strong','Low','Deep product knowledge, very steady.'],
+      ['Daniel Foster','Operations Analyst','Operations','Grace Owusu','3','Meets','Meets','75%','Solid','Low','Dependable, not currently seeking more.'],
+      ['Emma Clarke','Warehouse Supervisor','Operations','Grace Owusu','5','Below','Developing','55%','Limited','Medium','Quality issues raised, needs close support.']
     ];
     var ws=XLSX.utils.aoa_to_sheet(rows);
     ws['!cols']=headers.map(function(){return {wch:22};});
@@ -18008,7 +18062,7 @@ async function projConfirmEmailToTask(){
       manager:findCol(COL_ALIASES.manager), tenure:findCol(COL_ALIASES.tenure),
       reviewLatest:findCol(COL_ALIASES.reviewLatest), reviewPrev:findCol(COL_ALIASES.reviewPrev),
       goals:findCol(COL_ALIASES.goals), competency:findCol(COL_ALIASES.competency),
-      comments:findCol(COL_ALIASES.comments), key:findCol(COL_ALIASES.key) };
+      comments:findCol(COL_ALIASES.comments), key:findCol(COL_ALIASES.key), flight:findCol(COL_ALIASES.flight) };
     if(idx.name<0) return {error:'Could not find a Name column. Download the template for the expected format.'};
     if(idx.reviewLatest<0 && idx.goals<0 && idx.competency<0) return {error:'No review rating columns found. Upload a performance review export, or download the template.'};
     var people=[], id=0;
@@ -18029,6 +18083,7 @@ async function projConfirmEmailToTask(){
         competency:get(idx.competency),
         notes:get(idx.comments),
         keyRole:idx.key>=0?yes(get(idx.key)):false,
+        flightRisk:idx.flight>=0?(risk(get(idx.flight))||''):'',
         perf:null, pot:null, confidence:null, rationale:''
       });
     }
@@ -18449,8 +18504,8 @@ async function projConfirmEmailToTask(){
   window.talentDragEnd=function(el){ el.classList.remove('dragging'); };
   window.talentDragOver=function(e,el){ e.preventDefault(); e.dataTransfer.dropEffect='move'; el.classList.add('over'); };
   window.talentDrop=function(e,box,el){ e.preventDefault(); el.classList.remove('over');
-    var p=talentFind(_dragId); if(!p)return; p.pot=Math.floor((box-1)/3)+1; p.perf=((box-1)%3)+1; p.confidence='given'; _dragId=null; talentRenderGrid(); };
-  window.talentDropTray=function(e,el){ e.preventDefault(); el.classList.remove('over'); var p=talentFind(_dragId); if(!p)return; p.perf=null;p.pot=null; _dragId=null; talentRenderGrid(); };
+    var p=talentFind(_dragId); if(!p)return; p.pot=Math.floor((box-1)/3)+1; p.perf=((box-1)%3)+1; p.confidence='given'; p.rationale=''; _dragId=null; talentRenderGrid(); };
+  window.talentDropTray=function(e,el){ e.preventDefault(); el.classList.remove('over'); var p=talentFind(_dragId); if(!p)return; p.perf=null;p.pot=null; p.rationale=''; _dragId=null; talentRenderGrid(); };
   function talentFind(id){ return talentState.people.filter(function(p){return p.id===id;})[0]; }
 
   // ---------- edit card modal ----------
@@ -18481,7 +18536,10 @@ async function projConfirmEmailToTask(){
     var p=talentFind(id); if(!p)return;
     var v=function(i){ var el=document.getElementById(i); return el?el.value:''; };
     p.name=v('tlmName').trim()||p.name; p.role=v('tlmRole').trim();
+    var oldPerf=p.perf, oldPot=p.pot;
     p.perf=v('tlmPerf')?parseInt(v('tlmPerf'),10):null; p.pot=v('tlmPot')?parseInt(v('tlmPot'),10):null;
+    // The AI rationale cites the original ratings; drop it once the placement is changed by hand.
+    if(p.perf!==oldPerf||p.pot!==oldPot) p.rationale='';
     p.keyRole=v('tlmKey')==='yes';
     p.action=v('tlmAction').trim(); p.notes=v('tlmNotes').trim(); p.confidence='given';
     talentCloseModal(); renderTalent();
@@ -18674,8 +18732,9 @@ async function projConfirmEmailToTask(){
     XLSX.utils.book_append_sheet(wb,ws,'9-box');
     var srows=[['Role','Incumbent','Successor','Readiness','Gap']];
     (talentState.succession||[]).forEach(function(s){
-      if(!(s.successors||[]).length) srows.push([s.role,s.incumbent,'(no successor)','',s.gap?'GAP':'']);
-      (s.successors||[]).forEach(function(su){ srows.push([s.role,s.incumbent,su.name,READY[su.readiness]||su.readiness,s.gap?'GAP':'']); });
+      var succ=(s.successors||[]).filter(function(su){ return su.name&&su.name.trim(); });
+      if(!succ.length) srows.push([s.role,s.incumbent,'(no successor)','',s.gap?'GAP':'']);
+      succ.forEach(function(su){ srows.push([s.role,s.incumbent,su.name,READY[su.readiness]||su.readiness,s.gap?'GAP':'']); });
     });
     if(srows.length>1){ var sws=XLSX.utils.aoa_to_sheet(srows); sws['!cols']=srows[0].map(function(){return {wch:22};}); XLSX.utils.book_append_sheet(wb,sws,'Succession'); }
     if(talentState.summary){ var sumws=XLSX.utils.aoa_to_sheet([['CHRO summary'],[talentState.summary]]); sumws['!cols']=[{wch:110}]; XLSX.utils.book_append_sheet(wb,sumws,'Summary'); }
