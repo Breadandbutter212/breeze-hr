@@ -100,9 +100,29 @@ function textToDocxBuffer(text) {
   if (lastIdx < remaining.length) segments.push({type:'text', content: remaining.slice(lastIdx)});
 
   let paras = '';
+  // Document accent colour (matches the in-app doc panel) and a muted tone for metadata.
+  const NAVY = '1B2D50', MUTED = '6B7280';
+  let titleDone = false;     // the first heading becomes the document Title
+  let expectSubtitle = false; // a metadata strip directly under the title renders muted
+
+  // A styled heading paragraph. level 0 = Title, 1 = H1, 2 = H2, 3+ = H3.
+  const headingXml = (textPlain, level) => {
+    const t = enc(textPlain.trim());
+    if (level === 0) {
+      return `<w:p><w:pPr><w:spacing w:before="0" w:after="60"/><w:pBdr><w:bottom w:val="single" w:sz="8" w:space="6" w:color="${NAVY}"/></w:pBdr></w:pPr>`
+        + `<w:r><w:rPr><w:b/><w:color w:val="${NAVY}"/><w:sz w:val="40"/><w:szCs w:val="40"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
+    }
+    const sz = level === 1 ? 30 : level === 2 ? 26 : 23;
+    const color = level >= 3 ? '374151' : NAVY;
+    const before = level === 1 ? 280 : level === 2 ? 220 : 160;
+    return `<w:p><w:pPr><w:spacing w:before="${before}" w:after="70"/></w:pPr>`
+      + `<w:r><w:rPr><w:b/><w:color w:val="${color}"/><w:sz w:val="${sz}"/><w:szCs w:val="${sz}"/></w:rPr><w:t xml:space="preserve">${t}</w:t></w:r></w:p>`;
+  };
+  const looksLikeMeta = s => /\|/.test(s) || /^\s*(version|owner|review|date|prepared|author|status|confidential|classification|reference|ref|effective)\b/i.test(s) || /\[year\]/i.test(s);
 
   for (const seg of segments) {
     if (seg.type === 'table') {
+      expectSubtitle = false;
       const rowsData = seg.content.split('\n')
         .map(l => l.trim()).filter(Boolean)
         .map(l => l.split('§CELL§').map(c => c));
@@ -118,25 +138,45 @@ function textToDocxBuffer(text) {
         continue;
       }
       const trimmed = line.trim();
+
+      // Markdown heading (#, ##, ###...) - tolerate a single stray leading letter
+      const hMatch = trimmed.match(/^[a-z]?(#{1,6})\s+(.+)$/);
+      // A short, fully-bold line acts as a heading too (e.g. "**Strategic priorities**")
+      const boldRuns = parseInlineRuns(trimmed);
+      const allBold = boldRuns.length && boldRuns.every(r => r.bold || !r.text.trim());
+      const boldHeadingText = allBold && trimmed.replace(/\*\*/g,'').length < 90 ? trimmed.replace(/\*\*/g,'') : null;
+
+      if (hMatch || boldHeadingText) {
+        const text = hMatch ? hMatch[2].replace(/\*/g,'').trim() : boldHeadingText;
+        const mdLevel = hMatch ? hMatch[1].length : 2;
+        if (!titleDone) { paras += headingXml(text, 0); titleDone = true; expectSubtitle = true; }
+        else { paras += headingXml(text, mdLevel); expectSubtitle = false; }
+        continue;
+      }
+
+      // Metadata strip immediately under the title -> muted subtitle
+      if (expectSubtitle) {
+        expectSubtitle = false;
+        if (looksLikeMeta(trimmed)) {
+          paras += `<w:p><w:pPr><w:spacing w:before="20" w:after="160"/></w:pPr><w:r><w:rPr><w:color w:val="${MUTED}"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr><w:t xml:space="preserve">${enc(trimmed.replace(/\*\*/g,''))}</w:t></w:r></w:p>`;
+          continue;
+        }
+      }
+
       const bulletMatch = trimmed.match(/^[•\-]\s+([\s\S]*)/);
       if (bulletMatch) {
         const runs = parseInlineRuns(bulletMatch[1]);
         paras += `<w:p><w:pPr><w:ind w:left="360"/><w:spacing w:before="0" w:after="80"/></w:pPr><w:r><w:t xml:space="preserve">• </w:t></w:r>${runsToXml(runs)}</w:p>`;
         continue;
       }
-      const runs = parseInlineRuns(trimmed);
+      const runs = boldRuns;
       const hasBold = runs.some(r => r.bold);
-      const allBold = hasBold && runs.every(r => r.bold || !r.text.trim());
-      if (allBold) {
-        paras += `<w:p><w:pPr><w:spacing w:before="200" w:after="80"/></w:pPr>${runsToXml(runs)}</w:p>`;
-      } else if (hasBold) {
+      if (hasBold) {
         paras += `<w:p><w:pPr><w:spacing w:before="0" w:after="100"/></w:pPr>${runsToXml(runs)}</w:p>`;
       } else {
-        const isSection = /^\d+\.\s/.test(trimmed) && !/^\d+\.\d+/.test(trimmed);
-        const spaceBefore = isSection ? '200' : '0';
-        const spaceAfter  = isSection ? '80'  : '100';
-        const rPr = isSection ? '<w:rPr><w:b/></w:rPr>' : '';
-        paras += `<w:p><w:pPr><w:spacing w:before="${spaceBefore}" w:after="${spaceAfter}"/></w:pPr><w:r>${rPr}<w:t xml:space="preserve">${enc(trimmed)}</w:t></w:r></w:p>`;
+        const isSection = /^\d+\.\s/.test(trimmed) && !/^\d+\.\d+/.test(trimmed) && trimmed.length < 90;
+        if (isSection) { paras += headingXml(trimmed, 2); continue; }
+        paras += `<w:p><w:pPr><w:spacing w:before="0" w:after="100"/></w:pPr><w:r><w:t xml:space="preserve">${enc(trimmed)}</w:t></w:r></w:p>`;
       }
     }
   }

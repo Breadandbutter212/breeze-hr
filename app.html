@@ -7282,8 +7282,9 @@ function mdToDocSource(md) {
     }
     const tr = lines[i].trim();
     if (/^(-{3,}|\*{3,}|_{3,})$/.test(tr)) { out.push(''); continue; } // drop rules
+    // Keep the heading level (#, ##, ###) so the Word builder can style title vs sections
     const h = tr.match(/^[a-z]?(#{1,6})\s+(.+)$/);
-    if (h) { out.push('**' + h[2].replace(/\*/g,'').trim() + '**'); continue; }
+    if (h) { out.push('#'.repeat(h[1].length) + ' ' + h[2].replace(/\*/g,'').trim()); continue; }
     if ((tr === '•' || tr === '-' || tr === '*') && (lines[i+1]||'').trim()) { out.push('• ' + stripItalic(lines[++i].trim())); continue; }
     if (/^\*\s+/.test(tr)) { out.push('- ' + stripItalic(tr.replace(/^\*\s+/,''))); continue; }
     out.push(stripItalic(lines[i]));
