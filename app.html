@@ -7458,7 +7458,8 @@ function showArtifact(artifact, msgIdx) {
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
     ${!isDoc && emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
-  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(artifact.draft, artifact.accent)}</div>`;
+  const previewSrc = isDoc ? docBodyWithTitle(artifact, artifact.draft) : artifact.draft;
+  body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(previewSrc, artifact.accent)}</div>`;
   // Keep the original markdown so an unedited download renders headings/tables cleanly
   currentArtifact._md = artifact.draft;
   // Mark as hand-edited (and capture the plain text) only when the user actually types
@@ -7484,6 +7485,28 @@ async function copyArtifact() {
   if (copyBtn) { copyBtn.textContent = '✓ Copied'; setTimeout(() => copyBtn.textContent = 'Copy', 2000); }
 }
 
+// Build a clean, content-related filename for a downloaded document (never "draft" / "doc 3").
+function artifactFileName(artifact) {
+  let base = (artifact?.title || '').trim();
+  // Ignore generic placeholders - derive from the first heading of the body instead
+  if (!base || /^(document|draft( response)?|untitled)$/i.test(base)) {
+    const body = artifact?._md || artifact?.draft || '';
+    const h = body.split('\n').map(l => l.trim()).find(l => /^#{1,3}\s+\S/.test(l) || /^\*\*[^*]+\*\*$/.test(l));
+    base = h ? h.replace(/^#{1,3}\s+/, '').replace(/\*\*/g, '').trim() : 'HR document';
+  }
+  // Sanitise: drop characters illegal in filenames, collapse whitespace, cap the length
+  base = base.replace(/[\\\/:*?"<>|]+/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 80).trim();
+  return base || 'HR document';
+}
+
+// Ensure a document body opens with a proper top-level title (so the Word file gets a styled
+// title, not a section heading promoted by mistake). Leaves the body alone if it already has one.
+function docBodyWithTitle(artifact, body) {
+  const b = (body || '').replace(/^\s+/, '');
+  if (/^#\s+\S/.test(b)) return b;               // already starts with an H1 title
+  return `# ${artifactFileName(artifact)}\n\n${b}`;
+}
+
 async function downloadArtifact() {
   if (!currentArtifact) return;
   roiMarkDoc();
@@ -7492,27 +7515,30 @@ async function downloadArtifact() {
   try {
     // Use the original markdown (with headings/tables) unless the user hand-edited the panel
     const src = currentArtifact._edited ? (document.getElementById('artifactDoc')?.innerText || currentArtifact.draft) : (currentArtifact._md || currentArtifact.draft);
+    const fileName = artifactFileName(currentArtifact);
+    // On the unedited path the title styling survives; an edited preview already carries the title text.
+    const titledSrc = (currentArtifact.type === 'Document' && !currentArtifact._edited) ? docBodyWithTitle(currentArtifact, src) : src;
     const res = await fetch('/api/generate-doc', {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ plainText: mdToDocSource(src), templateName: 'Draft response', accent: currentArtifact.accent || null })
+      body: JSON.stringify({ plainText: mdToDocSource(titledSrc), templateName: fileName, accent: currentArtifact.accent || null })
     });
     if (res.ok) {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='draft.docx'; a.click();
+      const a = document.createElement('a'); a.href=url; a.download=`${fileName}.docx`; a.click();
       URL.revokeObjectURL(url);
     } else {
       // Fallback to txt if docx fails
       const blob = new Blob([currentArtifact.draft], {type:'text/plain'});
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download='draft.txt'; a.click();
+      const a = document.createElement('a'); a.href=url; a.download=`${fileName}.txt`; a.click();
       URL.revokeObjectURL(url);
     }
   } catch(e) {
     const blob = new Blob([currentArtifact.draft], {type:'text/plain'});
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download='draft.txt'; a.click();
+    const a = document.createElement('a'); a.href=url; a.download=`${artifactFileName(currentArtifact)}.txt`; a.click();
     URL.revokeObjectURL(url);
   }
   if (btn) { btn.textContent = '⬇ .docx'; btn.disabled = false; }
