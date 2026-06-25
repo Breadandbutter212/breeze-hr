@@ -5318,9 +5318,9 @@ async function downloadDocx() {
     // edits, formatting and photos all come through. Unedited uploads keep the byte-exact
     // original-file path below.
     const _page = document.querySelector('#dpBody .doc-page');
-    const _isFidPage = !!(_page && _page.classList.contains('docx-fidelity'));
-    const _wantHtml = (_isFidPage && (selTmpl._edited || !selTmpl.base64))
-      || (!selTmpl.base64 && _page && /<(strong|b|h[1-6]|table|img|ul|ol)\b/i.test(_page.innerHTML));
+    // Edited (insert/delete) or no original .docx left (saved/text template) -> build from the
+    // preview so the user's changes and the on-screen formatting are what gets downloaded.
+    const _wantHtml = !!_page && (selTmpl._edited || !selTmpl.base64);
     if (_wantHtml) {
       const ok = await ensureHtmlDocx();
       const html = exportHtmlFromPreview();
@@ -5384,16 +5384,40 @@ async function downloadDocAsPdf() {
     const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
-    const imgH = canvas.height * pageW / canvas.width;
-    const imgData = canvas.toDataURL('image/jpeg', 0.95);
-    let heightLeft = imgH, position = 0;
-    pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
-    heightLeft -= pageH;
-    while (heightLeft > 0) {
-      position -= pageH;
-      pdf.addPage();
-      pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
-      heightLeft -= pageH;
+    const cw = canvas.width, ch = canvas.height;
+    const pagePx = Math.floor(cw * (pageH / pageW)); // canvas px that fill one PDF page
+    const ctx = canvas.getContext('2d');
+    // A row counts as a safe break point only if it's blank (whitespace between lines), so a
+    // page never cuts through a line of text.
+    const isBlankRow = (y) => {
+      if (y <= 0 || y >= ch) return true;
+      let data; try { data = ctx.getImageData(0, y, cw, 1).data; } catch (e) { return false; }
+      for (let i = 0; i < data.length; i += 4) { if (data[i] < 248 || data[i+1] < 248 || data[i+2] < 248) return false; }
+      return true;
+    };
+    // Build slice boundaries: aim for a full page, then walk up to a blank row (search ~22% up)
+    const cuts = [0];
+    let y = 0;
+    while (y < ch) {
+      let cut = Math.min(y + pagePx, ch);
+      if (cut < ch) {
+        const limit = cut - Math.floor(pagePx * 0.22);
+        let c = cut;
+        while (c > limit && !isBlankRow(c)) c--;
+        if (c > limit) cut = c;
+      }
+      if (cut <= y) cut = Math.min(y + pagePx, ch); // safety: never stall
+      cuts.push(cut);
+      y = cut;
+    }
+    for (let i = 0; i < cuts.length - 1; i++) {
+      const sy = cuts[i], sh = cuts[i+1] - sy;
+      const slice = document.createElement('canvas');
+      slice.width = cw; slice.height = sh;
+      slice.getContext('2d').drawImage(canvas, 0, sy, cw, sh, 0, 0, cw, sh);
+      const sliceH = sh * pageW / cw;
+      if (i > 0) pdf.addPage();
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, sliceH);
     }
     pdf.save(`${title}.pdf`);
   } catch (e) {
