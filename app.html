@@ -13013,7 +13013,7 @@ async function renderAutomations(){
     </div>
     ${_autoTab==='workflows'
       ? `<button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)" style="flex-shrink:0;">+ New workflow</button>`
-      : `<button class="btn btn-primary btn-sm" onclick="autoStartPick()" style="flex-shrink:0;">▶ Run process</button>`}
+      : `<button class="btn btn-primary btn-sm" onclick="autoStartPick()" style="flex-shrink:0;">Launch</button>`}
   </div>`;
 
   if(_autoTab==='runs'){ el.innerHTML=header+renderAutoRuns(list,cases); return; }
@@ -13031,9 +13031,9 @@ async function renderAutomations(){
   const cards=list.map(a=>{
     const active=cases.filter(c=>c.scenarioId===a.id&&c.status!=='closed');
     const steps=(a.steps||[]).length;
-    const progressChip=active.length
-      ? `<button onclick="setAutoTab('runs','${a.id}')" style="margin-top:14px;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:inherit;">▶ ${active.length} in progress</button>`
-      : `<div style="margin-top:14px;font-size:11px;color:var(--ink3);">No active runs</div>`;
+    const inProgChip=active.length
+      ? `<button onclick="setAutoTab('runs','${a.id}')" title="View the people in progress" style="display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:5px 11px;cursor:pointer;font-family:inherit;">▶ ${active.length} in progress</button>`
+      : '';
     return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s;" onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
       <div style="display:flex;align-items:flex-start;gap:12px;">
         <div style="width:44px;height:44px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${a.icon||'⚡'}</div>
@@ -13042,10 +13042,10 @@ async function renderAutomations(){
           <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${steps} step${steps===1?'':'s'}</div>
         </div>
       </div>
-      ${progressChip}
-      <div style="flex:1;"></div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" style="font-size:11px;" onclick="autoStartRun('${a.id}')">▶ Run process</button>
+      <div style="flex:1;min-height:14px;"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" style="font-size:11px;" onclick="autoStartRun('${a.id}')">Launch</button>
+        ${inProgChip}
         <div style="flex:1;"></div>
         <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')">✏ Edit</button>
         <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
@@ -13081,8 +13081,8 @@ function renderAutoRuns(list,cases){
     return controls+`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-lg);padding:44px 24px;text-align:center;">
       <div style="font-size:30px;margin-bottom:10px;">🗂️</div>
       <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:5px;">No ${_autoRunStatus} runs</div>
-      <div style="font-size:12px;color:var(--ink3);max-width:340px;margin:0 auto 18px;line-height:1.7;">${_autoRunStatus==='active'?'Run a process for someone - e.g. an onboarding or an exit - and they\'ll appear here.':'Completed runs will show up here once they\'re closed.'}</div>
-      ${_autoRunStatus==='active'?`<button class="btn btn-primary btn-sm" onclick="autoStartPick()">▶ Run process</button>`:''}
+      <div style="font-size:12px;color:var(--ink3);max-width:340px;margin:0 auto 18px;line-height:1.7;">${_autoRunStatus==='active'?'Launch a process for someone - e.g. an onboarding or an exit - and they\'ll appear here.':'Completed runs will show up here once they\'re closed.'}</div>
+      ${_autoRunStatus==='active'?`<button class="btn btn-primary btn-sm" onclick="autoStartPick()">Launch</button>`:''}
     </div>`;
   }
 
@@ -13099,7 +13099,7 @@ function renderAutoRuns(list,cases){
         <span style="font-size:13px;font-weight:700;color:var(--ink);">${escapeHtml(label)}</span>
         <span style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 8px;">${cs.length}</span>
         <div style="flex:1;height:1px;background:var(--border);"></div>
-        ${a?`<button class="btn btn-secondary btn-sm" style="font-size:10px;" onclick="autoStartRun('${a.id}')">▶ Run process</button>`:''}
+        ${a?`<button class="btn btn-secondary btn-sm" style="font-size:10px;" onclick="autoStartRun('${a.id}')">Launch</button>`:''}
       </div>
       <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">${cards}</div>
     </div>`;
@@ -13137,7 +13137,7 @@ function autoStartPick(){
   const ov=document.createElement('div'); ov.id='autoStartPick';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
-    <div style="padding:15px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--ink);">Run a process for someone</div>
+    <div style="padding:15px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--ink);">Launch a process for someone</div>
     <div style="padding:12px;display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow:auto;">
       ${list.map(a=>`<button onclick="document.getElementById('autoStartPick').remove();autoStartRun('${a.id}')" style="display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--accent-mid)'" onmouseout="this.style.borderColor='var(--border)'">
         <span style="width:38px;height:38px;border-radius:10px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${a.icon||'⚡'}</span>
@@ -13153,12 +13153,39 @@ function autoStartPick(){
 async function autoStartRun(autoId){
   if(!automations) await loadAutomations();
   const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
-  const name=prompt(`Run "${a.label}" for which employee?\n\nEnter their name:`,'');
-  if(!name||!name.trim()) return;
+  document.getElementById('autoRunName')?.remove();
+  const ov=document.createElement('div'); ov.id='autoRunName';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:986;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);">
+    <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:11px;">
+      <span style="width:34px;height:34px;border-radius:9px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${a.icon||'⚡'}</span>
+      <div style="min-width:0;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Launch ${escapeHtml(a.label)}</div><div style="font-size:11px;color:var(--ink3);">Who is this process for?</div></div>
+    </div>
+    <div style="padding:18px 20px;">
+      <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Employee</label>
+      <input id="autoRunNameInp" placeholder="Search your HR system…" autocomplete="off" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" oninput="showHrisDropdown(this,this.value,emp=>{const i=document.getElementById('autoRunNameInp');if(i)i.value=emp.display_full_name||emp.full_name||'';})" onkeydown="if(event.key==='Enter'){event.preventDefault();autoRunNameConfirm('${autoId}')}">
+      <div style="font-size:11px;color:var(--ink3);margin-top:7px;">Pick someone from your HR system, or just type a name.</div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('autoRunName').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="autoRunNameConfirm('${autoId}')">Launch</button>
+    </div>
+  </div>`;
+  ov.onclick=e=>{ if(e.target===ov){ document.getElementById('hris-dd')?.remove(); ov.remove(); } };
+  document.body.appendChild(ov);
+  setTimeout(()=>document.getElementById('autoRunNameInp')?.focus(),60);
+}
+
+async function autoRunNameConfirm(autoId){
+  const inp=document.getElementById('autoRunNameInp'); const name=(inp?.value||'').trim();
+  if(!name){ if(inp) inp.style.borderColor='var(--red)'; return; }
+  const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
   if(!wfCases) await loadWfCases();
-  const newCase={ id:'wfc_'+Date.now(), employeeName:name.trim(), scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
+  const newCase={ id:'wfc_'+Date.now(), employeeName:name, scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
   wfCases.push(newCase);
   await saveWfCases();
+  document.getElementById('hris-dd')?.remove();
+  document.getElementById('autoRunName')?.remove();
   _autoTab='runs'; _autoRunStatus='active'; // show the new run in the In-progress tab afterwards
   renderAutomations();
   setTimeout(()=>openWfRunVisual(newCase.id),150);
@@ -16748,7 +16775,10 @@ function wfOpenEmailDraft(caseId, stepId, subId) {
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Body</label><textarea id="wfe-body" rows="7" style="${inp}resize:vertical;min-height:140px;">${escapeHtml(body)}</textarea></div>
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
-      <button class="btn btn-ghost btn-sm" onclick="wfEmailCopy()">📋 Copy</button>
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-secondary btn-sm" onclick="wfDraftEmailAI('${caseId}',${stepId},${subId!=null?`'${subId}'`:'null'},this)" style="color:var(--accent);">✨ Draft with AI</button>
+        <button class="btn btn-ghost btn-sm" onclick="wfEmailCopy()">📋 Copy</button>
+      </div>
       <div style="display:flex;gap:8px;">
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfEmailDraft').remove()">Cancel</button>
         <button class="btn btn-primary btn-sm" onclick="wfEmailOpenAndLog('${caseId}')" style="background:#047857;border-color:#047857;">Open in email app</button>
@@ -16783,6 +16813,25 @@ async function wfEmailOpenAndLog(caseId){
   }
   document.getElementById('wfEmailDraft')?.remove();
   showBreezeToast('Opened in your email app · logged to contact log');
+}
+
+// ✨ Draft this run's email with AI, from the step/task + workflow + employee name.
+async function wfDraftEmailAI(caseId, stepId, subId, btn){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=(typeof wfGetSteps==='function'?wfGetSteps(c):[]).find(s=>String(s.id)===String(stepId));
+  let task=step?.title||'';
+  if(subId!=null && subId!=='null'){ const su=(step?.subs||[]).find(x=>String(x.id)===String(subId)); if(su&&su.title) task=su.title; }
+  const a=(automations||[]).find(x=>x.id===c.scenarioId);
+  const orig=btn.innerHTML; btn.innerHTML='⏳ Drafting…'; btn.disabled=true;
+  try{
+    const r=await _aiDraftEmail({ workflow:a?.label||'HR workflow', step:step?.title, task, guidance:step?.desc });
+    const nm=c.employeeName||'';
+    const fix=v=>(v||'').replace(/\{employee\}/gi,nm).replace(/\{name\}/gi,nm);
+    const subEl=document.getElementById('wfe-sub'), bodyEl=document.getElementById('wfe-body');
+    if(subEl&&r.subject) subEl.value=fix(r.subject);
+    if(bodyEl&&r.body) bodyEl.value=fix(r.body);
+  }catch(e){ showBreezeToast('AI draft failed - try again'); }
+  btn.innerHTML=orig; btn.disabled=false;
 }
 
 // ── WORKFLOW DOCUMENT UPLOAD ──
