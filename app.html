@@ -5092,6 +5092,9 @@ function htmlToMarkdownText(html) {
   if (!html) return '';
   let t = html;
 
+  // Drop <style>/<script> blocks entirely - their inner text is not document content
+  t = t.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<script[\s\S]*?<\/script>/gi, '');
+
   // ── Tables → [TABLE]...[/TABLE] marker format for Word XML generation ──
   t = t.replace(/<table[\s\S]*?<\/table>/gi, tableHtml => {
     const rows = [];
@@ -5310,8 +5313,11 @@ async function downloadDocAsPdf() {
     wrap.style.cssText = isFid
       ? "position:fixed;left:-9999px;top:0;width:760px;background:#fff;padding:56px 64px;box-sizing:border-box;color:#111;"
       : "position:fixed;left:-9999px;top:0;width:720px;background:#fff;padding:48px 56px;font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;box-sizing:border-box;";
-    // For the faithful render, docPage.innerHTML already carries its own <style>, so keep it untouched
-    wrap.innerHTML = isFid ? docPage.innerHTML : `<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}.ph{color:#9AA0A6}</style>${docPage.innerHTML}`;
+    // For the faithful render, docPage.innerHTML already carries its own <style>. Add the
+    // same chrome/width resets the preview uses so docx-preview's fixed-width page sections
+    // fill the sheet instead of rendering narrow.
+    const fidReset = '<style>section.docxr,.docxr-wrapper>section{box-shadow:none!important;border:0!important;margin:0 auto!important;padding:0!important;width:auto!important;min-height:0!important;background:transparent!important}.docxr-wrapper{background:transparent!important;padding:0!important;display:block!important}.docxr img{max-width:100%;height:auto}</style>';
+    wrap.innerHTML = isFid ? fidReset + docPage.innerHTML : `<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}.ph{color:#9AA0A6}</style>${docPage.innerHTML}`;
     document.body.appendChild(wrap);
     const canvas = await html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
     document.body.removeChild(wrap);
