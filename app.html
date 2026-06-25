@@ -8359,7 +8359,6 @@ function renderChatHistory() {
   if (!chatMessages.length && !chatLoading) {
     const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
-      <div class="ai-head">Breeze</div>
       <div class="chat-welcome-title">${firstName ? 'Hi ' + firstName + ', how can I help?' : 'How can I help?'}</div>
       <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or ask me to draft a letter. I'll keep it in your company's style.</div>
       <div class="es-prompts">
