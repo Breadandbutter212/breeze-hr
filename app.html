@@ -12768,6 +12768,7 @@ function wfbStepEditor(idx){
         ${_wfTemplateOpts.length?`<label class="wfb-lab">Template</label><select id="wfbs-docid" style="${inp}">${tmplOpts}</select>`:`<div style="font-size:12px;color:var(--ink3);background:var(--surface2);padding:10px 12px;border-radius:var(--r-sm);">No templates yet. Upload one in <strong>Documents</strong> first, then it'll appear here.</div>`}
       </div>
       <div id="wfbs-email-fields" style="display:${actType==='email'?'flex':'none'};flex-direction:column;gap:10px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><span style="font-size:11px;color:var(--ink3);">Write it yourself, or let AI draft it from the step.</span><button type="button" onclick="wfbDraftStepEmail(this)" title="Draft this email with AI" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:4px 11px;font-size:11px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;flex-shrink:0;">✨ Draft with AI</button></div>
         <div><label class="wfb-lab">To</label><input id="wfbs-eto" value="${escapeHtml(s.action?.email?.to||'')}" placeholder="e.g. it@company.com or {employee}" style="${inp}"></div>
         <div style="display:flex;gap:10px;">
           <div style="flex:1;"><label class="wfb-lab">Cc</label><input id="wfbs-ecc" value="${escapeHtml(s.action?.email?.cc||'')}" placeholder="optional" style="${inp}"></div>
@@ -12795,11 +12796,11 @@ function wfbRenderSubs(){
   wrap.innerHTML=_wfbSubs.map((su,i)=>{
     const emailBlock = su.email
       ? `<div style="border-top:1px dashed var(--border);margin-top:2px;padding-top:8px;display:flex;flex-direction:column;gap:6px;">
-           <div style="display:flex;justify-content:space-between;align-items:center;"><span style="font-size:10px;font-weight:700;color:#047857;">✉️ Email draft</span><button type="button" onclick="wfbSubDelEmail(${i})" style="background:none;border:none;color:var(--ink3);font-size:10px;cursor:pointer;text-decoration:underline;">Remove email</button></div>
+           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><span style="font-size:10px;font-weight:700;color:#047857;">✉️ Email draft</span><div style="display:flex;gap:8px;align-items:center;"><button type="button" onclick="wfbDraftSubEmail(${i},this)" title="Draft this email with AI" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">✨ Draft</button><button type="button" onclick="wfbSubDelEmail(${i})" style="background:none;border:none;color:var(--ink3);font-size:10px;cursor:pointer;text-decoration:underline;">Remove</button></div></div>
            <input value="${escapeHtml(su.email.subject||'')}" placeholder="Subject - e.g. Welcome, {employee}!" oninput="_wfbSubEmailSet(${i},'subject',this.value)" style="${si}">
            <textarea rows="3" placeholder="Body - use {employee} for the person's name." oninput="_wfbSubEmailSet(${i},'body',this.value)" style="${si}resize:vertical;min-height:60px;">${escapeHtml(su.email.body||'')}</textarea>
          </div>`
-      : `<button type="button" onclick="wfbSubAddEmail(${i})" class="btn btn-ghost btn-sm" style="font-size:10px;color:#047857;align-self:flex-start;padding:2px 0;">+ Add email to this task</button>`;
+      : `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button type="button" onclick="wfbSubAddEmail(${i})" class="btn btn-ghost btn-sm" style="font-size:10px;color:#047857;padding:2px 0;">+ Add email to this task</button><button type="button" onclick="wfbDraftSubEmail(${i},this)" title="Let AI write this email for you" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">✨ Draft with AI</button></div>`;
     return `<div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 10px;background:var(--surface2);display:flex;flex-direction:column;gap:7px;">
       <div style="display:flex;gap:7px;align-items:center;">
         <span style="width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
@@ -12910,6 +12911,52 @@ Generate 5-8 stages, each with 2-4 sub-tasks.`;
     });
     wfbRender();
   }catch(e){ btn.textContent=orig; btn.disabled=false; showBreezeToast('AI draft failed - try again or add steps manually'); }
+}
+
+// Draft a single email (subject + body) for a workflow step/sub-task with AI.
+async function _aiDraftEmail({ workflow, step, task, guidance }) {
+  const token = await getAuthToken();
+  const company = currentProfile?.company_name || 'the company';
+  const what = task || step || 'this HR task';
+  const userPrompt = `Draft one short, warm, professional UK HR email for a task in an HR workflow.
+Workflow: "${workflow || 'HR workflow'}"
+${step ? `Stage: "${step}"\n` : ''}Task: "${what}"${guidance ? `\nContext: ${guidance}` : ''}
+Company: ${company}
+Use {employee} as a placeholder for the recipient's first name where it reads naturally. Keep it concise and ready to send.
+Return ONLY valid JSON, no markdown: {"subject":"...","body":"..."}`;
+  const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ system: 'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.', messages: [{ role: 'user', content: userPrompt }] }) });
+  const d = await res.json();
+  const raw = d.content?.[0]?.text || '';
+  const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
+  return JSON.parse(jsonStr);
+}
+
+// ✨ star on a sub-task: draft (or re-draft) its email with AI.
+async function wfbDraftSubEmail(i, btn) {
+  const su = _wfbSubs[i]; if (!su) return;
+  if (!(su.title || '').trim()) { showBreezeToast('Give the task a title first'); return; }
+  const orig = btn.innerHTML; btn.innerHTML = '⏳'; btn.disabled = true;
+  try {
+    const r = await _aiDraftEmail({ workflow: _wfBuilder?.label || document.getElementById('wfb-name')?.value, step: document.getElementById('wfbs-title')?.value, task: su.title, guidance: document.getElementById('wfbs-desc')?.value });
+    if (!su.email) su.email = { to: '', cc: '', bcc: '', subject: '', body: '' };
+    if (r.subject) su.email.subject = r.subject;
+    if (r.body) su.email.body = r.body;
+    wfbRenderSubs();
+  } catch (e) { btn.innerHTML = orig; btn.disabled = false; showBreezeToast('AI draft failed - try again'); }
+}
+
+// ✨ star on the step-level email: draft subject + body with AI.
+async function wfbDraftStepEmail(btn) {
+  const stepTitle = (document.getElementById('wfbs-title')?.value || '').trim();
+  if (!stepTitle) { const t = document.getElementById('wfbs-title'); if (t) { t.style.borderColor = 'var(--red)'; t.focus(); } showBreezeToast('Add a step title first'); return; }
+  const orig = btn.innerHTML; btn.innerHTML = '⏳ Drafting…'; btn.disabled = true;
+  try {
+    const r = await _aiDraftEmail({ workflow: _wfBuilder?.label || document.getElementById('wfb-name')?.value, step: stepTitle, guidance: document.getElementById('wfbs-desc')?.value });
+    const sub = document.getElementById('wfbs-esub'), body = document.getElementById('wfbs-ebody');
+    if (sub && r.subject) sub.value = r.subject;
+    if (body && r.body) body.value = r.body;
+  } catch (e) { showBreezeToast('AI draft failed - try again'); }
+  btn.innerHTML = orig; btn.disabled = false;
 }
 
 async function wfbSave(btn){
