@@ -4804,7 +4804,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Word</button><button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="saveTmplBtn" onclick="saveToTemplate()" title="Save your edits back to this template for future use">💾 Save to template</button><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Word</button><button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
@@ -4861,7 +4861,7 @@ function updatePreview() {
   const body=document.getElementById('dpBody');if(!body)return;
   const today=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
   const t=selTmpl;const vals=genVals;
-  const ph=(f)=>vals[f]?`<span class="filled">${escapeHtml(vals[f])}</span>`:`<span class="ph">[${f.replace(/_/g,' ')}]</span>`;
+  const ph=(f)=>vals[f]?`<span class="filled" data-f="${f}">${escapeHtml(vals[f])}</span>`:`<span class="ph" data-f="${f}">[${f.replace(/_/g,' ')}]</span>`;
   const co=()=>ph('company_name');
 
   if(t.isCustom&&t.content){
@@ -4871,9 +4871,9 @@ function updatePreview() {
     const isHtml = rendered.trim().startsWith('<');
     Object.keys(vals).forEach(f => {
       const esc = f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
-      rendered = rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'), () => `<span class="filled">${escapeHtml(vals[f])}</span>`);
+      rendered = rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'), () => `<span class="filled" data-f="${f}">${escapeHtml(vals[f])}</span>`);
     });
-    rendered = rendered.replace(/\{([^}]{1,60})\}/g,'<span class="ph">[$1]</span>');
+    rendered = rendered.replace(/\{([^}]{1,60})\}/g,'<span class="ph" data-f="$1">[$1]</span>');
     const notice = `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
     if (isHtml) {
       // Wrap mammoth HTML in doc-page with basic contract styling
@@ -4889,7 +4889,7 @@ function updatePreview() {
   const salutation=(name='employee_name')=>`<br><p style="margin-bottom:16px;font-size:13px;">Dear ${ph(name)},</p>`;
   const sign=(mgr='manager_name')=>`<div class="doc-sig"><div style="margin-top:32px;font-size:12px;color:var(--ink3);">Signed:</div><div class="doc-sig-name">${ph(mgr)}</div><div style="font-size:12px;color:var(--ink3);margin-top:4px;">On behalf of ${co()}</div><div style="margin-top:28px;border-top:1px solid var(--border);padding-top:8px;font-size:11px;color:var(--ink3);">I acknowledge receipt of this letter:<br><br>Signature: _______________________&nbsp;&nbsp;&nbsp; Date: _______________</div></div>`;
   // Derive first name from a filled value, or fall back to placeholder
-  const firstName=(f='employee_name')=>{const v=vals[f];if(!v)return `<span class="ph">[first name]</span>`;return `<span class="filled">${escapeHtml(v.trim().split(/\s+/)[0])}</span>`;};
+  const firstName=(f='employee_name')=>{const v=vals[f];if(!v)return `<span class="ph" data-f="${f}">[first name]</span>`;return `<span class="filled" data-f="${f}">${escapeHtml(v.trim().split(/\s+/)[0])}</span>`;};
   // Letter header: company name + rule + date + employee address block + salutation, opens doc-body-text
   const ltrTop=(f='employee_name')=>`${header(false)}<div class="doc-body-text"><p>${ph(f)}<br><strong>Private and Confidential</strong></p><br><p>Dear ${firstName(f)},</p><br>`;
   // Simple letter sign-off: closes doc-body-text, no acknowledgement box
@@ -5147,6 +5147,62 @@ async function downloadAsDocx() {
   }
 }
 
+// Reconstruct a reusable template from the edited preview. Filled values and
+// placeholders (tagged with data-f) revert to {field} so the next letter merges
+// correctly, and the rich HTML (bold, headings, lists, tables) is preserved.
+function templateFromPreview() {
+  const page = document.querySelector('#dpBody .doc-page');
+  if (!page) return null;
+  const clone = page.cloneNode(true);
+  // Turn filled values / placeholder chips back into {field} tokens
+  clone.querySelectorAll('[data-f]').forEach(s => {
+    s.replaceWith(document.createTextNode('{' + s.dataset.f + '}'));
+  });
+  let html = (clone.innerHTML || '').trim();
+  if (!html) return null;
+  // Stored content is treated as HTML by updatePreview when it starts with '<'
+  if (!html.startsWith('<')) html = `<div>${html}</div>`;
+  return html;
+}
+
+// Save the user's edits back to a template for future use.
+// Own uploaded template -> overwrite it. Built-in -> save a new custom copy.
+async function saveToTemplate() {
+  if (!currentProfile) { alert('Please sign in to save templates.'); return; }
+  const t = selTmpl; if (!t) return;
+  const text = templateFromPreview();
+  if (!text) { alert('Nothing to save yet.'); return; }
+  const btn = document.getElementById('saveTmplBtn');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
+  const storage = ('TEMPLATE_TEXT:' + text).substring(0, 500000);
+  try {
+    if (t.isCustom && t.id.startsWith('t_db_')) {
+      const dbId = t.id.replace('t_db_', '');
+      const { error } = await sb.from('policies').update({ content: storage })
+        .eq('id', dbId).eq('company_id', currentProfile.company_id);
+      if (error) throw error;
+      t.content = text; t.base64 = ''; t.isDocx = true;
+      t.flow = detectTemplateFields(text, t.name);
+      if (btn) { btn.disabled = false; btn.innerHTML = '✓ Saved'; setTimeout(() => { const b = document.getElementById('saveTmplBtn'); if (b) b.innerHTML = orig; }, 2200); }
+    } else {
+      const newName = t.isCustom ? t.name : t.name + ' (edited)';
+      const { data, error } = await sb.from('policies')
+        .insert({ company_id: currentProfile.company_id, name: `TEMPLATE: ${newName}`, content: storage })
+        .select().single();
+      if (error) throw error;
+      const newT = { id: 't_db_' + data.id, name: newName, emoji: '📄', type: 'Your uploads', isCustom: true, isDocx: true, base64: '', content: text, flow: detectTemplateFields(text, newName) };
+      tmpls.unshift(newT);
+      selTmpl = newT;
+      renderTmpls(document.getElementById('tmplSearch')?.value || '');
+      if (btn) { btn.disabled = false; btn.innerHTML = `✓ Saved to "${escapeHtml(newName)}"`; setTimeout(() => { const b = document.getElementById('saveTmplBtn'); if (b) b.innerHTML = orig; }, 3000); }
+    }
+  } catch (e) {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+    alert('Could not save template: ' + (e.message || e));
+  }
+}
+
 async function downloadDocx() {
   if(typeof roiAddDoc==='function') roiAddDoc(1);
   const btn=document.getElementById('dlBtn');btn.textContent='Generating...';btn.disabled=true;
@@ -5172,28 +5228,54 @@ async function downloadDocx() {
 }
 
 // PDF download: render the live preview in a print window and let the browser save it as PDF.
-function downloadDocAsPdf() {
+async function downloadDocAsPdf() {
   const body = document.getElementById('dpBody'); if (!body) return;
   if (typeof roiAddDoc==='function') roiAddDoc(1);
   const docPage = body.querySelector('.doc-page, .mammoth-doc') || body;
   const title = (typeof buildDocFileName==='function') ? buildDocFileName() : (selTmpl?.name || 'document');
-  const w = window.open('', '_blank');
-  if (!w) { alert('Please allow pop-ups to download as PDF.'); return; }
-  w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
-    <style>
-      @page { margin: 20mm; }
-      body { font-family: Georgia, 'Times New Roman', serif; font-size: 12pt; line-height: 1.6; color: #111; max-width: 720px; margin: 0 auto; padding: 24px; }
-      h1,h2,h3 { font-family: inherit; }
-      table { border-collapse: collapse; width: 100%; }
-      td,th { border: 1px solid #9CA3AF; padding: 6px 8px; }
-      img { max-width: 100%; }
-    </style></head><body>${docPage.innerHTML}</body></html>`);
-  w.document.close();
-  // Give the new window a moment to lay out, then open the print/save-as-PDF dialog (once).
-  let printed = false;
-  const doPrint = () => { if (printed) return; printed = true; try { w.focus(); w.print(); } catch(e){} };
-  w.onload = doPrint;
-  setTimeout(doPrint, 500);
+  const btn = document.getElementById('dlPdfBtn');
+  const orig = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.textContent = 'Generating...'; }
+  const loadScript = src => new Promise((res,rej)=>{ const s=document.createElement('script');s.src=src;s.onload=res;s.onerror=rej;document.head.appendChild(s); });
+  try {
+    if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
+    if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
+    // Render an off-screen clone at a fixed print width so the PDF layout is consistent
+    const wrap = document.createElement('div');
+    wrap.style.cssText = "position:fixed;left:-9999px;top:0;width:720px;background:#fff;padding:48px 56px;font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;box-sizing:border-box;";
+    wrap.innerHTML = `<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}.ph{color:#9AA0A6}</style>${docPage.innerHTML}`;
+    document.body.appendChild(wrap);
+    const canvas = await html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
+    document.body.removeChild(wrap);
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+    const pageW = pdf.internal.pageSize.getWidth();
+    const pageH = pdf.internal.pageSize.getHeight();
+    const imgH = canvas.height * pageW / canvas.width;
+    const imgData = canvas.toDataURL('image/jpeg', 0.95);
+    let heightLeft = imgH, position = 0;
+    pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+    heightLeft -= pageH;
+    while (heightLeft > 0) {
+      position -= pageH;
+      pdf.addPage();
+      pdf.addImage(imgData, 'JPEG', 0, position, pageW, imgH);
+      heightLeft -= pageH;
+    }
+    pdf.save(`${title}.pdf`);
+  } catch (e) {
+    // Fallback: browser print-to-PDF in a new tab
+    const w = window.open('', '_blank');
+    if (!w) { alert('Could not generate the PDF. Please allow pop-ups and try again.'); return; }
+    w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+      <style>@page{margin:20mm}body{font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;max-width:720px;margin:0 auto;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}</style></head><body>${docPage.innerHTML}</body></html>`);
+    w.document.close();
+    let printed = false;
+    const doPrint = () => { if (printed) return; printed = true; try { w.focus(); w.print(); } catch(e){} };
+    w.onload = doPrint; setTimeout(doPrint, 500);
+  } finally {
+    if (btn) { btn.disabled = false; btn.innerHTML = orig; }
+  }
 }
 
 function downloadTxt() {
@@ -16823,15 +16905,22 @@ function openRolePanel(id) {
         </div>
       </div>
 
-      <!-- Contact log -->
-      <div style="padding:16px 22px;flex:1;">
-        <div style="font-size:12px;font-weight:700;color:var(--ink);margin-bottom:14px;">Updates &amp; notes ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>14?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(none logged)</span>'}</div>
-        <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;display:flex;gap:8px;">
-          <select id="hc-log-type-${id}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;"><option value="note">📝 Note</option><option value="call">📞 Call</option><option value="email">✉️ Email</option><option value="meeting">👥 Meeting</option><option value="action">✅ Action</option></select>
-          <input id="hc-log-note-${id}" placeholder="Update, interview feedback, next step..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcAddLog('${id}')}">
-          <button class="btn btn-primary btn-sm" onclick="hcAddLog('${id}')">Log</button>
+      <!-- Updates & notes (collapsible) -->
+      <div style="border-bottom:1px solid var(--border);">
+        <div onclick="hcToggleDetails(this)" style="display:flex;align-items:center;justify-content:space-between;gap:10px;padding:14px 22px;cursor:pointer;user-select:none;">
+          <div style="display:flex;align-items:center;gap:8px;min-width:0;">
+            <span class="hc-chev" style="font-size:14px;color:var(--ink3);transition:transform 0.15s;display:inline-block;line-height:1;">&#8250;</span>
+            <span style="font-size:12px;font-weight:700;color:var(--ink);">Updates &amp; notes ${daysSince!==null?`<span style="font-size:11px;font-weight:400;color:${daysSince>14?'var(--amber)':'var(--ink3)'};">(last: ${daysSince}d ago)</span>`:'<span style="font-size:11px;font-weight:400;color:var(--red);">(none logged)</span>'}</span>
+          </div>
         </div>
-        <div>${logHtml}</div>
+        <div class="hc-sec-body" data-disp="block" style="display:none;padding:0 22px 16px;">
+          <div style="background:var(--surface2);border-radius:var(--r);padding:12px;margin-bottom:14px;display:flex;gap:8px;">
+            <select id="hc-log-type-${id}" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;flex-shrink:0;"><option value="note">📝 Note</option><option value="call">📞 Call</option><option value="email">✉️ Email</option><option value="meeting">👥 Meeting</option><option value="action">✅ Action</option></select>
+            <input id="hc-log-note-${id}" placeholder="Update, interview feedback, next step..." style="flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:white;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'" onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hcAddLog('${id}')}">
+            <button class="btn btn-primary btn-sm" onclick="hcAddLog('${id}')">Log</button>
+          </div>
+          <div>${logHtml}</div>
+        </div>
       </div>
 
       <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
