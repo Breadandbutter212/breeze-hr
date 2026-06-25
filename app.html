@@ -5070,8 +5070,16 @@ function updatePreview() {
 }
 
 function finishTmpl() {
-  addGMsg('ai',`✓ Complete. Click Download to get your Word document.`);
-  const f=document.getElementById('gcField');if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--green);font-weight:500;text-align:center;">Complete - ready to download</div>`;
+  const isCustom = !!selTmpl?.isCustom;
+  const noFields = isCustom && !(selTmpl.flow && selTmpl.flow.length);
+  const f=document.getElementById('gcField');
+  if (noFields) {
+    // Nothing to fill yet - the guidance message is already shown, so don't claim "complete"
+    if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--ink3);text-align:center;">Add {brackets} then click Detect fields - or download as-is.</div>`;
+  } else {
+    addGMsg('ai', isCustom ? `✓ Ready. Click ⬇ PDF to download.` : `✓ Complete. Click Download to get your Word document.`);
+    if(f)f.innerHTML=`<div style="padding:8px;font-size:11px;color:var(--green);font-weight:500;text-align:center;">Complete - ready to download</div>`;
+  }
   const dl=document.getElementById('dlBtn'),sb2=document.getElementById('sendBtn');
   if(dl){dl.style.display='inline-flex';dl.textContent='⬇ Download .docx';dl.onclick=selTmpl.isDocx?downloadDocx:downloadAsDocx;}
   if(sb2)sb2.style.display='inline-flex';
@@ -5427,24 +5435,34 @@ async function downloadDocAsPdf() {
     const cw = canvas.width, ch = canvas.height;
     const pagePx = Math.floor(cw * (pageH / pageW)); // canvas px that fill one PDF page
     const ctx = canvas.getContext('2d');
-    // A row counts as a safe break point only if it's blank (whitespace between lines), so a
-    // page never cuts through a line of text.
-    const isBlankRow = (y) => {
-      if (y <= 0 || y >= ch) return true;
-      let data; try { data = ctx.getImageData(0, y, cw, 1).data; } catch (e) { return false; }
-      for (let i = 0; i < data.length; i += 4) { if (data[i] < 248 || data[i+1] < 248 || data[i+2] < 248) return false; }
-      return true;
-    };
-    // Build slice boundaries: aim for a full page, then walk up to a blank row (search ~22% up)
+    // Precompute how many dark pixels each row has, so we can break pages only on blank
+    // (whitespace) rows and never cut through a line of text. Tolerant of anti-aliasing.
+    let rowDark = null;
+    try {
+      const full = ctx.getImageData(0, 0, cw, ch).data;
+      rowDark = new Uint32Array(ch);
+      for (let yy = 0; yy < ch; yy++) {
+        let dark = 0; const base = yy * cw * 4;
+        for (let x = 0; x < cw; x++) { const i = base + x * 4; if (full[i] < 236 || full[i+1] < 236 || full[i+2] < 236) dark++; }
+        rowDark[yy] = dark;
+      }
+    } catch (e) { rowDark = null; } // tainted canvas -> fall back to hard cuts
+    const maxDark = Math.max(3, Math.floor(cw * 0.005)); // a "blank" row may have a few stray AA pixels
+    const isBlankRow = (y) => rowDark ? (y <= 0 || y >= ch || rowDark[y] <= maxDark) : false;
+    // Build slice boundaries: aim for a full page, then walk up to the nearest blank row.
     const cuts = [0];
     let y = 0;
     while (y < ch) {
       let cut = Math.min(y + pagePx, ch);
       if (cut < ch) {
-        const limit = cut - Math.floor(pagePx * 0.22);
+        const limit = cut - Math.floor(pagePx * 0.45); // search up to ~45% of a page upward
         let c = cut;
         while (c > limit && !isBlankRow(c)) c--;
-        if (c > limit) cut = c;
+        if (c > limit) {
+          // center the cut within the blank gap so the next line starts cleanly
+          let top = c; while (top > limit && isBlankRow(top - 1)) top--;
+          cut = Math.floor((top + c) / 2);
+        }
       }
       if (cut <= y) cut = Math.min(y + pagePx, ch); // safety: never stall
       cuts.push(cut);
