@@ -10581,50 +10581,49 @@ const COMPARE_MODE_FLOW = {
 function compareAnimHtml() {
   return `
   <style id="cmpAnimStyle">
-  .cmp-anim{max-width:520px;margin:2px auto 4px;font-family:inherit}
-  .cmp-src{display:flex;align-items:stretch;justify-content:center;gap:10px}
+  .cmp-anim{width:100%;font-family:inherit}
+  .cmp-flow{display:flex;align-items:stretch;justify-content:center;gap:6px}
   .cmp-arrow{align-self:center;flex-shrink:0;color:var(--ink3)}
-  .cmp-doc{position:relative;flex:1;max-width:198px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 10px;overflow:hidden}
+  .cmp-doc{position:relative;flex:1;min-width:0;background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:9px 10px;overflow:hidden}
   .cmp-doc-h{display:flex;align-items:center;gap:6px;font-size:10px;font-weight:700;color:var(--ink2);margin-bottom:8px}
   .cmp-dot{width:7px;height:7px;border-radius:50%;background:var(--ink3);flex-shrink:0}
   .cmp-dot.u{background:var(--accent)}
   .cmp-doc i{display:block;height:5px;border-radius:3px;background:#d7dee8;margin:7px 0}
-  .cmp-scan{position:absolute;left:6px;right:6px;height:16px;top:30px;border-radius:4px;color:var(--accent);background:linear-gradient(180deg,transparent,currentColor,transparent);opacity:0;animation:cmpScan 6.4s cubic-bezier(.4,0,.2,1) infinite}
-  .cmp-out{margin-top:10px;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 11px}
-  .cmp-out-h{display:flex;align-items:center;justify-content:space-between;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
-  .cmp-count{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:2px 9px;text-transform:none;letter-spacing:0;opacity:0;animation:cmpCount 6.4s ease infinite;animation-delay:3.3s}
-  .cmp-row{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--ink2);padding:5px 8px;border-radius:6px;margin:3px 0;opacity:0;animation:cmpRow 6.4s ease infinite both}
-  .cmp-row b{width:13px;text-align:center;font-weight:800;flex-shrink:0;font-size:13px}
+  .cmp-scan{position:absolute;left:6px;right:6px;height:14px;top:28px;border-radius:4px;color:var(--accent);background:linear-gradient(180deg,transparent,currentColor,transparent);opacity:0;animation:cmpScan 6.4s cubic-bezier(.4,0,.2,1) infinite}
+  .cmp-out{flex:1.5;min-width:0;background:#fff;border:1px solid var(--border);border-radius:10px;padding:9px 11px}
+  .cmp-out-h{display:flex;align-items:center;justify-content:space-between;gap:6px;font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:7px}
+  .cmp-count{font-size:10px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:2px 9px;text-transform:none;letter-spacing:0;flex-shrink:0;opacity:0;animation:cmpCount 6.4s ease infinite;animation-delay:3.3s}
+  .cmp-row{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--ink2);padding:4px 8px;border-radius:6px;margin:3px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;opacity:0;animation:cmpRow 6.4s ease infinite both}
+  .cmp-row b{width:12px;text-align:center;font-weight:800;flex-shrink:0;font-size:13px}
   .cmp-row.add{background:rgba(22,163,74,.10);animation-delay:1.9s}.cmp-row.add b{color:#16a34a}
   .cmp-row.del{background:rgba(220,38,38,.09);animation-delay:2.5s}.cmp-row.del b{color:#dc2626}
   .cmp-row.del s{color:var(--ink3)}
   .cmp-row.chg{background:rgba(245,158,11,.13);animation-delay:3.1s}.cmp-row.chg b{color:#d97706}
-  .cmp-more{font-size:10px;color:var(--ink3);padding:2px 8px;opacity:0;animation:cmpRow 6.4s ease infinite both;animation-delay:3.5s}
-  @keyframes cmpScan{0%{opacity:0;transform:translateY(-2px)}5%{opacity:.16}28%{opacity:.16;transform:translateY(58px)}33%{opacity:0;transform:translateY(64px)}100%{opacity:0}}
+  @keyframes cmpScan{0%{opacity:0;transform:translateY(-2px)}5%{opacity:.16}28%{opacity:.16;transform:translateY(44px)}33%{opacity:0;transform:translateY(50px)}100%{opacity:0}}
   @keyframes cmpRow{0%{opacity:0;transform:translateY(7px)}7%{opacity:1;transform:none}62%{opacity:1;transform:none}72%{opacity:0;transform:translateY(-4px)}100%{opacity:0}}
   @keyframes cmpCount{0%{opacity:0;transform:scale(.6)}5%{opacity:1;transform:scale(1)}62%{opacity:1}72%{opacity:0}100%{opacity:0}}
-  @media (prefers-reduced-motion:reduce){.cmp-scan{display:none}.cmp-row,.cmp-more,.cmp-count{animation:none;opacity:1;transform:none}}
+  @media (prefers-reduced-motion:reduce){.cmp-scan{display:none}.cmp-row,.cmp-count{animation:none;opacity:1;transform:none}}
   </style>
   <div class="cmp-anim" aria-hidden="true">
-    <div class="cmp-src">
+    <div class="cmp-flow">
       <div class="cmp-doc">
         <div class="cmp-doc-h"><span class="cmp-dot"></span>Original</div>
-        <i style="width:92%"></i><i style="width:74%"></i><i style="width:84%"></i><i style="width:60%"></i>
+        <i style="width:92%"></i><i style="width:74%"></i><i style="width:84%"></i>
         <div class="cmp-scan"></div>
       </div>
       <svg class="cmp-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
       <div class="cmp-doc">
         <div class="cmp-doc-h"><span class="cmp-dot u"></span>Updated</div>
-        <i style="width:92%"></i><i style="width:88%"></i><i style="width:70%"></i><i style="width:78%"></i>
+        <i style="width:92%"></i><i style="width:88%"></i><i style="width:70%"></i>
         <div class="cmp-scan"></div>
       </div>
-    </div>
-    <div class="cmp-out">
-      <div class="cmp-out-h">Changes<span class="cmp-count">7 changes</span></div>
-      <div class="cmp-row add"><b>+</b> Added clause 4.2 - data retention</div>
-      <div class="cmp-row del"><b>&minus;</b> Removed <s>"30 days' notice"</s></div>
-      <div class="cmp-row chg"><b>~</b> Salary £40,000 &rarr; £42,000</div>
-      <div class="cmp-more">&hellip; and 4 more changes</div>
+      <svg class="cmp-arrow" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polyline points="9 18 15 12 9 6"/></svg>
+      <div class="cmp-out">
+        <div class="cmp-out-h">Changes<span class="cmp-count">7 changes</span></div>
+        <div class="cmp-row add"><b>+</b> Added clause 4.2</div>
+        <div class="cmp-row del"><b>&minus;</b> Removed <s>"30 days"</s></div>
+        <div class="cmp-row chg"><b>~</b> £40,000 &rarr; £42,000</div>
+      </div>
     </div>
   </div>`;
 }
@@ -10678,13 +10677,15 @@ function onCompareModeChange() {
   const info = COMPARE_MODE_INFO[mode];
   if (info) {
     if (subTitle) subTitle.textContent = info.helper || '';
+    // Spreadsheet-vs-spreadsheet shows its "How it works" expanded by default
+    const openByDefault = mode === 'employee';
     const howEl = document.getElementById('compareModeHow');
     if (howEl) {
       howEl.innerHTML = compareHowHtml(mode);
-      howEl.style.display = 'none';
+      howEl.style.display = openByDefault ? 'block' : 'none';
     }
     const tg = document.getElementById('compareHowToggle');
-    if (tg) tg.textContent = 'How it works';
+    if (tg) tg.textContent = openByDefault ? 'Hide' : 'How it works';
   }
   document.getElementById('compareResults').innerHTML = '';
 }
@@ -13234,6 +13235,9 @@ function mpStatus(rec) {
   if (rec.actualReturn) return 'returned';
   // No leave-start date yet, or it's in the future -> treat as upcoming (don't nag for contact).
   if (!rec.leaveStart || new Date(rec.leaveStart) > now) return 'upcoming';
+  // Leave period has ended (expected return date is in the past) but no return logged yet ->
+  // it's no longer active; flag it as completed so HR can confirm the return.
+  if (rec.expectedReturn && new Date(rec.expectedReturn) < now) return 'completed';
   return 'active';
 }
 
@@ -13247,7 +13251,7 @@ function mpFlags(records) {
   const flags = [];
   records.forEach(r => {
     const status = mpStatus(r);
-    if (status === 'returned') return;
+    if (status === 'returned' || status === 'completed') return;
     if (!r.dependantAdded && (r.type === 'Maternity' || r.type === 'Paternity' || r.type === 'Adoption') && status === 'active') {
       flags.push({ type:'warn', msg:`<strong>Action needed:</strong> ${r.employeeName} is on ${r.type.toLowerCase()} leave - dependant has not been added to company benefits.`, action:`openMatPatRecord('${r.id}')`, actionLabel:'View record →' });
     }
@@ -13519,6 +13523,7 @@ function renderLeaveTracker(body) {
   const statusBadge = (r) => {
     const s = mpStatus(r);
     if (s==='returned') return `<span class="trk-badge trk-badge-grey">Returned</span>`;
+    if (s==='completed') return `<span class="trk-badge trk-badge-amber">● Completed</span>`;
     if (s==='upcoming') return `<span class="trk-badge trk-badge-blue">● Upcoming</span>`;
     return `<span class="trk-badge trk-badge-green">● Active</span>`;
   };
@@ -13537,7 +13542,7 @@ function renderLeaveTracker(body) {
       <div class="trk-kpi"><div class="trk-kpi-val">${matActive.length}</div><div class="trk-kpi-label">On maternity / adoption leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity'||r.type==='Adoption').length} upcoming</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--accent);">${patActive.length}</div><div class="trk-kpi-label">On paternity / SPL</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Paternity'||r.type==='Shared Parental').length} upcoming</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val">${recs.filter(r=>r.kitDaysUsed>0).reduce((s,r)=>s+r.kitDaysUsed,0)}</div><div class="trk-kpi-label">KIT days used</div><div class="trk-kpi-sub">Across all active</div></div>
-      <div class="trk-kpi"><div class="trk-kpi-val" style="color:${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length>0?'var(--red)':'var(--green)'};">${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned').length}</div><div class="trk-kpi-label">Missing dependant</div><div class="trk-kpi-sub">Need adding to benefits</div></div>
+      <div class="trk-kpi"><div class="trk-kpi-val" style="color:${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned'&&mpStatus(r)!=='completed').length>0?'var(--red)':'var(--green)'};">${recs.filter(r=>!r.dependantAdded&&mpStatus(r)!=='returned'&&mpStatus(r)!=='completed').length}</div><div class="trk-kpi-label">Missing dependant</div><div class="trk-kpi-sub">Need adding to benefits</div></div>
       <div class="trk-kpi"><div class="trk-kpi-val" style="color:var(--ink2);">${returned.length}</div><div class="trk-kpi-label">Returned to work</div><div class="trk-kpi-sub">This year</div></div>
     </div>
 
@@ -13713,7 +13718,7 @@ function openMatPatRecord(id) {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">
             <div style="font-size:16px;font-weight:700;color:var(--ink);">${escapeHtml(rec.employeeName)}</div>
             <span class="trk-badge trk-badge-grey">${rec.type}</span>
-            <span id="mpStatusBadge" class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':'Returned'}</span>
+            <span id="mpStatusBadge" class="trk-badge ${status==='active'?'trk-badge-green':status==='upcoming'?'trk-badge-blue':status==='completed'?'trk-badge-amber':'trk-badge-grey'}">${status==='active'?'● Active':status==='upcoming'?'● Upcoming':status==='completed'?'● Completed':'Returned'}</span>
           </div>
           <div style="font-size:12px;color:var(--ink3);">${escapeHtml(rec.jobTitle||'')}</div>
         </div>
@@ -13878,8 +13883,8 @@ async function mpUpdateField(id, field, value) {
   const badge = document.getElementById('mpStatusBadge');
   if (badge) {
     const st = mpStatus(rec);
-    badge.className = 'trk-badge ' + (st==='active'?'trk-badge-green':st==='upcoming'?'trk-badge-blue':'trk-badge-grey');
-    badge.textContent = st==='active'?'● Active':st==='upcoming'?'● Upcoming':'Returned';
+    badge.className = 'trk-badge ' + (st==='active'?'trk-badge-green':st==='upcoming'?'trk-badge-blue':st==='completed'?'trk-badge-amber':'trk-badge-grey');
+    badge.textContent = st==='active'?'● Active':st==='upcoming'?'● Upcoming':st==='completed'?'● Completed':'Returned';
   }
   // Refresh the table behind the panel
   renderTrackersBody();
