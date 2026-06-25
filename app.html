@@ -260,8 +260,11 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 48px 52px; max-width: 640px; margin: 0 auto; min-height: 480px; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.75; }
 /* Faithful Word render (docx-preview): let the document's own styles win, drop the page chrome it adds */
 .doc-page.docx-fidelity { font-family: inherit; line-height: inherit; }
-.doc-page.docx-fidelity section.docxr, .doc-page.docx-fidelity .docxr-wrapper > section { box-shadow: none !important; border: 0 !important; margin: 0 auto !important; padding: 0 !important; width: auto !important; min-height: 0 !important; background: transparent !important; }
+.doc-page.docx-fidelity section.docxr, .doc-page.docx-fidelity .docxr-wrapper > section { box-shadow: none !important; border: 0 !important; margin: 0 auto !important; padding: 0 !important; width: auto !important; min-height: 0 !important; background: transparent !important; overflow: visible !important; }
 .doc-page.docx-fidelity .docxr-wrapper { background: transparent !important; padding: 0 !important; }
+/* Keep Word header/footer content in normal flow so it isn't absolutely positioned into a clipped margin */
+.doc-page.docx-fidelity header, .doc-page.docx-fidelity footer { position: static !important; width: auto !important; left: auto !important; top: auto !important; right: auto !important; bottom: auto !important; margin: 0 0 10px !important; }
+.doc-page.docx-fidelity footer { margin: 12px 0 0 !important; }
 .doc-page.docx-fidelity img { max-width: 100%; height: auto; }
 .info-tip { position:relative; display:inline-flex; align-items:center; cursor:pointer; }
 .info-tip .tip-box { display:none; position:absolute; top:calc(100% + 8px); right:0; left:auto; background:#1A202C; color:#fff; font-size:11px; line-height:1.6; padding:9px 12px; border-radius:6px; white-space:normal; width:240px; z-index:9999; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,0.3); }
@@ -5207,7 +5210,7 @@ async function renderDocxFidelity(t) {
       className: 'docxr', inWrapper: false, ignoreWidth: true, ignoreHeight: true,
       useBase64URL: true, // embed images as data URIs so they survive save/download
       ignoreLastRenderedPageBreak: true, breakPages: false,
-      renderHeaders: false, renderFooters: false, renderFootnotes: true,
+      renderHeaders: true, renderFooters: true, renderFootnotes: true,
       experimental: true, trimXmlDeclaration: true
     });
     const css = [...styleC.querySelectorAll('style')].map(s => s.textContent).join('\n');
@@ -5412,7 +5415,7 @@ async function downloadDocAsPdf() {
     // For the faithful render, docPage.innerHTML already carries its own <style>. Add the
     // same chrome/width resets the preview uses so docx-preview's fixed-width page sections
     // fill the sheet instead of rendering narrow.
-    const fidReset = '<style>section.docxr,.docxr-wrapper>section{box-shadow:none!important;border:0!important;margin:0 auto!important;padding:0!important;width:auto!important;min-height:0!important;background:transparent!important}.docxr-wrapper{background:transparent!important;padding:0!important;display:block!important}.docxr img{max-width:100%;height:auto}</style>';
+    const fidReset = '<style>section.docxr,.docxr-wrapper>section{box-shadow:none!important;border:0!important;margin:0 auto!important;padding:0!important;width:auto!important;min-height:0!important;background:transparent!important;overflow:visible!important}.docxr-wrapper{background:transparent!important;padding:0!important;display:block!important}header,footer{position:static!important;width:auto!important;left:auto!important;top:auto!important;margin:0 0 10px!important}footer{margin:12px 0 0!important}.docxr img{max-width:100%;height:auto}</style>';
     wrap.innerHTML = isFid ? fidReset + docPage.innerHTML : `<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}.ph{color:#9AA0A6}</style>${docPage.innerHTML}`;
     document.body.appendChild(wrap);
     const canvas = await html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
