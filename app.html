@@ -8215,13 +8215,42 @@ function jsAttr(str) {
 }
 
 function formatChatResponse(text) {
-  return text
-    .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
-    .replace(/\*\*(.*?)\*\*/g,'<strong>$1</strong>')
-    .replace(/^•\s+(.+)$/gm,'<li style="margin-left:18px;margin-bottom:3px;">$1</li>')
-    .replace(/^-\s+(.+)$/gm,'<li style="margin-left:18px;margin-bottom:3px;">$1</li>')
-    .replace(/\n\n/g,'<br><br>')
-    .replace(/\n/g,'<br>');
+  const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const inline = s => esc(s)
+    .replace(/\*\*([^*]+)\*\*/g,'<strong>$1</strong>')
+    .replace(/(^|[^*])\*([^*\n]+)\*/g,'$1<em>$2</em>');
+
+  const lines = String(text || '').split('\n');
+  let html = '';
+  for (let i = 0; i < lines.length; i++) {
+    // Markdown pipe table -> styled HTML table
+    if (_isMdTableStart(lines, i)) {
+      const rows = []; let j = i;
+      while (j < lines.length && lines[j].includes('|')) { rows.push(lines[j]); j++; }
+      const header = _mdTableCells(rows[0]);
+      const body = rows.slice(2).map(_mdTableCells);
+      html += '<table style="border-collapse:collapse;width:100%;margin:8px 0;font-size:13px;">';
+      html += '<tr>' + header.map(c => `<th style="border:1px solid var(--border);background:var(--accent,#D85A30);color:#fff;padding:6px 9px;text-align:left;font-weight:600;">${inline(c)}</th>`).join('') + '</tr>';
+      body.forEach((r,ri) => { const zeb = ri%2===0 ? 'var(--bg2,#F7F8FA)' : '#fff'; html += '<tr>' + r.map(c => `<td style="border:1px solid var(--border);padding:6px 9px;background:${zeb};">${inline(c)}</td>`).join('') + '</tr>'; });
+      html += '</table>';
+      i = j - 1;
+      continue;
+    }
+    const trimmed = lines[i].trim();
+    if (!trimmed) { html += '<br>'; continue; }
+    // Heading (#, ##, ###)
+    const h = trimmed.match(/^(#{1,6})\s+(.+)$/);
+    if (h) {
+      const lvl = h[1].length, size = lvl <= 1 ? 17 : lvl === 2 ? 15 : 14;
+      html += `<div style="font-weight:700;font-size:${size}px;margin:12px 0 4px;">${inline(h[2].trim())}</div>`;
+      continue;
+    }
+    // Bullet (• or -)
+    const b = trimmed.match(/^[•-]\s+(.+)$/);
+    if (b) { html += `<li style="margin-left:18px;margin-bottom:3px;">${inline(b[1])}</li>`; continue; }
+    html += inline(trimmed) + '<br>';
+  }
+  return html;
 }
 
 // Cycle a whimsical "thinking" word while a reply is in flight (Claude-style).
@@ -8280,7 +8309,7 @@ function renderChatHistory() {
         <div class="ai-head">Breeze</div>
         <div class="chat-bubble ai-bubble ai-plain" id="bubble-${i}" contenteditable="true" spellcheck="true"
           style="outline:none;cursor:text;" title="Click to edit before copying"
-          oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent?escapeHtml(m._editedContent).replace(/\n/g,'<br>'):bubbleText)}</div>
+          oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent!=null?m._editedContent:bubbleText)}</div>
         ${artifact ? `<div style="margin:9px 0 4px 0;display:flex;gap:8px;flex-wrap:wrap;">${isSheet
           ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatSheetDownload(${i})">⬇ .xlsx</button><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="chatSheetRich(${i},this)" title="Charts and full formatting">✦ Rich Excel</button>`
           : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 ${isDoc ? 'View document' : 'View draft'}</button>`
