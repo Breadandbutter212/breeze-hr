@@ -258,6 +258,11 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .dp-btns { display: flex; gap: 5px; }
 .dp-body { flex: 1; overflow-y: auto; padding: 20px; }
 .doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 48px 52px; max-width: 640px; margin: 0 auto; min-height: 480px; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.75; }
+/* Faithful Word render (docx-preview): let the document's own styles win, drop the page chrome it adds */
+.doc-page.docx-fidelity { font-family: inherit; line-height: inherit; }
+.doc-page.docx-fidelity section.docxr, .doc-page.docx-fidelity .docxr-wrapper > section { box-shadow: none !important; border: 0 !important; margin: 0 auto !important; padding: 0 !important; width: auto !important; min-height: 0 !important; background: transparent !important; }
+.doc-page.docx-fidelity .docxr-wrapper { background: transparent !important; padding: 0 !important; }
+.doc-page.docx-fidelity img { max-width: 100%; height: auto; }
 .info-tip { position:relative; display:inline-flex; align-items:center; cursor:pointer; }
 .info-tip .tip-box { display:none; position:absolute; top:calc(100% + 8px); right:0; left:auto; background:#1A202C; color:#fff; font-size:11px; line-height:1.6; padding:9px 12px; border-radius:6px; white-space:normal; width:240px; z-index:9999; pointer-events:none; box-shadow:0 4px 14px rgba(0,0,0,0.3); }
 .info-tip .tip-box::before { content:''; position:absolute; bottom:100%; right:4px; left:auto; border:5px solid transparent; border-bottom-color:#1A202C; }
@@ -2581,6 +2586,8 @@ function toFieldName(raw) {
 
 function detectTemplateFields(content, name) {
   if (!content) return getDefaultFields(name);
+  // Ignore embedded <style> blocks - their CSS braces are not template fields
+  content = String(content).replace(/<style[\s\S]*?<\/style>/gi, ' ');
   const found = new Map(); // field_name → original matched text (first occurrence)
   const patterns = [
     /\{([^}]{1,80})\}/g,          // {field_name} or {FIELD NAME}
@@ -4814,6 +4821,16 @@ async function openTmpl(t) {
       if (result.value && selTmpl === t) { t.content = result.value; updatePreview(); }
     } catch(e) {}
   }
+  // Upgrade the preview to a faithful Word render in the background. Mammoth (above)
+  // paints first for speed; this replaces it once ready, and falls back silently if not.
+  if (t.isCustom && t.base64 && !t._useFidelity) {
+    renderDocxFidelity(t).then(res => {
+      if (res && res.html && selTmpl === t) {
+        t._fidelityHtml = res.html; t._fidelityCss = res.css || ''; t._useFidelity = true;
+        updatePreview();
+      }
+    }).catch(()=>{});
+  }
   askQ();
 }
 
@@ -4866,18 +4883,26 @@ function updatePreview() {
 
   if(t.isCustom&&t.content){
     body.dataset.customNote = '1';
-    let rendered = t.content;
-    // If content is HTML (from mammoth conversion), apply field replacements within HTML
-    const isHtml = rendered.trim().startsWith('<');
+    // Faithful Word render: live (from base64 via docx-preview) or saved (HTML already carries its <style>)
+    const useFid   = t._useFidelity && t._fidelityHtml;
+    const savedFid = !useFid && (t.content.includes('docxr') || t.content.trimStart().startsWith('<style'));
+    const fid      = useFid || savedFid;
+    let rendered = useFid ? t._fidelityHtml : t.content;
+    // If content is HTML (mammoth or faithful render), apply field replacements within HTML
+    const isHtml = fid || rendered.trim().startsWith('<');
+    // Shield <style> blocks: their CSS braces must not be treated as {placeholders}
+    const _styleBlocks = [];
+    rendered = rendered.replace(/<style[\s\S]*?<\/style>/gi, m => { _styleBlocks.push(m); return ` ST${_styleBlocks.length-1} `; });
     Object.keys(vals).forEach(f => {
       const esc = f.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
       rendered = rendered.replace(new RegExp(`\\{${esc}\\}`,'gi'), () => `<span class="filled" data-f="${f}">${escapeHtml(vals[f])}</span>`);
     });
     rendered = rendered.replace(/\{([^}]{1,60})\}/g,'<span class="ph" data-f="$1">[$1]</span>');
-    const notice = `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
+    rendered = rendered.replace(/ ST(\d+) /g, (_,i) => _styleBlocks[+i]);
+    const styleTag = useFid && t._fidelityCss ? `<style>${t._fidelityCss}</style>` : '';
+    const notice = fid ? '' : `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
     if (isHtml) {
-      // Wrap mammoth HTML in doc-page with basic contract styling
-      body.innerHTML = `${notice}<div class="doc-page mammoth-doc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${rendered}</div>`;
+      body.innerHTML = `${notice}<div class="doc-page ${fid?'docx-fidelity':'mammoth-doc'}" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${styleTag}${rendered}</div>`;
     } else {
       const paragraphs = rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
       body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
@@ -5147,6 +5172,44 @@ async function downloadAsDocx() {
   }
 }
 
+// Lazily load docx-preview (+ its JSZip dependency) for faithful Word rendering.
+let _docxPreviewLoading = null;
+function ensureDocxPreview() {
+  if (window.docx && window.docx.renderAsync) return Promise.resolve(true);
+  if (_docxPreviewLoading) return _docxPreviewLoading;
+  const load = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  _docxPreviewLoading = (async () => {
+    try {
+      if (!window.JSZip) await load('https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js');
+      if (!(window.docx && window.docx.renderAsync)) await load('https://cdn.jsdelivr.net/npm/docx-preview@0.3.5/dist/docx-preview.min.js');
+      return !!(window.docx && window.docx.renderAsync);
+    } catch (e) { return false; }
+  })();
+  return _docxPreviewLoading;
+}
+
+// Render a .docx template to high-fidelity HTML + CSS (preserves the real Word
+// formatting). Returns {html, css} or null so callers can fall back to mammoth.
+async function renderDocxFidelity(t) {
+  if (!t || !t.base64) return null;
+  const ok = await ensureDocxPreview();
+  if (!ok) return null;
+  try {
+    const buf = Uint8Array.from(atob(t.base64), c => c.charCodeAt(0)).buffer;
+    const bodyC = document.createElement('div');
+    const styleC = document.createElement('div');
+    await window.docx.renderAsync(buf, bodyC, styleC, {
+      className: 'docxr', inWrapper: false, ignoreWidth: true, ignoreHeight: true,
+      ignoreLastRenderedPageBreak: true, breakPages: false,
+      renderHeaders: false, renderFooters: false, renderFootnotes: true,
+      experimental: true, trimXmlDeclaration: true
+    });
+    const css = [...styleC.querySelectorAll('style')].map(s => s.textContent).join('\n');
+    const html = bodyC.innerHTML;
+    return html ? { html, css } : null;
+  } catch (e) { return null; }
+}
+
 // Reconstruct a reusable template from the edited preview. Filled values and
 // placeholders (tagged with data-f) revert to {field} so the next letter merges
 // correctly, and the rich HTML (bold, headings, lists, tables) is preserved.
@@ -5183,6 +5246,7 @@ async function saveToTemplate() {
         .eq('id', dbId).eq('company_id', currentProfile.company_id);
       if (error) throw error;
       t.content = text; t.base64 = ''; t.isDocx = true;
+      t._useFidelity = false; t._fidelityHtml = null; // saved HTML now carries its own styling
       t.flow = detectTemplateFields(text, t.name);
       if (btn) { btn.disabled = false; btn.innerHTML = '✓ Saved'; setTimeout(() => { const b = document.getElementById('saveTmplBtn'); if (b) b.innerHTML = orig; }, 2200); }
     } else {
@@ -5241,9 +5305,13 @@ async function downloadDocAsPdf() {
     if (!window.html2canvas) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js');
     if (!window.jspdf) await loadScript('https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js');
     // Render an off-screen clone at a fixed print width so the PDF layout is consistent
+    const isFid = !!(docPage.classList && docPage.classList.contains('docx-fidelity'));
     const wrap = document.createElement('div');
-    wrap.style.cssText = "position:fixed;left:-9999px;top:0;width:720px;background:#fff;padding:48px 56px;font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;box-sizing:border-box;";
-    wrap.innerHTML = `<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}.ph{color:#9AA0A6}</style>${docPage.innerHTML}`;
+    wrap.style.cssText = isFid
+      ? "position:fixed;left:-9999px;top:0;width:760px;background:#fff;padding:56px 64px;box-sizing:border-box;color:#111;"
+      : "position:fixed;left:-9999px;top:0;width:720px;background:#fff;padding:48px 56px;font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;box-sizing:border-box;";
+    // For the faithful render, docPage.innerHTML already carries its own <style>, so keep it untouched
+    wrap.innerHTML = isFid ? docPage.innerHTML : `<style>table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}.ph{color:#9AA0A6}</style>${docPage.innerHTML}`;
     document.body.appendChild(wrap);
     const canvas = await html2canvas(wrap, { scale: 2, useCORS: true, backgroundColor: '#ffffff', logging: false });
     document.body.removeChild(wrap);
@@ -10772,16 +10840,33 @@ function isSalaryKey(key) {
 }
 
 function detectEmployeeColumns(rows) {
-  if (!rows || !rows.length) return { nameCol: null, idCol: null };
+  if (!rows || !rows.length) return { nameCol: null, idCol: null, firstNameCol: null, lastNameCol: null };
   const cols = Object.keys(rows[0]);
   const norm = s => s.toLowerCase().trim().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'');
   const nameHits = ['employee_name','full_name','name','employee','staff_name','worker_name','person_name'];
   const idHits   = ['employee_id','emp_id','employee_no','emp_no','staff_id','staff_no','payroll_id','payroll_no','id','reference','ref','personnel_no','empno'];
+  const firstHits = ['first_name','firstname','given_name','given_names','forename','first'];
+  const lastHits  = ['last_name','lastname','surname','family_name','last'];
+  // Separate first/last name columns, so we can show and match on the full name
+  const firstNameCol = cols.find(c => firstHits.includes(norm(c)));
+  const lastNameCol  = cols.find(c => lastHits.includes(norm(c)));
   const nameCol = cols.find(c => nameHits.includes(norm(c)))
     || cols.find(c => /name|employee|staff|worker/i.test(c) && !/id|no|num|department|title|job/i.test(c));
   const idCol   = cols.find(c => idHits.includes(norm(c)))
     || cols.find(c => /\bid\b|emp.?no|staff.?id|payroll/i.test(c));
-  return { nameCol, idCol };
+  return { nameCol, idCol, firstNameCol, lastNameCol };
+}
+
+// Build a full display name from a row: prefer separate first + last columns,
+// then a single full-name column, then the generic employee_name key.
+function employeeFullName(row, cols) {
+  if (!row || !cols) return '';
+  const fn = cols.firstNameCol ? String(row[cols.firstNameCol] || '').trim() : '';
+  const ln = cols.lastNameCol  ? String(row[cols.lastNameCol]  || '').trim() : '';
+  const combined = `${fn} ${ln}`.trim();
+  if (combined) return combined;
+  if (cols.nameCol && String(row[cols.nameCol] ?? '').trim()) return String(row[cols.nameCol]).trim();
+  return String(row['employee_name'] || '').trim();
 }
 
 function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
@@ -10815,10 +10900,10 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
     }
     if (best && bestScore >= 65) {
       usedB.add(best.idx);
-      const displayName = colsA.nameCol ? rowA[colsA.nameCol] : rowA['employee_name'] || '';
+      const displayName = employeeFullName(rowA, colsA) || '';
       matches.push({ rowA, rowB: best.row, displayName, matched: true });
     } else {
-      const displayName = colsA.nameCol ? rowA[colsA.nameCol] : rowA['employee_name'] || '(unknown)';
+      const displayName = employeeFullName(rowA, colsA) || '(unknown)';
       matches.push({ rowA, rowB: null, displayName, matched: false, unmatchedSide: 'A' });
     }
   }
@@ -10826,7 +10911,7 @@ function matchEmployeeRows(rowsA, rowsB, colsA, colsB) {
   for (let bi = 0; bi < rowsB.length; bi++) {
     if (!usedB.has(bi)) {
       const rowB = rowsB[bi];
-      const dn = colsB.nameCol ? rowB[colsB.nameCol] : rowB['employee_name'] || '(unknown)';
+      const dn = employeeFullName(rowB, colsB) || '(unknown)';
       matches.push({ rowA: null, rowB, displayName: dn, matched: false, unmatchedSide: 'B' });
     }
   }
@@ -18759,8 +18844,6 @@ async function projConfirmEmailToTask(){
               '<button class="btn btn-secondary btn-sm" onclick="talentDownloadTemplate()">Download template</button>'+
               '<button class="btn btn-ghost btn-sm" onclick="talentLoadSample()">See it with sample data</button>'+
             '</div>'+
-            '<div class="tl-cols"><span class="h">Expected columns</span>Name, Job title, Department, Manager, Tenure, Latest review rating, Previous review rating, Goal achievement, Leadership / competency, Manager comments. Only a name and one review rating are required; column names are matched flexibly.</div>'+
-            '<div class="tl-priv"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg><span>Private. Your data stays in this browser tab, is sent to the AI only to build the review, and is never saved. Refreshing clears it.</span></div>'+
           '</div>'+
           '<div class="tl-hero-side">'+
             '<div class="tl-mini">'+
