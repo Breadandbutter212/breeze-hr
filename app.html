@@ -233,8 +233,8 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .gen-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; color: var(--ink3); text-align: center; padding: 40px; }
 .gen-split { flex: 1; display: flex; flex-direction: row-reverse; overflow: hidden; }
 .gen-chat { width: 300px; flex-shrink: 0; border-left: 1px solid var(--border); display: flex; flex-direction: column; background: var(--surface); }
-.gc-head { padding: 12px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, var(--accent-bg), #F0FFF4); }
-.gc-title { font-size: 13px; font-weight: 600; color: var(--ink); display: flex; align-items: center; gap: 6px; }
+.gc-head { height: 52px; box-sizing: border-box; padding: 8px 14px; border-bottom: 1px solid var(--border); background: linear-gradient(135deg, var(--accent-bg), #F0FFF4); overflow: hidden; }
+.gc-title { font-size: 13px; font-weight: 600; color: var(--ink); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .gc-sub { font-size: 11px; color: var(--ink2); margin-top: 2px; }
 .gc-msgs { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; }
 .gm { display: flex; gap: 7px; align-items: flex-start; }
@@ -253,7 +253,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .gc-next { background: var(--accent); color: white; border: none; border-radius: var(--r-sm); padding: 0 14px; font-size: 12px; font-family: inherit; font-weight: 500; cursor: pointer; transition: opacity 0.12s; }
 .gc-next:hover { opacity: 0.88; }
 .doc-preview { flex: 1; display: flex; flex-direction: column; overflow: hidden; background: var(--bg); }
-.dp-head { padding: 11px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
+.dp-head { height: 52px; box-sizing: border-box; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
 .dp-title { font-size: 12px; font-weight: 600; color: var(--ink); }
 .dp-btns { display: flex; gap: 5px; }
 .dp-body { flex: 1; overflow-y: auto; padding: 20px; }
