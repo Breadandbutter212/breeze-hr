@@ -6495,7 +6495,7 @@ function showView(v,navEl) {
   if(v==='manage')renderManage();
   if(v==='docs')renderTmpls();
   if(v==='processmaps')renderProcessMaps();
-  if(v==='automations'){automations=null;wfCases=null;wfActiveCase=null;renderAutomations();}
+  if(v==='automations'){automations=null;wfCases=null;wfActiveCase=null;_autoTab='workflows';_autoRunFilter=null;_autoRunStatus='active';renderAutomations();}
   if(v==='projects'){projectsData=null;projectActiveId=null;_projHideAttention=false;_projDismissedAttn={};_projFilter={q:'',cat:'',owner:'',sort:'newest'};loadProjects().then(renderProjects);}
   if(v==='settings') { try { renderSettings(); } catch(e) { console.error('[Settings]',e); const b=document.getElementById('settingsBody'); if(b) b.innerHTML='<div style="padding:20px;color:red;">'+String(e)+'</div>'; } }
   if(v==='chat')renderChatHistory();
@@ -12577,6 +12577,9 @@ async function confirmSaveCustomTracker(btn) {
 
 // ════════════ AUTOMATIONS - build-your-own workflows (separate from Trackers) ════════════
 let automations = null;        // [{id,label,icon,steps,createdAt}]
+let _autoTab = 'workflows';    // 'workflows' | 'runs'
+let _autoRunFilter = null;     // scenarioId filter on the In-progress tab, or null
+let _autoRunStatus = 'active'; // 'active' | 'completed'
 let _wfBuilder = null;         // { id, label, icon, steps:[], editing }
 let _wfTemplateOpts = [];      // [{id,name,emoji}] available templates for doc steps
 let _wfbSubs = [];             // working copy of the open step's sub-tasks [{title,owner,email}]
@@ -12994,13 +12997,27 @@ async function renderAutomations(){
   el.innerHTML='<div style="padding:24px;color:var(--ink3);font-size:13px;">Loading…</div>';
   try{ await Promise.all([loadAutomations(), loadWfCases()]); }catch(e){ automations=automations||[]; wfCases=wfCases||[]; }
   const list=automations||[];
-  const intro=`<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
-    <div style="font-size:14px;font-weight:700;color:var(--ink);">Your workflows</div>
-    <button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)" style="flex-shrink:0;">+ New workflow</button>
+  const cases=wfCases||[];
+  const activeRuns=cases.filter(c=>c.status!=='closed');
+
+  // Tab bar: Workflows (definitions) | In progress (the people running through them)
+  const tabBtn=(id,label,count)=>{
+    const on=_autoTab===id;
+    return `<button onclick="setAutoTab('${id}')" style="font-size:12px;padding:6px 14px;border:none;border-radius:6px;cursor:pointer;font-family:inherit;font-weight:${on?'600':'500'};background:${on?'var(--accent)':'transparent'};color:${on?'#fff':'var(--ink2)'};display:inline-flex;align-items:center;gap:6px;">${label}${count?`<span style="font-size:10px;font-weight:700;background:${on?'rgba(255,255,255,0.25)':'var(--surface)'};color:${on?'#fff':'var(--ink3)'};border-radius:10px;padding:0 6px;">${count}</span>`:''}</button>`;
+  };
+  const header=`<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap;margin-bottom:18px;">
+    <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px;">
+      ${tabBtn('workflows','Workflows',list.length)}${tabBtn('runs','In progress',activeRuns.length)}
+    </div>
+    ${_autoTab==='workflows'
+      ? `<button class="btn btn-primary btn-sm" onclick="openWorkflowBuilder(null)" style="flex-shrink:0;">+ New workflow</button>`
+      : `<button class="btn btn-primary btn-sm" onclick="autoStartPick()" style="flex-shrink:0;">+ Start a run</button>`}
   </div>`;
 
+  if(_autoTab==='runs'){ el.innerHTML=header+renderAutoRuns(list,cases); return; }
+
   if(!list.length){
-    el.innerHTML=intro+`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-lg);padding:48px 24px;text-align:center;">
+    el.innerHTML=header+`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-lg);padding:48px 24px;text-align:center;">
       <div style="font-size:34px;margin-bottom:12px;">⚡</div>
       <div style="font-size:15px;font-weight:600;color:var(--ink);margin-bottom:6px;">No workflows yet</div>
       <div style="font-size:13px;color:var(--ink3);max-width:380px;margin:0 auto 20px;line-height:1.7;">Create your first automation - for example a <strong>New starter onboarding</strong> with contract, IT setup and a welcome email.</div>
@@ -13010,30 +13027,23 @@ async function renderAutomations(){
   }
 
   const cards=list.map(a=>{
-    const runs=(wfCases||[]).filter(c=>c.scenarioId===a.id);
-    const active=runs.filter(c=>c.status!=='closed');
-    const runsHtml=active.length?`<div style="border-top:1px solid var(--border);margin-top:12px;padding-top:10px;display:flex;flex-direction:column;gap:6px;">
-        ${active.slice(0,4).map(c=>{
-          const total=(a.steps||[]).length||1; const pct=Math.round(((c.checkedSteps||[]).length/total)*100);
-          return `<div onclick="openWfRunVisual('${c.id}')" style="display:flex;align-items:center;gap:8px;cursor:pointer;">
-            <div style="flex:1;min-width:0;font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.employeeName)}</div>
-            <div style="width:70px;height:5px;background:var(--border);border-radius:3px;overflow:hidden;flex-shrink:0;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};"></div></div>
-            <span style="font-size:11px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink2)'};width:34px;text-align:right;">${pct}%</span>
-          </div>`;
-        }).join('')}
-      </div>`:'';
-    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:16px 18px;display:flex;flex-direction:column;">
-      <div style="display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;">
-        <div style="width:42px;height:42px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${a.icon||'⚡'}</div>
+    const active=cases.filter(c=>c.scenarioId===a.id&&c.status!=='closed');
+    const steps=(a.steps||[]).length;
+    const progressChip=active.length
+      ? `<button onclick="setAutoTab('runs','${a.id}')" style="margin-top:14px;align-self:flex-start;display:inline-flex;align-items:center;gap:6px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 11px;cursor:pointer;font-family:inherit;">▶ ${active.length} in progress</button>`
+      : `<div style="margin-top:14px;font-size:11px;color:var(--ink3);">No active runs</div>`;
+    return `<div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;display:flex;flex-direction:column;transition:box-shadow .15s,border-color .15s;" onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div style="width:44px;height:44px;border-radius:11px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:22px;flex-shrink:0;">${a.icon||'⚡'}</div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:700;color:var(--ink);">${escapeHtml(a.label)}</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${(a.steps||[]).length} step${(a.steps||[]).length===1?'':'s'}${active.length?` · ${active.length} active`:''}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:2px;">${steps} step${steps===1?'':'s'}</div>
         </div>
       </div>
+      ${progressChip}
       <div style="flex:1;"></div>
-      ${runsHtml}
-      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-primary" title="Start for someone" style="font-size:13px;font-weight:700;line-height:1;padding:4px 9px;border-radius:6px;" onclick="autoStartRun('${a.id}')">+</button>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:16px;flex-wrap:wrap;">
+        <button class="btn btn-primary btn-sm" style="font-size:11px;" onclick="autoStartRun('${a.id}')">+ Start a run</button>
         <div style="flex:1;"></div>
         <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')">✏ Edit</button>
         <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
@@ -13041,7 +13051,101 @@ async function renderAutomations(){
     </div>`;
   }).join('');
 
-  el.innerHTML=intro+`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">${cards}</div>`;
+  el.innerHTML=header+`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">${cards}</div>`;
+}
+
+function setAutoTab(tab,filter){ _autoTab=tab; _autoRunFilter=filter||null; if(tab==='runs') _autoRunStatus='active'; renderAutomations(); }
+function setAutoRunStatus(s){ _autoRunStatus=s; renderAutomations(); }
+function setAutoRunFilter(f){ _autoRunFilter=f; renderAutomations(); }
+
+// "In progress" tab: the people running through workflows, grouped by workflow, click to open the flow.
+function renderAutoRuns(list,cases){
+  const activeCount=(cases||[]).filter(c=>c.status!=='closed').length;
+  const doneCount=(cases||[]).filter(c=>c.status==='closed').length;
+  const statusBtn=(id,label,count)=>{
+    const on=_autoRunStatus===id;
+    return `<button onclick="setAutoRunStatus('${id}')" style="font-size:12px;padding:6px 12px;border:none;border-radius:5px;cursor:pointer;font-family:inherit;font-weight:${on?'600':'500'};background:${on?'var(--accent)':'transparent'};color:${on?'#fff':'var(--ink2)'};">${label}${count?` (${count})`:''}</button>`;
+  };
+  const filterAuto=_autoRunFilter?list.find(a=>a.id===_autoRunFilter):null;
+  const controls=`<div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
+    <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;">${statusBtn('active','Active',activeCount)}${statusBtn('completed','Completed',doneCount)}</div>
+    ${filterAuto?`<span style="display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:4px 11px;">${filterAuto.icon||'⚡'} ${escapeHtml(filterAuto.label)} <span onclick="setAutoRunFilter(null)" style="cursor:pointer;opacity:0.7;">✕</span></span>`:''}
+  </div>`;
+
+  let runs=(cases||[]).filter(c=> _autoRunStatus==='completed' ? c.status==='closed' : c.status!=='closed');
+  if(_autoRunFilter) runs=runs.filter(c=>c.scenarioId===_autoRunFilter);
+
+  if(!runs.length){
+    return controls+`<div style="background:var(--surface);border:1px dashed var(--border);border-radius:var(--r-lg);padding:44px 24px;text-align:center;">
+      <div style="font-size:30px;margin-bottom:10px;">🗂️</div>
+      <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:5px;">No ${_autoRunStatus} runs</div>
+      <div style="font-size:12px;color:var(--ink3);max-width:340px;margin:0 auto 18px;line-height:1.7;">${_autoRunStatus==='active'?'Start a workflow for someone - e.g. an onboarding or an exit - and they\'ll appear here.':'Completed runs will show up here once they\'re closed.'}</div>
+      ${_autoRunStatus==='active'?`<button class="btn btn-primary btn-sm" onclick="autoStartPick()">+ Start a run</button>`:''}
+    </div>`;
+  }
+
+  // Group runs by workflow
+  const groups=new Map();
+  runs.forEach(c=>{ const k=c.scenarioId||'_other'; if(!groups.has(k)) groups.set(k,[]); groups.get(k).push(c); });
+  const sections=[...groups.entries()].map(([k,cs])=>{
+    const a=list.find(x=>x.id===k);
+    const icon=a?.icon||'⚡', label=a?a.label:'Removed workflow';
+    const cards=cs.map(c=>autoRunCard(c,a)).join('');
+    return `<div style="margin-bottom:24px;">
+      <div style="display:flex;align-items:center;gap:9px;margin:0 2px 11px;">
+        <span style="width:26px;height:26px;border-radius:7px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;">${icon}</span>
+        <span style="font-size:13px;font-weight:700;color:var(--ink);">${escapeHtml(label)}</span>
+        <span style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:1px 8px;">${cs.length}</span>
+        <div style="flex:1;height:1px;background:var(--border);"></div>
+        ${a?`<button class="btn btn-secondary btn-sm" style="font-size:10px;" onclick="autoStartRun('${a.id}')">+ Start</button>`:''}
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">${cards}</div>
+    </div>`;
+  }).join('');
+  return controls+sections;
+}
+
+function autoRunCard(c,a){
+  const total=(a?.steps||[]).length||1;
+  const done=Math.min(total,(c.checkedSteps||[]).length);
+  const pct=Math.min(100,Math.round((done/total)*100));
+  const initials=((c.employeeName||'?').trim().split(/\s+/).map(w=>w[0]).slice(0,2).join('')||'?').toUpperCase();
+  const date=c.startedAt?new Date(c.startedAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+  return `<div onclick="openWfRunVisual('${c.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;cursor:pointer;transition:box-shadow .15s,border-color .15s;" onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="width:34px;height:34px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${escapeHtml(initials)}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13px;font-weight:600;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(c.employeeName||'(unnamed)')}</div>
+        <div style="font-size:11px;color:var(--ink3);">${date?'Started '+date:''}</div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;">
+      <div style="flex:1;height:6px;background:var(--border);border-radius:3px;overflow:hidden;"><div style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};"></div></div>
+      <span style="font-size:11px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink2)'};width:32px;text-align:right;">${pct}%</span>
+    </div>
+    <div style="font-size:10px;color:var(--ink3);margin-top:7px;">${done}/${total} steps · open flow →</div>
+  </div>`;
+}
+
+// Pick which workflow to start a run for (used by the In-progress tab's "+ Start a run").
+function autoStartPick(){
+  const list=automations||[];
+  if(!list.length){ _autoTab='workflows'; renderAutomations(); showBreezeToast('Create a workflow first'); return; }
+  if(list.length===1){ autoStartRun(list[0].id); return; }
+  const ov=document.createElement('div'); ov.id='autoStartPick';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="padding:15px 20px;border-bottom:1px solid var(--border);font-size:14px;font-weight:700;color:var(--ink);">Start a workflow for someone</div>
+    <div style="padding:12px;display:flex;flex-direction:column;gap:8px;max-height:62vh;overflow:auto;">
+      ${list.map(a=>`<button onclick="document.getElementById('autoStartPick').remove();autoStartRun('${a.id}')" style="display:flex;align-items:center;gap:12px;text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 14px;cursor:pointer;font-family:inherit;" onmouseover="this.style.borderColor='var(--accent-mid)'" onmouseout="this.style.borderColor='var(--border)'">
+        <span style="width:38px;height:38px;border-radius:10px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">${a.icon||'⚡'}</span>
+        <span style="flex:1;min-width:0;"><span style="display:block;font-size:13px;font-weight:600;color:var(--ink);">${escapeHtml(a.label)}</span><span style="display:block;font-size:11px;color:var(--ink3);">${(a.steps||[]).length} steps</span></span>
+      </button>`).join('')}
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);text-align:right;"><button class="btn btn-secondary btn-sm" onclick="document.getElementById('autoStartPick').remove()">Cancel</button></div>
+  </div>`;
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  document.body.appendChild(ov);
 }
 
 async function autoStartRun(autoId){
@@ -13053,6 +13157,7 @@ async function autoStartRun(autoId){
   const newCase={ id:'wfc_'+Date.now(), employeeName:name.trim(), scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
   wfCases.push(newCase);
   await saveWfCases();
+  _autoTab='runs'; _autoRunStatus='active'; // show the new run in the In-progress tab afterwards
   renderAutomations();
   setTimeout(()=>openWfRunVisual(newCase.id),150);
 }
