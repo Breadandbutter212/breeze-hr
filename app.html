@@ -12890,10 +12890,11 @@ Return ONLY valid JSON, no markdown fences, no explanation:
 Each step is a STAGE. Break each stage into 2-4 concrete "subs" (sub-tasks) that someone ticks off to complete the stage. For any sub-task whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for sub-tasks that are not emails.
 Generate 5-8 stages, each with 2-4 sub-tasks.`;
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
+    if(!res.ok) throw new Error('Chat API '+res.status);
     const d=await res.json();
     const raw=d.content?.[0]?.text||'';
-    const jsonStr=raw.match(/\{[\s\S]*\}/)?.[0]; if(!jsonStr) throw new Error('No JSON');
-    const parsed=JSON.parse(jsonStr);
+    const jsonStr=raw.match(/\{[\s\S]*\}/)?.[0]; if(!jsonStr) throw new Error('No JSON in response');
+    const parsed=_safeJsonParse(jsonStr);
     if(parsed.icon) _wfBuilder.icon=parsed.icon;
     (parsed.steps||[]).forEach(s=>{
       let action=null;
@@ -12929,10 +12930,32 @@ Company: ${company}
 Use {employee} as a placeholder for the recipient's first name where it reads naturally. Keep it concise and ready to send.
 Return ONLY valid JSON, no markdown: {"subject":"...","body":"..."}`;
   const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ system: 'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.', messages: [{ role: 'user', content: userPrompt }] }) });
+  if (!res.ok) throw new Error('Chat API ' + res.status);
   const d = await res.json();
   const raw = d.content?.[0]?.text || '';
-  const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON');
-  return JSON.parse(jsonStr);
+  const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON in response');
+  return _safeJsonParse(jsonStr);
+}
+
+// Parse model JSON that may contain unescaped newlines/tabs inside string values
+// (common when a multi-paragraph email body comes back). Repairs control chars that
+// sit inside quotes, leaving structural whitespace untouched.
+function _safeJsonParse(str) {
+  try { return JSON.parse(str); } catch (_) {}
+  let out = '', inStr = false, esc = false;
+  for (let i = 0; i < str.length; i++) {
+    const c = str[i];
+    if (esc) { out += c; esc = false; continue; }
+    if (c === '\\') { out += c; esc = true; continue; }
+    if (c === '"') { inStr = !inStr; out += c; continue; }
+    if (inStr) {
+      if (c === '\n') { out += '\\n'; continue; }
+      if (c === '\r') { out += '\\r'; continue; }
+      if (c === '\t') { out += '\\t'; continue; }
+    }
+    out += c;
+  }
+  return JSON.parse(out);
 }
 
 // ✨ star on a sub-task: draft (or re-draft) its email with AI.
