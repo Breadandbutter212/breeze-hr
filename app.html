@@ -4801,7 +4801,7 @@ const TMPL_NEW_ROLE = ['t1','t3'];
 const TMPL_NEW_SALARY = ['t1','t2','t3'];
 
 async function openTmpl(t) {
-  selTmpl=t;genStep=0;
+  selTmpl=t;genStep=0;t._edited=false;
   const lib=document.querySelector('.tmpl-lib');lib.classList.add('lib-collapsed');const tb=document.getElementById('tmplLibToggle');if(tb)tb.textContent='›';
   // Pre-fill date and reset - always auto-fill letter date, never ask
   const today = new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
@@ -4902,10 +4902,10 @@ function updatePreview() {
     const styleTag = useFid && t._fidelityCss ? `<style>${t._fidelityCss}</style>` : '';
     const notice = fid ? '' : `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
     if (isHtml) {
-      body.innerHTML = `${notice}<div class="doc-page ${fid?'docx-fidelity':'mammoth-doc'}" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${styleTag}${rendered}</div>`;
+      body.innerHTML = `${notice}<div class="doc-page ${fid?'docx-fidelity':'mammoth-doc'}" contenteditable="true" spellcheck="true" oninput="if(selTmpl)selTmpl._edited=true" style="outline:none;cursor:text;">${styleTag}${rendered}</div>`;
     } else {
       const paragraphs = rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
-      body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;">${paragraphs}</div>`;
+      body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" oninput="if(selTmpl)selTmpl._edited=true" style="outline:none;cursor:text;">${paragraphs}</div>`;
     }
     return;
   }
@@ -5203,6 +5203,7 @@ async function renderDocxFidelity(t) {
     const styleC = document.createElement('div');
     await window.docx.renderAsync(buf, bodyC, styleC, {
       className: 'docxr', inWrapper: false, ignoreWidth: true, ignoreHeight: true,
+      useBase64URL: true, // embed images as data URIs so they survive save/download
       ignoreLastRenderedPageBreak: true, breakPages: false,
       renderHeaders: false, renderFooters: false, renderFootnotes: true,
       experimental: true, trimXmlDeclaration: true
@@ -5211,6 +5212,43 @@ async function renderDocxFidelity(t) {
     const html = bodyC.innerHTML;
     return html ? { html, css } : null;
   } catch (e) { return null; }
+}
+
+// Lazily load html-docx-js for building a Word file from the rendered preview HTML.
+let _htmlDocxLoading = null;
+function ensureHtmlDocx() {
+  if (window.htmlDocx && window.htmlDocx.asBlob) return Promise.resolve(true);
+  if (_htmlDocxLoading) return _htmlDocxLoading;
+  const load = src => new Promise((res, rej) => { const s = document.createElement('script'); s.src = src; s.onload = res; s.onerror = rej; document.head.appendChild(s); });
+  _htmlDocxLoading = (async () => {
+    try { await load('https://unpkg.com/html-docx-js/dist/html-docx.js'); return !!(window.htmlDocx && window.htmlDocx.asBlob); }
+    catch (e) { return false; }
+  })();
+  return _htmlDocxLoading;
+}
+
+// Serialise the current preview into self-contained HTML for a Word export: inline the
+// computed styles (so class-based formatting survives), keep images, drop the chip markup.
+function exportHtmlFromPreview() {
+  const page = document.querySelector('#dpBody .doc-page');
+  if (!page) return null;
+  const clone = page.cloneNode(true);
+  const liveEls = page.querySelectorAll('*');
+  const cloneEls = clone.querySelectorAll('*');
+  const props = ['font-family','font-size','font-weight','font-style','text-decoration','text-align','color','background-color','line-height','margin-top','margin-bottom','margin-left','margin-right','padding-top','padding-bottom','padding-left','padding-right'];
+  const n = Math.min(liveEls.length, cloneEls.length);
+  for (let i = 0; i < n; i++) {
+    if (liveEls[i].tagName === 'STYLE') continue;
+    const cs = getComputedStyle(liveEls[i]);
+    let s = cloneEls[i].getAttribute('style') || '';
+    for (const p of props) { const v = cs.getPropertyValue(p); if (v && v !== 'normal' && v !== 'none' && v !== 'auto') s += `;${p}:${v}`; }
+    cloneEls[i].setAttribute('style', s);
+  }
+  // Field chips -> their visible text (values kept; unfilled keep their [field name])
+  clone.querySelectorAll('.filled,[data-f]').forEach(sp => sp.replaceWith(document.createTextNode(sp.textContent)));
+  // Styles are now inlined, so drop the <style> block (Word handles inline styles best)
+  clone.querySelectorAll('style').forEach(s => s.remove());
+  return clone.innerHTML;
 }
 
 // Reconstruct a reusable template from the edited preview. Filled values and
@@ -5241,7 +5279,8 @@ async function saveToTemplate() {
   const btn = document.getElementById('saveTmplBtn');
   const orig = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
-  const storage = ('TEMPLATE_TEXT:' + text).substring(0, 500000);
+  // Generous cap so embedded photos (base64) and full styling are not truncated
+  const storage = ('TEMPLATE_TEXT:' + text).substring(0, 8000000);
   try {
     if (t.isCustom && t.id.startsWith('t_db_')) {
       const dbId = t.id.replace('t_db_', '');
@@ -5274,6 +5313,26 @@ async function downloadDocx() {
   if(typeof roiAddDoc==='function') roiAddDoc(1);
   const btn=document.getElementById('dlBtn');btn.textContent='Generating...';btn.disabled=true;
   try {
+    // Faithful path: when the preview is a docx-preview render that's been EDITED, or a saved
+    // HTML template (no original .docx left), build the Word file FROM the preview so the user's
+    // edits, formatting and photos all come through. Unedited uploads keep the byte-exact
+    // original-file path below.
+    const _page = document.querySelector('#dpBody .doc-page');
+    const _isFidPage = !!(_page && _page.classList.contains('docx-fidelity'));
+    const _wantHtml = (_isFidPage && (selTmpl._edited || !selTmpl.base64))
+      || (!selTmpl.base64 && _page && /<(strong|b|h[1-6]|table|img|ul|ol)\b/i.test(_page.innerHTML));
+    if (_wantHtml) {
+      const ok = await ensureHtmlDocx();
+      const html = exportHtmlFromPreview();
+      if (ok && html && window.htmlDocx) {
+        const full = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;">${html}</body></html>`;
+        const blob = window.htmlDocx.asBlob(full, { orientation: 'portrait', margins: { top: 1080, right: 1080, bottom: 1080, left: 1080 } });
+        const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${buildDocFileName()}.docx`; a.click(); URL.revokeObjectURL(url);
+        btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(() => btn.textContent = '⬇ Word', 3000);
+        return;
+      }
+      // else fall through to the server path below
+    }
     const fields={};Object.entries(genVals).forEach(([k,v])=>{fields[k]=v;fields[k.toLowerCase().replace(/\s+/g,'_')]=v;fields[k.toLowerCase().replace(/\s+/g,'')]=v;});
     let payload;
     if(selTmpl.base64){
