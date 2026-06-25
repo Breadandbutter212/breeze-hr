@@ -2585,7 +2585,9 @@ function toFieldName(raw) {
 }
 
 function detectTemplateFields(content, name) {
-  if (!content) return getDefaultFields(name);
+  // Uploaded templates: only fields the user has actually marked with brackets become
+  // questions. No brackets -> no questions (we prompt them to add some instead).
+  if (!content) return [];
   // Ignore embedded <style> blocks - their CSS braces are not template fields
   content = String(content).replace(/<style[\s\S]*?<\/style>/gi, ' ');
   const found = new Map(); // field_name → original matched text (first occurrence)
@@ -2607,7 +2609,7 @@ function detectTemplateFields(content, name) {
   if (found.size > 0) {
     return [...found.keys()].map(f => ({ q: `What is the ${f.replace(/_/g,' ')}?`, f }));
   }
-  return getDefaultFields(name);
+  return [];
 }
 
 // Normalize detected placeholders in content to {field_name} format for consistent preview/download
@@ -4811,7 +4813,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?'Fields detected from your template.':'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns"><button class="btn btn-secondary btn-sm" id="saveTmplBtn" onclick="saveToTemplate()" title="Save your edits back to this template for future use">💾 Save to template</button><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="${t.isCustom?'downloadDocx()':'downloadAsDocx()'}">⬇ Word</button><button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the right'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="selTmpl=null;document.getElementById('genSplit').style.display='none';document.getElementById('genEmpty').style.display='';renderTmpls(document.getElementById('tmplSearch').value)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?(t.flow&&t.flow.length?`I found ${t.flow.length} field${t.flow.length!==1?'s':''} to fill in.`:'I could not find any fillable fields. To make parts of this template fillable, wrap them in {curly} or [square] brackets - e.g. [first name] - then click <strong>Detect fields</strong>.'):'Answer each question and the letter preview will update on the right.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns">${t.isCustom?`<button class="btn btn-secondary btn-sm" onclick="rescanTemplateFields()" title="Scan the template for {curly} or [square] brackets you've added and make them fillable fields">🔍 Detect fields</button>`:''}<button class="btn btn-secondary btn-sm" id="saveTmplBtn" onclick="saveToTemplate()" title="Save your edits back to this template for future use">💾 Save to template</button>${t.isCustom?'':`<button class="btn btn-secondary btn-sm" id="dlBtn" onclick="downloadAsDocx()">⬇ Word</button>`}<button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
@@ -5212,6 +5214,41 @@ async function renderDocxFidelity(t) {
     const html = bodyC.innerHTML;
     return html ? { html, css } : null;
   } catch (e) { return null; }
+}
+
+// Re-scan the current (possibly edited) preview for placeholders the user has added,
+// e.g. {first_name} or [start date], turn them into fillable fields, and ask for them.
+function rescanTemplateFields() {
+  const page = document.querySelector('#dpBody .doc-page');
+  if (!page || !selTmpl) return;
+  const clone = page.cloneNode(true);
+  // existing field chips back to {field} tokens so they're re-detected, not duplicated
+  clone.querySelectorAll('[data-f]').forEach(s => s.replaceWith(document.createTextNode('{' + s.dataset.f + '}')));
+  let html = clone.innerHTML;
+  // shield <style> blocks so CSS braces aren't mistaken for placeholders
+  const styles = [];
+  html = html.replace(/<style[\s\S]*?<\/style>/gi, m => { styles.push(m); return `@@STY${styles.length - 1}@@`; });
+  const before = (selTmpl.flow || []).map(f => f.f);
+  const { normalized, fields } = normalizeTemplateContent(html);
+  const restored = normalized.replace(/@@STY(\d+)@@/g, (_, i) => styles[+i]);
+  // The edited HTML is now the template source (keeps formatting; new {fields} become chips)
+  selTmpl.content = restored;
+  selTmpl._useFidelity = false; selTmpl._fidelityHtml = null;
+  selTmpl.flow = fields;
+  selTmpl._edited = true;
+  const added = fields.filter(f => !before.includes(f.f)).map(f => f.f.replace(/_/g, ' '));
+  updatePreview();
+  // continue asking from the first field that doesn't yet have a value
+  genStep = 0;
+  while (genStep < selTmpl.flow.length && genVals[selTmpl.flow[genStep].f]) genStep++;
+  if (!fields.length) {
+    addGMsg('ai', 'No fillable fields found yet. Wrap the bits you want to fill in {curly} or [square] brackets - e.g. [first name] - then click Detect fields again.');
+  } else if (added.length) {
+    addGMsg('ai', `Got it - added ${added.length} new field${added.length !== 1 ? 's' : ''}: ${added.join(', ')}. ${genStep < selTmpl.flow.length ? "Let's fill them in." : 'All set.'}`);
+  } else {
+    addGMsg('ai', `${fields.length} field${fields.length !== 1 ? 's' : ''} detected, nothing new to add.`);
+  }
+  askQ();
 }
 
 // Lazily load html-docx-js for building a Word file from the rendered preview HTML.
