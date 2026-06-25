@@ -476,9 +476,9 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 @keyframes typingBounce { 0%,80%,100%{transform:translateY(0);opacity:0.4}40%{transform:translateY(-6px);opacity:1} }
 .thinking-block { display: flex; flex-direction: column; gap: 8px; padding: 2px 0; min-width: 200px; }
 .thinking-label { font-size: 12px; color: var(--ink3); font-style: italic; }
-.thinking-bar { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; width: 240px; }
-.thinking-bar-fill { height: 100%; background: var(--accent); border-radius: 2px; animation: thinkingFill 1.8s ease-in-out infinite; }
-@keyframes thinkingFill { 0%{width:0%;opacity:1} 70%{width:85%;opacity:1} 90%{width:92%;opacity:0.7} 100%{width:92%;opacity:0.7} }
+/* Claude-style cycling word: shimmering text, no progress bar */
+.thinking-word { font-size: 13px; font-weight: 500; padding: 1px 0; background: linear-gradient(90deg, var(--ink3) 30%, var(--ink) 50%, var(--ink3) 70%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; color: transparent; animation: thinkingShimmer 1.8s linear infinite; }
+@keyframes thinkingShimmer { 0%{background-position: 200% 0} 100%{background-position: -200% 0} }
 @keyframes spin { from{transform:rotate(0deg)} to{transform:rotate(360deg)} }
 
 /* ── ORG CHART ── */
@@ -7946,6 +7946,7 @@ async function sendChat(overrideMsg) {
   clearChatAttachment();
   chatMessages.push({role:'user', content: fullMsg});
   renderChatHistory();
+  startThinkingWords();
   if (!chatSystemPrompt) chatSystemPrompt = await buildChatSystemPrompt();
 
   // Search SharePoint for document creation requests
@@ -7964,6 +7965,7 @@ async function sendChat(overrideMsg) {
   const reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
     heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 } : null);
   chatLoading = false;
+  stopThinkingWords();
   window._spSearchingForChat = false;
   if (btn) btn.disabled = false;
   // Save AI response with the original query for RAG retrieval later
@@ -8008,6 +8010,22 @@ function formatChatResponse(text) {
     .replace(/\n\n/g,'<br><br>')
     .replace(/\n/g,'<br>');
 }
+
+// Cycle a whimsical "thinking" word while a reply is in flight (Claude-style).
+let _thinkingTimer = null;
+const THINKING_WORDS = ['Thinking','Pondering','Contemplating','Finagling','Noodling','Ruminating','Percolating','Mulling','Cogitating','Deliberating','Conjuring','Tinkering','Puzzling','Brewing'];
+function startThinkingWords() {
+  stopThinkingWords();
+  let i = 0;
+  _thinkingTimer = setInterval(() => {
+    const el = document.getElementById('thinkingWord');
+    if (!el) return;
+    if (window._spSearchingForChat) { el.textContent = 'Searching your SharePoint...'; return; }
+    i = (i + 1) % THINKING_WORDS.length;
+    el.textContent = THINKING_WORDS[i] + '...';
+  }, 1600);
+}
+function stopThinkingWords() { if (_thinkingTimer) { clearInterval(_thinkingTimer); _thinkingTimer = null; } }
 
 function renderChatHistory() {
   const el = document.getElementById('chatHistory');
@@ -8064,9 +8082,8 @@ function renderChatHistory() {
     </div>`;
   }).join('');
   if (chatLoading) {
-    const labels = ['Thinking...','Thinking...','Working on it...','Pulling that together...'];
-    const label = window._spSearchingForChat ? 'Searching your SharePoint...' : labels[Math.floor(Date.now() / 2000) % labels.length];
-    html += `<div class="chat-msg ai-row"><div style="flex:1;min-width:0;"><div class="ai-head"><span class="ai-dot"></span>Breeze</div><div class="thinking-block"><div class="thinking-label">${label}</div><div class="thinking-bar"><div class="thinking-bar-fill"></div></div></div></div></div>`;
+    const label = window._spSearchingForChat ? 'Searching your SharePoint...' : 'Thinking...';
+    html += `<div class="chat-msg ai-row"><div style="flex:1;min-width:0;"><div class="ai-head"><span class="ai-dot"></span>Breeze</div><div class="thinking-word" id="thinkingWord">${label}</div></div></div>`;
   }
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
