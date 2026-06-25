@@ -12997,7 +12997,9 @@ async function renderAutomations(){
   el.innerHTML='<div style="padding:24px;color:var(--ink3);font-size:13px;">Loading…</div>';
   try{ await Promise.all([loadAutomations(), loadWfCases()]); }catch(e){ automations=automations||[]; wfCases=wfCases||[]; }
   const list=automations||[];
-  const cases=wfCases||[];
+  const autoIds=new Set(list.map(a=>a.id));
+  // Only runs that belong to a workflow you built here - tracker cases live in Trackers, not here
+  const cases=(wfCases||[]).filter(c=>autoIds.has(c.scenarioId));
   const activeRuns=cases.filter(c=>c.status!=='closed');
 
   // Tab bar: Workflows (definitions) | In progress (the people running through them)
