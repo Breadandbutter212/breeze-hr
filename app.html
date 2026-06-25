@@ -304,7 +304,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .doc-sig { margin-top: 40px; font-size: 13px; }
 .doc-sig-name { font-weight: 600; margin-top: 28px; }
 .ph { color: var(--ink3); background: var(--surface2); border-radius: 3px; padding: 1px 5px; font-style: italic; font-size: 12px; }
-.filled { color: var(--accent); font-weight: 500; }
+.filled { color: inherit; font-weight: inherit; }
 
 /* ── ARTIFACT PANEL ── */
 .chat-body { display: flex; flex: 1; overflow: hidden; min-height: 0; }
@@ -5418,8 +5418,8 @@ async function downloadDocAsPdf() {
     const isFid = !!(docPage.classList && docPage.classList.contains('docx-fidelity'));
     const wrap = document.createElement('div');
     wrap.style.cssText = isFid
-      ? "position:fixed;left:-9999px;top:0;width:760px;background:#fff;padding:56px 64px;box-sizing:border-box;color:#111;"
-      : "position:fixed;left:-9999px;top:0;width:720px;background:#fff;padding:48px 56px;font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;box-sizing:border-box;";
+      ? "position:fixed;left:-9999px;top:0;width:760px;background:#fff;padding:20px 64px;box-sizing:border-box;color:#111;"
+      : "position:fixed;left:-9999px;top:0;width:720px;background:#fff;padding:20px 56px;font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;box-sizing:border-box;";
     // For the faithful render, docPage.innerHTML already carries its own <style>. Add the
     // same chrome/width resets the preview uses so docx-preview's fixed-width page sections
     // fill the sheet instead of rendering narrow.
@@ -5433,7 +5433,9 @@ async function downloadDocAsPdf() {
     const pageW = pdf.internal.pageSize.getWidth();
     const pageH = pdf.internal.pageSize.getHeight();
     const cw = canvas.width, ch = canvas.height;
-    const pagePx = Math.floor(cw * (pageH / pageW)); // canvas px that fill one PDF page
+    const topMm = 16, botMm = 16;            // page margins top/bottom on every page
+    const usableH = pageH - topMm - botMm;
+    const pagePx = Math.floor(cw * (usableH / pageW)); // canvas px that fill one page's usable area
     const ctx = canvas.getContext('2d');
     // Precompute how many dark pixels each row has, so we can break pages only on blank
     // (whitespace) rows and never cut through a line of text. Tolerant of anti-aliasing.
@@ -5475,7 +5477,7 @@ async function downloadDocAsPdf() {
       slice.getContext('2d').drawImage(canvas, 0, sy, cw, sh, 0, 0, cw, sh);
       const sliceH = sh * pageW / cw;
       if (i > 0) pdf.addPage();
-      pdf.addImage(slice.toDataURL('image/jpeg', 0.95), 'JPEG', 0, 0, pageW, sliceH);
+      pdf.addImage(slice.toDataURL('image/jpeg', 0.95), 'JPEG', 0, topMm, pageW, sliceH);
     }
     pdf.save(`${title}.pdf`);
   } catch (e) {
