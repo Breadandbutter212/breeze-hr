@@ -452,7 +452,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .chat-av.user-av { background: var(--accent-bg); color: var(--accent); border: 1px solid var(--accent-mid); font-size: 9px; font-weight: 700; letter-spacing: 0.04em; width: auto; padding: 0 8px; border-radius: 12px; }
 .chat-bubble { padding: 13px 17px; border-radius: 14px; font-size: 13px; line-height: 1.75; max-width: 88%; }
 .chat-bubble.ai-bubble { background: white; border: 1px solid var(--border); border-top-left-radius: 4px; color: var(--ink); }
-.chat-bubble.user-bubble { background: var(--accent-bg); border: 1px solid var(--accent-mid); border-top-right-radius: 4px; color: var(--ink); }
+.chat-bubble.user-bubble { background: transparent; border: none; padding: 0; border-radius: 0; max-width: 100%; color: var(--accent); font-weight: 600; }
 .chat-actions { display: flex; align-items: center; gap: 5px; margin-top: 7px; margin-left: 44px; }
 .chat-action-btn { font-size: 11px; padding: 3px 10px; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--ink3); cursor: pointer; font-family: inherit; transition: all 0.12s; line-height: 1.4; }
 .chat-action-btn:hover { border-color: var(--border2); color: var(--ink); }
@@ -10677,8 +10677,8 @@ function onCompareModeChange() {
   const info = COMPARE_MODE_INFO[mode];
   if (info) {
     if (subTitle) subTitle.textContent = info.helper || '';
-    // Spreadsheet-vs-spreadsheet shows its "How it works" expanded by default
-    const openByDefault = mode === 'employee';
+    // "How it works" is expanded by default for every comparison mode
+    const openByDefault = true;
     const howEl = document.getElementById('compareModeHow');
     if (howEl) {
       howEl.innerHTML = compareHowHtml(mode);
