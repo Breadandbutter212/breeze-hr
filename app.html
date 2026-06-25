@@ -452,9 +452,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .chat-action-btn.rated-down { color: var(--red); background: var(--red-bg); border-color: transparent; }
 /* Claude-style assistant message: no bubble, plain full-width text under a small pulsing logo dot */
 .chat-msg.ai-row { gap: 0; }
-.ai-head { display: flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; margin-bottom: 8px; }
-.ai-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); flex-shrink: 0; animation: aiPulse 2s ease-in-out infinite; }
-@keyframes aiPulse { 0% { box-shadow: 0 0 0 0 rgba(216,90,48,0.45); } 70% { box-shadow: 0 0 0 7px rgba(216,90,48,0); } 100% { box-shadow: 0 0 0 0 rgba(216,90,48,0); } }
+.ai-head { display: inline-flex; align-items: center; font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; margin-bottom: 9px; background: var(--accent-bg); border: 1px solid var(--accent-mid); border-radius: 7px; padding: 3px 9px; }
 .chat-bubble.ai-bubble.ai-plain { background: transparent; border: none; padding: 0; max-width: 100%; border-radius: 0; }
 .chat-msg.ai-row .chat-actions { margin-left: 0; }
 .chat-input-area { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--surface); padding: 10px 24px 18px; margin-bottom: 0; }
@@ -8033,7 +8031,7 @@ function renderChatHistory() {
   if (!chatMessages.length && !chatLoading) {
     const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
-      <div style="display:flex;align-items:center;gap:7px;font-size:11px;font-weight:700;color:var(--accent);letter-spacing:0.04em;margin-bottom:8px;"><span class="ai-dot"></span>Breeze</div>
+      <div class="ai-head">Breeze</div>
       <div class="chat-welcome-title">${firstName ? 'Hi ' + firstName + ', how can I help?' : 'How can I help?'}</div>
       <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or ask me to draft a letter. I'll keep it in your company's style.</div>
       <div class="es-prompts">
@@ -8064,7 +8062,7 @@ function renderChatHistory() {
     if (artifact && !isSheet && i === chatMessages.length - 1) setTimeout(() => showArtifact(window._chatArtifacts[i], i), 50);
     return `<div class="chat-msg ai-row">
       <div style="flex:1;min-width:0;">
-        <div class="ai-head"><span class="ai-dot"></span>Breeze</div>
+        <div class="ai-head">Breeze</div>
         <div class="chat-bubble ai-bubble ai-plain" id="bubble-${i}" contenteditable="true" spellcheck="true"
           style="outline:none;cursor:text;" title="Click to edit before copying"
           oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent?escapeHtml(m._editedContent).replace(/\n/g,'<br>'):bubbleText)}</div>
@@ -8083,7 +8081,7 @@ function renderChatHistory() {
   }).join('');
   if (chatLoading) {
     const label = window._spSearchingForChat ? 'Searching your SharePoint...' : 'Thinking...';
-    html += `<div class="chat-msg ai-row"><div style="flex:1;min-width:0;"><div class="ai-head"><span class="ai-dot"></span>Breeze</div><div class="thinking-word" id="thinkingWord">${label}</div></div></div>`;
+    html += `<div class="chat-msg ai-row"><div style="flex:1;min-width:0;"><div class="ai-head">Breeze</div><div class="thinking-word" id="thinkingWord">${label}</div></div></div>`;
   }
   el.innerHTML = html;
   el.scrollTop = el.scrollHeight;
