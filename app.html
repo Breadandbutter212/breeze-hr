@@ -162,7 +162,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
 
 /* ── EMAIL INBOX PANEL ── */
-.email-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:800;display:none; }
+.email-overlay { position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:800;display:none; }
 .email-overlay.open { display:block; }
 .email-panel { position:fixed;right:-400px;top:0;bottom:0;width:380px;background:var(--surface);z-index:801;transition:right 0.25s cubic-bezier(.4,0,.2,1);box-shadow:var(--shadow-lg);display:flex;flex-direction:column;border-left:1px solid var(--border); }
 .email-panel.open { right:0; }
@@ -386,7 +386,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .prsc-foot { margin-top: 10px; font-size: 11px; color: var(--ink3); font-style: italic; }
 
 /* ── BULK MODAL ── */
-.modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px); }
+.modal-overlay { position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:300;display:none;align-items:center;justify-content:center;backdrop-filter:blur(2px); }
 .modal-overlay.open { display:flex; }
 .modal { background:var(--surface);border-radius:var(--r-xl);box-shadow:var(--shadow-lg);width:520px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden; }
 .modal-head { padding:18px 20px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between; }
@@ -1422,7 +1422,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 </div>
 
 <!-- RECORDING CONSENT MODAL -->
-<div id="recConsentOverlay" style="display:none;position:fixed;inset:0;background:rgba(10,22,40,0.6);z-index:1800;display:none;align-items:center;justify-content:center;padding:20px;">
+<div id="recConsentOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1800;display:none;align-items:center;justify-content:center;padding:20px;">
   <div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:28px 32px;">
     <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;">Before you record</div>
     <div style="font-size:13px;color:var(--ink2);line-height:1.75;margin-bottom:20px;">This recording will be transcribed by Google (Speech-to-Text) and then processed by Anthropic AI. Under UK GDPR you must ensure all meeting participants are aware before recording begins.<br><br>Do not record employees without their knowledge.</div>
@@ -1586,7 +1586,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 </div>
 
 <!-- COLUMN PICKER MODAL -->
-<div id="colPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:1000;align-items:center;justify-content:center;">
+<div id="colPickerOverlay" style="display:none;position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1000;align-items:center;justify-content:center;">
   <div style="background:var(--bg);border-radius:var(--r-lg);box-shadow:0 8px 32px rgba(0,0,0,0.18);width:360px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;">
     <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);">
       <div style="font-size:14px;font-weight:600;color:var(--ink);margin-bottom:2px;">Choose columns to compare</div>
@@ -2029,7 +2029,7 @@ function showOnboardingTour() {
   const overlay = document.createElement('div');
   overlay.id = 'tourOverlay';
   // Light scrim so the page stays visible behind the centred card while each step explains it.
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.34);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
 
   function endTour() { overlay.remove(); localStorage.setItem('breeze_tour_done','1'); }
 
@@ -2426,7 +2426,7 @@ async function convertToTemplate(event) {
     const withTimeout = (p, ms) => Promise.race([p, new Promise(r => setTimeout(() => r(''), ms))]);
 
     const textContent = await withTimeout(readFileAsText(file), 8000);
-    if (!textContent || textContent.trim().length < 50) { toast.remove(); alert('Could not read document content.'); return; }
+    if (!textContent || textContent.trim().length < 50) { toast.remove(); showBreezeToast('Could not read document content.'); return; }
 
     toast.innerHTML = '<span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> AI is identifying fields to replace...';
 
@@ -2534,10 +2534,10 @@ ${textContent.substring(0, 5000)}`;
     tmpls.unshift({ id:'t_'+Date.now(), name, emoji:'📄', type:'Your uploads', isCustom:true, isDocx: true, base64: docxBase64||'', content: templateText, flow: uniqueFields });
     renderTmpls();
     toast.remove();
-    alert(`✓ "${name}" converted - ${uniqueFields.length} fields detected. Downloads as .docx with original formatting preserved.`);
+    showBreezeToast(`✓ "${name}" converted - ${uniqueFields.length} fields detected. Downloads as .docx with original formatting preserved.`);
   } catch(e) {
     toast.remove();
-    alert('Conversion failed: ' + e.message);
+    showBreezeToast('Conversion failed: ' + e.message);
   }
   event.target.value = '';
 }
@@ -2575,10 +2575,10 @@ async function uploadTemplate(event) {
   const displayContent = previewHtml || normalizedText;
   const storageContent = isDocx ? `DOCX_BASE64:${finalBase64}|||TEXT:${displayContent.substring(0,50000)}` : `TEMPLATE_TEXT:${normalizedText}`;
   const {error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name:`TEMPLATE: ${name}`,content:storageContent.substring(0,500000)}).select().single();
-  if(error){alert('Upload failed: '+error.message);return;}
+  if(error){showBreezeToast('Upload failed: '+error.message);return;}
   tmpls.unshift({id:'t_'+Date.now(),name,emoji:'📄',type:'Your uploads',isCustom:true,isDocx:true,base64:finalBase64,content:displayContent,flow:fields});
   renderTmpls();
-  alert(`✓ "${name}" uploaded - ${fields.length} fields detected.`);
+  showBreezeToast(`✓ "${name}" uploaded - ${fields.length} fields detected.`);
   event.target.value='';
 }
 
@@ -2832,7 +2832,7 @@ function presStatusPersist(msg, isError) {
 function showTestRestricted(feature) {
   let m = document.getElementById('testRestrictModal');
   if (!m) { m = document.createElement('div'); m.id = 'testRestrictModal'; document.body.appendChild(m); }
-  m.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
   m.innerHTML = `<div style="background:white;border-radius:14px;max-width:380px;width:100%;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:28px 26px;text-align:center;">
     <div style="width:48px;height:48px;border-radius:50%;background:#F3E8FF;display:flex;align-items:center;justify-content:center;margin:0 auto 14px;font-size:24px;">🔒</div>
     <div style="font-size:16px;font-weight:700;color:var(--ink);margin-bottom:8px;">Restricted on test accounts</div>
@@ -3027,7 +3027,7 @@ Guidelines:
     setPresStatus('');
   } catch(e) {
     setPresStatus('');
-    alert('Failed to generate: ' + e.message);
+    showBreezeToast('Failed to generate: ' + e.message);
   }
   btn.disabled = false; btn.textContent = '✦ Build';
 }
@@ -3940,7 +3940,7 @@ ${bgXml}
     btn.textContent = '✓ Downloaded'; btn.disabled = false;
     setTimeout(() => { btn.textContent = '⬇ Download .pptx'; }, 2500);
   } catch(e) {
-    alert('Download failed: ' + e.message);
+    showBreezeToast('Download failed: ' + e.message);
     btn.textContent = '⬇ Download .pptx'; btn.disabled = false;
   }
 }
@@ -4157,7 +4157,7 @@ ${transcript.substring(0, 8000)}`;
     loadSavedMeetings();
   } catch(e) {
     btn.textContent = '✦ Write up & save'; btn.disabled = false; btn.style.opacity = '1';
-    alert('Failed: ' + e.message);
+    showBreezeToast('Failed: ' + e.message);
   }
 }
 
@@ -4189,7 +4189,7 @@ async function downloadSavedMeeting(id, label) {
 }
 
 async function deleteMeeting(id) {
-  if (!confirm('Delete this meeting note?')) return;
+  if (!await uiConfirm('Delete this meeting note?')) return;
   await sb.from('policies').delete().eq('id', id).eq('company_id', currentProfile.company_id);
   loadSavedMeetings();
 }
@@ -4212,7 +4212,7 @@ function resetRecorder() {
 
 function showLoginPrivacy() {
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:28px 32px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;">
       <div style="font-size:16px;font-weight:700;color:#1A202C;">Privacy Policy</div>
@@ -4234,7 +4234,7 @@ function showLoginPrivacy() {
 
 function showDpaModal() {
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:720px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:36px 40px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <div style="font-size:18px;font-weight:700;color:#0A1628;">Data Processing Agreement</div>
@@ -4427,7 +4427,7 @@ function showDpaModal() {
 
 function showTermsModal() {
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.6);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:3000;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:720px;max-height:88vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.25);padding:36px 40px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
       <div style="font-size:18px;font-weight:700;color:#0A1628;">Terms and Conditions of Service</div>
@@ -4639,7 +4639,7 @@ function showTmplHintIfNew() {
   if (document.getElementById('tmplHintOverlay')) return;
   const ov = document.createElement('div');
   ov.id = 'tmplHintOverlay';
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(10,22,40,0.55);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(2px);';
   ov.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);overflow:hidden;">
     <div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:24px 28px 20px;">
       <div style="font-size:22px;margin-bottom:10px;">📂</div>
@@ -4740,7 +4740,7 @@ async function renameTmpl(tmplId) {
       .update({name:`TEMPLATE: ${newName}`})
       .eq('id',dbId)
       .eq('company_id',currentProfile.company_id);
-    if(error){alert('Rename failed: '+error.message);return;}
+    if(error){showBreezeToast('Rename failed: '+error.message);return;}
   }
   // Update local name - don't do a full DB reload or it will overwrite
   t.name=newName;
@@ -4783,7 +4783,7 @@ function renderTmplsLocal() {
 }
 
 async function deleteTemplate(tmplId) {
-  if(!confirm('Delete this template?'))return;
+  if(!await uiConfirm('Delete this template?'))return;
   const dbId=tmplId.replace('t_db_','');
   if(tmplId.startsWith('t_db_'))await sb.from('policies').delete().eq('id',dbId);
   const idx=tmpls.findIndex(t=>t.id===tmplId); if(idx>-1)tmpls.splice(idx,1);
@@ -5329,10 +5329,10 @@ function templateFromPreview() {
 // Save the user's edits back to a template for future use.
 // Own uploaded template -> overwrite it. Built-in -> save a new custom copy.
 async function saveToTemplate() {
-  if (!currentProfile) { alert('Please sign in to save templates.'); return; }
+  if (!currentProfile) { showBreezeToast('Please sign in to save templates.'); return; }
   const t = selTmpl; if (!t) return;
   const text = templateFromPreview();
-  if (!text) { alert('Nothing to save yet.'); return; }
+  if (!text) { showBreezeToast('Nothing to save yet.'); return; }
   const btn = document.getElementById('saveTmplBtn');
   const orig = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.textContent = 'Saving...'; }
@@ -5362,7 +5362,7 @@ async function saveToTemplate() {
     }
   } catch (e) {
     if (btn) { btn.disabled = false; btn.innerHTML = orig; }
-    alert('Could not save template: ' + (e.message || e));
+    showBreezeToast('Could not save template: ' + (e.message || e));
   }
 }
 
@@ -5401,13 +5401,13 @@ async function downloadDocx() {
       payload={plainText:dpBody?htmlToMarkdownText(dpBody.innerHTML):'',templateName:selTmpl.name};
     }
     const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
-    if(!res.ok){const err=await res.json();alert('Error: '+err.error);btn.textContent='⬇ Word';btn.disabled=false;return;}
+    if(!res.ok){const err=await res.json();showBreezeToast('Error: '+err.error);btn.textContent='⬇ Word';btn.disabled=false;return;}
     const blob=await res.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
     // Server sends .doc for plainText path, .docx for template path
     a.download=selTmpl.base64?`${buildDocFileName()}.docx`:`${buildDocFileName()}.doc`;
     a.click();URL.revokeObjectURL(url);
     btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);
-  } catch(e){alert('Download failed');btn.textContent='⬇ Word';btn.disabled=false;}
+  } catch(e){showBreezeToast('Download failed');btn.textContent='⬇ Word';btn.disabled=false;}
 }
 
 // PDF download: render the live preview in a print window and let the browser save it as PDF.
@@ -5492,7 +5492,7 @@ async function downloadDocAsPdf() {
   } catch (e) {
     // Fallback: browser print-to-PDF in a new tab
     const w = window.open('', '_blank');
-    if (!w) { alert('Could not generate the PDF. Please allow pop-ups and try again.'); return; }
+    if (!w) { showBreezeToast('Could not generate the PDF. Please allow pop-ups and try again.'); return; }
     w.document.write(`<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
       <style>@page{margin:20mm}body{font-family:Georgia,'Times New Roman',serif;font-size:12pt;line-height:1.6;color:#111;max-width:720px;margin:0 auto;padding:24px}table{border-collapse:collapse;width:100%}td,th{border:1px solid #9CA3AF;padding:6px 8px}img{max-width:100%}</style></head><body>${docPage.innerHTML}</body></html>`);
     w.document.close();
@@ -5606,14 +5606,14 @@ async function uploadHandbook(event, existingId) {
     storageContent = `DOCX_BASE64:${b64}|||TEXT:${txt.substring(0, 50000)}`;
   } else {
     storageContent = await readFileAsText(file);
-    if (!storageContent) { alert('Could not read file'); return; }
+    if (!storageContent) { showBreezeToast('Could not read file'); return; }
   }
   const content = storageContent.substring(0, 500000);
   const name = `HANDBOOK:${file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ')}`;
   const cid = currentProfile.company_id;
   if (existingId) await sb.from('policies').delete().eq('id', existingId).eq('company_id', cid);
   const { error } = await sb.from('policies').insert({ company_id: cid, name, content });
-  if (error) { alert('Upload failed: ' + error.message); return; }
+  if (error) { showBreezeToast('Upload failed: ' + error.message); return; }
   chatSystemPrompt = null;
   await renderManage();
   event.target.value = '';
@@ -5624,19 +5624,19 @@ async function renamePolicy(id) {
   const current=el?el.textContent:'';
   const newName=await uiPromptText('Rename policy', {icon:'✏️', label:'Policy name', value:current, submitLabel:'Rename', required:true});
   if(!newName||newName===current)return;
-  if(!currentProfile){alert('Not logged in');return;}
+  if(!currentProfile){showBreezeToast('Not logged in');return;}
   // Must include company_id match for RLS to allow the update
   const{error}=await sb.from('policies')
     .update({name:newName})
     .eq('id',id)
     .eq('company_id',currentProfile.company_id);
-  if(error){alert('Rename failed: '+error.message);return;}
+  if(error){showBreezeToast('Rename failed: '+error.message);return;}
   // Update the span directly so we don't need a full re-render
   if(el) el.textContent=newName;
 }
 
 async function uploadPolicy(event) {
-  const file=event.target.files[0];if(!file||!currentProfile){alert('Not logged in');return;}
+  const file=event.target.files[0];if(!file||!currentProfile){showBreezeToast('Not logged in');return;}
   const name=file.name.replace(/\.[^/.]+$/,'').replace(/[-_]/g,' ');
   const isPdf=file.name.toLowerCase().endsWith('.pdf');
   const isDocx=file.name.toLowerCase().endsWith('.docx');
@@ -5650,12 +5650,12 @@ async function uploadPolicy(event) {
     storageContent=`DOCX_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
   } else {
     storageContent=await readFileAsText(file);
-    if(!storageContent){alert('Could not read file. Try saving as .txt first.');return;}
+    if(!storageContent){showBreezeToast('Could not read file. Try saving as .txt first.');return;}
   }
   const{error}=await sb.from('policies').insert({company_id:currentProfile.company_id,name,content:storageContent.substring(0,500000)});
-  if(error){alert('Upload failed: '+error.message);return;}
+  if(error){showBreezeToast('Upload failed: '+error.message);return;}
   chatSystemPrompt = null;
-  alert(`✓ "${name}" uploaded.`); renderManage(); event.target.value='';
+  showBreezeToast(`✓ "${name}" uploaded.`); renderManage(); event.target.value='';
 }
 
 async function uploadNamedPolicy(event,policyName,existingId) {
@@ -5674,7 +5674,7 @@ async function uploadNamedPolicy(event,policyName,existingId) {
     storageContent=`DOCX_BASE64:${b64}|||TEXT:${txt.substring(0,50000)}`;
   } else {
     storageContent=await readFileAsText(file);
-    if(!storageContent){alert('Could not read file');return;}
+    if(!storageContent){showBreezeToast('Could not read file');return;}
   }
   const content=storageContent.substring(0,500000);
   const cid=currentProfile.company_id;
@@ -5687,13 +5687,13 @@ async function uploadNamedPolicy(event,policyName,existingId) {
     if(found) await sb.from('policies').delete().eq('id',found.id).eq('company_id',cid);
   }
   const{error}=await sb.from('policies').insert({company_id:cid,name:policyName,content});
-  if(error){alert('Replace failed: '+error.message);return;}
+  if(error){showBreezeToast('Replace failed: '+error.message);return;}
   chatSystemPrompt=null;
   await renderManage(); event.target.value='';
 }
 
 async function deletePolicy(id) {
-  if(!confirm('Delete this policy?'))return;
+  if(!await uiConfirm('Delete this policy?'))return;
   await sb.from('policies').delete().eq('id',id);
   chatSystemPrompt = null;
   renderManage();
@@ -5707,7 +5707,7 @@ async function viewPolicy(id, name) {
   const lastUpd = updTs ? new Date(updTs).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
   let modal = document.getElementById('policyViewModal');
   if (!modal) { modal = document.createElement('div'); modal.id = 'policyViewModal'; document.body.appendChild(modal); }
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   const isPdf  = data.content && data.content.startsWith('PDF_BASE64:');
   const isDocx = data.content && data.content.startsWith('DOCX_BASE64:');
   const dlLabel = isPdf ? '⬇ Download PDF' : isDocx ? '⬇ Download .docx' : '⬇ Download .doc';
@@ -6287,7 +6287,7 @@ async function approveWaitlistUser(id, email, fullName, companyName, btn) {
     body: JSON.stringify({ waitlist_id: id, email, full_name: fullName, company_name: companyName })
   });
   const data = await res.json();
-  if (!res.ok) { alert('Failed: ' + data.error); btn.textContent = 'Approve & invite'; btn.disabled = false; return; }
+  if (!res.ok) { showBreezeToast('Failed: ' + data.error); btn.textContent = 'Approve & invite'; btn.disabled = false; return; }
   btn.closest('div[style*="surface2"]').querySelector('button').replaceWith(Object.assign(document.createElement('span'), { style: 'font-size:11px;color:var(--green);font-weight:500;', textContent: '✓ Invited' }));
 }
 
@@ -6965,7 +6965,7 @@ function handleCsvUpload(event) {
   const reader = new FileReader();
   reader.onload = (e) => {
     const lines = e.target.result.split('\n').filter(l => l.trim());
-    if (lines.length < 2) { alert('CSV needs at least a header row and one data row'); return; }
+    if (lines.length < 2) { showBreezeToast('CSV needs at least a header row and one data row'); return; }
     const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,''));
     bulkCsvData = lines.slice(1).map(line => {
       const vals = line.split(',').map(v => v.trim().replace(/"/g,''));
@@ -6992,8 +6992,8 @@ function handleCsvUpload(event) {
 async function runBulkGenerate() {
   const tmplId = document.getElementById('bulkTmplSelect').value;
   const t = tmpls.find(x => x.id === tmplId);
-  if (!t) { alert('Please select a template'); return; }
-  if (!bulkCsvData.length) { alert('Please upload a CSV file'); return; }
+  if (!t) { showBreezeToast('Please select a template'); return; }
+  if (!bulkCsvData.length) { showBreezeToast('Please upload a CSV file'); return; }
 
   const btn = document.getElementById('bulkGenerateBtn');
   btn.textContent = `Generating ${bulkCsvData.length} letters...`;
@@ -7103,7 +7103,7 @@ async function connectSharePointFromPanel() {
       btn.textContent = 'Waiting...'; btn.disabled = false;
     }
   } catch(e) {
-    alert('Could not connect: ' + e.message);
+    showBreezeToast('Could not connect: ' + e.message);
     btn.textContent = 'Connect SharePoint'; btn.disabled = false;
   }
 }
@@ -7227,7 +7227,7 @@ function spOpenResult(url) {
 
 function spCopyLink(url) {
   navigator.clipboard.writeText(url).then(() => {
-    alert('Link copied to clipboard');
+    showBreezeToast('Link copied to clipboard');
   });
 }
 
@@ -8883,14 +8883,17 @@ async function logOtherTrackerUpdate() {
   bzToast(`Logged on ${escapeHtml(m.employeeName)}'s record.`);
 }
 
-function bzToast(msg) {
+function bzToast(msg, type) {
   document.getElementById('bzToast')?.remove();
   const t = document.createElement('div');
   t.id = 'bzToast';
-  t.style.cssText = 'position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:var(--ink);color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:500;z-index:2000;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90vw;';
+  const isErr = type === 'error';
+  const bg = isErr ? '#B42318' : 'var(--ink)';
+  // z-index above every modal so error toasts fired from inside a dialog stay visible.
+  t.style.cssText = `position:fixed;bottom:22px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:10px 16px;border-radius:10px;font-size:12px;font-weight:500;z-index:100000;box-shadow:0 8px 24px rgba(0,0,0,0.25);max-width:90vw;`;
   t.innerHTML = msg;
   document.body.appendChild(t);
-  setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, 3400);
+  setTimeout(() => { t.style.transition = 'opacity 0.4s'; t.style.opacity = '0'; setTimeout(() => t.remove(), 400); }, isErr ? 5200 : 3400);
 }
 
 // ════════════ AI SMART INBOX ACTIONS ════════════
@@ -8952,7 +8955,7 @@ async function aiAnalyseEmail(emailId) {
 
 function smartActionShell(innerHtml){
   let mo=document.getElementById('smartActionModal'); if(!mo){mo=document.createElement('div');mo.id='smartActionModal';document.body.appendChild(mo);}
-  mo.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mo.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1200;display:flex;align-items:center;justify-content:center;padding:20px;';
   mo.innerHTML=`<div onclick="event.stopPropagation()" style="background:white;border-radius:14px;width:100%;max-width:480px;box-shadow:var(--shadow-lg);overflow:hidden;">${innerHtml}</div>`;
   mo.onclick=e=>{ if(e.target===mo) mo.remove(); };
 }
@@ -9088,7 +9091,7 @@ function openSendEmailModal() {
   const isReply = !!(window._replyToThreadId);
   const inputStyle = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   const labelStyle = 'font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:960;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `<div style="background:white;border-radius:var(--r-lg);width:100%;max-width:560px;box-shadow:var(--shadow-lg);">
     <div style="padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:14px;font-weight:600;">Send via ${provider === 'outlook' ? 'Outlook' : provider === 'test' ? 'Test inbox' : 'Gmail'}</div>
@@ -9315,7 +9318,7 @@ async function connectIntegration(app) {
       }, 3000);
     }
   } catch(e) {
-    alert('Could not connect: ' + e.message);
+    showBreezeToast('Could not connect: ' + e.message);
     btn.textContent = 'Connect'; btn.disabled = false;
   }
 }
@@ -9362,14 +9365,14 @@ async function connectMerge() {
           mergeEmployeeCache = null; // force re-pull with the new account
           showBreezeToast(`Connected to ${ed.integration || 'your HRIS'}`);
           loadIntegrations();
-        } catch (e) { alert('Could not finish connecting: ' + e.message); loadIntegrations(); }
+        } catch (e) { showBreezeToast('Could not finish connecting: ' + e.message); loadIntegrations(); }
       },
       onExit: () => { if (btn) { btn.textContent = 'Connect'; btn.disabled = false; } },
     });
     MergeLink.openLink();
     if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
   } catch (e) {
-    alert('Could not connect: ' + e.message);
+    showBreezeToast('Could not connect: ' + e.message);
     if (btn) { btn.textContent = 'Connect'; btn.disabled = false; }
   }
 }
@@ -9479,12 +9482,12 @@ async function loadAnalyticsFile(event) {
     } else {
       rows = parseAnalyticsCSV(await file.text());
     }
-    if (!rows.length) { alert('No data found in file'); return; }
+    if (!rows.length) { showBreezeToast('No data found in file'); return; }
     analyticsData = rows;
     _analyticsRawData = rows; // keep original for filter reset
     analyticsSource = file.name;
     renderDashboard();
-  } catch(e) { alert('Could not read file: ' + e.message); }
+  } catch(e) { showBreezeToast('Could not read file: ' + e.message); }
   event.target.value = '';
 }
 
@@ -9896,7 +9899,7 @@ Return only the JSON array, no explanation.`;
     renderDashboard();
     setTimeout(() => { const f = document.getElementById('analyticsFilter'); if (f) f.value = expr; }, 80);
   } catch(e) {
-    alert('Filter error: ' + e.message);
+    showBreezeToast('Filter error: ' + e.message);
   } finally {
     if (applyBtn) { applyBtn.textContent = origText; applyBtn.disabled = false; }
   }
@@ -9909,7 +9912,7 @@ function clearAnalyticsFilter() {
 }
 
 async function downloadAnalyticsPPT() {
-  if (!analyticsData || !Object.keys(analyticsCharts).length) { alert('No charts to export yet.'); return; }
+  if (!analyticsData || !Object.keys(analyticsCharts).length) { showBreezeToast('No charts to export yet.'); return; }
   const pptx = new PptxGenJS();
   pptx.layout = 'LAYOUT_WIDE';
   pptx.theme = { headFontFace: 'Plus Jakarta Sans', bodyFontFace: 'Plus Jakarta Sans' };
@@ -10173,7 +10176,7 @@ async function openChatHistory(id) {
 }
 
 async function deleteChatHistory(id) {
-  if (!currentProfile || !confirm('Delete this chat?')) return;
+  if (!currentProfile || !await uiConfirm('Delete this chat?')) return;
   await sb.from('policies').delete().eq('id', id).eq('company_id', currentProfile.company_id);
   if (currentChatId === id) {
     currentChatId = null;
@@ -11528,7 +11531,7 @@ const PP_CAT_COLORS = ['var(--accent)','#1D9E75','#1D9E75','#E0A800','#2E3D52','
 
 function ppAddCategory() {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const usedColors = PP_CATS_ALL().map(c=>c.color);
   const defaultColor = PP_CAT_COLORS.find(c=>!usedColors.includes(c)) || PP_CAT_COLORS[0];
@@ -11615,8 +11618,8 @@ async function ppDownloadPDF() {
   pdf.save(`People Plan ${ppPlan?.year||''}.pdf`);
 }
 
-function ppReset() {
-  if (!confirm('Reset the people plan and start over?')) return;
+async function ppReset() {
+  if (!await uiConfirm('Reset the people plan and start over?', {confirmLabel:'Reset', danger:false})) return;
   ppPlan = null; ppWizardStep = 0; ppWizardAnswers = {};
   renderPeoplePlan();
 }
@@ -11988,7 +11991,7 @@ function ppModalInputStyle() {
 
 function ppAddEvent(defaultCat) {
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const catOptions = PP_CATS.map(c => `<option value="${c.id}"${c.id===defaultCat?' selected':''}>${c.label}</option>`).join('');
   const monthOptions = PP_MONTHS.map((m,i) => `<option value="${i+1}">${m}</option>`).join('');
   const inp = ppModalInputStyle();
@@ -12055,7 +12058,7 @@ function ppEditEvent(id) {
   const catOptions = PP_CATS.map(c => `<option value="${c.id}"${c.id===ev.catId?' selected':''}>${c.label}</option>`).join('');
   const monthOpts = (sel) => PP_MONTHS.map((m,i)=>`<option value="${i+1}"${i+1===sel?' selected':''}>${m}</option>`).join('');
   const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.35);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const inp = ppModalInputStyle();
   overlay.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:460px;box-shadow:var(--shadow-lg);overflow:hidden;">
     <div style="background:var(--surface);border-top:3px solid ${cat?.color||'var(--accent)'};border-bottom:1px solid var(--border);padding:18px 24px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Edit event</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">Specific dates fine-tune where the bar sits within the month</div></div>
@@ -12186,7 +12189,7 @@ function ppShowCalendarInvite(ev) {
   if (modal) modal.remove();
   modal = document.createElement('div');
   modal.id = 'ppCalInviteModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:400px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
     <div style="background:${cat.color};padding:16px 20px 14px;">
       <div style="font-size:14px;font-weight:700;color:white;">📅 Send calendar invite</div>
@@ -12474,7 +12477,7 @@ function toggleCustomTrackerMenu(e) {
 let _pendingCustomTracker = null;
 function openCreateTrackerModal() {
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;">
@@ -12553,7 +12556,7 @@ Generate 7-10 steps. tag must be one of: legal, recommended, best-practice.`;
 }
 function showTrackerPreviewModal(tracker) {
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const stepsHtml = (tracker.steps||[]).map((s,i)=>`<div style="display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);"><div style="width:20px;height:20px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px;">${i+1}</div><div><div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${escapeHtml(s.title)}</div><div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(s.desc)}</div></div></div>`).join('');
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;max-height:86vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;display:flex;align-items:center;gap:12px;">
@@ -12643,7 +12646,7 @@ function openCenteredModal(id, inner){
   const ov=document.createElement('div');
   ov.id=id;
   ov.setAttribute('data-centered-modal','');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);backdrop-filter:blur(2px);z-index:950;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);backdrop-filter:blur(2px);z-index:950;display:flex;align-items:center;justify-content:center;padding:24px;box-sizing:border-box;';
   ov.appendChild(inner);
   document.body.appendChild(ov);
   document.body.style.overflow='hidden';
@@ -13278,7 +13281,7 @@ async function autoRunNameConfirm(autoId){
 }
 
 async function deleteAutomation(id){
-  if(!confirm('Delete this workflow? Runs already started for employees will remain but the workflow will be removed.')) return;
+  if(!await uiConfirm('Delete this workflow? Runs already started for employees will remain but the workflow will be removed.')) return;
   if(!automations) await loadAutomations();
   automations=(automations||[]).filter(a=>a.id!==id);
   await saveAutomations();
@@ -13286,7 +13289,7 @@ async function deleteAutomation(id){
   renderAutomations();
 }
 async function deleteCustomTracker(id) {
-  if (!confirm('Delete this custom tracker? The cases logged against it will remain but the tracker tab will be removed.')) return;
+  if (!await uiConfirm('Delete this custom tracker? The cases logged against it will remain but the tracker tab will be removed.')) return;
   customTrackers = (customTrackers||[]).filter(c=>c.id!==id);
   await saveCustomTrackers();
   // Remove from WF_SCENARIOS
@@ -13690,7 +13693,7 @@ function openAddMatPatModal() {
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const lbl = 'font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:90vh;display:flex;flex-direction:column;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;">
       <div style="font-size:15px;font-weight:700;color:var(--ink);">New leave record</div>
@@ -13785,7 +13788,7 @@ function openMatPatRecord(id) {
 
   const panel = document.createElement('div');
   panel.id = 'mpRecordPanel';
-  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  panel.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
 
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
   const lbl = 'font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;text-transform:uppercase;letter-spacing:0.05em;';
@@ -13977,7 +13980,7 @@ async function mpUpdateField(id, field, value) {
 
 function mpLogAttachFile(id, input) {
   const file = input.files[0]; if (!file) return;
-  if (file.size > 1.5*1024*1024) { alert('Max 1.5MB'); input.value=''; return; }
+  if (file.size > 1.5*1024*1024) { showBreezeToast('Max 1.5MB'); input.value=''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     window[`_mpLogAttach_${id}`] = { filename: file.name, base64: e.target.result.split(',')[1], mimeType: file.type };
@@ -14004,7 +14007,7 @@ function mpDownloadLogDoc(id, dateStr) {
 }
 async function deleteMpLogEntry(id, dateStr) {
   const rec = (mpRecords||[]).find(r=>r.id===id); if (!rec) return;
-  if (!confirm('Delete this log entry?')) return;
+  if (!await uiConfirm('Delete this log entry?')) return;
   rec.contactLog = (rec.contactLog||[]).filter(e=>e.date!==dateStr);
   await saveMatPatRecords();
   const listEl = document.getElementById(`mp-log-list-${id}`);
@@ -14031,7 +14034,7 @@ async function addMpContactLog(id) {
 }
 
 async function deleteMatPatRecord(id) {
-  if (!confirm('Delete this leave record? This cannot be undone.')) return;
+  if (!await uiConfirm('Delete this leave record? This cannot be undone.')) return;
   const rec = (mpRecords||[]).find(r => r.id === id);
   mpRecords = (mpRecords||[]).filter(r => r.id !== id);
   await saveMatPatRecords();
@@ -14044,7 +14047,7 @@ async function deleteMatPatRecord(id) {
 }
 
 async function deleteMatPatAndCase(mpId, caseId) {
-  if (!confirm('Delete this leave record? This cannot be undone.')) return;
+  if (!await uiConfirm('Delete this leave record? This cannot be undone.')) return;
   if (mpId && mpRecords) mpRecords = mpRecords.filter(r => r.id !== mpId);
   if (mpId) await saveMatPatRecords();
   if (caseId && wfCases) wfCases = wfCases.filter(x => x.id !== caseId);
@@ -14245,7 +14248,7 @@ function renderCareersTracker(body) {
 function openCareerMap(idx) {
   const c = (window._demoCareers||[])[idx]; if (!c) return;
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const tl = c.careerMap.map((s,i)=>`<div style="display:flex;gap:12px;align-items:flex-start;">
     <div style="display:flex;flex-direction:column;align-items:center;flex-shrink:0;">
       <div style="width:12px;height:12px;border-radius:50%;background:${i===c.careerMap.length-1?'var(--accent)':'var(--border2)'};"></div>
@@ -14369,7 +14372,7 @@ function openAddImmigrationModal(existing) {
   const ilrStatuses = ['Not yet eligible','5yr milestone approaching','Application in progress','ILR granted','Not applicable'];
   const ilrOpts = ilrStatuses.map(s=>`<option value="${s}"${r.ilrStatus===s?' selected':''}>${s}</option>`).join('');
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:580px;max-height:90vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:var(--ink);">${isEdit?'Edit':'Add'} immigration record</div></div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:12px;">
@@ -14436,7 +14439,7 @@ function openImmigrationRecord(id) {
   document.getElementById('immRecordPanel')?.remove();
   const panel = document.createElement('div');
   panel.id = 'immRecordPanel';
-  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  panel.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
   const colMap={call:'var(--accent)',email:'#1D9E75',meeting:'#1D9E75',note:'#BA7517',action:'#1D9E75'};
   const logHtml = (r.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>{
@@ -14521,7 +14524,7 @@ async function addImmContactLog(id) {
 
 async function immDeleteLogEntry(id, dateStr) {
   const r=(immigrationRecords||[]).find(x=>x.id===id);if(!r)return;
-  if(!confirm('Delete this log entry?'))return;
+  if(!await uiConfirm('Delete this log entry?'))return;
   r.contactLog=(r.contactLog||[]).filter(e=>e.date!==dateStr);
   await saveImmigrationRecords();
   const listEl=document.getElementById(`imm-log-list-${id}`);
@@ -14530,7 +14533,7 @@ async function immDeleteLogEntry(id, dateStr) {
 
 async function immUploadDoc(id, input) {
   const file=input.files[0];if(!file)return;
-  const MAX=1.5*1024*1024;if(file.size>MAX){alert('Max 1.5MB');input.value='';return;}
+  const MAX=1.5*1024*1024;if(file.size>MAX){showBreezeToast('Max 1.5MB');input.value='';return;}
   const b64=await new Promise(r=>{const fr=new FileReader();fr.onload=e=>r(e.target.result.split(',')[1]);fr.readAsDataURL(file);});
   const r=(immigrationRecords||[]).find(x=>x.id===id);if(!r)return;
   if(!r.docs)r.docs=[];
@@ -14575,7 +14578,7 @@ function immExpiryCalendar(id) {
   showCalendarModal(events, `${r.employeeName} · expiry reminders`, `Immigration reminders ${r.employeeName}`);
 }
 async function deleteImmigrationRecord(id) {
-  if(!confirm('Delete this immigration record? This cannot be undone.'))return;
+  if(!await uiConfirm('Delete this immigration record? This cannot be undone.'))return;
   immigrationRecords=(immigrationRecords||[]).filter(r=>r.id!==id);
   await saveImmigrationRecords();
   document.getElementById('immRecordPanel')?.remove();
@@ -15106,7 +15109,7 @@ function uiPrompt(opts){
     document.getElementById('uiPromptModal')?.remove();
     const ov=document.createElement('div');
     ov.id='uiPromptModal';
-    ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:99990;display:flex;align-items:center;justify-content:center;padding:20px;';
     const fieldHtml=fields.map((f,i)=>{
       f._id='uip-f'+i;
       let control;
@@ -15141,6 +15144,40 @@ function uiPrompt(opts){
     setTimeout(()=>{ const el=document.getElementById(fields[0]._id); if(el){ el.focus(); if(el.select) try{el.select();}catch(_){} } },60);
   });
 }
+// Styled confirm dialog (replaces native confirm()). Resolves true/false.
+// Destructive by default (red confirm button) - pass {danger:false} for neutral.
+function uiConfirm(message, opts={}){
+  return new Promise(resolve=>{
+    document.getElementById('uiConfirmModal')?.remove();
+    const danger = opts.danger !== false;
+    const accent = danger ? '#B42318' : 'var(--accent)';
+    const accentBg = danger ? '#FEF2F2' : 'var(--accent-bg)';
+    const ov=document.createElement('div');
+    ov.id='uiConfirmModal';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:99995;display:flex;align-items:center;justify-content:center;padding:20px;';
+    ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
+      <div style="padding:20px 22px 16px;display:flex;gap:13px;align-items:flex-start;">
+        <div style="width:36px;height:36px;border-radius:50%;background:${accentBg};color:${accent};display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;">${danger?'⚠️':'❓'}</div>
+        <div style="min-width:0;">
+          <div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(opts.title||(danger?'Are you sure?':'Confirm'))}</div>
+          ${message?`<div style="font-size:13px;color:var(--ink2);margin-top:5px;line-height:1.55;">${escapeHtml(message)}</div>`:''}
+        </div>
+      </div>
+      <div style="padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;background:var(--surface);">
+        <button class="btn btn-secondary btn-sm" id="uic-cancel">${escapeHtml(opts.cancelLabel||'Cancel')}</button>
+        <button class="btn btn-sm" id="uic-ok" style="background:${accent};border:1px solid ${accent};color:white;">${escapeHtml(opts.confirmLabel||(danger?'Delete':'Confirm'))}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    const close=v=>{ document.removeEventListener('keydown',onKey); ov.remove(); resolve(v); };
+    const onKey=ev=>{ if(ev.key==='Escape') close(false); else if(ev.key==='Enter') close(true); };
+    ov.querySelector('#uic-ok').onclick=()=>close(true);
+    ov.querySelector('#uic-cancel').onclick=()=>close(false);
+    ov.onclick=e=>{ if(e.target===ov) close(false); };
+    document.addEventListener('keydown',onKey);
+    setTimeout(()=>ov.querySelector('#uic-ok')?.focus(),60);
+  });
+}
 // Single-value convenience: returns the string (or null if cancelled).
 async function uiPromptText(title, opts={}){
   const r=await uiPrompt({ title, icon:opts.icon, subtitle:opts.subtitle, submitLabel:opts.submitLabel,
@@ -15159,7 +15196,7 @@ function _ocOpenAddModal(kind) {
   document.getElementById('ocAddModal')?.remove();
   const ov=document.createElement('div');
   ov.id='ocAddModal';
-  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:990;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:990;display:flex;align-items:center;justify-content:center;padding:20px;';
   const accent = isRole ? '#059669' : 'var(--accent)';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 22px;display:flex;align-items:center;gap:10px;">
@@ -15308,7 +15345,7 @@ async function ocLoadCSV(event) {
       return {id:'csv-'+i,display_full_name:r[nameKey]||r.name||'Person '+(i+1),employments:[{job_title:r[titleKey]||'',department:r[deptKey]||'General'}],manager:mi>=0?'csv-'+mi:null};
     });
     ocBuild();
-  } catch(e){alert('Could not read file: '+e.message);}
+  } catch(e){showBreezeToast('Could not read file: '+e.message);}
   event.target.value='';
 }
 
@@ -15768,7 +15805,7 @@ function showCalendarModal(events, subtitle, filename) {
   document.getElementById('calInviteModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'calInviteModal';
-  modal.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
   modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
     <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);"><div style="font-size:14px;font-weight:700;color:var(--ink);">📅 Add to calendar</div><div style="font-size:12px;color:var(--ink3);margin-top:3px;">${escapeHtml(subtitle||'')}</div></div>
     <div style="padding:16px 20px;">
@@ -16102,7 +16139,7 @@ function wfInjectChecklistButtons(container, activeCases) {
 function wfNewCase(filterScenarioIds) {
   const scenarios = filterScenarioIds ? WF_SCENARIOS.filter(s=>filterScenarioIds.includes(s.id)) : WF_SCENARIOS;
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   const opts = scenarios.map(s=>`<option value="${s.id}">${s.icon} ${s.label}</option>`).join('');
   const inp = 'width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:420px;box-shadow:var(--shadow-lg);overflow:hidden;">
@@ -16187,7 +16224,7 @@ function wfEditStep(caseId, stepId) {
   const step=wfGetSteps(c).find(s=>s.id===stepId); if(!step) return;
   const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Edit checklist step</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
@@ -16217,7 +16254,7 @@ async function wfSaveStepEdit(caseId, stepId, btn) {
   wfRenderCase(c);
 }
 async function wfDeleteStep(caseId, stepId) {
-  if(!confirm('Remove this step from the checklist? This only affects this case.')) return;
+  if(!await uiConfirm('Remove this step from the checklist? This only affects this case.', {confirmLabel:'Remove'})) return;
   const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
   wfInitStepsOverride(c);
   c.stepsOverride=c.stepsOverride.filter(s=>s.id!==stepId);
@@ -16228,7 +16265,7 @@ async function wfDeleteStep(caseId, stepId) {
 function wfAddStep(caseId) {
   const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;box-shadow:var(--shadow-lg);overflow:hidden;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Add checklist step</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
@@ -16420,7 +16457,7 @@ function wfRenderCase(c) {
 // Contact log attachment helpers
 async function wfDeleteLogEntry(caseId, dateStr) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
-  if (!confirm('Delete this log entry?')) return;
+  if (!await uiConfirm('Delete this log entry?')) return;
   c.contactLog = (c.contactLog||[]).filter(e => e.date !== dateStr);
   await saveWfCases();
   // Re-render log list
@@ -16451,7 +16488,7 @@ function wfDownloadLogDoc(caseId, dateStr) {
 function wfLogAttachFile(caseId, input) {
   const file = input.files[0]; if (!file) return;
   const MAX = 1.5*1024*1024;
-  if (file.size > MAX) { alert('Max 1.5MB'); input.value=''; return; }
+  if (file.size > MAX) { showBreezeToast('Max 1.5MB'); input.value=''; return; }
   const reader = new FileReader();
   reader.onload = e => {
     window[`_wfLogAttach_${caseId}`] = { filename: file.name, base64: e.target.result.split(',')[1], mimeType: file.type };
@@ -16590,7 +16627,7 @@ function openWfDetailsPanel(caseId) {
   document.getElementById('wfDetailPanel')?.remove();
   const panel = document.createElement('div');
   panel.id = 'wfDetailPanel';
-  panel.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  panel.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const sc = WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[],icon:'📋',label:'Unknown'};
   const pct = sc.steps.length?Math.min(100,Math.round((c.checkedSteps.length/sc.steps.length)*100)):0;
   const contactLog = (c.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
@@ -16636,7 +16673,7 @@ function openWfDetailsPanel(caseId) {
         ${docs.length?docs.map(d=>`<div style="display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid var(--border);"><span>${d.filename.endsWith('.pdf')?'📄':d.filename.match(/\.(docx?)/i)?'📝':'📎'}</span><div style="flex:1;min-width:0;"><div style="font-size:11px;font-weight:500;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(d.filename)}</div></div><button onclick="wfDownloadDoc('${caseId}','${d.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">⬇</button></div>`).join(''):`<div style="font-size:11px;color:var(--ink3);">No documents yet - use Upload to add files.</div>`}
       </div>
       <div style="padding:14px 22px;display:flex;align-items:center;gap:8px;margin-top:auto;">
-        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="if(confirm('Delete this case? Cannot be undone.')){document.getElementById('wfDetailPanel').remove();wfDeleteCase('${caseId}')}">Delete record</button>
+        <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="(async()=>{ if(await uiConfirm('Delete this case? This cannot be undone.')){document.getElementById('wfDetailPanel').remove();wfDeleteCase('${caseId}',true);} })()">Delete record</button>
         <div style="flex:1;"></div>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfDetailPanel').remove()">Close</button>
       </div>
@@ -16677,8 +16714,8 @@ async function wfCloseCase(id) {
   await loadWfCases();renderTrackersBody();
 }
 
-async function wfDeleteCase(id) {
-  if (!confirm('Delete this case record? This cannot be undone.')) return;
+async function wfDeleteCase(id, skipConfirm) {
+  if (!skipConfirm && !await uiConfirm('Delete this case record? This cannot be undone.')) return;
   wfCases = wfCases.filter(x=>x.id!==id);
   await saveWfCases();
   wfActiveCase = null;
@@ -16700,7 +16737,7 @@ async function openTrackerGuidance(topic) {
   }, null);
 
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
 
   const points = fallback?.points || [];
   const source = policy ? `Based on your policy: ${policy.name}` : (fallback?.source || 'ACAS guidance');
@@ -16769,7 +16806,7 @@ function wfRunClose(){ _wfRunId=null; renderAutomations(); }
 async function wfRunDeleteCase(caseId){
   const c=(wfCases||[]).find(x=>x.id===caseId);
   const who=c?.employeeName?` for ${c.employeeName}`:'';
-  if(!confirm(`Remove this workflow run${who}? This deletes their progress and cannot be undone.`)) return;
+  if(!await uiConfirm(`Remove this workflow run${who}? This deletes their progress and cannot be undone.`, {confirmLabel:'Remove'})) return;
   wfCases=(wfCases||[]).filter(x=>x.id!==caseId);
   try{ await saveWfCases(); }catch(e){}
   _wfRunId=null;
@@ -17118,7 +17155,7 @@ async function wfDraftDocAI(caseId, stepId, subId, btn){
 async function wfUploadDoc(caseId, input) {
   const file = input.files[0]; if (!file) return;
   const MAX = 1.5 * 1024 * 1024; // 1.5MB
-  if (file.size > MAX) { alert('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; }
+  if (file.size > MAX) { showBreezeToast('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; }
   const b64 = await new Promise(r => { const fr=new FileReader(); fr.onload=e=>r(e.target.result.split(',')[1]); fr.readAsDataURL(file); });
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
   if (!c.docs) c.docs = [];
@@ -17154,18 +17191,21 @@ function wfDownloadDoc(caseId, docId) {
 }
 
 async function wfDeleteDoc(caseId, docId) {
-  if (!confirm('Remove this document?')) return;
+  if (!await uiConfirm('Remove this document?', {confirmLabel:'Remove'})) return;
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
   c.docs = (c.docs||[]).filter(d=>d.id!==docId);
   await saveWfCases();
   wfRenderCase(c);
 }
 
-function showBreezeToast(msg) {
-  // Unified: all toasts use the bottom-centre navy bzToast style.
+function showBreezeToast(msg, type) {
+  // Unified: all toasts use the bottom-centre bzToast style (navy, or red for errors).
   // bzToast renders via innerHTML, so escape here - these messages are plain text
   // and may include user-supplied names (project/task titles).
-  bzToast(escapeHtml(msg));
+  // If no type is given, infer "error" from common failure wording so converted
+  // showBreezeToast() calls keep their red tone automatically.
+  if (!type && /(fail|error|too large|could not|couldn'?t|cannot|can'?t |not logged in|not signed|please (sign|select|upload|connect)|no (data|charts|template|valid))/i.test(String(msg))) type = 'error';
+  bzToast(escapeHtml(msg), type);
 }
 
 // ── HEADCOUNT PLANNING ──
@@ -17437,7 +17477,7 @@ function openAddRoleModal(existing) {
   const srcOpts = HC_SOURCES.map(s=>`<option value="${s}"${r.source===s?' selected':''}>${s}</option>`).join('');
   const defaultStages = (r.interviewStages||HC_DEFAULT_INTERVIEW_STAGES).join(', ');
   const ov = document.createElement('div');
-  ov.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML = `<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:600px;max-height:92vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:18px 24px;flex-shrink:0;"><div style="font-size:15px;font-weight:700;color:var(--ink);">${isEdit?'Edit':'Add'} open role</div></div>
     <div style="padding:20px 24px;overflow-y:auto;flex:1;display:flex;flex-direction:column;gap:14px;">
@@ -17544,7 +17584,7 @@ function openRolePanel(id) {
   document.getElementById('hcRolePanel')?.remove();
   const panel = document.createElement('div');
   panel.id='hcRolePanel';
-  panel.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
+  panel.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:stretch;justify-content:flex-end;';
   const lbl='font-size:10px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:3px;display:block;';
   const inp='width:100%;height:37px;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;';
   const sel=inp+'cursor:pointer;';
@@ -17688,7 +17728,7 @@ function hcAddCandidateModal(roleId) {
   const stageOpts=stages.map(s=>`<option value="${s}">${escapeHtml(s)}</option>`).join('');
   const srcOpts=HC_SOURCES.map(s=>`<option value="${s}">${s}</option>`).join('');
   const ov=document.createElement('div');
-  ov.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:950;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;">
     <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">Add candidate</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">${escapeHtml(r.title)}</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
@@ -17794,7 +17834,7 @@ async function hcDeleteLog(id,date) {
   document.getElementById('hcRolePanel')?.remove(); openRolePanel(id);
 }
 async function deleteHCRole(id) {
-  if(!confirm('Delete this role? This cannot be undone.')) return;
+  if(!await uiConfirm('Delete this role? This cannot be undone.')) return;
   hcRoles=(hcRoles||[]).filter(r=>r.id!==id);
   await saveHCRoles();
   document.getElementById('hcRolePanel')?.remove(); renderHeadcount();
@@ -17866,8 +17906,8 @@ renderTmpls();
 // ── DEMO DATA SEEDER ──
 // Run window.seedDemoData() from the browser console to clear test data and load realistic sample data.
 window.seedDemoData = async function() {
-  if (!currentProfile) { alert('Not signed in - please log in first.'); return; }
-  if (!confirm('This will replace ALL tracker, people plan and headcount data with realistic sample data. Continue?')) return;
+  if (!currentProfile) { showBreezeToast('Not signed in - please log in first.'); return; }
+  if (!await uiConfirm('This will replace ALL tracker, people plan and headcount data with realistic sample data. Continue?', {title:'Replace all data?', confirmLabel:'Replace data'})) return;
 
   const d = (y,m,day) => new Date(y,m-1,day).toISOString();
   const ago = n => new Date(Date.now()-n*86400000).toISOString();
@@ -18039,7 +18079,7 @@ window.seedDemoData = async function() {
 
   // Reset in-memory state so next navigation re-fetches from DB
   wfCases = null; mpRecords = null; ppPlan = null; hcRoles = null; automations = null;
-  alert('Done! Navigate to Trackers, People Plan or Headcount to see the sample data.');
+  showBreezeToast('Done! Navigate to Trackers, People Plan or Headcount to see the sample data.');
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -18354,17 +18394,17 @@ function projFileIcon(name){ name=(name||'').toLowerCase(); return /\.pdf$/.test
 function _projReadB64(file){ return new Promise(r=>{ const fr=new FileReader(); fr.onload=e=>r(e.target.result.split(',')[1]); fr.readAsDataURL(file); }); }
 function _projDownloadAtt(a){ if(!a||!a.base64) return; const bytes=Uint8Array.from(atob(a.base64),c=>c.charCodeAt(0)); const blob=new Blob([bytes],{type:a.mimeType||'application/octet-stream'}); const el=document.createElement('a'); el.href=URL.createObjectURL(blob); el.download=a.title||'file'; el.click(); URL.revokeObjectURL(el.href); }
 
-async function projUploadFile(input){ const p=projActive(); if(!p) return; const file=input.files[0]; if(!file){ return; } if(file.size>PROJ_FILE_MAX){ alert('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; } const base64=await _projReadB64(file); p.attachments=p.attachments||[]; p.attachments.push({type:'file',title:file.name,base64,mimeType:file.type,size:file.size,uploadedAt:new Date().toISOString()}); input.value=''; await saveProjects(); renderProjectDetail(); if(typeof showBreezeToast==='function') showBreezeToast('File uploaded'); }
+async function projUploadFile(input){ const p=projActive(); if(!p) return; const file=input.files[0]; if(!file){ return; } if(file.size>PROJ_FILE_MAX){ showBreezeToast('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; } const base64=await _projReadB64(file); p.attachments=p.attachments||[]; p.attachments.push({type:'file',title:file.name,base64,mimeType:file.type,size:file.size,uploadedAt:new Date().toISOString()}); input.value=''; await saveProjects(); renderProjectDetail(); if(typeof showBreezeToast==='function') showBreezeToast('File uploaded'); }
 function projDownloadFile(i){ const p=projActive(); if(!p) return; _projDownloadAtt((p.attachments||[])[i]); }
 
-async function projUploadTaskFile(id,input){ const p=projActive(); const m=(p?.milestones||[]).find(x=>x.id===id); if(!m) return; const file=input.files[0]; if(!file){ return; } if(file.size>PROJ_FILE_MAX){ alert('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; } const base64=await _projReadB64(file); m.attachments=m.attachments||[]; m.attachments.push({type:'file',title:file.name,base64,mimeType:file.type,size:file.size,uploadedAt:new Date().toISOString()}); input.value=''; await saveProjects(); renderProjectDetail(); if(typeof showBreezeToast==='function') showBreezeToast('File uploaded'); }
+async function projUploadTaskFile(id,input){ const p=projActive(); const m=(p?.milestones||[]).find(x=>x.id===id); if(!m) return; const file=input.files[0]; if(!file){ return; } if(file.size>PROJ_FILE_MAX){ showBreezeToast('File too large (max 1.5 MB). Please compress or use a smaller file.'); input.value=''; return; } const base64=await _projReadB64(file); m.attachments=m.attachments||[]; m.attachments.push({type:'file',title:file.name,base64,mimeType:file.type,size:file.size,uploadedAt:new Date().toISOString()}); input.value=''; await saveProjects(); renderProjectDetail(); if(typeof showBreezeToast==='function') showBreezeToast('File uploaded'); }
 function projDownloadTaskFile(id,i){ const p=projActive(); const m=(p?.milestones||[]).find(x=>x.id===id); if(!m) return; _projDownloadAtt((m.attachments||[])[i]); }
-async function projDeleteProject(id){ if(!confirm('Delete this project? This cannot be undone.')) return; projectsData=(projectsData||[]).filter(p=>p.id!==id); await saveProjects(); renderProjects(); }
+async function projDeleteProject(id){ if(!await uiConfirm('Delete this project? This cannot be undone.')) return; projectsData=(projectsData||[]).filter(p=>p.id!==id); await saveProjects(); renderProjects(); }
 
 // ── New project modal ──
 function openNewProjectModal(){
   let m=document.getElementById('newProjModal'); if(!m){ m=document.createElement('div'); m.id='newProjModal'; document.body.appendChild(m); }
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:970;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:970;display:flex;align-items:center;justify-content:center;padding:20px;';
   const chips = Object.entries(PROJ_TEMPLATES).map(([k,t])=>`<button onclick="projCreateFromTemplate('${k}')" style="font-size:12px;border:1px solid var(--border);background:var(--surface2);border-radius:20px;padding:6px 12px;cursor:pointer;font-family:inherit;color:var(--ink2);" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--ink2)'">${escapeHtml(t.name)}</button>`).join('');
   m.innerHTML=`<div style="background:white;border-radius:14px;width:100%;max-width:520px;box-shadow:var(--shadow-lg);padding:24px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;"><div style="font-size:16px;font-weight:700;color:var(--ink);">New project</div><button onclick="document.getElementById('newProjModal').remove()" style="background:none;border:none;font-size:22px;color:var(--ink3);cursor:pointer;">×</button></div>
@@ -18405,7 +18445,7 @@ async function projAiGenerate(){
 async function openProjectStatusReport(){
   const p=projActive(); if(!p) return;
   let m=document.getElementById('projStatusModal'); if(!m){ m=document.createElement('div'); m.id='projStatusModal'; document.body.appendChild(m); }
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:970;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:970;display:flex;align-items:center;justify-content:center;padding:20px;';
   m.innerHTML=`<div style="background:white;border-radius:14px;width:100%;max-width:640px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;max-height:88vh;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">Status report - ${escapeHtml(p.name)}</div><button onclick="document.getElementById('projStatusModal').remove()" style="background:none;border:none;font-size:22px;color:var(--ink3);cursor:pointer;">×</button></div>
     <div style="padding:16px 20px;overflow-y:auto;flex:1;">
@@ -18435,7 +18475,7 @@ async function openProjectStatusReport(){
 function projCopyStatus(){ const t=document.getElementById('projStatusText'); if(t){ t.select(); try{ document.execCommand('copy'); }catch(e){} } }
 function projDownloadStatusPDF(){
   const p=projActive(); const txt=document.getElementById('projStatusText')?.value||'';
-  const w=window.open('','_blank'); if(!w){ alert('Allow pop-ups to download the PDF.'); return; }
+  const w=window.open('','_blank'); if(!w){ showBreezeToast('Allow pop-ups to download the PDF.'); return; }
   const html='<html><head><title>'+escapeHtml(p?.name||'Project status')+'</title><style>body{font-family:Arial,Helvetica,sans-serif;color:#1d1d1f;max-width:720px;margin:40px auto;line-height:1.6;padding:0 28px;}h1{font-size:20px;margin-bottom:2px;}.meta{color:#777;font-size:12px;margin-bottom:24px;}pre{white-space:pre-wrap;font-family:inherit;font-size:13px;}</style></head><body><h1>'+escapeHtml(p?.name||'Project status')+'</h1><div class="meta">Status report · '+new Date().toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'})+'</div><pre>'+escapeHtml(txt)+'</pre><scr'+'ipt>window.onload=function(){window.print();}</scr'+'ipt></body></html>';
   w.document.write(html); w.document.close();
 }
@@ -18451,10 +18491,10 @@ function projEmailStatus(){
 // ── Attach email picker ──
 function projAttachEmail(){
   let emails=(_allEmails&&_allEmails.length)?_allEmails:(window._isTestAccount?getTestEmails():[]);
-  if(!emails.length){ alert('Open your inbox first (the email icon, top right) so there are emails to attach.'); return; }
+  if(!emails.length){ showBreezeToast('Open your inbox first (the email icon, top right) so there are emails to attach.'); return; }
   _projEmailPick=emails;
   let m=document.getElementById('projEmailPickModal'); if(!m){ m=document.createElement('div'); m.id='projEmailPickModal'; document.body.appendChild(m); }
-  m.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:975;display:flex;align-items:center;justify-content:center;padding:20px;';
+  m.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:975;display:flex;align-items:center;justify-content:center;padding:20px;';
   m.innerHTML=`<div style="background:white;border-radius:14px;width:100%;max-width:520px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;max-height:80vh;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid var(--border);"><div style="font-size:14px;font-weight:600;color:var(--ink);">Attach an email</div><button onclick="document.getElementById('projEmailPickModal').remove()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;">×</button></div>
     <div style="overflow-y:auto;padding:8px;">${emails.map((e,i)=>{ const from=(e.from||'').replace(/<[^>]+>/,'').replace(/"/g,'').trim()||'Unknown'; return `<div onclick="projAttachEmailChosen(${i})" style="padding:10px 12px;border-radius:var(--r-sm);cursor:pointer;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'"><div style="font-size:12px;font-weight:600;color:var(--ink);">${escapeHtml(e.subject||'(No subject)')}</div><div style="font-size:11px;color:var(--ink3);">${escapeHtml(from)} · ${e.date?new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):''}</div></div>`; }).join('')}</div>
@@ -18676,7 +18716,7 @@ function projRenderCardModal(id){
   if (!m){ projCloseCard(); return; }
   _projOpenCardId = id;
   let mo = document.getElementById('projCardModal'); if(!mo){ mo = document.createElement('div'); mo.id='projCardModal'; document.body.appendChild(mo); }
-  mo.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:980;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;';
+  mo.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:flex-start;justify-content:center;padding:40px 20px;overflow-y:auto;';
   const sel = 'border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 8px;font-size:12px;font-family:inherit;background:var(--surface2);outline:none;cursor:pointer;';
   const statusOpts = Object.entries(MS_STATUS).map(([k,v])=>`<option value="${k}" ${projMsStatus(m)===k?'selected':''}>${v.label}</option>`).join('');
   mo.innerHTML = `<div onclick="event.stopPropagation()" style="background:white;border-radius:14px;width:100%;max-width:560px;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;margin:auto;">
@@ -18781,7 +18821,7 @@ function projDismissAttnItem(pid,mid){ _projDismissedAttn[pid+':'+mid] = true; r
 async function projTaskHelp(id){
   const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return;
   let mo=document.getElementById('projHelpModal'); if(!mo){ mo=document.createElement('div'); mo.id='projHelpModal'; document.body.appendChild(mo); }
-  mo.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mo.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:980;display:flex;align-items:center;justify-content:center;padding:20px;';
   mo.innerHTML=`<div style="background:white;border-radius:14px;width:100%;max-width:560px;max-height:85vh;box-shadow:var(--shadow-lg);display:flex;flex-direction:column;">
     <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">How to approach: ${escapeHtml(m.title)}</div><button onclick="document.getElementById('projHelpModal').remove()" style="background:none;border:none;font-size:22px;color:var(--ink3);cursor:pointer;">×</button></div>
     <div id="projHelpBody" style="padding:18px 20px;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--ink);"><div style="color:var(--ink3);display:flex;align-items:center;gap:8px;"><span style="animation:spin 1s linear infinite;display:inline-block;">⟳</span> Thinking this through for you...</div></div>
@@ -18802,7 +18842,7 @@ async function projAddEmailFromInbox(emailId){
   const emails=(_allEmails&&_allEmails.length)?_allEmails:(window._isTestAccount?getTestEmails():[]);
   const e=emails.find(x=>x.id===emailId); if(!e) return;
   if(!projectsData) await loadProjects();
-  if(!projectsData||!projectsData.length){ alert('Create a project first, then you can attach emails to its tasks.'); return; }
+  if(!projectsData||!projectsData.length){ showBreezeToast('Create a project first, then you can attach emails to its tasks.'); return; }
   _projEmailToAdd=e; if(!_projPickProject||!projectsData.find(p=>p.id===_projPickProject)) _projPickProject=projectsData[0].id;
   projRenderEmailToTaskModal();
 }
@@ -18815,7 +18855,7 @@ function projRenderEmailToTaskModal(){
   const taskOpts=tasks.length?tasks.map(m=>`<option value="${m.id}">${escapeHtml(m.title)}</option>`).join(''):`<option value="">(no tasks yet - attach to project)</option>`;
   const from=(e.from||'').replace(/<[^>]+>/,'').replace(/"/g,'').trim();
   const ss='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;background:var(--surface2);';
-  mo.style.cssText='position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:985;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mo.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:985;display:flex;align-items:center;justify-content:center;padding:20px;';
   mo.innerHTML=`<div style="background:white;border-radius:14px;width:100%;max-width:480px;box-shadow:var(--shadow-lg);padding:22px;">
     <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Add email to a task</div><button onclick="document.getElementById('projE2TModal').remove()" style="background:none;border:none;font-size:22px;color:var(--ink3);cursor:pointer;">×</button></div>
     <div style="font-size:12px;color:var(--ink2);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:14px;"><strong>${escapeHtml(e.subject||'(No subject)')}</strong><br><span style="color:var(--ink3);">From ${escapeHtml(from)}</span></div>
@@ -19145,7 +19185,7 @@ async function projConfirmEmailToTask(){
   .tl-input{font:inherit;font-size:12px;border:1px solid var(--border);border-radius:6px;padding:5px 8px;background:var(--surface);color:var(--ink);width:100%;}
   .tl-input:focus{outline:none;border-color:var(--accent);}
   .tl-ta{min-height:70px;resize:vertical;line-height:1.5;}
-  .tl-modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;}
+  .tl-modal-bg{position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1500;display:flex;align-items:center;justify-content:center;padding:20px;}
   .tl-modal{background:var(--surface);border-radius:var(--r-lg);box-shadow:0 20px 60px rgba(0,0,0,.3);width:100%;max-width:440px;max-height:90vh;overflow:auto;}
   .tl-modal-h{padding:16px 20px;border-bottom:1px solid var(--border);font-size:15px;font-weight:700;display:flex;justify-content:space-between;align-items:center;}
   .tl-modal-b{padding:18px 20px;display:flex;flex-direction:column;gap:12px;}
@@ -20021,7 +20061,7 @@ async function projConfirmEmailToTask(){
     XLSX.writeFile(wb,'Breeze-talent-review.xlsx');
   };
 
-  window.talentReset=function(){ if(talentState&&!confirm('Clear this talent review? Nothing was saved, so this cannot be undone.'))return; talentState=null; talentTab='grid'; renderTalent(); };
+  window.talentReset=async function(){ if(talentState&&!(await uiConfirm('Clear this talent review? Nothing was saved, so this cannot be undone.',{confirmLabel:'Clear'})))return; talentState=null; talentTab='grid'; renderTalent(); };
 
   // ---------- sample / demo data (no upload, no AI call) ----------
   window.talentLoadSample=function(){
