@@ -16983,7 +16983,17 @@ function wfOpenDocDraft(caseId, stepId, subId){
     <div style="background:#D85A30;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">📄 Draft document</div><div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:2px;">Review and edit, then download as a Word file - nothing is sent automatically.</div></div>
     <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
       <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Title</label><input id="wfd-title" value="${escapeHtml(title)}" style="${inp}"></div>
-      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Document</label><textarea id="wfd-body" rows="14" style="${inp}resize:vertical;min-height:240px;line-height:1.6;">${escapeHtml(body)}</textarea></div>
+      <div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;">
+          <label style="font-size:11px;font-weight:600;color:var(--ink2);">Document</label>
+          <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;">
+            <button type="button" id="wfd-tab-prev" onclick="wfDocTab('preview')" style="border:none;border-radius:6px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;font-family:inherit;">👁 Preview</button>
+            <button type="button" id="wfd-tab-edit" onclick="wfDocTab('edit')" style="border:none;border-radius:6px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;font-family:inherit;">✏️ Edit</button>
+          </div>
+        </div>
+        <textarea id="wfd-body" rows="15" oninput="if(_wfdTab==='preview')wfDocSyncPreview()" style="${inp}resize:vertical;min-height:280px;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;display:none;">${escapeHtml(body)}</textarea>
+        <div id="wfd-preview" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:22px 26px;background:white;min-height:280px;max-height:54vh;overflow-y:auto;font-size:13px;line-height:1.7;color:var(--ink);"></div>
+      </div>
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
       <div style="display:flex;gap:8px;align-items:center;">
@@ -16998,6 +17008,22 @@ function wfOpenDocDraft(caseId, stepId, subId){
   </div>`;
   document.body.appendChild(ov);
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  wfDocTab('preview');
+}
+let _wfdTab='preview';
+function wfDocTab(mode){
+  _wfdTab=mode;
+  const ta=document.getElementById('wfd-body'), pv=document.getElementById('wfd-preview');
+  const be=document.getElementById('wfd-tab-edit'), bp=document.getElementById('wfd-tab-prev');
+  if(!ta||!pv) return;
+  const on='background:white;color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,0.10);', off='background:transparent;color:var(--ink3);box-shadow:none;';
+  const base='border:none;border-radius:6px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;font-family:inherit;';
+  if(mode==='preview'){ ta.style.display='none'; pv.style.display='block'; wfDocSyncPreview(); if(bp)bp.style.cssText=base+on; if(be)be.style.cssText=base+off; }
+  else { pv.style.display='none'; ta.style.display='block'; if(be)be.style.cssText=base+on; if(bp)bp.style.cssText=base+off; ta.focus(); }
+}
+function wfDocSyncPreview(){
+  const ta=document.getElementById('wfd-body'), pv=document.getElementById('wfd-preview');
+  if(ta&&pv) pv.innerHTML = (typeof formatArtifactContent==='function') ? formatArtifactContent(ta.value||'', null) : escapeHtml(ta.value||'').replace(/\n/g,'<br>');
 }
 function wfDocCopy(){
   const t=document.getElementById('wfd-title')?.value||'';
@@ -17032,6 +17058,7 @@ async function wfDraftDocAI(caseId, stepId, subId, btn){
     const tEl=document.getElementById('wfd-title'), bEl=document.getElementById('wfd-body');
     if(tEl&&r.title) tEl.value=fix(r.title);
     if(bEl&&r.body) bEl.value=fix(r.body);
+    if(_wfdTab==='preview') wfDocSyncPreview();
   }catch(e){ showBreezeToast('AI draft failed - try again'); }
   btn.innerHTML=orig; btn.disabled=false;
 }
