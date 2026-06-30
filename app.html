@@ -4593,8 +4593,7 @@ async function runRetentionCleanupManual() {
 }
 
 async function deleteAllCompanyData() {
-  if (!confirm('This will permanently delete all chat history, meeting notes, responses and ratings for your company. Uploaded policies and templates will not be deleted. This cannot be undone.\n\nType DELETE to confirm.')) return;
-  const input = prompt('Type DELETE to confirm:');
+  const input = await uiPromptText('Delete all company data', {icon:'⚠️', subtitle:'Permanently deletes all chat history, meeting notes, responses and ratings. Uploaded policies and templates are kept. This cannot be undone.', label:'Type DELETE to confirm', placeholder:'DELETE', submitLabel:'Delete everything'});
   if (input !== 'DELETE') return;
   const cid = currentProfile.company_id;
   const msg = document.getElementById('set-danger-msg');
@@ -4734,7 +4733,7 @@ async function renderTmpls(filter) {
 
 async function renameTmpl(tmplId) {
   const t=tmpls.find(x=>x.id===tmplId); if(!t)return;
-  const newName=prompt('Rename template:',t.name); if(!newName||newName===t.name)return;
+  const newName=await uiPromptText('Rename template', {icon:'✏️', label:'Template name', value:t.name, submitLabel:'Rename', required:true}); if(!newName||newName===t.name)return;
   if(tmplId.startsWith('t_db_')){
     const dbId=tmplId.replace('t_db_','');
     const{error}=await sb.from('policies')
@@ -5623,7 +5622,7 @@ async function uploadHandbook(event, existingId) {
 async function renamePolicy(id) {
   const el=document.getElementById('pname-'+id);
   const current=el?el.textContent:'';
-  const newName=prompt('Rename policy:',current);
+  const newName=await uiPromptText('Rename policy', {icon:'✏️', label:'Policy name', value:current, submitLabel:'Rename', required:true});
   if(!newName||newName===current)return;
   if(!currentProfile){alert('Not logged in');return;}
   // Must include company_id match for RLS to allow the update
@@ -15097,6 +15096,58 @@ function ocRemovePerson(nodeId) {
   if(_ocEmps?.length) ocBuild();
 }
 
+// Reusable styled prompt modal (replaces native prompt()). Resolves to an object of
+// field values keyed by `key`, or null if cancelled. Supports text / textarea / select.
+function uiPrompt(opts){
+  return new Promise(resolve=>{
+    const fields=(opts.fields&&opts.fields.length)?opts.fields:[{key:'value',label:opts.label||'',value:opts.value||'',type:opts.type||'text',placeholder:opts.placeholder||'',required:opts.required}];
+    const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+    const lbl='font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
+    document.getElementById('uiPromptModal')?.remove();
+    const ov=document.createElement('div');
+    ov.id='uiPromptModal';
+    ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+    const fieldHtml=fields.map((f,i)=>{
+      f._id='uip-f'+i;
+      let control;
+      if(f.type==='textarea') control=`<textarea id="${f._id}" rows="${f.rows||3}" placeholder="${escapeHtml(f.placeholder||'')}" style="${inp}resize:vertical;min-height:70px;">${escapeHtml(f.value||'')}</textarea>`;
+      else if(f.type==='select') control=`<select id="${f._id}" style="${inp}cursor:pointer;">${(f.options||[]).map(o=>{const v=typeof o==='string'?o:o.value;const l=typeof o==='string'?o:o.label;return `<option value="${escapeHtml(String(v))}" ${String(f.value)===String(v)?'selected':''}>${escapeHtml(String(l))}</option>`;}).join('')}</select>`;
+      else control=`<input id="${f._id}" value="${escapeHtml(f.value||'')}" placeholder="${escapeHtml(f.placeholder||'')}" style="${inp}">`;
+      return `<div>${f.label?`<label style="${lbl}">${escapeHtml(f.label)}</label>`:''}${control}</div>`;
+    }).join('');
+    ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;">
+      <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 22px;display:flex;align-items:center;gap:10px;">
+        ${opts.icon?`<div style="width:34px;height:34px;border-radius:9px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${opts.icon}</div>`:''}
+        <div style="min-width:0;"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(opts.title||'')}</div>${opts.subtitle?`<div style="font-size:11px;color:var(--ink3);margin-top:1px;">${escapeHtml(opts.subtitle)}</div>`:''}</div>
+      </div>
+      <div style="padding:18px 22px;display:flex;flex-direction:column;gap:13px;">${fieldHtml}</div>
+      <div style="padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+        <button class="btn btn-secondary btn-sm" id="uip-cancel">Cancel</button>
+        <button class="btn btn-primary btn-sm" id="uip-ok">${escapeHtml(opts.submitLabel||'Save')}</button>
+      </div>
+    </div>`;
+    document.body.appendChild(ov);
+    const close=val=>{ ov.remove(); resolve(val); };
+    const submit=()=>{
+      const out={};
+      fields.forEach(f=>{ out[f.key]=document.getElementById(f._id)?.value||''; });
+      for(const f of fields){ if(f.required && !String(out[f.key]).trim()){ const el=document.getElementById(f._id); if(el){el.style.borderColor='var(--red)';el.focus();} return; } }
+      close(out);
+    };
+    ov.querySelector('#uip-ok').onclick=submit;
+    ov.querySelector('#uip-cancel').onclick=()=>close(null);
+    ov.onclick=e=>{ if(e.target===ov) close(null); };
+    fields.forEach(f=>{ if(f.type!=='textarea'){ const el=document.getElementById(f._id); if(el) el.addEventListener('keydown',ev=>{ if(ev.key==='Enter'){ ev.preventDefault(); submit(); } }); } });
+    setTimeout(()=>{ const el=document.getElementById(fields[0]._id); if(el){ el.focus(); if(el.select) try{el.select();}catch(_){} } },60);
+  });
+}
+// Single-value convenience: returns the string (or null if cancelled).
+async function uiPromptText(title, opts={}){
+  const r=await uiPrompt({ title, icon:opts.icon, subtitle:opts.subtitle, submitLabel:opts.submitLabel,
+    fields:[{key:'value', label:opts.label||'', value:opts.value||'', placeholder:opts.placeholder||'', type:opts.type||'text', rows:opts.rows, required:opts.required}] });
+  return r ? r.value : null;
+}
+
 function ocAddPerson() { _ocOpenAddModal('person'); }
 function ocAddOpenRole() { _ocOpenAddModal('role'); }
 
@@ -17073,8 +17124,8 @@ async function wfUploadDoc(caseId, input) {
   if (!c.docs) c.docs = [];
   // Prompt for doc type
   const types = ['Sick note','MATB1 form','Fit note','Letter','SC3 form','Medical report','Company document','Other'];
-  const type = prompt('Document type:\n'+types.map((t,i)=>`${i+1}. ${t}`).join('\n')+'\n\nEnter a number or type a label:', '1');
-  const typeLabel = (parseInt(type)>=1 && parseInt(type)<=types.length) ? types[parseInt(type)-1] : (type||'Document');
+  const typeLabel = await uiPromptText('Document type', {icon:'📄', label:'What kind of document is this?', type:'select', value:'Sick note', options:types, submitLabel:'Add document'});
+  if (typeLabel===null) { input.value=''; return; }
   const doc = { id:'doc_'+Date.now(), filename:file.name, type:typeLabel, base64:b64, mimeType:file.type, uploadedAt:new Date().toISOString() };
   c.docs.push(doc);
   await saveWfCases();
@@ -18284,16 +18335,16 @@ function renderProjectDetail(){
 
 // ── Mutations ──
 async function projSet(field, value){ const p=projActive(); if(!p) return; p[field]=value; await saveProjects(); renderProjectDetail(); }
-async function projEditField(field){ const p=projActive(); if(!p) return; const v=prompt(field==='name'?'Project name':'Objective', p[field]||''); if(v===null) return; p[field]=v.trim(); await saveProjects(); renderProjectDetail(); }
-async function projAddMilestone(){ const p=projActive(); if(!p) return; const t=prompt('Task name'); if(!t) return; p.milestones=p.milestones||[]; const id=projUid('m'); p.milestones.push({id,title:t.trim(),owner:'',dueDate:projDateIn(2),status:'not-started',description:'',subtasks:[],attachments:[]}); _projExpandedMs[id]=true; await saveProjects(); renderProjectDetail(); }
+async function projEditField(field){ const p=projActive(); if(!p) return; const v=await uiPromptText(field==='name'?'Project name':'Project objective', {icon:'✏️', label:field==='name'?'Project name':'Objective', value:p[field]||'', type:field==='name'?'text':'textarea', submitLabel:'Save'}); if(v===null) return; p[field]=v.trim(); await saveProjects(); renderProjectDetail(); }
+async function projAddMilestone(){ const p=projActive(); if(!p) return; const t=await uiPromptText('Add task', {icon:'➕', label:'Task name', placeholder:'e.g. Draft the policy', submitLabel:'Add task', required:true}); if(!t) return; p.milestones=p.milestones||[]; const id=projUid('m'); p.milestones.push({id,title:t.trim(),owner:'',dueDate:projDateIn(2),status:'not-started',description:'',subtasks:[],attachments:[]}); _projExpandedMs[id]=true; await saveProjects(); renderProjectDetail(); }
 async function projToggleMilestone(id){ const p=projActive(); if(!p) return; const m=(p.milestones||[]).find(x=>x.id===id); if(m){ const nd=!projMsDone(m); (m.subtasks||[]).forEach(s=>s.done=nd); m.status=nd?'done':'not-started'; m.done=nd; await saveProjects(); renderProjectDetail(); } }
 async function projDeleteMilestone(id){ const p=projActive(); if(!p) return; p.milestones=(p.milestones||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
-async function projAddRaid(){ const p=projActive(); if(!p) return; const text=prompt('Describe the risk / issue / assumption / dependency'); if(!text) return; let type=(prompt('Type: risk, issue, assumption or dependency','risk')||'risk').toLowerCase().trim(); if(!['risk','issue','assumption','dependency'].includes(type)) type='risk'; const mit=prompt('Mitigation / action (optional)','')||''; p.raid=p.raid||[]; p.raid.push({id:projUid('r'),type,text:text.trim(),mitigation:mit.trim()}); await saveProjects(); renderProjectDetail(); }
+async function projAddRaid(){ const p=projActive(); if(!p) return; const r=await uiPrompt({title:'Add RAID item',icon:'⚠️',submitLabel:'Add',fields:[{key:'text',label:'Describe the risk / issue / assumption / dependency',type:'textarea',required:true},{key:'type',label:'Type',type:'select',value:'risk',options:[{value:'risk',label:'Risk'},{value:'issue',label:'Issue'},{value:'assumption',label:'Assumption'},{value:'dependency',label:'Dependency'}]},{key:'mit',label:'Mitigation / action (optional)',type:'textarea'}]}); if(!r||!r.text.trim()) return; let type=(r.type||'risk').toLowerCase().trim(); if(!['risk','issue','assumption','dependency'].includes(type)) type='risk'; p.raid=p.raid||[]; p.raid.push({id:projUid('r'),type,text:r.text.trim(),mitigation:(r.mit||'').trim()}); await saveProjects(); renderProjectDetail(); }
 async function projDeleteRaid(id){ const p=projActive(); if(!p) return; p.raid=(p.raid||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
-async function projAddRaci(){ const p=projActive(); if(!p) return; const name=prompt('Name or role'); if(!name) return; let raci=(prompt('R (Responsible), A (Accountable), C (Consulted) or I (Informed)','R')||'R').toUpperCase().trim()[0]; if(!['R','A','C','I'].includes(raci)) raci='I'; p.raci=p.raci||[]; p.raci.push({id:projUid('c'),name:name.trim(),raci}); await saveProjects(); renderProjectDetail(); }
+async function projAddRaci(){ const p=projActive(); if(!p) return; const r=await uiPrompt({title:'Add RACI entry',icon:'👤',submitLabel:'Add',fields:[{key:'name',label:'Name or role',required:true},{key:'raci',label:'Responsibility',type:'select',value:'R',options:[{value:'R',label:'R - Responsible'},{value:'A',label:'A - Accountable'},{value:'C',label:'C - Consulted'},{value:'I',label:'I - Informed'}]}]}); if(!r||!r.name.trim()) return; let raci=(r.raci||'R').toUpperCase().trim()[0]; if(!['R','A','C','I'].includes(raci)) raci='I'; p.raci=p.raci||[]; p.raci.push({id:projUid('c'),name:r.name.trim(),raci}); await saveProjects(); renderProjectDetail(); }
 async function projDeleteRaci(id){ const p=projActive(); if(!p) return; p.raci=(p.raci||[]).filter(x=>x.id!==id); await saveProjects(); renderProjectDetail(); }
-async function projAddLog(){ const p=projActive(); if(!p) return; const note=prompt('Add an update'); if(!note) return; p.log=p.log||[]; p.log.push({date:new Date().toISOString().slice(0,10),note:note.trim()}); await saveProjects(); renderProjectDetail(); }
-async function projAddLink(){ const p=projActive(); if(!p) return; const title=prompt('Document / link title'); if(!title) return; const url=prompt('URL (optional)','')||''; p.attachments=p.attachments||[]; p.attachments.push({type:'link',title:title.trim(),url:url.trim()}); await saveProjects(); renderProjectDetail(); }
+async function projAddLog(){ const p=projActive(); if(!p) return; const note=await uiPromptText('Add an update', {icon:'📝', label:'Update', type:'textarea', submitLabel:'Add update', required:true}); if(!note) return; p.log=p.log||[]; p.log.push({date:new Date().toISOString().slice(0,10),note:note.trim()}); await saveProjects(); renderProjectDetail(); }
+async function projAddLink(){ const p=projActive(); if(!p) return; const r=await uiPrompt({title:'Add document / link',icon:'🔗',submitLabel:'Add',fields:[{key:'title',label:'Title',required:true},{key:'url',label:'URL (optional)',placeholder:'https://'}]}); if(!r||!r.title.trim()) return; p.attachments=p.attachments||[]; p.attachments.push({type:'link',title:r.title.trim(),url:(r.url||'').trim()}); await saveProjects(); renderProjectDetail(); }
 async function projRemoveAttachment(i){ const p=projActive(); if(!p) return; (p.attachments||[]).splice(i,1); await saveProjects(); renderProjectDetail(); }
 
 // ── File attachments (real upload + download), stored base64 inline like case docs ──
@@ -18645,7 +18696,7 @@ function projRenderCardModal(id){
   </div>`;
   mo.onclick = e => { if (e.target===mo) projCloseCard(); };
 }
-async function projEditMsTitle(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Task name', m.title||''); if(v===null) return; if(v.trim()){ m.title=v.trim(); await saveProjects(); renderProjectDetail(); } }
+async function projEditMsTitle(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=await uiPromptText('Rename task', {icon:'✏️', label:'Task name', value:m.title||'', submitLabel:'Save'}); if(v===null) return; if(v.trim()){ m.title=v.trim(); await saveProjects(); renderProjectDetail(); } }
 
 function projRenderTimeline(p){
   const ms = (p.milestones||[]).filter(m=>m.dueDate).slice().sort((a,b)=>new Date(a.dueDate)-new Date(b.dueDate));
@@ -18692,8 +18743,8 @@ function projRenderTimeline(p){
 // ── Milestone + subtask mutations ──
 async function projSetMsStatus(id,status){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(m){ m.status=status; m.done=(status==='done'); await saveProjects(); renderProjectDetail(); } }
 async function projSetMsField(id,field,val){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(m){ m[field]=val; await saveProjects(); renderProjectDetail(); } }
-async function projEditMsDesc(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Milestone description', m.description||''); if(v===null) return; m.description=v.trim(); await saveProjects(); renderProjectDetail(); }
-async function projAddSubtask(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=prompt('Task'); if(!t) return; m.subtasks=m.subtasks||[]; m.subtasks.push({id:projUid('s'),text:t.trim(),done:false}); projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); }
+async function projEditMsDesc(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=await uiPromptText('Task description', {icon:'📝', label:'Description', value:m.description||'', type:'textarea', submitLabel:'Save'}); if(v===null) return; m.description=v.trim(); await saveProjects(); renderProjectDetail(); }
+async function projAddSubtask(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=await uiPromptText('Add step', {icon:'➕', label:'Step', placeholder:'e.g. Send the form', submitLabel:'Add step', required:true}); if(!t) return; m.subtasks=m.subtasks||[]; m.subtasks.push({id:projUid('s'),text:t.trim(),done:false}); projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); }
 async function projToggleSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(s){ s.done=!s.done; projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); } }
 async function projDeleteSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; m.subtasks=(m.subtasks||[]).filter(x=>x.id!==sid); projSyncMsStatus(m); await saveProjects(); renderProjectDetail(); }
 function projSyncMsStatus(m){ const s=m.subtasks||[]; if(!s.length) return; const done=s.filter(x=>x.done).length; if(done===s.length){ m.status='done'; m.done=true; } else if(done>0){ if(m.status==='done'||m.status==='not-started'||!m.status){ m.status='in-progress'; } m.done=false; } else { if(m.status==='done'){ m.status='in-progress'; } m.done=false; } }
@@ -18709,8 +18760,8 @@ async function projAiBreakTasks(id){
   }catch(e){}
   renderProjectDetail();
 }
-async function projEditMsOwner(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=prompt('Owner(s) - separate multiple people with commas', m.owner||''); if(v===null) return; m.owner=v.trim(); await saveProjects(); renderProjectDetail(); }
-async function projEditSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return; const v=prompt('Edit task', s.text||''); if(v===null) return; if(!v.trim()){ m.subtasks=m.subtasks.filter(x=>x.id!==sid); } else { s.text=v.trim(); } await saveProjects(); renderProjectDetail(); }
+async function projEditMsOwner(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const v=await uiPromptText('Edit owner', {icon:'👤', label:'Owner(s)', subtitle:'Separate multiple people with commas', value:m.owner||'', submitLabel:'Save'}); if(v===null) return; m.owner=v.trim(); await saveProjects(); renderProjectDetail(); }
+async function projEditSubtask(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return; const v=await uiPromptText('Edit step', {icon:'✏️', label:'Step', value:s.text||'', submitLabel:'Save'}); if(v===null) return; if(!v.trim()){ m.subtasks=m.subtasks.filter(x=>x.id!==sid); } else { s.text=v.trim(); } await saveProjects(); renderProjectDetail(); }
 async function projAiSubtaskHelp(mid,sid){
   const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(!s) return;
   const btn=document.getElementById('sh-'+sid); if(btn){ btn.disabled=true; btn.textContent='⟳…'; }
@@ -18743,8 +18794,8 @@ async function projTaskHelp(id){
     const body=document.getElementById('projHelpBody'); if(body) body.innerHTML = txt ? escapeHtml(txt).replace(/\n/g,'<br>') : 'Sorry, could not generate guidance just now. Please try again.';
   }catch(e){ const body=document.getElementById('projHelpBody'); if(body) body.innerHTML='Sorry, could not generate guidance just now.'; }
 }
-async function projAddTaskNote(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=prompt('Note'); if(!t) return; m.attachments=m.attachments||[]; m.attachments.push({type:'note',title:t.trim()}); await saveProjects(); renderProjectDetail(); }
-async function projAddTaskLink(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=prompt('Document / link title'); if(!t) return; const u=prompt('URL (optional)','')||''; m.attachments=m.attachments||[]; m.attachments.push({type:'link',title:t.trim(),url:u.trim()}); await saveProjects(); renderProjectDetail(); }
+async function projAddTaskNote(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const t=await uiPromptText('Add note', {icon:'📝', label:'Note', type:'textarea', submitLabel:'Add note', required:true}); if(!t) return; m.attachments=m.attachments||[]; m.attachments.push({type:'note',title:t.trim()}); await saveProjects(); renderProjectDetail(); }
+async function projAddTaskLink(id){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; const r=await uiPrompt({title:'Add document / link',icon:'🔗',submitLabel:'Add',fields:[{key:'title',label:'Title',required:true},{key:'url',label:'URL (optional)',placeholder:'https://'}]}); if(!r||!r.title.trim()) return; m.attachments=m.attachments||[]; m.attachments.push({type:'link',title:r.title.trim(),url:(r.url||'').trim()}); await saveProjects(); renderProjectDetail(); }
 async function projRemoveTaskAttachment(id,ai){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===id); if(!m) return; (m.attachments||[]).splice(ai,1); await saveProjects(); renderProjectDetail(); }
 
 async function projAddEmailFromInbox(emailId){
