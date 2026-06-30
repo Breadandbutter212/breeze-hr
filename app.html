@@ -12749,7 +12749,7 @@ function wfbPickIcon(){
 function wfbStepEditor(idx){
   const editing = idx!=null;
   const s = editing ? _wfBuilder.steps[idx] : {title:'',desc:'',timeframe:'',owner:'',tag:'recommended',action:null};
-  _wfbSubs = (s.subs||[]).map(su=>({title:su.title||'',owner:su.owner||'',email:su.email?{...su.email}:null}));
+  _wfbSubs = (s.subs||[]).map(su=>({title:su.title||'',owner:su.owner||'',email:su.email?{...su.email}:null,doc:su.doc?{...su.doc}:null}));
   const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
   const actType = s.action?.type||'none';
   const tmplOpts = _wfTemplateOpts.map(o=>`<option value="${o.id}" ${s.action?.docId===o.id?'selected':''}>${escapeHtml(o.name)}</option>`).join('');
@@ -12815,6 +12815,13 @@ function wfbRenderSubs(){
            <textarea rows="3" placeholder="Body - use {employee} for the person's name." oninput="_wfbSubEmailSet(${i},'body',this.value)" style="${si}resize:vertical;min-height:60px;">${escapeHtml(su.email.body||'')}</textarea>
          </div>`
       : `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button type="button" onclick="wfbSubAddEmail(${i})" class="btn btn-ghost btn-sm" style="font-size:10px;color:#047857;padding:2px 0;">+ Add email to this task</button><button type="button" onclick="wfbDraftSubEmail(${i},this)" title="Let AI write this email for you" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">✨ Draft with AI</button></div>`;
+    const docBlock = su.doc
+      ? `<div style="border-top:1px dashed var(--border);margin-top:2px;padding-top:8px;display:flex;flex-direction:column;gap:6px;">
+           <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;"><span style="font-size:10px;font-weight:700;color:#D85A30;">📄 Document draft</span><div style="display:flex;gap:8px;align-items:center;"><button type="button" onclick="wfbDraftSubDoc(${i},this)" title="Draft this document with AI" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:2px 9px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:3px;">✨ Draft</button><button type="button" onclick="wfbSubDelDoc(${i})" style="background:none;border:none;color:var(--ink3);font-size:10px;cursor:pointer;text-decoration:underline;">Remove</button></div></div>
+           <input value="${escapeHtml(su.doc.title||'')}" placeholder="Document title - e.g. Onboarding pack for {employee}" oninput="_wfbSubDocSet(${i},'title',this.value)" style="${si}">
+           <textarea rows="4" placeholder="Document body - use {employee} for the person's name, or click ✨ Draft to let AI write it." oninput="_wfbSubDocSet(${i},'body',this.value)" style="${si}resize:vertical;min-height:80px;">${escapeHtml(su.doc.body||'')}</textarea>
+         </div>`
+      : `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button type="button" onclick="wfbSubAddDoc(${i})" class="btn btn-ghost btn-sm" style="font-size:10px;color:#D85A30;padding:2px 0;">+ Add document to this task</button><button type="button" onclick="wfbDraftSubDoc(${i},this)" title="Let AI write this Word document for you" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">✨ Draft with AI</button></div>`;
     return `<div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 10px;background:var(--surface2);display:flex;flex-direction:column;gap:7px;">
       <div style="display:flex;gap:7px;align-items:center;">
         <span style="width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
@@ -12823,15 +12830,32 @@ function wfbRenderSubs(){
       </div>
       <input value="${escapeHtml(su.owner||'')}" placeholder="Owner (optional) - e.g. HR, IT" oninput="_wfbSubSet(${i},'owner',this.value)" style="${si}">
       ${emailBlock}
+      ${docBlock}
     </div>`;
   }).join('');
 }
 function _wfbSubSet(i,field,val){ if(_wfbSubs[i]) _wfbSubs[i][field]=val; }
 function _wfbSubEmailSet(i,field,val){ if(_wfbSubs[i]&&_wfbSubs[i].email) _wfbSubs[i].email[field]=val; }
-function wfbAddSub(){ _wfbSubs.push({title:'',owner:'',email:null}); wfbRenderSubs(); }
+function wfbAddSub(){ _wfbSubs.push({title:'',owner:'',email:null,doc:null}); wfbRenderSubs(); }
 function wfbDelSub(i){ _wfbSubs.splice(i,1); wfbRenderSubs(); }
 function wfbSubAddEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email={to:'',cc:'',bcc:'',subject:'',body:''}; wfbRenderSubs(); }
 function wfbSubDelEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email=null; wfbRenderSubs(); }
+function _wfbSubDocSet(i,field,val){ if(_wfbSubs[i]&&_wfbSubs[i].doc) _wfbSubs[i].doc[field]=val; }
+function wfbSubAddDoc(i){ if(_wfbSubs[i]) _wfbSubs[i].doc={title:'',body:''}; wfbRenderSubs(); }
+function wfbSubDelDoc(i){ if(_wfbSubs[i]) _wfbSubs[i].doc=null; wfbRenderSubs(); }
+// ✨ star on a sub-task: draft (or re-draft) a Word document / letter with AI.
+async function wfbDraftSubDoc(i, btn){
+  const su=_wfbSubs[i]; if(!su) return;
+  if(!(su.title||'').trim()){ showBreezeToast('Give the task a title first'); return; }
+  const orig=btn?btn.innerHTML:''; if(btn){btn.innerHTML='⏳';btn.disabled=true;}
+  try{
+    const r=await _aiDraftDoc({ workflow:_wfBuilder?.label||document.getElementById('wfb-name')?.value, step:document.getElementById('wfbs-title')?.value, task:su.title, guidance:document.getElementById('wfbs-desc')?.value });
+    if(!su.doc) su.doc={title:'',body:''};
+    if(r.title) su.doc.title=r.title;
+    if(r.body) su.doc.body=r.body;
+    wfbRenderSubs();
+  }catch(e){ if(btn){btn.innerHTML=orig;btn.disabled=false;} showBreezeToast('AI draft failed - try again'); }
+}
 function wfbCollectSubs(){
   return _wfbSubs
     .filter(su=>(su.title||'').trim())
@@ -12839,6 +12863,9 @@ function wfbCollectSubs(){
       const o={ id:String.fromCharCode(97+j), title:su.title.trim(), owner:(su.owner||'').trim() };
       if(su.email&&((su.email.subject||'').trim()||(su.email.body||'').trim())){
         o.email={ to:(su.email.to||'').trim(), cc:(su.email.cc||'').trim(), bcc:(su.email.bcc||'').trim(), subject:(su.email.subject||'').trim(), body:su.email.body||'' };
+      }
+      if(su.doc&&((su.doc.title||'').trim()||(su.doc.body||'').trim())){
+        o.doc={ title:(su.doc.title||'').trim(), body:su.doc.body||'' };
       }
       return o;
     });
@@ -12939,6 +12966,25 @@ ${step ? `Stage: "${step}"\n` : ''}Task: "${what}"${guidance ? `\nContext: ${gui
 Company: ${company}
 Use {employee} as a placeholder for the recipient's first name where it reads naturally. Keep it concise and ready to send.
 Return ONLY valid JSON, no markdown: {"subject":"...","body":"..."}`;
+  const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ system: 'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.', messages: [{ role: 'user', content: userPrompt }] }) });
+  if (!res.ok) throw new Error('Chat API ' + res.status);
+  const d = await res.json();
+  const raw = d.content?.[0]?.text || '';
+  const jsonStr = raw.match(/\{[\s\S]*\}/)?.[0]; if (!jsonStr) throw new Error('No JSON in response');
+  return _safeJsonParse(jsonStr);
+}
+
+// Draft a full Word-style document / letter (title + body) for a workflow task with AI.
+async function _aiDraftDoc({ workflow, step, task, guidance }) {
+  const token = await getAuthToken();
+  const company = currentProfile?.company_name || 'the company';
+  const what = task || step || 'this HR document';
+  const userPrompt = `Draft a complete, professional UK HR document for a task in an HR workflow. This is a Word-style document or letter, NOT an email.
+Workflow: "${workflow || 'HR workflow'}"
+${step ? `Stage: "${step}"\n` : ''}Task: "${what}"${guidance ? `\nContext: ${guidance}` : ''}
+Company: ${company}
+Write the full document body in clear UK English. Use {employee} as a placeholder for the person's name where it reads naturally, and [PLACEHOLDER] for any specific detail you can't know. Use short paragraphs and simple headings where helpful. Do not include an email subject line or salutation to an inbox - this is a document/letter.
+Return ONLY valid JSON, no markdown: {"title":"...","body":"..."}`;
   const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ system: 'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.', messages: [{ role: 'user', content: userPrompt }] }) });
   if (!res.ok) throw new Error('Chat API ' + res.status);
   const d = await res.json();
@@ -16736,12 +16782,13 @@ function wfOpenStepTasks(caseId, stepId) {
       const checked = subSet.has(k(su.id));
       const ob = su.owner?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(su.owner)}</span>`:'';
       const eb = su.email?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:#047857;">✉️ Draft email →</button>`:'';
+      const db = su.doc?`<button onclick="event.stopPropagation();wfOpenDocDraft('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:#D85A30;">📄 Draft document →</button>`:'';
       const af = (su.autofill || /\b(screen|dbs|vetting)\b|background check/i.test(su.title))
         ? `<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><button onclick="event.stopPropagation();wfScreeningAutofill('${caseId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:var(--accent);">⚡ Pre-fill screening form</button><span onclick="event.stopPropagation();wfScreeningAutofillInfo()" title="How it works" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--ink3);font-size:9px;font-style:italic;font-weight:700;cursor:pointer;flex-shrink:0;">i</span></span>`
         : '';
       return `<div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
         <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
-        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>${(ob||eb||af)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}${af}</div>`:''}</div>
+        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>${(ob||eb||db||af)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}${db}${af}</div>`:''}</div>
       </div>`;
     }).join('');
   } else {
@@ -16873,6 +16920,76 @@ async function wfDraftEmailAI(caseId, stepId, subId, btn){
     const subEl=document.getElementById('wfe-sub'), bodyEl=document.getElementById('wfe-body');
     if(subEl&&r.subject) subEl.value=fix(r.subject);
     if(bodyEl&&r.body) bodyEl.value=fix(r.body);
+  }catch(e){ showBreezeToast('AI draft failed - try again'); }
+  btn.innerHTML=orig; btn.disabled=false;
+}
+
+// Open the document drafted on a workflow sub-task: review, AI-redraft, download as Word.
+function wfOpenDocDraft(caseId, stepId, subId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=(typeof wfGetSteps==='function'?wfGetSteps(c):[]).find(s=>String(s.id)===String(stepId)); if(!step) return;
+  const su=(step.subs||[]).find(x=>String(x.id)===String(subId)); if(!su||!su.doc) return;
+  const nm=c.employeeName||'';
+  const fill=v=>(v||'').replace(/\{employee\}/gi,nm).replace(/\{name\}/gi,nm);
+  const title=fill(su.doc.title)||'Document';
+  const body=fill(su.doc.body);
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  document.getElementById('wfDocDraft')?.remove();
+  const ov=document.createElement('div');
+  ov.id='wfDocDraft';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:990;display:flex;align-items:center;justify-content:center;padding:20px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:640px;max-height:90vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
+    <div style="background:#D85A30;padding:15px 20px;"><div style="font-size:14px;font-weight:700;color:white;">📄 Draft document</div><div style="font-size:11px;color:rgba(255,255,255,0.8);margin-top:2px;">Review and edit, then download as a Word file - nothing is sent automatically.</div></div>
+    <div style="padding:18px 20px;display:flex;flex-direction:column;gap:12px;">
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Title</label><input id="wfd-title" value="${escapeHtml(title)}" style="${inp}"></div>
+      <div><label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:4px;">Document</label><textarea id="wfd-body" rows="14" style="${inp}resize:vertical;min-height:240px;line-height:1.6;">${escapeHtml(body)}</textarea></div>
+    </div>
+    <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <button class="btn btn-secondary btn-sm" onclick="wfDraftDocAI('${caseId}',${stepId},'${subId}',this)" style="color:var(--accent);">✨ Draft with AI</button>
+        <button class="btn btn-ghost btn-sm" onclick="wfDocCopy()">📋 Copy</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfDocDraft').remove()">Cancel</button>
+        <button class="btn btn-primary btn-sm" onclick="wfDocDownload()" style="background:#D85A30;border-color:#D85A30;">⬇ Download Word</button>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+function wfDocCopy(){
+  const t=document.getElementById('wfd-title')?.value||'';
+  const b=document.getElementById('wfd-body')?.value||'';
+  navigator.clipboard?.writeText((t?t+'\n\n':'')+b).then(()=>showBreezeToast('Document copied to clipboard'),()=>showBreezeToast('Copy failed'));
+}
+async function wfDocDownload(){
+  const title=document.getElementById('wfd-title')?.value||'Document';
+  const body=document.getElementById('wfd-body')?.value||'';
+  const text=(title?title+'\n\n':'')+body;
+  const fname=(title||'document').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'document';
+  try{
+    if(typeof roiAddDoc==='function') roiAddDoc(1);
+    const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({templateBase64:null,fields:{},plainText:text,templateName:title})});
+    if(!res.ok){ const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=fname+'.txt';a.click();URL.revokeObjectURL(url); }
+    else { const blob=await res.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=fname+'.docx';a.click();URL.revokeObjectURL(url); }
+    showBreezeToast('Document downloaded');
+  }catch(e){ showBreezeToast('Download failed'); }
+}
+// ✨ Draft this run's document with AI, personalised to the employee.
+async function wfDraftDocAI(caseId, stepId, subId, btn){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=(typeof wfGetSteps==='function'?wfGetSteps(c):[]).find(s=>String(s.id)===String(stepId));
+  const su=(step?.subs||[]).find(x=>String(x.id)===String(subId));
+  const a=(automations||[]).find(x=>x.id===c.scenarioId);
+  const orig=btn.innerHTML; btn.innerHTML='⏳ Drafting…'; btn.disabled=true;
+  try{
+    const r=await _aiDraftDoc({ workflow:a?.label||'HR workflow', step:step?.title, task:su?.title||step?.title, guidance:step?.desc });
+    const nm=c.employeeName||'';
+    const fix=v=>(v||'').replace(/\{employee\}/gi,nm).replace(/\{name\}/gi,nm);
+    const tEl=document.getElementById('wfd-title'), bEl=document.getElementById('wfd-body');
+    if(tEl&&r.title) tEl.value=fix(r.title);
+    if(bEl&&r.body) bEl.value=fix(r.body);
   }catch(e){ showBreezeToast('AI draft failed - try again'); }
   btn.innerHTML=orig; btn.disabled=false;
 }
