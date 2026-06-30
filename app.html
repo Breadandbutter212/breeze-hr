@@ -12979,12 +12979,19 @@ async function _aiDraftDoc({ workflow, step, task, guidance }) {
   const token = await getAuthToken();
   const company = currentProfile?.company_name || 'the company';
   const what = task || step || 'this HR document';
-  const userPrompt = `Draft a complete, professional UK HR document for a task in an HR workflow. This is a Word-style document or letter, NOT an email.
-Workflow: "${workflow || 'HR workflow'}"
-${step ? `Stage: "${step}"\n` : ''}Task: "${what}"${guidance ? `\nContext: ${guidance}` : ''}
+  const userPrompt = `Draft a focused, professional UK HR document for this specific task. It is a Word-style document or letter, NOT an email.
+
+Task: "${what}"${step ? `\nStage: "${step}"` : ''}${workflow ? `\nWorkflow: "${workflow}"` : ''}${guidance ? `\nContext: ${guidance}` : ''}
 Company: ${company}
-Write the full document body in clear UK English. Use {employee} as a placeholder for the person's name where it reads naturally, and [PLACEHOLDER] for any specific detail you can't know. Use short paragraphs and simple headings where helpful. Do not include an email subject line or salutation to an inbox - this is a document/letter.
-Return ONLY valid JSON, no markdown: {"title":"...","body":"..."}`;
+
+Rules:
+- Write ONLY about the specific task above. Do NOT broaden the scope or add unrelated sections (for example, do not turn a "confirm transport options" letter into a full offer of employment).
+- Keep it concise - usually well under one page unless the task genuinely needs more.
+- Format the body in Markdown: "## " for section headings, "**bold**" for emphasis, and "- " for bullet lists. This formatting carries through to the Word download, so do NOT use plain "1." numbered headings or long underlines.
+- Use {employee} for the person's first name, and use the real company name "${company}" instead of a placeholder.
+- Only use "[PLACEHOLDER - what it is]" for a detail you genuinely cannot know (e.g. a specific date or address). Do not pad the document with long lists of placeholders.
+
+Return ONLY valid JSON, no markdown fences: {"title":"...","body":"..."}`;
   const res = await fetch('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` }, body: JSON.stringify({ system: 'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.', messages: [{ role: 'user', content: userPrompt }] }) });
   if (!res.ok) throw new Error('Chat API ' + res.status);
   const d = await res.json();
@@ -17000,7 +17007,8 @@ function wfDocCopy(){
 async function wfDocDownload(){
   const title=document.getElementById('wfd-title')?.value||'Document';
   const body=document.getElementById('wfd-body')?.value||'';
-  const text=(title?title+'\n\n':'')+body;
+  // Send the Markdown body so the generator applies headings/bold/bullets.
+  const text=body;
   const fname=(title||'document').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'document';
   try{
     if(typeof roiAddDoc==='function') roiAddDoc(1);
