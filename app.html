@@ -15090,22 +15090,56 @@ function ocRemovePerson(nodeId) {
   if(_ocEmps?.length) ocBuild();
 }
 
-function ocAddPerson() {
-  const name=prompt('New person\'s name:'); if(!name?.trim()) return;
-  const title=prompt('Job title (optional):') || '';
-  const dept=prompt('Department (optional):') || 'General';
-  const id='manual-'+Date.now();
-  if(!_ocEmps) _ocEmps=[];
-  _ocEmps.push({id, display_full_name:name.trim(), employments:[{job_title:title.trim(), department:dept.trim()}], manager:null});
-  ocBuild();
-}
+function ocAddPerson() { _ocOpenAddModal('person'); }
+function ocAddOpenRole() { _ocOpenAddModal('role'); }
 
-function ocAddOpenRole() {
-  const title=prompt('Role title (e.g. Customer Service Manager):'); if(!title?.trim()) return;
-  const dept=prompt('Department (optional):') || 'General';
-  const id='open-'+Date.now();
+// Styled modal for adding a person / open role (replaces native prompt() chain).
+function _ocOpenAddModal(kind) {
+  const isRole = kind==='role';
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const lbl='font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;display:block;';
+  document.getElementById('ocAddModal')?.remove();
+  const ov=document.createElement('div');
+  ov.id='ocAddModal';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.45);z-index:990;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const accent = isRole ? '#059669' : 'var(--accent)';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 22px;display:flex;align-items:center;gap:10px;">
+      <div style="width:34px;height:34px;border-radius:9px;background:${isRole?'#ECFDF5':'var(--accent-bg)'};color:${accent};display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;">${isRole?'➕':'👤'}</div>
+      <div><div style="font-size:15px;font-weight:700;color:var(--ink);">${isRole?'Add open role':'Add person'}</div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:1px;">${isRole?'A vacancy to show on the chart - fill it later.':'Add someone to the org chart manually.'}</div></div>
+    </div>
+    <div style="padding:18px 22px;display:flex;flex-direction:column;gap:13px;">
+      ${isRole
+        ? `<div><label style="${lbl}">Role title</label><input id="oc-add-title" placeholder="e.g. Customer Service Manager" style="${inp}" onkeydown="if(event.key==='Enter')_ocSubmitAdd('role')"></div>`
+        : `<div><label style="${lbl}">Full name</label><input id="oc-add-name" placeholder="e.g. Sarah Mitchell" style="${inp}" onkeydown="if(event.key==='Enter')document.getElementById('oc-add-title').focus()"></div>
+           <div><label style="${lbl}">Job title <span style="color:var(--ink3);font-weight:400;">(optional)</span></label><input id="oc-add-title" placeholder="e.g. Marketing Manager" style="${inp}" onkeydown="if(event.key==='Enter')_ocSubmitAdd('person')"></div>`}
+      <div><label style="${lbl}">Department <span style="color:var(--ink3);font-weight:400;">(optional)</span></label><input id="oc-add-dept" placeholder="e.g. Marketing" style="${inp}" onkeydown="if(event.key==='Enter')_ocSubmitAdd('${kind}')"></div>
+    </div>
+    <div style="padding:13px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('ocAddModal').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="_ocSubmitAdd('${kind}')">${isRole?'Add role':'Add person'}</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  setTimeout(()=>document.getElementById(isRole?'oc-add-title':'oc-add-name')?.focus(),60);
+}
+function _ocSubmitAdd(kind) {
+  const isRole = kind==='role';
+  const dept=(document.getElementById('oc-add-dept')?.value||'').trim()||'General';
   if(!_ocEmps) _ocEmps=[];
-  _ocEmps.push({id, display_full_name:title.trim(), employments:[{job_title:title.trim(), department:dept.trim()}], manager:null, isOpen:true});
+  if(isRole){
+    const title=(document.getElementById('oc-add-title')?.value||'').trim();
+    if(!title){ const el=document.getElementById('oc-add-title'); if(el){el.style.borderColor='var(--red)';el.focus();} return; }
+    _ocEmps.push({id:'open-'+Date.now(), display_full_name:title, employments:[{job_title:title, department:dept}], manager:null, isOpen:true});
+  } else {
+    const name=(document.getElementById('oc-add-name')?.value||'').trim();
+    if(!name){ const el=document.getElementById('oc-add-name'); if(el){el.style.borderColor='var(--red)';el.focus();} return; }
+    const title=(document.getElementById('oc-add-title')?.value||'').trim();
+    _ocEmps.push({id:'manual-'+Date.now(), display_full_name:name, employments:[{job_title:title, department:dept}], manager:null});
+  }
+  document.getElementById('ocAddModal')?.remove();
   ocBuild();
 }
 
@@ -18459,10 +18493,11 @@ function projRenderBoard(p){
   const colHtml = Object.entries(MS_STATUS).map(([key,meta])=>{
     const items = ms.filter(m=>projMsStatus(m)===key);
     const cards = items.map(m=>projBoardCard(m,meta)).join('') || `<div style="font-size:11px;color:var(--ink3);padding:10px 4px;text-align:center;">Drop tasks here</div>`;
-    return `<div ondragover="event.preventDefault();this.style.boxShadow='inset 0 0 0 2px var(--accent-mid)'" ondragleave="this.style.boxShadow='none'" ondrop="event.preventDefault();this.style.boxShadow='none';projBoardDrop('${key}')" style="flex:0 0 256px;width:256px;background:var(--surface2);border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:8px;max-height:600px;box-sizing:border-box;">
+    return `<div ondragover="event.preventDefault();this.style.boxShadow='inset 0 0 0 2px var(--accent-mid)'" ondragleave="this.style.boxShadow='none'" ondrop="event.preventDefault();this.style.boxShadow='none';projBoardDrop('${key}')" style="flex:0 0 256px;width:256px;background:${meta.color}0f;border:1px solid ${meta.color}33;border-radius:10px;padding:9px;display:flex;flex-direction:column;gap:8px;max-height:600px;box-sizing:border-box;">
       <div style="display:flex;align-items:center;gap:7px;padding:2px 4px 4px;">
-        <span style="font-size:12px;font-weight:700;color:var(--ink);">${meta.label}</span>
-        <span style="font-size:11px;color:var(--ink3);background:var(--surface3);border-radius:10px;padding:0 7px;line-height:18px;">${items.length}</span>
+        <span style="width:8px;height:8px;border-radius:50%;background:${meta.color};flex-shrink:0;"></span>
+        <span style="font-size:12px;font-weight:700;color:${meta.color};">${meta.label}</span>
+        <span style="font-size:11px;color:${meta.color};background:${meta.color}1f;border-radius:10px;padding:0 7px;line-height:18px;">${items.length}</span>
       </div>
       <div style="display:flex;flex-direction:column;gap:8px;overflow-y:auto;flex:1;min-height:30px;">${cards}</div>
       <div style="display:flex;align-items:center;gap:6px;border-top:1px solid var(--border);padding-top:8px;">
