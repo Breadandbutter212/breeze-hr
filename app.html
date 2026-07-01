@@ -4925,7 +4925,7 @@ async function renderTmpls(filter) {
       const visible = showAll ? ts : ts.slice(0,UPLOADS_PREVIEW);
       visible.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-        div.innerHTML=`<div class="ti-ico" style="background:var(--accent-bg)">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        div.innerHTML=`<div class="ti-ico" style="background:var(--accent-bg)">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
       if(isUploads && ts.length>UPLOADS_PREVIEW){
@@ -4983,7 +4983,7 @@ function renderTmplsLocal() {
     if(!isCollapsed){
       ts.forEach(t=>{
         const div=document.createElement('div');div.className='ti'+(selTmpl&&selTmpl.id===t.id?' active':'');div.onclick=()=>openTmpl(t);
-        div.innerHTML=`<div class="ti-ico" style="background:var(--accent-bg)">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')">✏</button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
+        div.innerHTML=`<div class="ti-ico" style="background:var(--accent-bg)">${t.emoji}</div><div style="flex:1;"><div class="ti-name">${t.name}</div><div class="ti-sub">${t.flow.length} fields${t.isCustom?' · custom':''}</div></div>${t.isCustom?`<button class="btn btn-ghost btn-sm" style="color:var(--ink2);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();renameTmpl('${t.id}')"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button><button class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;padding:2px 5px;" onclick="event.stopPropagation();deleteTemplate('${t.id}')">×</button>`:''}`;
         list.appendChild(div);
       });
     }
@@ -13847,7 +13847,7 @@ async function renderAutomations(){
         <button class="btn btn-primary btn-sm" style="font-size:11px;" onclick="autoStartRun('${a.id}')">Launch</button>
         ${inProgChip}
         <div style="flex:1;"></div>
-        <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')">✏ Edit</button>
+        <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
         <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
       </div>
     </div>`;
@@ -17044,7 +17044,7 @@ function wfRenderCase(c) {
         </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:4px;">
-        <button onclick="event.stopPropagation();wfEditStep('${c.id}',${step.id})" title="Edit step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--ink3);" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'">✏</button>
+        <button onclick="event.stopPropagation();wfEditStep('${c.id}',${step.id})" title="Edit step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--ink3);" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
         <button onclick="event.stopPropagation();wfDeleteStep('${c.id}',${step.id})" title="Delete step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--red);" onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">✕</button>
       </div>
     </div>`;
@@ -17788,7 +17788,7 @@ function wfOpenDocDraft(caseId, stepId, subId){
           <label style="font-size:11px;font-weight:600;color:var(--ink2);">Document</label>
           <div style="display:inline-flex;background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:2px;">
             <button type="button" id="wfd-tab-prev" onclick="wfDocTab('preview')" style="border:none;border-radius:6px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;font-family:inherit;">👁 Preview</button>
-            <button type="button" id="wfd-tab-edit" onclick="wfDocTab('edit')" style="border:none;border-radius:6px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;font-family:inherit;">✏️ Edit</button>
+            <button type="button" id="wfd-tab-edit" onclick="wfDocTab('edit')" style="border:none;border-radius:6px;font-size:11px;font-weight:600;padding:4px 11px;cursor:pointer;font-family:inherit;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
           </div>
         </div>
         <textarea id="wfd-body" rows="15" oninput="if(_wfdTab==='preview')wfDocSyncPreview()" style="${inp}resize:vertical;min-height:280px;line-height:1.6;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;display:none;">${escapeHtml(body)}</textarea>
@@ -18424,7 +18424,7 @@ function openRolePanel(id) {
       <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
         <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHCRole('${id}')">Delete role</button>
         <div style="flex:1;"></div>
-        <button onclick="document.getElementById('hcRolePanel').remove();openAddRoleModal((hcRoles||[]).find(x=>x.id==='${id}'))" class="btn btn-secondary btn-sm" style="font-size:11px;">✏ Edit details</button>
+        <button onclick="document.getElementById('hcRolePanel').remove();openAddRoleModal((hcRoles||[]).find(x=>x.id==='${id}'))" class="btn btn-secondary btn-sm" style="font-size:11px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit details</button>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('hcRolePanel').remove()">Close</button>
       </div>
     </div>
