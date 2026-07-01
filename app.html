@@ -15636,7 +15636,8 @@ function ocRender(root) {
         </div>`;
     } else {
       div.style.borderColor=node.color+'44';
-      const _photoImg = node.photo ? `<img src="${escapeHtml(node.photo)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">` : '';
+      const _ocFace = node.photo || (typeof _projMockFace==='function' ? _projMockFace(node.name) : '');
+      const _photoImg = _ocFace ? `<img src="${escapeHtml(_ocFace)}" alt="" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;" onerror="this.remove()">` : '';
       div.innerHTML=`<div class="org-avatar" style="background:${node.color};position:relative;overflow:hidden;">${initials}${_photoImg}</div>
         <div style="flex:1;min-width:0;">
           <div class="org-name">${escapeHtml(node.name)}</div>
@@ -16142,7 +16143,7 @@ async function ocLoadCSV(event) {
 function ocGetDemoData() {
   const data = [
     // ── C-Suite ──
-    {id:'e1', display_full_name:'Sarah Mitchell',   employments:[{job_title:'Chief Executive Officer',    department:'Leadership'}],      manager:null, photo:'https://randomuser.me/api/portraits/women/44.jpg'},
+    {id:'e1', display_full_name:'Sarah Mitchell',   employments:[{job_title:'Chief Executive Officer',    department:'Leadership'}],      manager:null, photo:'https://i.pravatar.cc/120?img=45'},
     {id:'e2', display_full_name:'James Thornton',   employments:[{job_title:'Chief Operating Officer',    department:'Leadership'}],      manager:'e1'},
     {id:'e36',display_full_name:'Robert Chen',      employments:[{job_title:'Chief Financial Officer',    department:'Finance'}],         manager:'e1'},
     {id:'e41',display_full_name:'Laura Kim',        employments:[{job_title:'General Counsel',            department:'Legal'}],           manager:'e1'},
@@ -16211,16 +16212,14 @@ function ocGetDemoData() {
     {id:'e49',display_full_name:'Joel Marsh',       employments:[{job_title:'Customer Success Rep',       department:'Customer Success'}], manager:'e47'},
     {id:'e50',display_full_name:'Nina Patel',       employments:[{job_title:'Customer Success Rep',       department:'Customer Success'}], manager:'e47'},
   ];
-  // Give every demo person a photoreal face (gender-matched), keeping initials as the
-  // runtime fallback. Open roles stay as the dashed "+" placeholder.
-  const FEMALE = new Set(['sarah','laura','emma','lucy','mia','kate','sophie','maya','olivia','rachel','diana','lily','priya','jessica','amy','fiona','hannah','grace','claire','victoria','isabella','sandra','anna','rebecca','lena','nina']);
-  let fc = 10, mc = 10;
+  // Give every demo person a photoreal face, keeping initials as the runtime
+  // fallback. Open roles stay as the dashed "+" placeholder. Uses pravatar
+  // (same reliable source as the Home dashboard).
+  let ac = 1;
   return data.map(e => {
     if (e.photo || e.isOpen) return e;
-    const first = (e.display_full_name || '').trim().split(' ')[0].toLowerCase();
-    const isF = FEMALE.has(first);
-    const n = (isF ? fc++ : mc++) % 100;
-    return { ...e, photo: `https://randomuser.me/api/portraits/${isF ? 'women' : 'men'}/${n}.jpg` };
+    const img = ((ac++ * 7) % 70) + 1;
+    return { ...e, photo: `https://i.pravatar.cc/120?img=${img}` };
   });
 }
 
@@ -19593,11 +19592,12 @@ async function projLoadFaces(){
 }
 // An owner field may name several people ("Sarah, James & Robert").
 function _projAssignees(m){ return (m.owner||'').split(/\s*(?:,|&|\/| and )\s*/i).map(s=>s.trim()).filter(Boolean); }
-// Stable demo portrait per name (same source as the org chart's mock faces).
+// Stable demo portrait per name. Uses pravatar (same source as the Home
+// dashboard + top-bar avatar) which loads reliably where randomuser.me is blocked.
 function _projMockFace(name){
   let h = 0; const s = (name||'').trim();
   for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
-  return `https://randomuser.me/api/portraits/${h%2?'men':'women'}/${h%100}.jpg`;
+  return `https://i.pravatar.cc/120?img=${(h%70)+1}`;
 }
 function _projFaceAvatar(name, i){
   const real = _projEmpIndex ? _projEmpIndex.get((name||'').toLowerCase().trim()) : null;
@@ -21049,8 +21049,8 @@ async function projConfirmEmailToTask(){
     var _fi=21,_mi=21;
     var people=raw.map(function(r,i){
       var first=String(r[0]||'').trim().split(' ')[0].toLowerCase();
-      var isF=!!TL_FEM[first];
-      var photo='https://randomuser.me/api/portraits/'+(isF?'women':'men')+'/'+((isF?_fi++:_mi++)%100)+'.jpg';
+      var _th=0; var _tn=String(r[0]||''); for(var _k=0;_k<_tn.length;_k++) _th=(_th*31+_tn.charCodeAt(_k))>>>0;
+      var photo='https://i.pravatar.cc/120?img='+((_th%70)+1);
       return { id:'p'+i, name:r[0], role:r[1], dept:r[2], manager:r[3], tenure:r[4],
       perf:r[5], pot:r[6], flightRisk:r[7], keyRole:r[8], action:r[9], notes:r[10], confidence:'given', rationale:'', photo:photo }; });
     var succession=[
