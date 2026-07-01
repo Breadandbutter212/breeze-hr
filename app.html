@@ -13520,21 +13520,26 @@ function wfbRenderSubs(){
            <textarea rows="4" placeholder="Document body - use {employee} for the person's name, or click ✨ Draft to let AI write it." oninput="_wfbSubDocSet(${i},'body',this.value)" style="${si}resize:vertical;min-height:80px;">${escapeHtml(su.doc.body||'')}</textarea>
          </div>`
       : `<div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;"><button type="button" onclick="wfbSubAddDoc(${i})" class="btn btn-ghost btn-sm" style="font-size:10px;color:#5B47E0;padding:2px 0;">+ Add document to this task</button><button type="button" onclick="wfbDraftSubDoc(${i},this)" title="Let AI write this Word document for you" style="background:var(--accent-bg);border:1px solid var(--accent-mid);color:var(--accent);border-radius:20px;padding:3px 10px;font-size:10px;font-weight:700;cursor:pointer;display:inline-flex;align-items:center;gap:4px;">✨ Draft with AI</button></div>`;
+    const open = !!su._open;
+    const tags = open ? '' : `${su.email?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#047857" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" title="Has email"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>':''}${su.doc?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#5B47E0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;" title="Has document"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>':''}`;
     return `<div style="border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 10px;background:var(--surface2);display:flex;flex-direction:column;gap:7px;">
       <div style="display:flex;gap:7px;align-items:center;">
+        <button type="button" onclick="wfbToggleSubOpen(${i})" title="${open?'Collapse':'Expand'}" style="background:none;border:none;cursor:pointer;color:var(--ink3);width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;padding:0;transform:rotate(${open?90:0}deg);transition:transform .12s;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>
         <span style="width:18px;height:18px;border-radius:50%;background:var(--accent-bg);color:var(--accent);font-size:10px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">${i+1}</span>
         <input value="${escapeHtml(su.title||'')}" placeholder="Sub-task title" oninput="_wfbSubSet(${i},'title',this.value)" style="${si}flex:1;">
+        ${tags}
         <button type="button" onclick="wfbDelSub(${i})" title="Delete sub-task" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:11px;color:var(--red);flex-shrink:0;">✕</button>
       </div>
-      <input value="${escapeHtml(su.owner||'')}" placeholder="Owner (optional) - e.g. HR, IT" oninput="_wfbSubSet(${i},'owner',this.value)" style="${si}">
+      ${open ? `<input value="${escapeHtml(su.owner||'')}" placeholder="Owner (optional) - e.g. HR, IT" oninput="_wfbSubSet(${i},'owner',this.value)" style="${si}">
       ${emailBlock}
-      ${docBlock}
+      ${docBlock}` : ''}
     </div>`;
   }).join('');
 }
 function _wfbSubSet(i,field,val){ if(_wfbSubs[i]) _wfbSubs[i][field]=val; }
 function _wfbSubEmailSet(i,field,val){ if(_wfbSubs[i]&&_wfbSubs[i].email) _wfbSubs[i].email[field]=val; }
-function wfbAddSub(){ _wfbSubs.push({title:'',owner:'',email:null,doc:null}); wfbRenderSubs(); }
+function wfbToggleSubOpen(i){ if(_wfbSubs[i]){ _wfbSubs[i]._open=!_wfbSubs[i]._open; wfbRenderSubs(); } }
+function wfbAddSub(){ _wfbSubs.push({title:'',owner:'',email:null,doc:null,_open:true}); wfbRenderSubs(); }
 function wfbDelSub(i){ _wfbSubs.splice(i,1); wfbRenderSubs(); }
 function wfbSubAddEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email={to:'',cc:'',bcc:'',subject:'',body:''}; wfbRenderSubs(); }
 function wfbSubDelEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email=null; wfbRenderSubs(); }
