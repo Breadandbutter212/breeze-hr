@@ -11339,9 +11339,7 @@ function compareHowHtml(mode) {
       <div style="font-size:11px;color:var(--ink3);line-height:1.5;">${escapeHtml(st.s)}</div>
     </div>`).join(arrow);
   const notes = (info.steps || []).map(s => `<div style="margin-top:5px;color:var(--ink3);">· ${escapeHtml(s)}</div>`).join('');
-  const visual = mode === 'general'
-    ? compareAnimHtml()
-    : `<div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">${steps}</div>`;
+  const visual = `<div style="display:flex;align-items:flex-start;gap:4px;flex-wrap:wrap;">${steps}</div>`;
   return `
     <div style="font-size:12px;color:var(--ink2);line-height:1.6;margin-bottom:16px;">${escapeHtml(info.desc || '')}</div>
     ${visual}
