@@ -17580,7 +17580,15 @@ async function wfStepNote(caseId, stepId){
   const cur=c.stepNotes[stepId]||'';
   const v=await uiPromptText('Note for this step', {icon:'📝', subtitle:"Saved on this run only - it won't change the workflow.", label:'Note', value:cur, type:'textarea', submitLabel:'Save note'});
   if(v===null) return;
-  if(v.trim()) c.stepNotes[stepId]=v.trim(); else delete c.stepNotes[stepId];
+  if(v.trim()){
+    c.stepNotes[stepId]=v.trim();
+    // Also drop a dated line into the contact log so there's a history.
+    const step=(typeof wfGetSteps==='function'?wfGetSteps(c):[]).find(s=>String(s.id)===String(stepId));
+    c.contactLog=c.contactLog||[];
+    c.contactLog.push({ date:new Date().toISOString(), type:'note', note:(step&&step.title?step.title+' - ':'')+v.trim() });
+  } else {
+    delete c.stepNotes[stepId];
+  }
   try{ await saveWfCases(); }catch(e){}
   wfRunRefresh();
 }
