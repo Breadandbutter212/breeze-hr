@@ -206,6 +206,8 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .app-topbar-divider { width:1px; height:20px; background:var(--border); margin:0 4px; }
 .view { display: none; flex: 1; overflow: hidden; }
 .view.active { display: flex; }
+/* Home is a tall scrolling page (unlike the internally-scrolled views) */
+#view-home { overflow-y: auto; align-items: flex-start; }
 
 /* TOAST */
 #breezeToast { position:fixed; bottom:28px; left:50%; transform:translateX(-50%) translateY(10px); background:#1D1D1F; color:white; font-size:12px; font-weight:500; padding:8px 18px; border-radius:20px; opacity:0; pointer-events:none; transition:all 0.22s; z-index:950; white-space:nowrap; }
