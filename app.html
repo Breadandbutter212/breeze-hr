@@ -13467,7 +13467,12 @@ function wfbStepEditor(idx){
       <div>
         <label class="wfb-lab">Checklist sub-tasks <span style="font-weight:400;color:var(--ink3);">(optional - break this stage into tickable tasks)</span></label>
         <div id="wfbs-subs-list" style="display:flex;flex-direction:column;gap:8px;"></div>
-        <button type="button" onclick="wfbAddSub()" class="btn btn-secondary btn-sm" style="margin-top:8px;font-size:11px;">+ Add sub-task</button>
+        <div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;align-items:center;">
+          <span style="font-size:11px;color:var(--ink3);margin-right:2px;">Add:</span>
+          <button type="button" onclick="wfbAddSub()" class="btn btn-secondary btn-sm" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Tick task</button>
+          <button type="button" onclick="wfbAddSub('email')" class="btn btn-secondary btn-sm" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>Email</button>
+          <button type="button" onclick="wfbAddSub('doc')" class="btn btn-secondary btn-sm" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Document</button>
+        </div>
       </div>
       <div><label class="wfb-lab">Action <span style="font-weight:400;color:var(--ink3);">(optional automation)</span></label>
         <select id="wfbs-acttype" style="${inp}" onchange="wfbToggleActionFields(this.value)">
@@ -13539,7 +13544,12 @@ function wfbRenderSubs(){
 function _wfbSubSet(i,field,val){ if(_wfbSubs[i]) _wfbSubs[i][field]=val; }
 function _wfbSubEmailSet(i,field,val){ if(_wfbSubs[i]&&_wfbSubs[i].email) _wfbSubs[i].email[field]=val; }
 function wfbToggleSubOpen(i){ if(_wfbSubs[i]){ _wfbSubs[i]._open=!_wfbSubs[i]._open; wfbRenderSubs(); } }
-function wfbAddSub(){ _wfbSubs.push({title:'',owner:'',email:null,doc:null,_open:true}); wfbRenderSubs(); }
+function wfbAddSub(type){
+  const sub={title:'',owner:'',email:null,doc:null,_open:true};
+  if(type==='email') sub.email={to:'',cc:'',bcc:'',subject:'',body:''};
+  else if(type==='doc') sub.doc={title:'',body:''};
+  _wfbSubs.push(sub); wfbRenderSubs();
+}
 function wfbDelSub(i){ _wfbSubs.splice(i,1); wfbRenderSubs(); }
 function wfbSubAddEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email={to:'',cc:'',bcc:'',subject:'',body:''}; wfbRenderSubs(); }
 function wfbSubDelEmail(i){ if(_wfbSubs[i]) _wfbSubs[i].email=null; wfbRenderSubs(); }
