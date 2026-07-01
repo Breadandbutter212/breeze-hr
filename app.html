@@ -1073,7 +1073,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
   /* Home top bar (search + notifications + profile) */
   #homeBody .hb-topbar{display:flex;align-items:center;gap:16px;margin-bottom:22px;}
-  #homeBody .hb-topbar .search{flex:1;max-width:460px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--hb-line);border-radius:999px;padding:11px 18px;box-shadow:0 1px 2px rgba(28,25,60,.04);}
+  #homeBody .hb-topbar .search{position:relative;flex:1;max-width:460px;display:flex;align-items:center;gap:10px;background:#fff;border:1px solid var(--hb-line);border-radius:999px;padding:11px 18px;box-shadow:0 1px 2px rgba(28,25,60,.04);}
   #homeBody .hb-topbar .search svg{width:18px;height:18px;stroke:var(--hb-ink3);flex-shrink:0;fill:none;stroke-width:2;}
   #homeBody .hb-topbar .search input{border:0;outline:0;font-family:inherit;font-size:13.5px;color:var(--hb-ink);background:transparent;width:100%;}
   #homeBody .hb-topbar .search input::placeholder{color:var(--hb-ink3);}
@@ -6870,8 +6870,10 @@ async function renderHome(){
   let empTotal = Array.isArray(emps) ? emps.length : 0;
   if (!empTotal && window._isTestAccount) empTotal = 254;
 
-  // Ensure projects loaded for the projects card + attention rows.
-  try { if (typeof loadProjects==='function' && !Array.isArray(projectsData)) await loadProjects(); } catch(e){}
+  // Ensure projects loaded for the projects card + attention rows. Reload when the
+  // cache is empty too (a stale empty [] from init would otherwise show nothing until
+  // you visit Projects and come back).
+  try { if (typeof loadProjects==='function' && (!Array.isArray(projectsData) || !projectsData.length)) await loadProjects(); } catch(e){}
   if (!document.getElementById('homeBody')) return;
   const projects = Array.isArray(projectsData) ? projectsData : [];
 
@@ -7182,7 +7184,7 @@ async function homeGather(){
   const out = { ppSoon:0, ppList:[], projActive:0, projOverdue:0, projAttn:0, chats:0, lastChat:null, docs:0, roles:0, rolesUrgent:0, cases:0 };
   // Projects (cheap: single row) - count active + overdue + attention
   try {
-    if (typeof loadProjects==='function' && !Array.isArray(projectsData)) await loadProjects();
+    if (typeof loadProjects==='function' && (!Array.isArray(projectsData) || !projectsData.length)) await loadProjects();
     const ps = Array.isArray(projectsData) ? projectsData : [];
     ps.forEach(p=>{
       if (p.stage !== 'complete') out.projActive++;
@@ -19591,7 +19593,7 @@ async function projConfirmEmailToTask(){
   }
   window.slimSearch=async function(q){
     var pop=document.getElementById('searchPop');
-    if(!pop){ pop=document.createElement('div'); pop.id='searchPop'; pop.className='search-pop'; document.querySelector('.topsearch').appendChild(pop); }
+    if(!pop){ pop=document.createElement('div'); pop.id='searchPop'; pop.className='search-pop'; (document.querySelector('#homeBody .hb-topbar .search') || document.querySelector('.topsearch')).appendChild(pop); }
     q=(q||'').trim().toLowerCase(); _selIdx=-1;
     var pages=DEST.filter(function(d){ return d.l.toLowerCase().indexOf(q)>=0; });
     var allChats=(typeof chatList!=='undefined' && chatList)?chatList:[];
@@ -19616,7 +19618,7 @@ async function projConfirmEmailToTask(){
     else if(act) showView(act);
   }
   function slimSearchClose(){ var p=document.getElementById('searchPop'); if(p) p.remove(); document.removeEventListener('mousedown', slimSearchOut, true); }
-  function slimSearchOut(e){ if(!e.target.closest || !e.target.closest('.topsearch')) slimSearchClose(); }
+  function slimSearchOut(e){ if(!e.target.closest || (!e.target.closest('.topsearch') && !e.target.closest('.hb-topbar') && !e.target.closest('#searchPop'))) slimSearchClose(); }
   window.slimSearchKey=function(e){
     var pop=document.getElementById('searchPop'); if(!pop) return;
     var items=[].slice.call(pop.querySelectorAll('.search-item'));
