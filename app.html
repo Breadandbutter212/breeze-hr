@@ -118,8 +118,11 @@ body.nav-slim .slimbar { display:flex; }
 .sg.open .sg-head .chev { transform:rotate(90deg); }
 .sg-badge { min-width:18px; height:18px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
 .sg-items { max-height:0; overflow:hidden; transition:max-height 0.18s ease-out; }
-.sg.open .sg-items { max-height:340px; }
-.sgi { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:6px 10px 6px 37px; border:none; background:none; color:rgba(255,255,255,0.62); font-size:12px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; }
+.sg.open .sg-items { max-height:none; }
+.sg-head.sg-static { cursor:default; padding:14px 12px 5px; }
+.sg-head.sg-static:hover { background:none; }
+.sg-head.sg-static .lbl { text-transform:uppercase; font-size:10px; font-weight:700; letter-spacing:0.12em; color:rgba(255,255,255,0.45); }
+.sgi { display:flex; align-items:center; gap:8px; width:100%; text-align:left; padding:8px 12px; border:none; background:none; color:rgba(255,255,255,0.72); font-size:13px; font-weight:500; font-family:inherit; cursor:pointer; border-radius:10px; }
 .sgi .sgi-lbl { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sgi-badge { min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:none; align-items:center; justify-content:center; flex-shrink:0; }
 .sgi:hover { background:rgba(255,255,255,0.07); color:#fff; }
@@ -7051,6 +7054,9 @@ async function renderHome(){
       <button class="notif-bell" id="notifBell" onclick="toggleNotifPanel(event)" title="Notifications" aria-label="Notifications">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
         <span class="notif-dot" id="notifDot" style="display:none"></span>
+      </button>
+      <button class="notif-bell" onclick="(window._gmailConnected?toggleEmailPanel('gmail'):window._outlookConnected?toggleEmailPanel('outlook'):window._isTestAccount?toggleEmailPanel('test'):showView('settings',document.querySelector('.ni[onclick*=settings]')))" title="Inbox" aria-label="Inbox">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>
       </button>
       <div class="tb-profile" onclick="showView('settings',document.querySelector('.ni[onclick*=settings]'))" title="Settings">${hbAvatar(fullName,30)}<span>${escapeHtml(first)}</span></div>
     </div>
@@ -19541,9 +19547,10 @@ async function projConfirmEmailToTask(){
     var cur=curView(), openG=VIEW2GROUP[cur];
     var html='<button class="sg-head'+(cur==='home'?' active':'')+'" onclick="slimGo(\'home\')"'+(cur==='home'?' aria-current="page"':'')+'>'+ic('<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>')+'<span class="lbl">Dashboard</span></button>';
     Object.keys(GROUPS).forEach(function(g){
-      var c=GROUPS[g], isOpen=(openG===g);
-      html+='<div class="sg'+(isOpen?' open':'')+'" data-g="'+g+'">';
-      html+='<button class="sg-head'+(isOpen?' active':'')+'" onclick="slimToggle(\''+g+'\')" aria-expanded="'+isOpen+'">'+ic(c.icon)+'<span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 6 15 12 9 18"/></svg></button>';
+      var c=GROUPS[g];
+      // Groups stay expanded; the group name is a plain section label (not collapsible).
+      html+='<div class="sg open" data-g="'+g+'">';
+      html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'</div>';
       html+='<div class="sg-items">'+c.items.map(function(it){
         if(it.soon) return '<button class="sgi" aria-disabled="true"><span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
         var on=cur===it.view;
