@@ -1243,7 +1243,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   </div>
   <div class="app-topbar-right">
     <!-- Gmail -->
-    <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail')" style="cursor:pointer;">
+    <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail'); else if(window._isTestAccount)toggleEmailPanel('test');" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
     </div>
     <!-- Test inbox (demo emails - test accounts only) -->
@@ -1251,7 +1251,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
       <svg width="16" height="16" viewBox="0 0 24 24" fill="#7C3AED"><path d="M9 2h6v2h-1v5.2l4.8 8.3A2 2 0 0 1 17.1 20H6.9a2 2 0 0 1-1.7-2.5L10 9.2V4H9V2z"/></svg>
     </div>
     <!-- Outlook -->
-    <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook inbox" onclick="if(window._outlookConnected)toggleEmailPanel('outlook')" style="cursor:pointer;">
+    <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook inbox" onclick="if(window._outlookConnected)toggleEmailPanel('outlook'); else if(window._isTestAccount)toggleEmailPanel('test');" style="cursor:pointer;">
       <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 7.387v10.478l-4.262-3.632V9.978z" fill="#0078D4"/><path d="M0 5.919l10.218 6.774L24 7.387v-1.81A1.578 1.578 0 0 0 22.422 4H1.578A1.578 1.578 0 0 0 0 5.578z" fill="#0078D4"/><path d="M0 5.919v12.163a1.578 1.578 0 0 0 1.578 1.578H22.42A1.578 1.578 0 0 0 24 17.865v-.478L10.218 12.69z" fill="#1E4F96"/></svg>
     </div>
     <!-- SharePoint -->
@@ -2179,10 +2179,18 @@ async function onSignedIn(user) {
     const sidebarCo = document.getElementById('sidebarCompanyName');
     if (sidebarCo && profile.company_name) sidebarCo.textContent = profile.company_name;
   }
-  // Test accounts (@getbreeze.co.uk) get a demo "Test inbox" button next to Gmail
+  // Test accounts (@getbreeze.co.uk) use the demo "Test inbox" as their mailbox.
   window._isTestAccount = !!(user.email && user.email.toLowerCase().endsWith('@getbreeze.co.uk'));
   const testMailEl = document.getElementById('topbar-testmail');
   if (testMailEl) testMailEl.style.display = window._isTestAccount ? 'flex' : 'none';
+  // On a test account there's no real mailbox to connect - hide the dead Gmail/Outlook
+  // icons so the one clear mail icon (Test inbox) is the way in, and default to it.
+  if (window._isTestAccount) {
+    const gm = document.getElementById('topbar-gmail'); if (gm) gm.style.display = 'none';
+    const ol = document.getElementById('topbar-outlook'); if (ol) ol.style.display = 'none';
+    window._emailProvider = 'test';
+    const ec = document.getElementById('emailChip'); if (ec) ec.style.display = 'flex';
+  }
   chatSystemPrompt = null;
   buildChatSystemPrompt().then(sp => { chatSystemPrompt = sp; });
   loadChatList();
@@ -2191,7 +2199,7 @@ async function onSignedIn(user) {
   fetch(`/api/composio?userId=${encodeURIComponent(user.id)}`, { headers: await _authH() }).then(r=>r.json()).then(st=>{
     window._gmailConnected = !!st.gmail;
     window._outlookConnected = !!st.outlook;
-    window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : null;
+    window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : (window._isTestAccount ? 'test' : null);
     window._sharepointConnected = !!st.sharepoint;
     const btn = document.getElementById('emailChip');
     if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
@@ -2199,10 +2207,9 @@ async function onSignedIn(user) {
     const gmailEl = document.getElementById('topbar-gmail');
     const outlookEl = document.getElementById('topbar-outlook');
     const spEl = document.getElementById('topbar-sharepoint');
-    if (gmailEl) gmailEl.classList.toggle('connected', !!st.gmail);
-    if (gmailEl) gmailEl.classList.toggle('disconnected', !st.gmail);
-    if (outlookEl) outlookEl.classList.toggle('connected', !!st.outlook);
-    if (outlookEl) outlookEl.classList.toggle('disconnected', !st.outlook);
+    // Test accounts keep Gmail/Outlook hidden (no real mailbox) - the Test inbox is the mailbox.
+    if (gmailEl && !window._isTestAccount) { gmailEl.classList.toggle('connected', !!st.gmail); gmailEl.classList.toggle('disconnected', !st.gmail); }
+    if (outlookEl && !window._isTestAccount) { outlookEl.classList.toggle('connected', !!st.outlook); outlookEl.classList.toggle('disconnected', !st.outlook); }
     if (spEl) spEl.classList.toggle('connected', !!st.sharepoint);
     if (spEl) spEl.classList.toggle('disconnected', !st.sharepoint);
     const spDot = document.getElementById('slimSpDot'); if (spDot) spDot.classList.toggle('on', !!st.sharepoint);
