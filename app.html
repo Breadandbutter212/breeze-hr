@@ -6932,10 +6932,16 @@ async function renderHome(){
   const projects = Array.isArray(projectsData) ? projectsData : [];
 
   // ── Hero ──
-  const attnCount = (d.projOverdue||0) + (d.ppSoon||0) + (d.rolesUrgent||0);
+  const _ov=(d.projOverdue||0), _ur=(d.rolesUrgent||0), _ev=(d.ppSoon||0);
+  const attnCount = _ov + _ur + _ev;
+  const _bits=[];
+  if(_ov) _bits.push(`${_ov} overdue task${_ov>1?'s':''}`);
+  if(_ur) _bits.push(`${_ur} urgent role${_ur>1?'s':''}`);
+  if(_ev) _bits.push(`${_ev} upcoming event${_ev>1?'s':''}`);
+  const _summary = _bits.length<=1 ? (_bits[0]||'') : _bits.slice(0,-1).join(', ')+' and '+_bits[_bits.length-1];
   const heroLine = attnCount>0
-    ? `You have <b>${attnCount} thing${attnCount>1?'s':''} to review</b> today.`
-    : `You're all caught up today.`;
+    ? `You have <b>${attnCount} thing${attnCount>1?'s':''} to review</b> today.<br><span style="color:rgba(255,255,255,.78);">${_summary}.</span>`
+    : `You're all caught up today.<br><span style="color:rgba(255,255,255,.78);">Nothing needs a look right now.</span>`;
 
   // ── Stat cards ──
   const test = !!window._isTestAccount;
@@ -7076,7 +7082,7 @@ async function renderHome(){
       </tr>`).join('')}</tbody></table><div style="height:6px"></div>`;
   }
   const attnCardHtml = `
-    <div class="card online">
+    <div class="card online" id="hbAttn">
       <div class="card-h"><h3>Needs your attention</h3><a class="link-more" onclick="homeGo('trackers')">View queue</a></div>
       ${attnHtml}
     </div>`;
@@ -7140,7 +7146,7 @@ async function renderHome(){
       <div class="hero-eyebrow">${escapeHtml(dateStr)}</div>
       <h1>Welcome back, ${escapeHtml(first)}</h1>
       <p>${heroLine}</p>
-      <button class="hero-btn" onclick="homeGo('trackers')">Review now
+      <button class="hero-btn" onclick="document.getElementById('hbAttn')?.scrollIntoView({behavior:'smooth',block:'center'})">Review now
         <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
       </button>
     </section>
