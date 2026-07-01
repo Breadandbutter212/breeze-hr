@@ -17019,6 +17019,7 @@ function wfRenderCase(c) {
 
   const stepsHtml = steps.map(step=>{
     const isDone = checkedSet.has(step.id);
+    const stepNote = (c.stepNotes||{})[step.id] || '';
     const policy = step.policyTag ? wfFindPolicy(step.policyTag) : null;
     const policyBadge = policy?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--green-bg);color:var(--green);white-space:nowrap;">📋 ${policy.name}</span>`:'';
     let actionBtn = '';
@@ -17042,8 +17043,10 @@ function wfRenderCase(c) {
           <span style="font-size:10px;font-weight:600;color:var(--ink3);background:var(--surface2);padding:2px 8px;border-radius:20px;">⏱ ${step.timeframe||'-'}</span>
           <div style="display:flex;gap:6px;">${calBtn}${actionBtn}</div>
         </div>
+        ${stepNote?`<div style="margin-top:9px;background:#FFF9E6;border:1px solid #F5E6A8;border-radius:8px;padding:8px 10px;font-size:11.5px;color:#7A5B00;line-height:1.5;display:flex;gap:7px;align-items:flex-start;"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;margin-top:1px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg><span>${escapeHtml(stepNote)}</span></div>`:''}
       </div>
       <div style="display:flex;flex-direction:column;gap:4px;flex-shrink:0;margin-left:4px;">
+        <button onclick="event.stopPropagation();wfStepNote('${c.id}',${step.id})" title="${stepNote?'Edit note':'Add a note'}" style="background:${stepNote?'var(--accent-bg)':'none'};border:1px solid ${stepNote?'var(--accent-mid)':'var(--border)'};border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;display:flex;align-items:center;justify-content:center;color:${stepNote?'var(--accent)':'var(--ink3)'};"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 3v4a1 1 0 0 0 1 1h4"/><path d="M17 21H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h7l5 5v11a2 2 0 0 1-2 2z"/><path d="M9 13h6M9 17h4"/></svg></button>
         <button onclick="event.stopPropagation();wfEditStep('${c.id}',${step.id})" title="Edit step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--ink3);" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='none'"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg></button>
         <button onclick="event.stopPropagation();wfDeleteStep('${c.id}',${step.id})" title="Delete step" style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);width:24px;height:24px;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;color:var(--red);" onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">✕</button>
       </div>
@@ -17570,6 +17573,17 @@ function wfRunRender(){
     '</div>';
 }
 function wfRunRefresh(){ if(_wfRunId && document.getElementById('automationsBody')) wfRunRender(); }
+// Add/edit a free-text note on a step for THIS run only (does not change the workflow).
+async function wfStepNote(caseId, stepId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  c.stepNotes=c.stepNotes||{};
+  const cur=c.stepNotes[stepId]||'';
+  const v=await uiPromptText('Note for this step', {icon:'📝', subtitle:"Saved on this run only - it won't change the workflow.", label:'Note', value:cur, type:'textarea', submitLabel:'Save note'});
+  if(v===null) return;
+  if(v.trim()) c.stepNotes[stepId]=v.trim(); else delete c.stepNotes[stepId];
+  try{ await saveWfCases(); }catch(e){}
+  wfRunRefresh();
+}
 
 // Pre-screening: hand the new starter's details to the Breeze Autofill extension.
 function wfScreeningAutofill(caseId){
