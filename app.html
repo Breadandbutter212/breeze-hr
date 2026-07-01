@@ -102,7 +102,11 @@ body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: 
 .slimbar { display:none; }
 body.nav-slim .sidebar { display:none !important; }
 body.nav-slim .slimbar { display:flex; }
-.slimbar { width:208px; flex-shrink:0; background:linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%); flex-direction:column; height:100%; }
+.slimbar { width:240px; flex-shrink:0; background:linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%); flex-direction:column; height:100%; }
+.sgi .ic { width:17px; height:17px; opacity:0.9; flex-shrink:0; }
+.sgi.active .ic { opacity:1; }
+body.nav-slim #slimConnSlot { display:none !important; }
+.slim-more { flex-shrink:0; text-align:center; color:rgba(255,255,255,0.45); font-size:16px; letter-spacing:2px; line-height:1; padding:2px 0 8px; user-select:none; }
 .slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
 .slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
@@ -1191,6 +1195,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   <div class="slim-logo"><div class="mk">HR</div><div class="nm">Breeze</div></div>
   <div id="slimSearchSlot"></div>
   <nav class="slim-nav" id="slimGroups" aria-label="Primary"></nav>
+  <div class="slim-more" title="Scroll for more">•••</div>
   <div id="slimConnSlot"></div>
   <div class="slim-sp-wrap">
     <button class="sg-head" onclick="toggleSharePoint()" title="Search your SharePoint documents">
@@ -19530,12 +19535,30 @@ async function projConfirmEmailToTask(){
 // ===== Slim sidebar: search + collapsible groups + avatar menu (?nav=slim) =====
 (function(){
   var GROUPS = {
-    create:{ label:'Main', icon:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>', items:[ {label:'Chat', view:'chat'}, {label:'History', view:'chats'}, {label:'Documents', view:'docs'} ] },
-    people:{ label:'People', icon:'<circle cx="9" cy="7" r="4"/><path d="M3 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>', items:[ {label:'Org structure', view:'orgchart'}, {label:'People plan', view:'peopleplan'}, {label:'Headcount', view:'headcount'}, {label:'Talent', view:'talent', beta:true} ] },
-    manage:{ label:'Work', badge:true, icon:'<path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>', items:[ {label:'Automations', view:'automations', beta:true}, {label:'Trackers', view:'trackers'}, {label:'Projects', view:'projects'}, {label:'Process maps', view:'processmaps'} ] },
-    library:{ label:'Library', icon:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>', items:[ {label:'Policies', view:'manage'}, {label:'Presentations', view:'presentations'}, {label:'Meeting notes', view:'recorder'} ] },
-    insights:{ label:'Insights', icon:'<line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>', items:[ {label:'Analytics', view:'analytics'}, {label:'Compare', view:'compare'} ] },
-    admin:{ label:'Admin', icon:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82M4.6 9a1.65 1.65 0 0 0-.33-1.82"/>', items:[ {label:'Settings', view:'settings'}, {label:'FAQs', view:'faqs'} ] }
+    create:{ label:'Main', items:[
+      {label:'Chat', view:'chat', ic:'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>'},
+      {label:'History', view:'chats', ic:'<circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/>'},
+      {label:'Documents', view:'docs', ic:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/>'} ] },
+    people:{ label:'People', items:[
+      {label:'Org structure', view:'orgchart', ic:'<rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="15" width="6" height="5" rx="1"/><rect x="15" y="15" width="6" height="5" rx="1"/><path d="M12 8v4M6 15v-3h12v3"/>'},
+      {label:'People plan', view:'peopleplan', ic:'<rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/>'},
+      {label:'Headcount', view:'headcount', ic:'<circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5"/><path d="M17 8.5a3 3 0 0 0 0-1M18 14c2.5.6 3.5 2.4 3.5 5"/>'},
+      {label:'Talent', view:'talent', beta:true, ic:'<path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/>'} ] },
+    manage:{ label:'Work', badge:true, items:[
+      {label:'Automations', view:'automations', beta:true, ic:'<path d="M4 7h9M20 17h-9"/><circle cx="17" cy="7" r="2.5"/><circle cx="7" cy="17" r="2.5"/>'},
+      {label:'Trackers', view:'trackers', ic:'<path d="M3 12h4l2-6 4 14 3-9 2 4h4"/>'},
+      {label:'Projects', view:'projects', ic:'<rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 4v16"/>'},
+      {label:'Process maps', view:'processmaps', ic:'<rect x="3" y="4" width="6" height="5" rx="1.2"/><rect x="15" y="4" width="6" height="5" rx="1.2"/><rect x="9" y="15" width="6" height="5" rx="1.2"/><path d="M6 9v3h12V9M12 12v3"/>'},
+      {label:'Meeting notes', view:'recorder', ic:'<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="13" y2="17"/>'} ] },
+    library:{ label:'Library', items:[
+      {label:'Policies', view:'manage', ic:'<path d="M12 3l8 3.5v5c0 5-3.4 8-8 9.5-4.6-1.5-8-4.5-8-9.5v-5z"/><path d="M9 12l2 2 4-4"/>'},
+      {label:'Presentations', view:'presentations', ic:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/>'} ] },
+    insights:{ label:'Insights', items:[
+      {label:'Analytics', view:'analytics', ic:'<path d="M5 20V9M12 20V4M19 20v-7"/>'},
+      {label:'Compare', view:'compare', ic:'<path d="M12 3v18"/><rect x="4" y="8" width="5" height="8" rx="1"/><rect x="15" y="5" width="5" height="11" rx="1"/>'} ] },
+    admin:{ label:'Admin', items:[
+      {label:'Settings', view:'settings', ic:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8M4.3 9a1.6 1.6 0 0 0 .3-1.8M12 2v3M12 19v3M2 12h3M19 12h3"/>'},
+      {label:'FAQs', view:'faqs', ic:'<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.6 2.2c-.7.4-1.1.9-1.1 1.8"/><line x1="12" y1="17" x2="12.01" y2="17"/>'} ] }
   };
   var VIEW2GROUP = {};
   Object.keys(GROUPS).forEach(function(g){ GROUPS[g].items.forEach(function(it){ if(it.view && !VIEW2GROUP[it.view]) VIEW2GROUP[it.view]=g; }); });
@@ -19552,9 +19575,9 @@ async function projConfirmEmailToTask(){
       html+='<div class="sg open" data-g="'+g+'">';
       html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'</div>';
       html+='<div class="sg-items">'+c.items.map(function(it){
-        if(it.soon) return '<button class="sgi" aria-disabled="true"><span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
+        if(it.soon) return '<button class="sgi" aria-disabled="true">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
         var on=cur===it.view;
-        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')"><span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'">0</span></button>';
+        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'">0</span></button>';
       }).join('')+'</div></div>';
     });
     box.innerHTML=html;
@@ -19586,7 +19609,7 @@ async function projConfirmEmailToTask(){
   }
 
   // ---- global search ----
-  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Talent review',v:'talent',k:'People'},{l:'9-box grid',v:'talent',k:'People'},{l:'Succession planning',v:'talent',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Automations',v:'automations',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Library'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
+  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Talent review',v:'talent',k:'People'},{l:'9-box grid',v:'talent',k:'People'},{l:'Succession planning',v:'talent',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Automations',v:'automations',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Work'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
   var _peopleCache=null, _selIdx=-1;
   async function peopleNames(){
     if(_peopleCache) return _peopleCache;
