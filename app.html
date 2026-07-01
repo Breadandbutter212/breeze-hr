@@ -9653,7 +9653,11 @@ function showSmartActionModal(email, a){
       <button onclick="smartActionClose()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;flex-shrink:0;">×</button>
     </div>
     <div style="font-size:13px;color:var(--ink2);line-height:1.55;background:var(--surface2);border-radius:10px;padding:11px 13px;margin-bottom:14px;">${escapeHtml(a.summary||'')}</div>
-    <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px 0;margin-bottom:16px;">${actions.join('')}</div>
+    <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px 0;margin-bottom:14px;">${actions.join('')}</div>
+    ${(matchedCase||a.createScenario)?`<div style="margin-bottom:16px;">
+      <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Add a note ${step?`for "${escapeHtml(step.title)}" `:''}<span style="font-weight:400;color:var(--ink3);">(optional)</span></label>
+      <textarea id="smartNote" rows="2" placeholder="e.g. Still to return: laptop and building pass" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;resize:vertical;min-height:48px;"></textarea>
+    </div>`:''}
     <div style="display:flex;justify-content:flex-end;gap:8px;">
       <button onclick="smartActionClose()" class="btn btn-secondary btn-sm">Dismiss</button>${primary}
     </div>
@@ -9681,9 +9685,18 @@ async function applySmartAction(){
     if(!c.checkedSteps) c.checkedSteps=[];
     c.checkedSteps.push(sid); ticked=' · step ticked';
   }
+  // Optional note typed in the Apply modal - logged, and pinned to the step if there is one.
+  const _noteTxt=(document.getElementById('smartNote')?.value||'').trim();
+  let _noted='';
+  if(_noteTxt){
+    const _st=(a.stepId!=null && typeof wfScenarioFor==='function') ? (((wfScenarioFor(c)||{}).steps||[]).find(s=>String(s.id)===String(a.stepId))||{}).title : '';
+    c.contactLog.push({ date:new Date().toISOString(), type:'note', note:(_st?_st+' - ':'')+_noteTxt });
+    if(a.stepId!=null && Number.isFinite(sid)){ c.stepNotes=c.stepNotes||{}; c.stepNotes[sid]=_noteTxt; }
+    _noted=' · note added';
+  }
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
-  bzToast(`Logged to ${escapeHtml(c.employeeName)}'s record${firstAtt?' · attachment saved':''}${ticked}.`);
+  bzToast(`Logged to ${escapeHtml(c.employeeName)}'s record${firstAtt?' · attachment saved':''}${ticked}${_noted}.`);
   setTimeout(()=>{ try{ openWfCasePanel(c.id); }catch(e){} }, 200);
 }
 
@@ -9696,6 +9709,8 @@ async function applySmartCreate(){
   newCase.contactLog.push({ date:new Date().toISOString(), type:'email', note:a.summary||'Email received.' });
   const firstAtt = _smartSaveAttachments(newCase, email);
   if(firstAtt){ const e=newCase.contactLog[0]; e.docFilename=firstAtt.filename; e.docBase64=firstAtt.base64; e.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
+  const _noteTxt=(document.getElementById('smartNote')?.value||'').trim();
+  if(_noteTxt) newCase.contactLog.push({ date:new Date().toISOString(), type:'note', note:_noteTxt });
   wfCases.push(newCase);
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
