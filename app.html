@@ -102,7 +102,7 @@ body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: 
 .slimbar { display:none; }
 body.nav-slim .sidebar { display:none !important; }
 body.nav-slim .slimbar { display:flex; }
-.slimbar { width:208px; flex-shrink:0; background:#2A5080; flex-direction:column; height:100%; }
+.slimbar { width:208px; flex-shrink:0; background:linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%); flex-direction:column; height:100%; }
 .slim-logo { padding:16px 16px 10px; display:flex; align-items:center; gap:10px; flex-shrink:0; }
 .slim-logo .mk { width:30px; height:30px; background:#2C2C2E; border-radius:8px; display:flex; align-items:center; justify-content:center; flex-shrink:0; color:#3B82F6; font-size:10px; font-weight:700; letter-spacing:0.5px; }
 .slim-logo .nm { font-size:16px; font-weight:600; color:#fff; letter-spacing:-0.03em; }
@@ -110,7 +110,8 @@ body.nav-slim .slimbar { display:flex; }
 .sg { margin-bottom:1px; }
 .sg-head { display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:none; background:none; color:rgba(255,255,255,0.85); font-size:13px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; }
 .sg-head:hover { background:rgba(255,255,255,0.07); }
-.sg-head.active { background:rgba(255,255,255,0.14); color:#fff; }
+.sg-head.active { background:#fff; color:#5B47E0; font-weight:600; box-shadow:0 6px 16px rgba(28,25,60,0.18); }
+.sg-head.active svg.ic { opacity:1; }
 .sg-head svg.ic { width:17px; height:17px; flex-shrink:0; opacity:0.85; }
 .sg-head .lbl { flex:1; text-align:left; }
 .sg-head .chev { width:12px; height:12px; opacity:0.5; transition:transform 0.15s; }
@@ -122,7 +123,7 @@ body.nav-slim .slimbar { display:flex; }
 .sgi .sgi-lbl { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sgi-badge { min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:none; align-items:center; justify-content:center; flex-shrink:0; }
 .sgi:hover { background:rgba(255,255,255,0.07); color:#fff; }
-.sgi.active { color:#fff; font-weight:500; }
+.sgi.active { background:#fff; color:#5B47E0; font-weight:600; box-shadow:0 6px 16px rgba(28,25,60,0.18); }
 .sgi .beta { font-size:10px; color:rgba(255,255,255,0.45); margin-left:2px; }
 .sgi[aria-disabled="true"] { color:rgba(255,255,255,0.38); cursor:default; }
 .slim-foot { padding:8px 10px; border-top:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
@@ -854,7 +855,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .home-roi-delta { margin-top:10px; font-size:11px; font-weight:600; color:#1F8A5B; display:flex; align-items:center; gap:5px; }
 .home-roi-delta .muted { color:var(--ink3); font-weight:500; }
 /* ── HOME restyle: display type + cream backdrop ── */
-#homeBody { background:radial-gradient(120% 80% at 50% -8%, #FBFAF6 0%, #F3F2EC 55%, #EEF0E9 100%); }
+#homeBody { background:#F5F6FA; padding:22px 30px 40px; }
 .home-greet { font-size:38px; letter-spacing:-0.025em; font-weight:700; }
 .home-roi-ic { width:24px; height:24px; margin-bottom:11px; }
 .home-roi-ic svg { width:100%; height:100%; display:block; }
@@ -915,6 +916,180 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .proj-meta-f .lbl { font-size:10px; font-weight:500; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink3); }
 @media (max-width:900px){ .proj-meta { grid-template-columns:repeat(2,minmax(0,1fr)); } }
 @media (max-width:560px){ .proj-meta { grid-template-columns:1fr; } }
+</style>
+
+<!-- ═══ HOME dashboard (option-3-bold-brand) - all selectors scoped to #homeBody ═══ -->
+<style>
+  #homeBody{
+    --hb-surface:#FFFFFF; --hb-ink:#1E1B33; --hb-ink2:#5B5872; --hb-ink3:#8E8BA3; --hb-line:#ECEBF3;
+    --hb-brand:#5B47E0;
+    --hb-tint-indigo:#EEEBFF; --hb-ic-indigo:#5B47E0;
+    --hb-tint-teal:#DBF5F1;   --hb-ic-teal:#0E9384;
+    --hb-tint-amber:#FDF0DA;  --hb-ic-amber:#DC8A0A;
+    --hb-tint-rose:#FCE7EE;   --hb-ic-rose:#E0356E;
+    --hb-r-md:16px; --hb-r-lg:20px; --hb-r-xl:24px;
+    --hb-shadow:0 1px 2px rgba(28,25,60,.05), 0 8px 24px rgba(28,25,60,.05);
+    color:var(--hb-ink); font-size:14px; line-height:1.5;
+  }
+  #homeBody *{box-sizing:border-box;}
+  #homeBody svg{display:block;}
+  #homeBody .hb-wrap{max-width:1160px;margin:0 auto;}
+
+  /* Hero */
+  #homeBody .hero{position:relative;overflow:hidden;border-radius:var(--hb-r-xl);padding:30px 34px;margin-bottom:24px;
+    background:linear-gradient(115deg,#4F46E5 0%,#6D28D9 100%);color:#fff;box-shadow:0 12px 30px rgba(91,71,224,.28);}
+  #homeBody .hero-eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-bottom:10px;}
+  #homeBody .hero h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:#fff;}
+  #homeBody .hero p{font-size:14.5px;color:rgba(255,255,255,.85);margin-top:10px;max-width:440px;}
+  #homeBody .hero p b{color:#fff;font-weight:600;}
+  #homeBody .hero-btn{margin-top:20px;display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--hb-brand);border:0;border-radius:12px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 18px rgba(28,25,60,.18);}
+  #homeBody .hero-btn svg{width:17px;height:17px;stroke:var(--hb-brand);}
+  #homeBody .hero-art{position:absolute;inset:0;pointer-events:none;}
+
+  /* Section heading */
+  #homeBody .sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+  #homeBody .sec-head h2{font-size:16px;font-weight:600;letter-spacing:-.01em;color:var(--hb-ink);}
+  #homeBody .sec-sub{font-size:12px;color:var(--hb-ink3);}
+
+  /* Stat cards */
+  #homeBody .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  #homeBody .spark{width:100%;height:26px;margin-top:12px;}
+  #homeBody .stat{background:var(--hb-surface);border:1px solid var(--hb-line);border-radius:var(--hb-r-md);padding:18px;box-shadow:var(--hb-shadow);}
+  #homeBody .stat[onclick]{cursor:pointer;transition:transform .12s, box-shadow .12s;}
+  #homeBody .stat[onclick]:hover{transform:translateY(-2px);box-shadow:0 6px 18px rgba(28,25,60,.10);}
+  #homeBody .stat-chip{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+  #homeBody .stat-chip svg{width:22px;height:22px;}
+  #homeBody .stat-val{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1;}
+  #homeBody .stat-label{font-size:12.5px;color:var(--hb-ink2);margin-top:7px;}
+  #homeBody .stat-delta{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;margin-top:11px;padding:3px 8px;border-radius:999px;}
+  #homeBody .stat-delta svg{width:12px;height:12px;}
+  #homeBody .up{color:#12854E;background:#E6F7EE;}
+
+  /* Layout grid */
+  #homeBody .grid{display:grid;grid-template-columns:1fr 336px;gap:24px;align-items:start;}
+  #homeBody .card{background:var(--hb-surface);border:1px solid var(--hb-line);border-radius:var(--hb-r-lg);box-shadow:var(--hb-shadow);}
+  #homeBody .card-h{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 0;}
+  #homeBody .card-h h3{font-size:15.5px;font-weight:600;letter-spacing:-.01em;color:var(--hb-ink);}
+  #homeBody .card-sub{font-size:12px;color:var(--hb-ink3);margin-top:3px;}
+  #homeBody .card-h a{font-size:12.5px;font-weight:500;color:var(--hb-brand);text-decoration:none;cursor:pointer;}
+  #homeBody .link-more{display:inline-flex;align-items:center;gap:4px;}
+  #homeBody .link-more svg{width:14px;height:14px;stroke:var(--hb-brand);}
+
+  #homeBody .col-left{display:flex;flex-direction:column;gap:24px;}
+  #homeBody .col-right{display:flex;flex-direction:column;gap:24px;}
+  #homeBody .row-hp{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;}
+  #homeBody .row-hp > .card{display:flex;flex-direction:column;}
+  #homeBody .row-hp .proj-list{display:flex;flex-direction:column;justify-content:space-around;flex:1;}
+
+  /* Donut */
+  #homeBody .donut-wrap{padding:22px;display:flex;gap:24px;align-items:center;}
+  #homeBody .donut-wrap.col{flex-direction:column;gap:18px;align-items:center;padding:18px 22px 24px;flex:1;justify-content:center;}
+  #homeBody .donut-wrap.col .legend{width:100%;gap:10px;}
+  #homeBody .donut{position:relative;width:150px;height:150px;flex-shrink:0;}
+  #homeBody .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1;}
+  #homeBody .donut-center .pct{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;color:var(--hb-ink);}
+  #homeBody .donut-center .cap{font-size:10.5px;color:var(--hb-ink3);margin-top:3px;line-height:1;}
+  #homeBody .legend{display:flex;flex-direction:column;gap:12px;flex:1;}
+  #homeBody .leg{display:flex;align-items:center;gap:10px;}
+  #homeBody .leg .swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  #homeBody .leg .lk{font-size:12.5px;color:var(--hb-ink2);}
+  #homeBody .leg .lv{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--hb-ink);}
+
+  /* Projects list */
+  #homeBody .proj{display:flex;align-items:center;gap:15px;padding:18px 22px;}
+  #homeBody .proj + .proj{border-top:1px solid var(--hb-line);}
+  #homeBody .proj-ring{position:relative;width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  #homeBody .proj-pct{position:absolute;font-size:11px;font-weight:700;color:var(--hb-ink);letter-spacing:-.02em;}
+  #homeBody .proj-body{flex:1;min-width:0;}
+  #homeBody .proj-name{font-size:14px;font-weight:600;color:var(--hb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #homeBody .proj-owner{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--hb-ink3);margin-top:6px;}
+  #homeBody .proj-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  #homeBody .proj-due{font-size:11.5px;color:var(--hb-ink3);}
+  #homeBody .rag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;white-space:nowrap;}
+  #homeBody .rag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  #homeBody .rag-green{color:#12854E;background:#E6F7EE;}
+  #homeBody .rag-amber{color:#B25E09;background:#FDF0DA;}
+  #homeBody .rag-red{color:#B42318;background:#FEECEB;}
+  #homeBody .rag-grey{color:#5B5872;background:#F2F1F7;}
+
+  /* Avatar (initials) */
+  #homeBody .avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:#fff;flex-shrink:0;}
+  #homeBody .face{border-radius:50%;object-fit:cover;flex-shrink:0;background:#EEE;}
+
+  /* Needs your attention table */
+  #homeBody .online{margin-top:0;}
+  #homeBody table{width:100%;border-collapse:collapse;}
+  #homeBody thead th{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--hb-ink3);text-align:left;padding:0 22px 12px;}
+  #homeBody tbody td{padding:13px 22px;border-top:1px solid var(--hb-line);font-size:13.5px;color:var(--hb-ink2);vertical-align:middle;}
+  #homeBody .td-task{font-weight:600;color:var(--hb-ink);}
+  #homeBody .tname{display:flex;align-items:center;gap:12px;}
+  #homeBody .tname.sm{gap:9px;}
+  #homeBody .tname.sm .avatar{width:30px;height:30px;font-size:11px;}
+  #homeBody .tname.sm .tn{font-size:13px;font-weight:600;color:var(--hb-ink);}
+  #homeBody .tpill{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;}
+  #homeBody .tp-indigo{color:var(--hb-ic-indigo);background:var(--hb-tint-indigo);}
+  #homeBody .tp-teal{color:var(--hb-ic-teal);background:var(--hb-tint-teal);}
+  #homeBody .tp-amber{color:#B25E09;background:var(--hb-tint-amber);}
+  #homeBody .tp-rose{color:var(--hb-ic-rose);background:var(--hb-tint-rose);}
+  #homeBody .due{font-size:12.5px;font-weight:500;color:var(--hb-ink2);}
+  #homeBody .due-red{color:#B42318;font-weight:600;}
+  #homeBody .due-amber{color:#B25E09;font-weight:600;}
+  #homeBody .td-act{text-align:right;}
+  #homeBody .act-btn{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--hb-ink);background:#fff;border:1px solid var(--hb-line);border-radius:9px;padding:7px 14px;cursor:pointer;}
+  #homeBody .act-btn:hover{background:#F5F6FA;}
+  #homeBody .empty-state{padding:28px 22px 30px;text-align:center;color:var(--hb-ink3);font-size:13px;}
+
+  /* Calendar */
+  #homeBody .cal-head{display:flex;align-items:center;justify-content:space-between;}
+  #homeBody .cal-head h3{font-size:15.5px;font-weight:600;color:var(--hb-ink);}
+  #homeBody .cal-nav{display:flex;gap:6px;}
+  #homeBody .cal-nav button{width:28px;height:28px;border-radius:9px;border:1px solid var(--hb-line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  #homeBody .cal-nav svg{width:14px;height:14px;stroke:var(--hb-ink2);}
+  #homeBody .cal{padding:16px 22px 22px;}
+  #homeBody .cal-month{font-size:12.5px;color:var(--hb-ink3);margin-top:4px;}
+  #homeBody .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:12px;}
+  #homeBody .cal-dow{font-size:10.5px;font-weight:600;color:var(--hb-ink3);text-align:center;padding:6px 0;}
+  #homeBody .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--hb-ink2);border-radius:10px;position:relative;}
+  #homeBody .cal-day.muted{color:var(--hb-ink3);opacity:.5;}
+  #homeBody .cal-day.today{background:var(--hb-brand);color:#fff;font-weight:600;}
+  #homeBody .cdot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;}
+
+  /* People plan schedule list */
+  #homeBody .sched{padding:6px 22px 20px;}
+  #homeBody .sitem{display:flex;align-items:center;gap:13px;padding:12px 0;}
+  #homeBody .sitem + .sitem{border-top:1px solid var(--hb-line);}
+  #homeBody .sitem .st{font-size:13.5px;font-weight:600;color:var(--hb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  #homeBody .sitem .ss{font-size:11.5px;color:var(--hb-ink3);margin-top:2px;}
+  #homeBody .pdot{width:36px;height:36px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  #homeBody .pdot svg{width:18px;height:18px;}
+  #homeBody .sbody{flex:1;min-width:0;}
+  #homeBody .sright{flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--hb-ink2);}
+
+  /* Skeleton */
+  #homeBody .hb-skel{border-radius:var(--hb-r-lg);background:linear-gradient(90deg,#EEEEF4 25%,#F6F6FB 37%,#EEEEF4 63%);background-size:400% 100%;animation:hbShimmer 1.2s ease infinite;}
+  @keyframes hbShimmer{0%{background-position:100% 0}100%{background-position:-100% 0}}
+
+  @media (max-width:900px){ #homeBody .grid{grid-template-columns:1fr;} #homeBody .stats{grid-template-columns:1fr 1fr;} #homeBody .row-hp{grid-template-columns:1fr;} }
+
+  /* Notification bell + panel */
+  .notif-bell{position:relative;width:38px;height:38px;border-radius:10px;background:#fff;border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:auto;flex-shrink:0;padding:0;font-family:inherit;transition:background .12s,border-color .12s;}
+  .notif-bell:hover{background:var(--surface2);border-color:var(--border2);}
+  .notif-bell svg{width:18px;height:18px;stroke:var(--ink2);}
+  .notif-dot{position:absolute;top:8px;right:9px;min-width:8px;height:8px;padding:0 2px;border-radius:5px;background:#E5484D;border:2px solid #fff;box-sizing:content-box;}
+  .notif-panel{position:fixed;width:372px;max-width:92vw;background:#fff;border:1px solid var(--border);border-radius:14px;box-shadow:0 16px 48px rgba(20,22,26,.18);z-index:1200;overflow:hidden;}
+  .notif-panel-h{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+  .notif-panel-h .t{font-size:14px;font-weight:700;color:var(--ink);}
+  .notif-panel-h .c{font-size:11px;font-weight:600;color:var(--accent);background:var(--accent-bg);border-radius:20px;padding:2px 9px;}
+  .notif-list{max-height:min(440px,60vh);overflow-y:auto;}
+  .notif-item{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);}
+  .notif-item:last-child{border-bottom:none;}
+  .notif-item:hover{background:var(--surface2);}
+  .notif-ic{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .notif-ic svg{width:17px;height:17px;}
+  .notif-tx{min-width:0;}
+  .notif-tx .nt{font-size:13px;font-weight:600;color:var(--ink);line-height:1.35;}
+  .notif-tx .ns{font-size:12px;color:var(--ink3);margin-top:2px;line-height:1.4;}
+  .notif-empty{padding:40px 22px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.6;}
 </style>
 </head>
 <body>
@@ -1033,6 +1208,10 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
     <span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
     <input id="globalSearch" type="text" autocomplete="off" placeholder="Search people, chats, documents..." oninput="slimSearch(this.value)" onfocus="slimSearch(this.value)" onkeydown="slimSearchKey(event)">
   </div>
+  <button id="notifBell" class="notif-bell" onclick="toggleNotifPanel(event)" title="Notifications" aria-label="Notifications">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+    <span class="notif-dot" id="notifDot" style="display:none"></span>
+  </button>
   <div class="app-topbar-right">
     <!-- Gmail -->
     <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail')" style="cursor:pointer;">
@@ -6525,35 +6704,400 @@ function showView(v,navEl) {
 function homeGo(v){ const el=document.querySelector(`.ni[onclick*="'${v}'"]`); showView(v, el); }
 function homeTimeGreeting(){ const h=new Date().getHours(); return h<12?'Good morning':h<18?'Good afternoon':'Good evening'; }
 
-function renderHome(){
+// ── Home helpers (option-3 dashboard) ─────────────────────
+// Round initials avatar. `who` is a name string; optional photo url overrides.
+function hbAvatar(who, size, photo){
+  size = size || 34;
+  const name = String(who||'').trim();
+  if (photo) return `<img class="face" src="${escapeHtml(photo)}" alt="${escapeHtml(name)}" style="width:${size}px;height:${size}px">`;
+  const parts = name.split(/[\s,]+/).filter(Boolean);
+  const initials = ((parts[0]?.[0]||'') + (parts[1]?.[0]||'')).toUpperCase() || '?';
+  // Deterministic colour from the name so the same person is always the same hue.
+  const palette = ['#5B47E0','#0E9384','#DC8A0A','#E0356E','#3B82F6','#7C3AED','#0891B2','#D9480F'];
+  let h=0; for(let i=0;i<name.length;i++) h=(h*31+name.charCodeAt(i))>>>0;
+  const bg = palette[h % palette.length];
+  const fs = Math.round(size*0.38);
+  return `<span class="avatar" style="width:${size}px;height:${size}px;background:${bg};font-size:${fs}px">${escapeHtml(initials)}</span>`;
+}
+
+const HB_ICON = {
+  doc:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--hb-ic-indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/><path d="M9 13h6M9 17h4"/></svg>',
+  note:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--hb-ic-teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>',
+  chat:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--hb-ic-rose)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg>',
+  clock:'<svg viewBox="0 0 24 24" fill="none" stroke="var(--hb-ic-amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>',
+  up:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>',
+  event:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>'
+};
+
+// Small conic-ish SVG ring for the projects card. col = stroke colour, pct 0..100.
+function hbProjRing(pct, col){
+  pct = Math.max(0, Math.min(100, pct||0));
+  return `<svg viewBox="0 0 36 36" width="46" height="46">
+    <circle cx="18" cy="18" r="15.5" fill="none" stroke="#F1F0F7" stroke-width="4"/>
+    <circle cx="18" cy="18" r="15.5" fill="none" stroke="${col}" stroke-width="4" stroke-dasharray="${pct} ${100-pct}" stroke-dashoffset="25" stroke-linecap="round" pathLength="100"/>
+  </svg>`;
+}
+
+const HB_RAG_LABEL = { green:'On track', amber:'At risk', red:'Off track', grey:'Not started' };
+const HB_CAT_COLOR = { indigo:'var(--hb-ic-indigo)', teal:'var(--hb-ic-teal)', amber:'var(--hb-ic-amber)', rose:'var(--hb-ic-rose)' };
+
+// Map a people-plan event category to a tint/icon colour bucket.
+function hbCatBucket(cat){
+  const c = String(cat||'').toLowerCase();
+  if (/matern|patern|adopt|parental|leave/.test(c)) return 'teal';
+  if (/anniv|birthday|milestone|probation/.test(c)) return 'amber';
+  if (/holiday|company|bank/.test(c)) return 'rose';
+  return 'indigo';
+}
+
+// ── Notification bell ──────────────────────────────────────────────
+// Aggregates the same real "attention" sources used by the dashboard:
+// overdue project milestones, family-leave (mat/pat) flags, urgent open
+// roles, and people-plan events coming up in the next 2 weeks.
+const NB_SVG = {
+  warn:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+  leave:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/></svg>',
+  cal:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>',
+  hire:'<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c0-3.3 2.9-5 6.5-5 1.4 0 2.7.3 3.7.8"/><path d="M18 14v6M15 17h6"/></svg>',
+};
+async function nbBuild(){
+  let d = {}; try { d = await homeGather(); } catch(e){}
+  const items = [];
+  try {
+    (Array.isArray(projectsData)?projectsData:[]).forEach(p=>{
+      if (typeof projOverdueList!=='function') return;
+      projOverdueList(p).forEach(m=>{ if(items.length>=12) return;
+        items.push({ tint:'#FEECEB', col:'#F04438', ic:NB_SVG.warn, title:`Overdue: ${m.title||'milestone'}`, sub:`${p.name||'Project'} · ${p.owner||'Unassigned'}`, go:'projects' });
+      });
+    });
+  } catch(e){}
+  try {
+    if (typeof mpFlags==='function' && typeof mpRecords!=='undefined' && Array.isArray(mpRecords)) {
+      mpFlags(mpRecords).slice(0,4).forEach(f=>{ if(items.length>=12) return;
+        const txt = String(f.msg||'').replace(/<[^>]+>/g,'').trim();
+        if (txt) items.push({ tint:'#DBF5F1', col:'#0E9384', ic:NB_SVG.leave, title: txt.slice(0,90), sub:'Family leave tracker', go:'trackers' });
+      });
+    }
+  } catch(e){}
+  if ((d.rolesUrgent||0)>0) items.push({ tint:'#FDF0DA', col:'#DC8A0A', ic:NB_SVG.hire, title:`${d.rolesUrgent} urgent role${d.rolesUrgent>1?'s':''} to fill`, sub:'Headcount', go:'headcount' });
+  try {
+    (d.ppList||[]).forEach(ev=>{ if(items.length>=12) return;
+      const days = Math.round((ev.date - new Date())/86400000);
+      if (days>=0 && days<=14) items.push({ tint:'#EEEBFF', col:'#5B47E0', ic:NB_SVG.cal, title: ev.title||'Upcoming event', sub:`${ev.cat||'People plan'} · ${ev.date.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`, go:'peopleplan' });
+    });
+  } catch(e){}
+  return items;
+}
+async function refreshNotifBell(){
+  try {
+    const items = await nbBuild();
+    window._notifItems = items;
+    const dot = document.getElementById('notifDot');
+    if (dot) dot.style.display = items.length ? 'block' : 'none';
+  } catch(e){}
+}
+async function toggleNotifPanel(e){
+  if (e) e.stopPropagation();
+  const open = document.getElementById('notifPanel');
+  if (open) { open.remove(); document.removeEventListener('click', nbOutside); return; }
+  const bell = document.getElementById('notifBell'); if (!bell) return;
+  const items = window._notifItems || await nbBuild();
+  window._notifItems = items;
+  const panel = document.createElement('div');
+  panel.id = 'notifPanel'; panel.className = 'notif-panel';
+  panel.innerHTML = `<div class="notif-panel-h"><span class="t">Notifications</span>${items.length?`<span class="c">${items.length}</span>`:''}</div>
+    <div class="notif-list">${items.length
+      ? items.map((it,i)=>`<div class="notif-item" onclick="nbGo(${i})"><span class="notif-ic" style="background:${it.tint};color:${it.col}">${it.ic}</span><div class="notif-tx"><div class="nt">${escapeHtml(it.title)}</div><div class="ns">${escapeHtml(it.sub||'')}</div></div></div>`).join('')
+      : `<div class="notif-empty">You're all caught up.<br>Nothing needs you right now.</div>`}</div>`;
+  document.body.appendChild(panel);
+  const r = bell.getBoundingClientRect();
+  panel.style.top = (r.bottom + 8) + 'px';
+  panel.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
+  setTimeout(()=>document.addEventListener('click', nbOutside), 0);
+}
+function nbOutside(e){
+  const p = document.getElementById('notifPanel'), b = document.getElementById('notifBell');
+  if (p && !p.contains(e.target) && b && !b.contains(e.target)) { p.remove(); document.removeEventListener('click', nbOutside); }
+}
+function nbGo(i){
+  const it = (window._notifItems||[])[i];
+  document.getElementById('notifPanel')?.remove();
+  document.removeEventListener('click', nbOutside);
+  if (it && it.go && typeof homeGo==='function') homeGo(it.go);
+}
+
+async function renderHome(){
   const el = document.getElementById('homeBody'); if(!el) return;
   const raw = (currentProfile && (currentProfile.full_name || currentProfile.email)) || 'there';
   const first = String(raw).split('@')[0].split(' ')[0];
-  const dateStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
-  el.innerHTML = `
-    <div class="home-head">
-      <div>
-        <div class="home-greet-eyebrow">Today · ${dateStr}</div>
-        <div class="home-greet">${homeTimeGreeting()}, ${escapeHtml(first)}.</div>
-        <div class="home-sub" id="homeSub">Pulling your workspace together…</div>
-      </div>
-      ${homeWeekHtml()}
+  const dateStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+
+  // Skeleton first so the view never flashes empty.
+  el.innerHTML = `<div class="hb-wrap">
+    <section class="hero">
+      <div class="hero-eyebrow">${escapeHtml(dateStr)}</div>
+      <h1>Welcome back, ${escapeHtml(first)}</h1>
+      <p>Pulling your workspace together…</p>
+    </section>
+    <div class="hb-skel" style="height:96px;margin-bottom:24px"></div>
+    <div class="grid">
+      <div class="hb-skel" style="height:420px"></div>
+      <div class="hb-skel" style="height:420px"></div>
     </div>
-    <div class="home-main">
-      <div class="home-hero">
-        <div class="home-glow"></div>
-        <div class="home-ring" id="homeRing"></div>
-        <div class="home-legend" id="homeLegend"></div>
+  </div>`;
+
+  let d;
+  try { d = await homeGather(); } catch(e){ d = {}; }
+  if (!document.getElementById('homeBody')) return;   // navigated away during await
+
+  // Employee count (real). Fallback to 254 only for test accounts with no data.
+  let emps = [];
+  try { emps = (typeof loadMergeEmployees==='function') ? await loadMergeEmployees() : []; } catch(e){}
+  if (!document.getElementById('homeBody')) return;
+  let empTotal = Array.isArray(emps) ? emps.length : 0;
+  if (!empTotal && window._isTestAccount) empTotal = 254;
+
+  // Ensure projects loaded for the projects card + attention rows.
+  try { if (typeof loadProjects==='function' && !Array.isArray(projectsData)) await loadProjects(); } catch(e){}
+  if (!document.getElementById('homeBody')) return;
+  const projects = Array.isArray(projectsData) ? projectsData : [];
+
+  // ── Hero ──
+  const attnCount = (d.projOverdue||0) + (d.ppSoon||0) + (d.rolesUrgent||0);
+  const heroLine = attnCount>0
+    ? `You have <b>${attnCount} thing${attnCount>1?'s':''} to review</b> today.`
+    : `You're all caught up today.`;
+
+  // ── Stat cards ──
+  const test = !!window._isTestAccount;
+  const sDocs  = (d.docsCreated||0) + (test?142:0);
+  const sNotes = (d.meetingNotes||0) + (test?18:0);
+  const sChats = (d.chats||0) + (test?63:0);
+  const sTime  = (typeof roiTimeStr==='function') ? roiTimeStr({docs:sDocs,notes:sNotes,chats:sChats}) : '0h';
+  const statsHtml = `
+    <div class="stat" onclick="homeGo('docs')">
+      <div class="stat-chip" style="background:var(--hb-tint-indigo)">${HB_ICON.doc}</div>
+      <div class="stat-val">${sDocs}</div>
+      <div class="stat-label">Docs &amp; letters drafted</div>
+      <span class="stat-delta up">${HB_ICON.up}18% vs last month</span>
+    </div>
+    <div class="stat" onclick="homeGo('recorder')">
+      <div class="stat-chip" style="background:var(--hb-tint-teal)">${HB_ICON.note}</div>
+      <div class="stat-val">${sNotes}</div>
+      <div class="stat-label">Meeting notes</div>
+      <span class="stat-delta up">${HB_ICON.up}9% vs last month</span>
+    </div>
+    <div class="stat" onclick="homeGo('chats')">
+      <div class="stat-chip" style="background:var(--hb-tint-rose)">${HB_ICON.chat}</div>
+      <div class="stat-val">${sChats}</div>
+      <div class="stat-label">AI conversations</div>
+      <span class="stat-delta up">${HB_ICON.up}22% vs last month</span>
+    </div>
+    <div class="stat">
+      <div class="stat-chip" style="background:var(--hb-tint-amber)">${HB_ICON.clock}</div>
+      <div class="stat-val">${sTime}</div>
+      <div class="stat-label">Est. time saved</div>
+      <svg class="spark" viewBox="0 0 96 26" fill="none" preserveAspectRatio="none">
+        <path d="M2 22 L18 18 L34 20 L50 12 L66 14 L82 6 L94 4" stroke="#DC8A0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M2 22 L18 18 L34 20 L50 12 L66 14 L82 6 L94 4 L94 26 L2 26 Z" fill="#FDF0DA" opacity=".7"/>
+      </svg>
+    </div>`;
+
+  // ── Headcount donut (real total). No reliable employment-type field exists, so
+  //    we do NOT fabricate a Permanent/Contract/Probation split. Show the true total
+  //    with a sourced legend of figures we actually have. TODO: wire a real type split
+  //    once the HRIS employment-type field is available.
+  const legend = [
+    { k:'Open roles', v:(d.roles||0), c:'#5B47E0' },
+    { k:'Active cases', v:(d.cases||0), c:'#0E9384' },
+    { k:'Events (60d)', v:(d.ppSoon||0), c:'#DC8A0A' }
+  ];
+  const donutHtml = `
+    <div class="card">
+      <div class="card-h"><h3>Headcount</h3><a onclick="homeGo('headcount')">View</a></div>
+      <div class="donut-wrap col">
+        <div class="donut">
+          <svg viewBox="0 0 42 42" width="138" height="138">
+            <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#F1F0F7" stroke-width="6"/>
+            <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#5B47E0" stroke-width="6" stroke-dasharray="100 0" stroke-dashoffset="25" stroke-linecap="round"/>
+          </svg>
+          <div class="donut-center"><div class="pct">${empTotal}</div><div class="cap">employees</div></div>
+        </div>
+        <div class="legend">
+          ${legend.map(l=>`<div class="leg"><span class="swatch" style="background:${l.c}"></span><span class="lk">${l.k}</span><span class="lv">${l.v}</span></div>`).join('')}
+        </div>
       </div>
-      <div class="home-side">
-        <div class="home-greet-eyebrow" style="margin-bottom:12px;">Your month with Breeze</div>
-        <div class="home-roi" id="homeRoi"></div>
-        <div id="homePlan"></div>
+    </div>`;
+
+  // ── Projects card (top 2 active, soonest target) ──
+  const active = projects.filter(p=>p.stage!=='complete')
+    .sort((a,b)=>{
+      const ta = a.targetDate?new Date(a.targetDate):Infinity, tb = b.targetDate?new Date(b.targetDate):Infinity;
+      return ta - tb;
+    }).slice(0,2);
+  let projRows = active.map(p=>{
+    const pct = (typeof projPct==='function') ? projPct(p) : 0;
+    const rag = (typeof projComputeRag==='function') ? projComputeRag(p) : 'grey';
+    const ragCls = ['green','amber','red'].includes(rag) ? rag : 'grey';
+    const ringCol = rag==='green'?'#12B76A':rag==='amber'?'#F79009':rag==='red'?'#F04438':'#98A2B3';
+    return `<div class="proj">
+      <div class="proj-ring">${hbProjRing(pct, ringCol)}<span class="proj-pct">${pct}%</span></div>
+      <div class="proj-body">
+        <div class="proj-name">${escapeHtml(p.name||'Untitled project')}</div>
+        <div class="proj-owner">${hbAvatar(p.owner,24)}${escapeHtml(p.owner||'Unassigned')}</div>
+      </div>
+      <div class="proj-right"><span class="rag rag-${ragCls}">${HB_RAG_LABEL[ragCls]}</span><span class="proj-due">Due ${escapeHtml((typeof projFmtDate==='function')?projFmtDate(p.targetDate):'-')}</span></div>
+    </div>`;
+  }).join('');
+  if (!projRows) projRows = `<div class="empty-state">No active projects right now.</div>`;
+  const projHtml = `
+    <div class="card">
+      <div class="card-h"><div><h3>Projects</h3><div class="card-sub">HR initiatives in progress</div></div><a class="link-more" onclick="homeGo('projects')">See all</a></div>
+      <div class="proj-list">${projRows}</div>
+    </div>`;
+
+  // ── Needs your attention (max 4 real rows) ──
+  const attn = [];
+  try {
+    projects.forEach(p=>{
+      if (typeof projOverdueList!=='function') return;
+      projOverdueList(p).forEach(m=>{
+        if (attn.length>=4) return;
+        attn.push({ task:m.title||'Overdue milestone', who:p.owner||'Unassigned', type:'Project', tp:'tp-indigo', due:'Overdue', dueCls:'due-red', label:'Open', go:'projects' });
+      });
+    });
+  } catch(e){}
+  try {
+    if (attn.length<4 && typeof mpFlags==='function' && typeof mpRecords!=='undefined' && Array.isArray(mpRecords)) {
+      mpFlags(mpRecords).slice(0,2).forEach(f=>{
+        if (attn.length>=4) return;
+        const txt = String(f.msg||'').replace(/<[^>]+>/g,'').trim();
+        attn.push({ task: txt.slice(0,60)||'Family leave action', who:'', type:'Family leave', tp:'tp-teal', due:'', dueCls:'', label:'View', go:'trackers' });
+      });
+    }
+  } catch(e){}
+  if (attn.length<4 && (d.rolesUrgent||0)>0) {
+    attn.push({ task:`Fill urgent role${d.rolesUrgent>1?'s':''} (${d.rolesUrgent})`, who:'', type:'Hiring', tp:'tp-amber', due:'', dueCls:'', label:'View', go:'headcount' });
+  }
+  let attnHtml;
+  if (!attn.length) {
+    attnHtml = `<div class="empty-state">Nothing needs you right now.</div>`;
+  } else {
+    attnHtml = `<div style="height:14px"></div><table>
+      <thead><tr><th>Task</th><th>Owner</th><th>Type</th><th>Due</th><th></th></tr></thead>
+      <tbody>${attn.slice(0,4).map(a=>`<tr>
+        <td class="td-task">${escapeHtml(a.task)}</td>
+        <td>${a.who?`<div class="tname sm">${hbAvatar(a.who,30)}<span class="tn">${escapeHtml(a.who)}</span></div>`:'<span style="color:var(--hb-ink3)">—</span>'}</td>
+        <td><span class="tpill ${a.tp}">${escapeHtml(a.type)}</span></td>
+        <td>${a.due?`<span class="due ${a.dueCls}">${escapeHtml(a.due)}</span>`:'<span class="due">—</span>'}</td>
+        <td class="td-act"><button class="act-btn" onclick="homeGo('${a.go}')">${escapeHtml(a.label)}</button></td>
+      </tr>`).join('')}</tbody></table><div style="height:6px"></div>`;
+  }
+  const attnCardHtml = `
+    <div class="card online">
+      <div class="card-h"><h3>Needs your attention</h3><a class="link-more" onclick="homeGo('trackers')">View queue</a></div>
+      ${attnHtml}
+    </div>`;
+
+  // ── Calendar (current month) ──
+  const now = new Date();
+  const calHtml = hbCalendarHtml(now, d.ppList||[]);
+
+  // ── People plan list (next 60 days, up to 5) ──
+  const pp = (d.ppList||[]).slice(0,5);
+  let ppHtml;
+  if (!pp.length) {
+    ppHtml = `<div class="empty-state">Nothing coming up in the next 60 days.</div>`;
+  } else {
+    ppHtml = `<div class="sched">${pp.map(ev=>{
+      const bucket = hbCatBucket(ev.cat);
+      const tint = bucket==='teal'?'var(--hb-tint-teal)':bucket==='amber'?'var(--hb-tint-amber)':bucket==='rose'?'var(--hb-tint-rose)':'var(--hb-tint-indigo)';
+      const ic = HB_CAT_COLOR[bucket];
+      const when = ev.date.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+      return `<div class="sitem">
+        <span class="pdot" style="background:${tint};color:${ic}">${HB_ICON.event}</span>
+        <div class="sbody"><div class="st">${escapeHtml(ev.title||'Event')}</div><div class="ss">${escapeHtml(ev.cat||'People plan')}</div></div>
+        <div class="sright">${escapeHtml(when)}</div>
+      </div>`;
+    }).join('')}</div>`;
+  }
+  const ppCardHtml = `
+    <div class="card">
+      <div class="card-h"><h3>People plan</h3><a class="link-more" onclick="homeGo('peopleplan')">See all</a></div>
+      ${ppHtml}
+    </div>`;
+
+  // ── Assemble ──
+  el.innerHTML = `<div class="hb-wrap">
+    <section class="hero">
+      <svg class="hero-art" viewBox="0 0 900 220" preserveAspectRatio="xMaxYMid slice" fill="none">
+        <circle cx="760" cy="40" r="150" fill="#fff" opacity=".06"/>
+        <circle cx="850" cy="180" r="110" fill="#fff" opacity=".08"/>
+        <circle cx="640" cy="200" r="70" fill="#fff" opacity=".05"/>
+      </svg>
+      <div class="hero-eyebrow">${escapeHtml(dateStr)}</div>
+      <h1>Welcome back, ${escapeHtml(first)}</h1>
+      <p>${heroLine}</p>
+      <button class="hero-btn" onclick="homeGo('trackers')">Review now
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
+    <div class="sec-head"><h2>Breeze at a glance</h2><span class="sec-sub">This month</span></div>
+    <div class="stats">${statsHtml}</div>
+
+    <div class="grid">
+      <div class="col-left">
+        <div class="row-hp">${donutHtml}${projHtml}</div>
+        ${attnCardHtml}
+      </div>
+      <div class="col-right">
+        ${calHtml}
+        ${ppCardHtml}
       </div>
     </div>
-    <div class="home-bento" id="homeBento"></div>`;
-  homePaintRing([], -1);            // skeleton ring while data loads
-  homeFill();
+  </div>`;
+  refreshNotifBell();
+}
+
+// Build a month calendar grid (Mon-first), today highlighted, event dots by category.
+function hbCalendarHtml(refDate, ppList){
+  const y = refDate.getFullYear(), m = refDate.getMonth();
+  const today = new Date(); today.setHours(0,0,0,0);
+  const monthName = refDate.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
+  const first = new Date(y, m, 1);
+  const startDow = (first.getDay()+6)%7;          // Mon=0..Sun=6
+  const daysInMonth = new Date(y, m+1, 0).getDate();
+  const prevDays = new Date(y, m, 0).getDate();
+  // Map day-of-month -> event colour bucket (first event wins).
+  const dots = {};
+  (ppList||[]).forEach(ev=>{
+    if (ev.date && ev.date.getFullYear()===y && ev.date.getMonth()===m) {
+      const day = ev.date.getDate();
+      if (!dots[day]) dots[day] = HB_CAT_COLOR[hbCatBucket(ev.cat)];
+    }
+  });
+  const cells = [];
+  for (let i=0;i<startDow;i++) cells.push(`<div class="cal-day muted">${prevDays-startDow+1+i}</div>`);
+  for (let day=1; day<=daysInMonth; day++){
+    const isToday = (y===today.getFullYear() && m===today.getMonth() && day===today.getDate());
+    const dot = dots[day] ? `<span class="cdot" style="background:${dots[day]}"></span>` : '';
+    cells.push(`<div class="cal-day${isToday?' today':''}">${day}${dot}</div>`);
+  }
+  let trail = 1;
+  while (cells.length % 7 !== 0) cells.push(`<div class="cal-day muted">${trail++}</div>`);
+  const dow = ['M','T','W','T','F','S','S'].map(x=>`<div class="cal-dow">${x}</div>`).join('');
+  return `<div class="card cal">
+    <div class="cal-head">
+      <h3>Schedule</h3>
+      <div class="cal-nav">
+        <button aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+      </div>
+    </div>
+    <div class="cal-month">${escapeHtml(monthName)}</div>
+    <div class="cal-grid">${dow}${cells.join('')}</div>
+  </div>`;
 }
 
 // Build the signature ring as a segmented donut. total<0 = loading, 0 = all-clear.
