@@ -15516,6 +15516,22 @@ function ocBuildDeptTree(nodes) {
   return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:deptNodes };
 }
 
+// Up to `max` member faces under a node (people only), for the department face pile.
+function ocDeptFaces(node, max) {
+  const out = [], seen = new Set();
+  (function walk(n) {
+    for (const c of (n.children || [])) {
+      if (out.length >= max) return;
+      if (c.isDept) { walk(c); continue; }
+      if (c.isOpen || !c.name || seen.has(c.name)) continue;
+      const f = c.photo || (typeof _projMockFace === 'function' ? _projMockFace(c.name) : '');
+      if (!f) continue;
+      seen.add(c.name); out.push(f);
+    }
+  })(node);
+  return out;
+}
+
 const OC_GRID_COLS = 8; // max children per row before wrapping to grid
 
 function ocSubW(n) {
@@ -15629,7 +15645,11 @@ function ocRender(root) {
       div.innerHTML=`<div style="width:100%;text-align:center;font-size:13px;font-weight:700;color:white;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(node.name)}</div>`;
     } else if (isDept) {
       div.style.background=node.color+'11'; div.style.borderColor=node.color+'55';
-      div.innerHTML=`<div class="org-avatar" style="background:${node.color}">${escapeHtml(node.name.substring(0,2).toUpperCase())}</div>
+      const _dfaces = ocDeptFaces(node, 3);
+      const _davatar = _dfaces.length
+        ? `<div style="display:flex;align-items:center;flex-shrink:0;">${_dfaces.map((f,idx)=>`<div style="width:28px;height:28px;border-radius:50%;overflow:hidden;border:2px solid var(--surface);background:${node.color};${idx>0?'margin-left:-10px;':''}box-shadow:0 0 0 1px ${node.color}55;position:relative;z-index:${10-idx};"><img src="${escapeHtml(f)}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.remove()"></div>`).join('')}</div>`
+        : `<div class="org-avatar" style="background:${node.color}">${escapeHtml(node.name.substring(0,2).toUpperCase())}</div>`;
+      div.innerHTML=`${_davatar}
         <div style="flex:1;min-width:0;"><div class="org-name">${escapeHtml(node.name)}</div><div class="org-title">${escapeHtml(node.title)}</div></div>`;
     } else if (node.isOpen) {
       div.style.border=`1.5px dashed ${node.color}99`;
