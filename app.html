@@ -6453,6 +6453,7 @@ function renderSettings() {
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button style="background:var(--red-bg);color:var(--red);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:6px 14px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="signOut()">Sign out of all devices</button>
         <button style="background:var(--red-bg);color:var(--red);border:1px solid #F0C5C5;border-radius:var(--r-sm);padding:6px 14px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="deleteAllCompanyData()">Delete all company data</button>
+        ${window._isTestAccount?`<button style="background:var(--accent-bg);color:var(--accent);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:6px 14px;font-size:12px;font-family:inherit;cursor:pointer;" onclick="seedDemoData()">Load demo data</button>`:''}
       </div>
       <div id="set-danger-msg" style="font-size:12px;color:var(--red);margin-top:8px;min-height:16px;"></div>
     </div>
