@@ -421,18 +421,18 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .sp-search-area { padding:14px 18px;border-bottom:1px solid var(--border); }
 .sp-input-row { display:flex;gap:6px; }
 .sp-input { flex:1;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 11px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2); }
-.sp-input:focus { border-color:#0078D4;background:white; }
-.sp-search-btn { background:#0078D4;color:white;border:none;border-radius:var(--r-sm);padding:0 14px;font-size:12px;font-family:inherit;font-weight:500;cursor:pointer;transition:opacity 0.12s; }
+.sp-input:focus { border-color:#5B47E0;background:white; }
+.sp-search-btn { background:#5B47E0;color:white;border:none;border-radius:var(--r-sm);padding:0 14px;font-size:12px;font-family:inherit;font-weight:500;cursor:pointer;transition:opacity 0.12s; }
 .sp-search-btn:hover { opacity:0.88; }
 .sp-results { flex:1;overflow-y:auto;padding:12px 18px; }
 .sp-result { padding:11px 13px;border:1px solid var(--border);border-radius:var(--r);margin-bottom:8px;cursor:pointer;transition:all 0.12s;background:var(--surface); }
-.sp-result:hover { border-color:#0078D4;background:#F0F7FF; }
+.sp-result:hover { border-color:#5B47E0;background:var(--accent-bg); }
 .sp-result-title { font-size:13px;font-weight:500;color:var(--ink);margin-bottom:3px;display:flex;align-items:center;gap:6px; }
 .sp-result-meta { font-size:11px;color:var(--ink3);margin-bottom:5px; }
 .sp-result-snippet { font-size:11px;color:var(--ink2);line-height:1.5; }
 .sp-result-actions { display:flex;gap:6px;margin-top:8px; }
 .sp-tag { font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500; }
-.sp-tag-doc { background:var(--accent-bg);color:#0078D4; }
+.sp-tag-doc { background:var(--accent-bg);color:#5B47E0; }
 .sp-tag-ppt { background:#FFF0E8;color:#D04E00; }
 .sp-tag-xls { background:#E8F5E9;color:#1A7A3C; }
 .sp-empty { text-align:center;padding:40px 20px;color:var(--ink3);font-size:12px; }
@@ -8043,7 +8043,7 @@ When producing ANY EMPLOYEE-FACING letter or email, always use the 📧 DRAFT FO
 (The HR Actions section is internal guidance for HR only - it is never shown or sent to the employee. Label it simply "HR Actions", with no "not for the employee" caption.)
 
 When producing ANY INTERNAL HR DOCUMENT (i.e. a document for HR or managers, not a letter to one employee), always use the 📄 DOCUMENT: format so it appears in the right-hand panel where HR can edit and download as a Word doc - NEVER paste the document body into the chat. This covers: frameworks (360, performance, competency, pay), policies and procedures, process guides, manager toolkits, checklists in prose form, terms of reference, multi-section templates - anything structured and longer than a short answer. Write the body in markdown: use ## and ### for section headings, | pipe tables for tables, - or • for bullets, **bold** and *italic*. End with an HR Actions section for any setup/decisions HR must make.
-THEME / COLOUR: the document is styled into a polished Word file automatically (a coloured title, section headings and table header). The default accent is navy. If the user asks for a particular colour or brand style (e.g. "in orange", "make it green", "use our brand colour #C2410C"), make the FIRST line of the document body "THEME: <colour>" (a colour name like orange/green/teal/purple/red, or a #hex) - it is read for styling and removed from the document, so do not mention it in the prose. Omit the THEME line entirely when no colour is requested.
+THEME / COLOUR: the document is styled into a polished Word file automatically (a coloured title, section headings and table header). The default accent is navy. If the user asks for a particular colour or brand style (e.g. "in orange", "make it green", "use our brand colour #5B47E0"), make the FIRST line of the document body "THEME: <colour>" (a colour name like orange/green/teal/purple/red, or a #hex) - it is read for styling and removed from the document, so do not mention it in the prose. Omit the THEME line entirely when no colour is requested.
 
 📄 DOCUMENT: [short title]
 [document body in markdown]
@@ -8712,7 +8712,7 @@ function isHeavyDocRequest(msg) {
   return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
 }
 
-// Detect a colour/theme the user asked for ("in orange", "green theme", "#C2410C") so a
+// Detect a colour/theme the user asked for ("in orange", "green theme", "#5B47E0") so a
 // generated document can be produced in that accent. Returns a colour name/hex or null.
 // Client-side colour resolver (mirrors the server) so the preview accent matches the download.
 function resolveAccentHex(accent) {
@@ -10210,7 +10210,7 @@ function renderDashboard() {
 
   const rows = analyticsData;
   const n = rows.length;
-  const C = ['#3B82F6','#1D9E75','#E0A800','#2E3D52','#5B47E0','#14B8A6','#8B5CF6','#F97316','#06B6D4','#94A3B8'];
+  const C = ['#5B47E0','#1D9E75','#E0A800','#2E3D52','#5B47E0','#14B8A6','#8B5CF6','#F97316','#06B6D4','#94A3B8'];
   const gridC = '#F0F0F0';
 
   const types = detectColumnTypes(rows);
@@ -10227,7 +10227,7 @@ function renderDashboard() {
 
   // KPI row: total rows + up to 3 numeric summaries
   const kpiNums = numCols.slice(0,3);
-  const kpiColors = ['#3B82F6','#1D9E75','#2E3D52','#E0A800'];
+  const kpiColors = ['#5B47E0','#1D9E75','#2E3D52','#E0A800'];
   let kpiHtml = kpiCard('Total rows', n, `${Object.keys(types).length} columns detected`, '#5B47E0');
   kpiNums.forEach((col,i) => {
     const vals = rows.map(r=>parseFloat(String(r[col]||'').replace(/[£$€,\s%]/g,''))).filter(v=>!isNaN(v));
@@ -18673,7 +18673,7 @@ window.seedDemoData = async function() {
 let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'board', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
 
 const PROJ_STAGES = {
-  'not-started': { label: 'Not started', color: '#3B82F6' },
+  'not-started': { label: 'Not started', color: '#98A2B3' },
   'in-progress': { label: 'In progress', color: '#5B47E0' },
   'on-hold':     { label: 'On hold',     color: '#E0A800' },
   'blocked':     { label: 'Blocked',     color: '#B42318' },
@@ -18682,7 +18682,7 @@ const PROJ_STAGES = {
 const PROJ_RAG = { green: '#30D158', amber: '#E0A800', red: '#B42318' };
 const PROJ_CATEGORIES = ['Comp & reward','Employee relations','Policy','Wellbeing','DEI','Recruitment','Compliance','Systems','Other'];
 const PROJ_PRIORITIES = ['low','normal','high','urgent'];
-const MS_STATUS = { 'not-started':{label:'Not started',color:'#3B82F6'}, 'in-progress':{label:'In progress',color:'#5B47E0'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
+const MS_STATUS = { 'not-started':{label:'Not started',color:'#98A2B3'}, 'in-progress':{label:'In progress',color:'#5B47E0'}, 'blocked':{label:'Blocked',color:'#B42318'}, 'done':{label:'Done',color:'#30D158'} };
 function projMsStatus(m){ return m.status || (m.done ? 'done' : 'not-started'); }
 function projMsDone(m){ return projMsStatus(m) === 'done'; }
 function projMsProgress(m){ if (projMsDone(m)) return 100; const s = m.subtasks||[]; if (s.length) return Math.round(s.filter(x=>x.done).length / s.length * 100); return projMsStatus(m)==='in-progress' ? 40 : 0; }
@@ -19220,7 +19220,7 @@ function projRenderBoard(p){
 }
 // Distinct, stable avatar colour per person (so cards look like Trello's member photos).
 function _projAvatarColor(name){
-  const palette = ['#F97316','#3B82F6','#16A34A','#8B5CF6','#EC4899','#0EA5E9','#D97706','#6366F1','#14B8A6','#EF4444'];
+  const palette = ['#7C3AED','#0E9384','#16A34A','#8B5CF6','#EC4899','#0EA5E9','#D97706','#6366F1','#14B8A6','#EF4444'];
   let h = 0; const s = (name||'').trim();
   for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) >>> 0;
   return palette[h % palette.length];
