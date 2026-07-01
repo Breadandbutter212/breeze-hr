@@ -1981,6 +1981,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
     <input id="emailSearch" placeholder="Search..." oninput="filterEmails(this.value)"
       style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 9px;font-size:12px;font-family:inherit;outline:none;width:110px;background:var(--surface2);"
       onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+    <button id="addEmailBtn" onclick="addTestEmailOpen()" title="Add a test email" style="display:none;align-items:center;gap:4px;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);cursor:pointer;font-size:11px;font-weight:700;color:var(--accent);line-height:1;padding:5px 9px;font-family:inherit;">+ Add</button>
     <button onclick="loadEmailInbox()" title="Refresh" style="background:none;border:none;cursor:pointer;font-size:14px;color:var(--ink3);line-height:1;padding:0 4px;" onmouseover="this.style.color='var(--accent)'" onmouseout="this.style.color='var(--ink3)'">↻</button>
     <button onclick="toggleEmailPanel()" style="background:none;border:none;cursor:pointer;font-size:18px;color:var(--ink3);line-height:1;padding:0 2px;">×</button>
   </div>
@@ -2161,10 +2162,14 @@ async function onSignedIn(user) {
     const nameEl = document.getElementById('userDisplayName');
     if (initEl) initEl.textContent = initials;
     if (nameEl) nameEl.textContent = profile.full_name || user.email;
+    // Deterministic face for the signed-in user (matches the Home dashboard + org chart look)
+    const _faceName = profile.full_name || user.email || '';
+    let _fh=0; for(let i=0;i<_faceName.length;i++) _fh=(_fh*31+_faceName.charCodeAt(i))>>>0;
+    const _faceImg = `<img src="https://i.pravatar.cc/72?img=${(_fh%70)+1}" alt="" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
     // Top bar avatar + greeting
     const avatar = document.getElementById('topbarAvatar');
-    if (avatar) avatar.textContent = initials;
-    const sAv = document.getElementById('slimAv'); if (sAv) sAv.textContent = initials;
+    if (avatar){ avatar.innerHTML = _faceImg; avatar.style.background='transparent'; avatar.style.color='transparent'; avatar.style.overflow='hidden'; }
+    const sAv = document.getElementById('slimAv'); if (sAv){ sAv.innerHTML = _faceImg; sAv.style.background='transparent'; sAv.style.overflow='hidden'; }
     const sNm = document.getElementById('slimName'); if (sNm && sNm.childNodes[0]) sNm.childNodes[0].nodeValue = (profile.full_name || user.email).split(' ')[0];
     const sCo = document.getElementById('slimCo'); if (sCo) sCo.textContent = profile.company_name || '';
     const firstName = (profile.full_name || user.email).split(' ')[0];
@@ -9137,9 +9142,12 @@ let _emailNextPageToken = null;
 
 // Demo inbox for test accounts - realistic HR emails so testers can try the
 // "Draft reply -> chat" flow without connecting a real mailbox.
+const TEST_EMAILS_LS = 'breeze_test_emails';
+function getAddedTestEmails(){ try { const a = JSON.parse(localStorage.getItem(TEST_EMAILS_LS)||'[]'); return Array.isArray(a) ? a : []; } catch(e){ return []; } }
+function saveAddedTestEmails(arr){ try { localStorage.setItem(TEST_EMAILS_LS, JSON.stringify(arr||[])); } catch(e){} }
 function getTestEmails() {
   const d = (daysAgo, h, m) => { const x = new Date(); x.setDate(x.getDate() - daysAgo); x.setHours(h, m, 0, 0); return x.toISOString(); };
-  return [
+  const _base = [
     { id: 'test-1', threadId: 'test-1', from: 'Lucy Park <lucy.park@example.com>', subject: 'Maternity leave - notifying you of my due date', date: d(0, 9, 12),
       snippet: 'Hi, I wanted to let you know that I am expecting and my due date is 14 October. I would like to start my maternity leave two weeks before that.',
       body: 'Hi,\n\nI wanted to let you know that I am expecting and my baby is due on 14 October. I would like to start my maternity leave two weeks before my due date, so from around 30 September.\n\nCould you let me know what I need to do next, what I am entitled to, and whether I need to fill in any forms? I would also like to understand how my pay will work during leave.\n\nThanks,\nLucy Park\nEngineering' },
@@ -9185,7 +9193,47 @@ function getTestEmails() {
       body: 'Hi,\n\nI\'m starting next Monday and wanted to get my paperwork over early. Please find my P45 attached.\n\nI\'ve also got my passport ready for the right-to-work check - let me know if you need a copy of that too, or anything else for onboarding.\n\nThanks,\nHayden Cole',
       attachments: [{ filename: 'P45-hayden-cole.pdf', mimeType: 'application/pdf', base64: 'JVBERi0xLjEKMSAwIG9iajw8L1R5cGUvQ2F0YWxvZy9QYWdlcyAyIDAgUj4+ZW5kb2JqCjIgMCBvYmo8PC9UeXBlL1BhZ2VzL0tpZHNbMyAwIFJdL0NvdW50IDE+PmVuZG9iagozIDAgb2JqPDwvVHlwZS9QYWdlL1BhcmVudCAyIDAgUi9NZWRpYUJveFswIDAgMzAwIDIwMF0vQ29udGVudHMgNCAwIFIvUmVzb3VyY2VzPDwvRm9udDw8L0YxIDUgMCBSPj4+Pj4+ZW5kb2JqCjQgMCBvYmo8PC9MZW5ndGggNjQ+PnN0cmVhbQpCVCAvRjEgMTQgVGYgMzAgMTIwIFRkIChQNDUgLSBkZW1vIGRvY3VtZW50KSBUaiBFVAplbmRzdHJlYW0gZW5kb2JqCjUgMCBvYmo8PC9UeXBlL0ZvbnQvU3VidHlwZS9UeXBlMS9CYXNlRm9udC9IZWx2ZXRpY2E+PmVuZG9iagp0cmFpbGVyPDwvUm9vdCAxIDAgUj4+' }] }
   ];
+  // Prepend any emails the tester has added (saved on this device only)
+  const added = getAddedTestEmails();
+  return added.length ? [...added, ..._base] : _base;
 }
+// ── Add / manage test-inbox emails (test accounts) ──
+function addTestEmailOpen(){
+  let mo=document.getElementById('addEmailModal'); if(!mo){ mo=document.createElement('div'); mo.id='addEmailModal'; document.body.appendChild(mo); }
+  const fld='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;background:var(--surface2);outline:none;color:var(--ink);';
+  const lbl='font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:5px;display:block;text-transform:uppercase;letter-spacing:.04em;';
+  mo.innerHTML=`<div style="position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:100000;display:flex;align-items:center;justify-content:center;padding:20px;" onclick="if(event.target===this)addTestEmailClose()">
+    <div style="background:var(--surface);border-radius:var(--r-lg);width:min(480px,94vw);box-shadow:0 24px 60px rgba(8,20,45,.32);overflow:hidden;">
+      <div style="padding:15px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:9px;"><span style="font-size:16px;">📧</span><div style="font-size:14px;font-weight:700;color:var(--ink);">Add a test email</div><button onclick="addTestEmailClose()" style="margin-left:auto;background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;">×</button></div>
+      <div style="padding:18px 20px;display:flex;flex-direction:column;gap:14px;">
+        <div><label style="${lbl}">From</label><input id="ae-from" placeholder="Jane Doe &lt;jane.doe@example.com&gt;" style="${fld}"></div>
+        <div><label style="${lbl}">Subject</label><input id="ae-subject" placeholder="e.g. Request for paternity leave" style="${fld}"></div>
+        <div><label style="${lbl}">Message</label><textarea id="ae-body" rows="6" placeholder="Type the body of the email here..." style="${fld}resize:vertical;line-height:1.5;"></textarea></div>
+        <div style="font-size:11px;color:var(--ink3);line-height:1.5;">This drops a demo email into your Test inbox so you can try <strong>Smart action</strong> and <strong>Draft reply</strong>. Saved on this device only.</div>
+      </div>
+      <div style="padding:13px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
+        <button onclick="addTestEmailClose()" class="btn btn-secondary btn-sm">Cancel</button>
+        <button onclick="addTestEmailSave()" class="btn btn-primary btn-sm">Add to inbox</button>
+      </div>
+    </div></div>`;
+  setTimeout(()=>{ const f=document.getElementById('ae-subject'); if(f) f.focus(); },30);
+}
+function addTestEmailClose(){ document.getElementById('addEmailModal')?.remove(); }
+function addTestEmailSave(){
+  const from=(document.getElementById('ae-from')?.value||'').trim();
+  const subject=(document.getElementById('ae-subject')?.value||'').trim();
+  const body=(document.getElementById('ae-body')?.value||'').trim();
+  if(!subject && !body){ showBreezeToast('Add a subject or a message first'); return; }
+  const fromFinal = from || 'Test Sender <test.sender@example.com>';
+  const ts=Date.now();
+  const em={ id:'test-added-'+ts, threadId:'test-added-'+ts, from:fromFinal, subject:subject||'(no subject)', date:new Date().toISOString(), snippet:(body||subject).slice(0,140), body:body||subject, _added:true };
+  const arr=getAddedTestEmails(); arr.unshift(em); saveAddedTestEmails(arr);
+  addTestEmailClose();
+  window._emailProvider='test';
+  loadEmailInbox();
+  showBreezeToast('Added to your test inbox');
+}
+function deleteTestEmail(id){ saveAddedTestEmails(getAddedTestEmails().filter(e=>e.id!==id)); loadEmailInbox(); showBreezeToast('Removed from test inbox'); }
 
 async function loadEmailInbox(pageToken = null) {
   if (!currentUser) return;
@@ -9193,13 +9241,16 @@ async function loadEmailInbox(pageToken = null) {
   const titleEl = document.getElementById('emailPanelTitle');
 
   // Test inbox - serve demo emails, skip all real connection/fetch logic
+  const _addBtn = document.getElementById('addEmailBtn');
   if (window._emailProvider === 'test') {
     if (titleEl) titleEl.textContent = 'Test inbox (demo)';
+    if (_addBtn) _addBtn.style.display = 'inline-flex';
     _emailNextPageToken = null;
     _allEmails = getTestEmails();
     renderEmailList(_allEmails);
     return;
   }
+  if (_addBtn) _addBtn.style.display = 'none';
 
   // Always re-check connection status so reconnected accounts are picked up immediately
   try {
@@ -9300,8 +9351,8 @@ function renderEmailList(emails) {
     const dateStr = e.date ? new Date(e.date).toLocaleString('en-GB',{day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}) : '';
     return `<div class="email-item">
       <div style="display:flex;justify-content:space-between;align-items:baseline;gap:8px;">
-        <div class="email-item-from">${escapeHtml(fromName)}</div>
-        <div class="email-item-meta" style="flex-shrink:0;">${dateStr}</div>
+        <div class="email-item-from">${escapeHtml(fromName)}${e._added?` <span style="font-size:9px;font-weight:700;color:var(--accent);background:var(--accent-bg);border-radius:4px;padding:1px 5px;vertical-align:middle;">Added</span>`:''}</div>
+        <div class="email-item-meta" style="flex-shrink:0;display:flex;align-items:center;gap:6px;">${dateStr}${e._added?`<button onclick="deleteTestEmail('${(e.id||'').replace(/'/g,"\\'")}')" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:13px;line-height:1;padding:0;">×</button>`:''}</div>
       </div>
       <div class="email-item-subject">${escapeHtml(e.subject)}</div>
       ${e.snippet ? `<div class="email-item-snippet">${escapeHtml(e.snippet)}</div>` : ''}
@@ -18710,7 +18761,17 @@ window.seedDemoData = async function() {
   // ── TRACKER - WORKFLOW CASES (30, part of the ~50 tracker total) ──
   const _scen = ['maternity-leave','paternity-leave','short-term-absence','long-term-absence','resignation','performance-concern','disciplinary','grievance'];
   const _scenNote = {'maternity-leave':'Maternity leave in progress - MATB1 received, dates confirmed.','paternity-leave':'2 weeks statutory paternity leave booked.','short-term-absence':'Repeated short absences - Bradford Factor at trigger point.','long-term-absence':'Signed off long-term; OH referral in progress.','resignation':'Resigned - working notice, exit interview to book.','performance-concern':'Informal support plan / PIP in progress.','disciplinary':'Disciplinary process - investigation stage.','grievance':'Formal grievance raised - investigation underway.'};
-  const cases = Array.from({length:30},(_,i)=>{ const sc=_scen[i%_scen.length]; const start=ago(70-(i%60)); return { id:'wfc_'+i, employeeName:pick(i,NAMES), scenarioId:sc, checkedSteps:[], startedAt:start, notes:_scenNote[sc], status:(i%10===0?'closed':'active'), docs:[], contactLog:[ {type:'email',note:'Case opened and acknowledged.',date:start}, {type:'meeting',note:'Follow-up meeting held; next steps agreed.',date:ago(35-(i%30))} ] }; });
+  const cases = Array.from({length:30},(_,i)=>{
+    const sc=_scen[i%_scen.length]; const start=ago(70-(i%60));
+    const _steps=((typeof WF_SCENARIOS!=='undefined'?WF_SCENARIOS:[]).find(s=>s.id===sc)||{steps:[]}).steps||[];
+    const _ids=_steps.map(s=>s.id); const closed=(i%10===0);
+    const _k=closed?_ids.length:(i%6);                       // varied real progress; closed = all done
+    const checkedSteps=_ids.slice(0,Math.min(_k,_ids.length));
+    const log=[{type:'email',note:'Case opened and acknowledged.',date:start}];
+    if(checkedSteps.length>=1) log.push({type:'meeting',note:_steps[0]?.title?_steps[0].title+' completed.':'First step completed.',date:ago(50-(i%40))});
+    if(checkedSteps.length>=2) log.push({type:'call',note:'Progress reviewed with the employee; next steps agreed.',date:ago(35-(i%30))});
+    return { id:'wfc_'+i, employeeName:pick(i,NAMES), scenarioId:sc, checkedSteps, startedAt:start, notes:_scenNote[sc], status:(closed?'closed':'active'), docs:[], contactLog:log };
+  });
   const _demoCases = [
     { id:'wfc_demo1', employeeName:'Sarah Mitchell', scenarioId:'maternity-leave', checkedSteps:['notify-employer','confirm-matb1','start-risk-assessment'], startedAt:d(2026,3,12), notes:'MATB1 received 14 April. Risk assessment completed. Leave starts 4 Aug 2026.', status:'active', docs:[], contactLog:[
       { type:'meeting', note:'Sarah notified us of pregnancy. Started risk assessment process.', date:d(2026,3,12) },
@@ -18777,7 +18838,18 @@ window.seedDemoData = async function() {
   // ── HEADCOUNT PLANNING (20 open roles) ──
   const _roles = [['Head of Marketing','Marketing',65000,80000],['Senior Data Analyst','Analytics',50000,62000],['Customer Success Manager','Customer Success',38000,46000],['Finance Business Partner','Finance',58000,72000],['Software Engineer','Engineering',55000,70000],['Product Manager','Product',60000,75000],['HR Advisor','People',34000,42000],['Sales Executive','Sales',30000,45000],['UX Designer','Product',45000,58000],['Operations Manager','Operations',48000,60000],['Content Writer','Marketing',30000,38000],['DevOps Engineer','Engineering',60000,78000],['Payroll Specialist','Finance',32000,40000],['Recruitment Partner','People',38000,48000],['Account Manager','Sales',35000,50000],['Business Analyst','Product',45000,55000],['Facilities Coordinator','Operations',26000,32000],['QA Engineer','Engineering',40000,52000],['Brand Manager','Marketing',48000,60000],['Legal Counsel','Legal',70000,90000]];
   const _hstages=['briefing','sourcing','shortlisting','interviewing','offer']; const _hprios=['urgent','high','normal','normal'];
-  const hcData = _roles.map((r,i)=>({ id:'hc_'+i, title:r[0], dept:r[1], country:'UK', hiringManager:pick(i+3,NAMES), stage:_hstages[i%_hstages.length], priority:_hprios[i%_hprios.length], source:(i%2?'Agency':'LinkedIn'), agencyName:(i%2?'Hays':''), agencyFee:(i%2?15:0), budget:0, compMin:r[2], compMax:r[3], targetStart:future(30+i*7), headcount:1, interviewStages:['CV screen','1st interview','2nd interview','Final panel','Offer'], interviewProcess:'CV screen -> interviews -> final panel -> offer', notes:'', stageHistory:[{stage:'briefing',startedAt:ago(35-i)}], candidates:[], contactLog:[{type:'email',note:'Role opened and brief agreed with the hiring manager.',date:ago(30-i)}], createdAt:ago(35-i), updatedAt:ago(1+(i%5)) }));
+  const _candStages=['CV screen','1st interview','2nd interview','Final panel','Offer','Rejected'];
+  const _prog=['briefing','sourcing','shortlisting','interviewing','offer'];
+  const hcData = _roles.map((r,i)=>{
+    const stage=_hstages[i%_hstages.length];
+    const nCand=(stage==='briefing')?0:(stage==='sourcing')?(1+(i%2)):(2+(i%4));
+    const candidates=Array.from({length:nCand},(_,j)=>({ id:'hc'+i+'c'+j, name:pick(i*3+j+1,NAMES), email:(pick(i*3+j+1,NAMES).toLowerCase().replace(/[^a-z]/g,'.'))+'@example.com', source:(j%2?'Agency':'LinkedIn'), stage:_candStages[j%_candStages.length], notes:['Strong CV, good first impression.','Solid background - worth progressing.','Awaiting availability for next round.'][j%3], addedAt:ago(18-j*2) }));
+    const _pi=_prog.indexOf(stage);
+    const stageHistory=_prog.slice(0,Math.max(1,_pi+1)).map((st,k)=>({stage:st,startedAt:ago(35-i-k*4)}));
+    const cLog=[{type:'email',note:'Role opened and brief agreed with the hiring manager.',date:ago(30-i)}];
+    if(candidates.length) cLog.push({type:'call',note:candidates.length+' candidate'+(candidates.length>1?'s':'')+' in the pipeline; interviews underway.',date:ago(12-(i%10))});
+    return { id:'hc_'+i, title:r[0], dept:r[1], country:'UK', hiringManager:pick(i+3,NAMES), stage, priority:_hprios[i%_hprios.length], source:(i%2?'Agency':'LinkedIn'), agencyName:(i%2?'Hays':''), agencyFee:(i%2?15:0), budget:0, compMin:r[2], compMax:r[3], targetStart:future(30+i*7), headcount:1, interviewStages:['CV screen','1st interview','2nd interview','Final panel','Offer'], interviewProcess:'CV screen -> interviews -> final panel -> offer', notes:'', stageHistory, candidates, contactLog:cLog, createdAt:ago(35-i), updatedAt:ago(1+(i%5)) };
+  });
   const _demoHc = [
     { id:'hc_s1', title:'Head of Marketing', dept:'Marketing', country:'UK', hiringManager:'Claire Booth', stage:'interviewing', priority:'urgent', source:'Agency', agencyName:'Hays', agencyFee:15, budget:0, compMin:65000, compMax:80000, targetStart:'2026-08-01', headcount:1, interviewStages:['CV screen','1st interview','2nd interview','Final panel','Offer'], interviewProcess:'CV screen by HR → 1st interview with CMO → task + 2nd interview → offer', notes:'Must have B2B SaaS experience. Ideal candidate has scaled a demand-gen function from scratch.', stageHistory:[{stage:'briefing',startedAt:ago(35)},{stage:'sourcing',startedAt:ago(28)},{stage:'shortlisting',startedAt:ago(18)},{stage:'interviewing',startedAt:ago(6)}], candidates:[
       { id:'hcs1c1', name:'Rachel Donovan',  email:'rachel@example.com', source:'Agency',   stage:'2nd interview', notes:'Strong demand-gen background. Very impressive 1st interview.', addedAt:ago(12) },
@@ -18827,8 +18899,39 @@ window.seedDemoData = async function() {
 
   // ── MEETING NOTES (5) ──
   await sb.from('policies').delete().eq('company_id',cid).like('name','MEETING:%');
-  const _mtg = [['Q3 planning','Team agreed Q3 priorities: hiring, the engagement survey and pay-review prep. Actions assigned to leads.'],['1:1 with Sarah Mitchell','Discussed the maternity handover and KIT days. Sarah is comfortable with the cover plan. Follow up in July.'],['Disciplinary hearing - M. Hayes','Hearing held regarding repeated lateness. Outcome: first written warning, six-month review. Right of appeal explained.'],['Leadership sync','Reviewed the headcount plan and budget. Approved three new roles for Q4, with the Data Analyst prioritised.'],['Wellbeing working group','Agreed to launch the EAP and mental-health first-aider training in the autumn. Budget confirmed.']];
-  for (let i=0;i<_mtg.length;i++){ await sb.from('policies').insert({ company_id:cid, name:`MEETING: ${past(4+i*5)} - ${_mtg[i][0]}`, content:_mtg[i][1] }); }
+  const _mNow = new Date(Date.now()-3*86400000);
+  const _mDate = _mNow.toLocaleDateString('en-GB',{day:'numeric',month:'long',year:'numeric'});
+  const _mShort = _mNow.toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+  const _mType = 'Monthly HR operations review';
+  const _mNote = `**Date:** ${_mDate}, 10:00\n`
++ `**Meeting type:** ${_mType}\n`
++ `**Attendees:** Priya Nair (Head of People), Sarah Mitchell (HR Business Partner), James Chen (Talent Acquisition), Emma Thompson (People Operations)\n`
++ `\n`
++ `**Summary**\n`
++ `The team reviewed hiring progress against the Q3 headcount plan, worked through the open employee relations cases, and confirmed next steps on the autumn wellbeing programme. Recruitment is broadly on track, though two senior roles are at risk of slipping. Two ER cases need close attention over the next fortnight.\n`
++ `\n`
++ `**Key points discussed**\n`
++ `- Hiring: 20 roles are open across the plan. The Data Analyst and Senior Software Engineer searches are progressing well and now at final-panel stage. The Finance Manager and Head of Operations roles are behind - limited quality applicants through the agency so far.\n`
++ `- James raised that agency response times have slowed. The team discussed adding a second supplier for the harder-to-fill senior roles.\n`
++ `- Maternity cover: Sarah confirmed the handover plan for her own leave in August is in good shape and the KIT-day schedule is agreed. Cover recruitment is underway.\n`
++ `- Employee relations: the lateness case (M. Hayes) has moved to a first written warning following the hearing. The performance case in the Sales team is at first PIP review - some improvement but not yet sustained.\n`
++ `- Wellbeing: budget for the Employee Assistance Programme and mental-health first-aider training has been confirmed for the autumn. Emma to scope providers.\n`
++ `- Engagement survey: draft questions are ready. Target launch is early September, ahead of pay-review season.\n`
++ `\n`
++ `**Decisions made**\n`
++ `- Approved onboarding a second recruitment agency for the two at-risk senior roles.\n`
++ `- Confirmed the wellbeing programme will launch in the autumn, funded from the approved budget.\n`
++ `- Agreed the engagement survey will go out in early September.\n`
++ `\n`
++ `**Actions**\n`
++ `- James Chen: brief and onboard the second agency for the Finance Manager and Head of Operations roles - by 8 July.\n`
++ `- Sarah Mitchell: finalise maternity cover shortlist and share with the hiring manager - by 11 July.\n`
++ `- Emma Thompson: scope EAP and mental-health first-aider providers and bring three options to the next review - by 18 July.\n`
++ `- Priya Nair: sign off final engagement survey questions - by 15 July.\n`
++ `\n`
++ `**Notes**\n`
++ `The performance case in Sales is sensitive - keep records complete and ensure the employee continues to receive support through the PIP. Revisit the two at-risk roles at the next review; if the second agency has not moved them within three weeks, consider an executive search option.`;
+  await sb.from('policies').insert({ company_id:cid, name:`MEETING: ${_mShort} - ${_mType}`, content:_mNote });
 
   // ── DELETE TEMPLATE CONTRACTS ──
   await sb.from('policies').delete().eq('company_id',cid).like('name','TEMPLATE:%');
@@ -18864,6 +18967,51 @@ window.seedDemoData = async function() {
         {id:'a',title:'Book 30-day review',owner:'Line manager'},
         {id:'b',title:'Confirm objectives for probation',owner:'Line manager'}
       ]}
+    ]},
+    { id:'auto_offboard', label:'Employee offboarding', icon:'👋', cat:'Automation', createdAt:new Date().toISOString(), steps:[
+      {id:1,title:'Acknowledge resignation',timeframe:'Same day',owner:'HR',desc:'Confirm receipt in writing and agree the leaving date.',subs:[
+        {id:'a',title:'Send resignation acknowledgement',owner:'HR',email:{subject:'Your resignation - {employee}',body:'Hi {employee},\n\nThank you for letting us know. This confirms we have received your resignation and that your last working day will be as agreed. We will be in touch shortly with details of your handover and exit arrangements.\n\nWishing you all the best,\nHR'}},
+        {id:'b',title:'Confirm notice period and final working day',owner:'HR'},
+        {id:'c',title:'Notify line manager and payroll',owner:'HR'}
+      ]},
+      {id:2,title:'Handover & knowledge transfer',timeframe:'During notice',owner:'Line manager',desc:'Capture key knowledge and reassign responsibilities.',subs:[
+        {id:'a',title:'Agree handover plan and priorities',owner:'Line manager'},
+        {id:'b',title:'Document key contacts, passwords and in-flight work',owner:'Line manager'},
+        {id:'c',title:'Reassign ongoing responsibilities',owner:'Line manager'}
+      ]},
+      {id:3,title:'Exit interview',timeframe:'Final week',owner:'HR',desc:'Understand reasons for leaving and gather feedback.',subs:[
+        {id:'a',title:'Invite to exit interview',owner:'HR',email:{subject:'Exit interview - {employee}',body:'Hi {employee},\n\nBefore you go we would love to hear your feedback. Could we book a short exit interview in your final week? It is a relaxed, confidential chat and your thoughts genuinely help us improve.\n\nLet me know what works for you.\nHR'}},
+        {id:'b',title:'Hold exit interview and record notes',owner:'HR'}
+      ]},
+      {id:4,title:'IT & access removal',timeframe:'Last day',owner:'IT',desc:'Revoke access and recover equipment on the final day.',subs:[
+        {id:'a',title:'Schedule account and access removal',owner:'IT',email:{subject:'Leaver access removal - {employee}',body:'Hi IT team,\n\n{employee} is leaving us. Please schedule the following for their last working day:\n\n- Disable email and system logins\n- Revoke building and remote access\n- Wipe and reclaim devices\n\nLast day to follow. Thank you.'}},
+        {id:'b',title:'Recover laptop, phone and any equipment',owner:'IT'},
+        {id:'c',title:'Return security passes and keys',owner:'Facilities'}
+      ]},
+      {id:5,title:'Final pay & records',timeframe:'Final payroll',owner:'HR',desc:'Settle final pay and close records correctly.',subs:[
+        {id:'a',title:'Confirm final salary, holiday pay and deductions',owner:'HR'},
+        {id:'b',title:'Issue P45 and update HR system',owner:'HR'},
+        {id:'c',title:'Archive employee file per retention policy',owner:'HR'}
+      ]}
+    ]},
+    { id:'auto_probation', label:'Probation review', icon:'✅', cat:'Automation', createdAt:new Date().toISOString(), steps:[
+      {id:1,title:'Set probation objectives',timeframe:'Week 1',owner:'Line manager',desc:'Agree clear, measurable goals for the probation period.',subs:[
+        {id:'a',title:'Draft objectives and success measures',owner:'Line manager'},
+        {id:'b',title:'Share objectives with the new starter',owner:'Line manager',email:{subject:'Your probation objectives - {employee}',body:'Hi {employee},\n\nWelcome again! To help you settle in, here are the objectives we will focus on during your probation. None of this should be a surprise - we will check in regularly and support you throughout.\n\nLet me know if you have any questions.\nYour manager'}}
+      ]},
+      {id:2,title:'Mid-probation check-in',timeframe:'Halfway point',owner:'Line manager',desc:'Review progress early enough to course-correct.',subs:[
+        {id:'a',title:'Hold informal progress review',owner:'Line manager'},
+        {id:'b',title:'Note any support or training needs',owner:'Line manager'}
+      ]},
+      {id:3,title:'Final probation review',timeframe:'End of probation',owner:'Line manager',desc:'Formally assess against objectives and decide the outcome.',subs:[
+        {id:'a',title:'Complete probation review form',owner:'Line manager'},
+        {id:'b',title:'Hold review meeting with the employee',owner:'Line manager'},
+        {id:'c',title:'Decide outcome: pass, extend or not confirmed',owner:'HR'}
+      ]},
+      {id:4,title:'Confirm outcome',timeframe:'Within 5 days',owner:'HR',desc:'Put the decision in writing and update records.',subs:[
+        {id:'a',title:'Send outcome confirmation letter',owner:'HR',email:{subject:'Probation outcome - {employee}',body:'Hi {employee},\n\nFollowing your probation review, I am pleased to confirm that you have successfully passed your probation period. Thank you for a great start - we are really glad to have you with us.\n\nBest wishes,\nHR'}},
+        {id:'b',title:'Update HR system and confirm employment terms',owner:'HR'}
+      ]}
     ]}
   ];
   const autoJson = JSON.stringify(autoData);
@@ -18873,7 +19021,7 @@ window.seedDemoData = async function() {
 
   // Reset in-memory state so next navigation re-fetches from DB
   wfCases = null; mpRecords = null; ppPlan = null; hcRoles = null; automations = null; projectsData = null; immigrationRecords = null; _projRowId = null;
-  showBreezeToast('Demo data loaded: 20 roles, 15 projects, 50 tracker cases, 5 meeting notes. People Plan and HRIS kept; templates cleared. Reload to see it all.');
+  showBreezeToast('Demo data loaded: 20 roles, 15 projects, 50 tracker cases, 3 automations, 1 meeting note. People Plan and HRIS kept; templates cleared. Reload to see it all.');
 };
 
 // ════════════════════════════════════════════════════════════════
@@ -19888,7 +20036,7 @@ async function projConfirmEmailToTask(){
     // Top bar removed. Global search is dropped (left hidden in the top bar).
     // Connectors move into the sidebar as a plain icon row above Search SharePoint.
     var rt=document.querySelector('.app-topbar-right'), cs=document.getElementById('slimConnSlot'); if(rt&&cs) cs.appendChild(rt);
-    var sav=document.getElementById('slimAv'); if(sav && !sav.textContent){ sav.textContent=(document.getElementById('topbarAvatar')||{}).textContent||''; }
+    var sav=document.getElementById('slimAv'); if(sav && !sav.innerHTML.trim()){ sav.innerHTML=(document.getElementById('topbarAvatar')||{}).innerHTML||''; sav.style.background='transparent'; sav.style.overflow='hidden'; }
     render();
   }
   if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', initSlim);
@@ -20101,8 +20249,8 @@ async function projConfirmEmailToTask(){
     var nm=String(name||'').trim();
     if(!nm) return '<div class="tl-av'+(cls?' '+cls:'')+'" style="background:var(--surface3);border:1px dashed var(--border2);"></div>';
     var p=(talentState&&talentState.people||[]).find(function(x){return String(x.name||'').toLowerCase()===nm.toLowerCase();});
-    var photo=p&&p.photo?p.photo:'';
-    return '<div class="tl-av'+(cls?' '+cls:'')+'" style="background:'+_projAvatarColor(nm||'?')+'">'+(photo?'<img src="'+esc(photo)+'" alt="">':'')+esc(initials(nm||'?'))+'</div>';
+    var photo=(p&&p.photo?p.photo:'')||(typeof _projMockFace==='function'?_projMockFace(nm):'');
+    return '<div class="tl-av'+(cls?' '+cls:'')+'" style="background:'+_projAvatarColor(nm||'?')+'">'+(photo?'<img src="'+esc(photo)+'" alt="" onerror="this.remove()">':'')+esc(initials(nm||'?'))+'</div>';
   }
   // Minimal Markdown -> HTML for the CHRO summary: ## headings, - bullets, 1. lists, **bold**.
   function talentMdToHtml(md){
@@ -20448,7 +20596,8 @@ async function projConfirmEmailToTask(){
   function empCard(p){
     var star=p.keyRole?'<span class="tl-key" title="Key role">Key</span>':'';
     var low=p.confidence==='low';
-    var av='<div class="tl-av" style="background:'+_projAvatarColor(p.name||'')+'">'+(p.photo?'<img src="'+esc(p.photo)+'" alt="">':'')+esc(initials(p.name))+'</div>';
+    var _pph=(p.photo||'')||(typeof _projMockFace==='function'?_projMockFace(p.name):'');
+    var av='<div class="tl-av" style="background:'+_projAvatarColor(p.name||'')+'">'+(_pph?'<img src="'+esc(_pph)+'" alt="" onerror="this.remove()">':'')+esc(initials(p.name))+'</div>';
     return '<div class="tl-emp'+(low?' lowconf':'')+'" draggable="true" data-id="'+p.id+'"'+(low?' title="AI inferred, review placement"':'')+' ondragstart="talentDragStart(event,\''+p.id+'\')" ondragend="talentDragEnd(this)" onclick="talentEditCard(\''+p.id+'\')">'+
       av+'<div class="who"><div class="n">'+esc(p.name)+star+'</div><div class="r">'+esc(p.role||'')+'</div></div></div>';
   }
