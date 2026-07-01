@@ -7169,8 +7169,19 @@ async function renderHome(){
 }
 
 // Build a month calendar grid (Mon-first), today highlighted, event dots by category.
+let _hbCalY, _hbCalM, _hbCalPP = [];
+// Prev/next month navigation - re-renders just the calendar card in place.
+function hbCalNav(delta){
+  let m = _hbCalM + delta, y = _hbCalY;
+  if (m < 0) { m = 11; y--; } else if (m > 11) { m = 0; y++; }
+  const card = document.getElementById('hbCal'); if (!card) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = hbCalendarHtml(new Date(y, m, 1), _hbCalPP);
+  if (tmp.firstElementChild) card.replaceWith(tmp.firstElementChild);
+}
 function hbCalendarHtml(refDate, ppList){
   const y = refDate.getFullYear(), m = refDate.getMonth();
+  _hbCalY = y; _hbCalM = m; _hbCalPP = ppList || [];
   const today = new Date(); today.setHours(0,0,0,0);
   const monthName = refDate.toLocaleDateString('en-GB',{month:'long',year:'numeric'});
   const first = new Date(y, m, 1);
@@ -7195,12 +7206,12 @@ function hbCalendarHtml(refDate, ppList){
   let trail = 1;
   while (cells.length % 7 !== 0) cells.push(`<div class="cal-day muted">${trail++}</div>`);
   const dow = ['M','T','W','T','F','S','S'].map(x=>`<div class="cal-dow">${x}</div>`).join('');
-  return `<div class="card cal">
+  return `<div class="card cal" id="hbCal">
     <div class="cal-head">
       <h3>Schedule</h3>
       <div class="cal-nav">
-        <button aria-label="Previous month"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
-        <button aria-label="Next month"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+        <button aria-label="Previous month" onclick="hbCalNav(-1)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+        <button aria-label="Next month" onclick="hbCalNav(1)"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
       </div>
     </div>
     <div class="cal-month">${escapeHtml(monthName)}</div>
