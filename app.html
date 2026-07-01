@@ -15446,9 +15446,11 @@ function ocLayout(n, depth, sx) {
     const totalW = Math.min(children.length, OC_GRID_COLS) * (OC_W + OC_HG);
     n._x = sx + totalW / 2 - OC_W / 2;
   } else {
-    const sw = ocSubW(n);
-    n._x = sx + sw / 2 - OC_W / 2;
     let cx = sx; children.forEach(c => { ocLayout(c, depth + 1, cx); cx += ocSubW(c); });
+    // Centre the parent over the midpoint of its children's centres, so a single
+    // child sits straight below (not offset by half the gap) and the connector is straight.
+    const firstC = children[0]._x + OC_W / 2, lastC = children[children.length - 1]._x + OC_W / 2;
+    n._x = (firstC + lastC) / 2 - OC_W / 2;
   }
 }
 
