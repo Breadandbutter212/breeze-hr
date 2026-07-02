@@ -17998,6 +17998,7 @@ function wfOpenStepTasks(caseId, stepId) {
     <span style="font-size:11px;color:var(--ink3);">Assignee</span>
     <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink);">${_asg.name?hbAvatar(_asg.name,18):''}${escapeHtml(_asgName)}</span>
     <button onclick="event.stopPropagation();wfReassignPrompt('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:10px;">Reassign</button>
+    ${!allDone?`<button onclick="event.stopPropagation();wfNudge('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:10px;color:var(--accent);" title="Draft a reminder email to the assignee">🔔 Nudge</button>`:''}
     ${_due?`<span style="font-size:11px;font-weight:600;margin-left:auto;color:${_dueCol};">${_dueSt?wfDueLabel(_dueSt):('due '+wfFmtDue(new Date(_due+'T00:00:00')))}</span>`:''}
   </div>`;
   const stepEmailBtn = step.action?.type==='email'?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:11px;color:#047857;">✉️ ${escapeHtml(step.action.label||'Draft email')} →</button>`:'';
@@ -18033,6 +18034,24 @@ function wfOpenStepTasks(caseId, stepId) {
   </div>`;
   document.body.appendChild(ov);
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+// Nudge: draft a reminder email to the step's assignee, reviewed and sent from
+// the user's own inbox (existing flow). No background/automatic send here.
+function wfNudge(caseId, stepId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=wfGetSteps(c).find(s=>s.id===stepId); if(!step) return;
+  const asg=wfStepAssignee(c, step);
+  const dueSt=wfDueStatus(wfStepDue(c, stepId), false);
+  const whenTxt=dueSt?(dueSt.kind==='overdue'?(dueSt.days===0?'due today':('now '+dueSt.days+' day'+(dueSt.days===1?'':'s')+' overdue')):('due '+wfDueLabel(dueSt))):'';
+  const scLabel=(wfScenarioFor(c)||{}).label||'process';
+  const firstName=((asg.name||'').split(' ')[0])||'there';
+  const prefill={
+    to: asg.email||'',
+    cc:'', bcc:'',
+    subject:`Reminder: ${step.title} for ${c.employeeName||'a colleague'}`,
+    body:`Hi ${firstName},\n\nA quick reminder about the "${step.title}" step for ${c.employeeName||'our colleague'} (${scLabel})${whenTxt?', which is '+whenTxt:''}. Could you take a look when you get a chance and mark it done once sorted?\n\nThanks very much.`
+  };
+  wfOpenEmailDraft(caseId, stepId, null, prefill);
 }
 // Person-picker fallback: reassign a step to an HRIS person (or free text).
 function wfReassignPrompt(caseId, stepId){
@@ -18087,11 +18106,12 @@ async function wfToggleSub(caseId, stepId, subId) {
   wfRunRefresh();
 }
 
-function wfOpenEmailDraft(caseId, stepId, subId) {
+function wfOpenEmailDraft(caseId, stepId, subId, prefill) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
   const step = wfGetSteps(c).find(s=>s.id===stepId); if (!step) return;
   let emailObj;
-  if (subId!=null) { const su=(step.subs||[]).find(x=>String(x.id)===String(subId)); if(!su||!su.email) return; emailObj=su.email; }
+  if (prefill) { emailObj = prefill; }
+  else if (subId!=null) { const su=(step.subs||[]).find(x=>String(x.id)===String(subId)); if(!su||!su.email) return; emailObj=su.email; }
   else { if(step.action?.type!=='email') return; emailObj=step.action.email; }
   const sub = v => (v||'').replace(/\{employee\}/gi, c.employeeName||'').replace(/\{name\}/gi, c.employeeName||'');
   const to = sub(emailObj?.to);
