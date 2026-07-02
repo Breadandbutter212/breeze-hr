@@ -7,8 +7,11 @@ const API = 'https://api.anthropic.com/v1';
 const MODEL = 'claude-sonnet-4-6';
 const TOOL = 'code_execution_20250825';
 const BETA = 'code-execution-2025-08-25,files-api-2025-04-14';
-const MAX_TOKENS = 8000;
-const MAX_TURNS = 5;              // server-tool (pause_turn) continuations - bounds per-request cost
+const MAX_TOKENS = 4096;
+const MAX_TURNS = 3;              // server-tool (pause_turn) continuations - bounds per-request cost
+// Internal deadline: abort and let the caller fall back to the converter BEFORE Vercel's 60s
+// function cap kills us (which would return a raw 504 with no document).
+const DEADLINE_MS = 45000;
 
 // Best-effort cumulative spend guard (per warm serverless instance, like chat.js's rate limiter).
 let _spend = 0;
@@ -23,9 +26,10 @@ function systemPrompt() {
   return `You are a document-generation engine for an HR platform. Use the code execution tool to build ONE polished Microsoft Word (.docx) file with python-docx (pre-installed), then save it.
 
 Rules:
+- Work in ONE step: write the complete python-docx script and run it once, then stop. Do not explain, do not narrate, do not iterate or verify - speed matters.
 - Real Word styling: a styled title, section headings, proper tables (shaded header row with white bold text, light zebra striping on data rows, thin grey cell borders), sensible spacing, bold where useful.
 - Faithfully include all the content given. Do not invent facts. Do not ask questions.
-- Save the finished file with a name ending in .docx in the working directory. Build it silently.
+- Save the finished file with a name ending in .docx in the working directory.
 
 Breeze HR house style: clean, professional "top HR consultancy" look; navy (#1F3864) headings/accents on white; Arial/Helvetica ~10-11pt body; clear hierarchy and generous spacing; never use em dashes (use a single hyphen); no emoji; UK English.`;
 }
@@ -72,15 +76,25 @@ export async function generatePremiumDocx(sourceText, accent) {
     content: `Accent colour: ${accent || 'navy'} (navy = #1F3864). Build a polished .docx from the following document content:\n\n${sourceText}`,
   }];
 
+  const start = Date.now();
+  const withDeadline = async (fn) => {
+    const remaining = DEADLINE_MS - (Date.now() - start);
+    if (remaining <= 0) throw new Error(`timed out after ${Math.round((Date.now() - start) / 1000)}s`);
+    const ctrl = new AbortController();
+    const t = setTimeout(() => ctrl.abort(), remaining);
+    try { return await fn(ctrl.signal); }
+    finally { clearTimeout(t); }
+  };
+
   let data;
   for (let turn = 0; turn < MAX_TURNS; turn++) {
-    const r = await fetch(`${API}/messages`, {
-      method: 'POST', headers,
+    const r = await withDeadline((signal) => fetch(`${API}/messages`, {
+      method: 'POST', headers, signal,
       body: JSON.stringify({
         model: MODEL, max_tokens: MAX_TOKENS, system: systemPrompt(),
         tools: [{ type: TOOL, name: 'code_execution' }], messages,
       }),
-    });
+    }));
     const txt = await r.text();
     if (!r.ok) throw new Error(`messages ${r.status}: ${txt.slice(0, 180)}`);
     data = JSON.parse(txt);
