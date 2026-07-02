@@ -2179,8 +2179,13 @@ async function onSignedIn(user) {
     const sidebarCo = document.getElementById('sidebarCompanyName');
     if (sidebarCo && profile.company_name) sidebarCo.textContent = profile.company_name;
   }
-  // Test accounts (@getbreeze.co.uk) use the demo "Test inbox" as their mailbox.
-  window._isTestAccount = !!(user.email && user.email.toLowerCase().endsWith('@getbreeze.co.uk'));
+  // Test accounts use the demo "Test inbox" as their mailbox. Matches the
+  // @getbreeze.co.uk domain and any "test..." login (e.g. test27@...), plus a
+  // manual override flag for one-off demo logins.
+  const _em = (user.email || '').toLowerCase();
+  window._isTestAccount = /@getbreeze\.co\.uk$/.test(_em)
+    || /^test\d*([._-]|@|$)/.test(_em)
+    || (() => { try { return localStorage.getItem('breeze_force_test_inbox') === '1'; } catch(e){ return false; } })();
   const testMailEl = document.getElementById('topbar-testmail');
   if (testMailEl) testMailEl.style.display = window._isTestAccount ? 'flex' : 'none';
   // On a test account there's no real mailbox to connect - hide the dead Gmail/Outlook
@@ -2199,7 +2204,8 @@ async function onSignedIn(user) {
   fetch(`/api/composio?userId=${encodeURIComponent(user.id)}`, { headers: await _authH() }).then(r=>r.json()).then(st=>{
     window._gmailConnected = !!st.gmail;
     window._outlookConnected = !!st.outlook;
-    window._emailProvider = st.gmail ? 'gmail' : st.outlook ? 'outlook' : (window._isTestAccount ? 'test' : null);
+    // Test accounts always use the demo inbox, even if a stale Composio connection is reported.
+    window._emailProvider = window._isTestAccount ? 'test' : (st.gmail ? 'gmail' : st.outlook ? 'outlook' : null);
     window._sharepointConnected = !!st.sharepoint;
     const btn = document.getElementById('emailChip');
     if (btn) btn.style.display = window._emailProvider ? 'flex' : 'none';
@@ -9247,6 +9253,8 @@ async function loadEmailInbox(pageToken = null) {
   const list = document.getElementById('emailList');
   const titleEl = document.getElementById('emailPanelTitle');
 
+  // Test accounts always use the demo inbox - never attempt a real mailbox fetch.
+  if (window._isTestAccount) window._emailProvider = 'test';
   // Test inbox - serve demo emails, skip all real connection/fetch logic
   const _addBtn = document.getElementById('addEmailBtn');
   if (window._emailProvider === 'test') {
