@@ -9731,6 +9731,54 @@ function wfNextDue(c){
   });
   return best;
 }
+// ── Assignees (Phase 3) ──
+// Best-effort employee directory: real HRIS via merge-search, else the org-chart demo data.
+async function wfEmpList(){
+  let emps=[];
+  try{ if(typeof loadMergeEmployees==='function') emps=await loadMergeEmployees(); }catch(e){}
+  if(!emps || !emps.length){ try{ emps=(typeof ocGetDemoData==='function')?ocGetDemoData():[]; }catch(e){} }
+  return emps||[];
+}
+// Resolve each step's free-text owner to a real person and store on the instance
+// (c.assignees map). "line manager"/"manager" -> the launched employee's manager;
+// otherwise a name match; otherwise left as the plain owner label.
+async function wfResolveAssignees(c, launchedEmp){
+  try{
+    const steps=(wfScenarioFor(c)||{}).steps||[]; if(!steps.length) return;
+    const emps=await wfEmpList();
+    const byId={}, byName={};
+    emps.forEach(e=>{ byId[String(e.id)]=e; const n=(e.display_full_name||'').toLowerCase().trim(); if(n) byName[n]=e; });
+    let selfEmp=launchedEmp||null;
+    if(!selfEmp){ const n=(c.employeeName||'').toLowerCase().trim(); selfEmp=byName[n]||null; }
+    let mgr=null;
+    if(selfEmp){ const mid=(typeof ocExtractMgrId==='function')?ocExtractMgrId(selfEmp):null; if(mid) mgr=byId[String(mid)]||null; }
+    const emailOf=e=>e?(e.work_email||e.personal_email||''):'';
+    c.assignees=c.assignees||{};
+    steps.forEach(s=>{
+      const owner=(s.owner||'').trim(); const ol=owner.toLowerCase();
+      let person=null;
+      if(/manager|line manager/.test(ol) && mgr) person=mgr;
+      else if(owner && byName[ol]) person=byName[ol];
+      c.assignees[String(s.id)]={ ownerLabel:owner, name:person?(person.display_full_name||''):null, email:person?emailOf(person):'' };
+    });
+  }catch(e){ /* assignee resolution is best-effort */ }
+}
+// The stored assignee for a step: {name, email, ownerLabel} or a bare owner label.
+function wfStepAssignee(c, step){
+  const a=(c && c.assignees && c.assignees[String(step.id)])||null;
+  if(a) return a;
+  return { ownerLabel:(step.owner||''), name:null, email:'' };
+}
+// Manually set/override a step's assignee (person-picker fallback + free text).
+async function wfSetAssignee(caseId, stepId, name, email){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  c.assignees=c.assignees||{};
+  const prev=c.assignees[String(stepId)]||{};
+  c.assignees[String(stepId)]={ ownerLabel:prev.ownerLabel||'', name:(name||'').trim()||null, email:(email||'').trim()||'' };
+  try{ await saveWfCases(); }catch(e){}
+  if(typeof wfRunRefresh==='function') wfRunRefresh();
+}
+
 // Every overdue / due-soon unticked step across active cases, earliest first.
 function wfDueSoonItems(){
   const out=[];
@@ -9896,8 +9944,9 @@ async function applySmartCreate(){
   if(!wfCases) wfCases=[];
   const id='wfc_'+Date.now();
   const _anchor=(document.getElementById('smartAnchorDate')?.value||'').trim() || new Date().toISOString().slice(0,10);
-  const newCase={ id, employeeName:a.employee||'New employee', scenarioId:a.createScenario, checkedSteps:[], startedAt:new Date().toISOString(), anchorDate:_anchor, stepDue:{}, notes:'', status:'active', docs:[], contactLog:[] };
+  const newCase={ id, employeeName:a.employee||'New employee', scenarioId:a.createScenario, checkedSteps:[], startedAt:new Date().toISOString(), anchorDate:_anchor, stepDue:{}, assignees:{}, notes:'', status:'active', docs:[], contactLog:[] };
   wfComputeDueDates(newCase);
+  await wfResolveAssignees(newCase, null);
   newCase.contactLog.push({ date:new Date().toISOString(), type:'email', note:a.summary||'Email received.' });
   const firstAtt = _smartSaveAttachments(newCase, email);
   if(firstAtt){ const e=newCase.contactLog[0]; e.docFilename=firstAtt.filename; e.docBase64=firstAtt.base64; e.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
@@ -14170,6 +14219,7 @@ async function autoStartRun(autoId){
   const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
   const _anchorLbl = /offboard|exit|leaver|resign/i.test(a.label||'') ? 'Notice start date' : /probation/i.test(a.label||'') ? 'Probation start date' : 'Start date';
   const _today = new Date().toISOString().slice(0,10);
+  window._wfLaunchEmp=null;   // reset; set when a person is picked from the HRIS list
   document.getElementById('autoRunName')?.remove();
   const ov=document.createElement('div'); ov.id='autoRunName';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:986;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -14180,7 +14230,7 @@ async function autoStartRun(autoId){
     </div>
     <div style="padding:18px 20px;">
       <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Employee</label>
-      <input id="autoRunNameInp" placeholder="Search your HR system…" autocomplete="off" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" oninput="showHrisDropdown(this,this.value,emp=>{const i=document.getElementById('autoRunNameInp');if(i)i.value=emp.display_full_name||emp.full_name||'';})" onkeydown="if(event.key==='Enter'){event.preventDefault();autoRunNameConfirm('${autoId}')}">
+      <input id="autoRunNameInp" placeholder="Search your HR system…" autocomplete="off" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" oninput="showHrisDropdown(this,this.value,emp=>{window._wfLaunchEmp=emp;const i=document.getElementById('autoRunNameInp');if(i)i.value=emp.display_full_name||emp.full_name||'';})" onkeydown="if(event.key==='Enter'){event.preventDefault();autoRunNameConfirm('${autoId}')}">
       <div style="font-size:11px;color:var(--ink3);margin-top:7px;">Pick someone from your HR system, or just type a name.</div>
       <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin:14px 0 5px;">${_anchorLbl}</label>
       <input id="autoRunAnchor" type="date" value="${_today}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
@@ -14202,8 +14252,9 @@ async function autoRunNameConfirm(autoId){
   const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
   if(!wfCases) await loadWfCases();
   const _anchor=(document.getElementById('autoRunAnchor')?.value||'').trim() || new Date().toISOString().slice(0,10);
-  const newCase={ id:'wfc_'+Date.now(), employeeName:name, scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), anchorDate:_anchor, stepDue:{}, notes:'', status:'active', docs:[], contactLog:[] };
+  const newCase={ id:'wfc_'+Date.now(), employeeName:name, scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), anchorDate:_anchor, stepDue:{}, assignees:{}, notes:'', status:'active', docs:[], contactLog:[] };
   wfComputeDueDates(newCase);
+  await wfResolveAssignees(newCase, window._wfLaunchEmp||null);
   wfCases.push(newCase);
   await saveWfCases();
   document.getElementById('hris-dd')?.remove();
@@ -17845,13 +17896,15 @@ function wfRunRender(){
     else { ring='var(--border2)'; bg='#fff'; numCol='var(--ink3)'; }
     const subTxt=(st.subs&&st.subs.length)?(st.subs.filter(su=>subSet.has(st.id+':'+su.id)).length+'/'+st.subs.length+' tasks'):'';
     const dueChip=dueSt?('<div style="font-size:9px;font-weight:700;color:'+(dueSt.kind==='overdue'?WF_DUE_COL.overdue:dueSt.kind==='soon'?WF_DUE_COL.soon:'var(--ink3)')+';">'+wfDueLabel(dueSt)+'</div>'):'';
+    const asg=wfStepAssignee(c,st); const asgTxt=asg.name||asg.ownerLabel||'';
+    const asgChip=asgTxt?('<div title="'+jsAttr(asg.name?('Assigned to '+asgTxt):('Owner: '+asgTxt))+'" style="font-size:9px;color:var(--ink3);max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:flex;align-items:center;gap:3px;justify-content:center;">'+(asg.name?(hbAvatar(asg.name,14)):'')+'<span style="overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(asgTxt)+'</span></div>'):'';
     const connector=i<steps.length-1?'<div style="width:50px;height:2px;background:'+(done?'var(--green)':'var(--border2)')+';margin:21px 0 0;flex-shrink:0;"></div>':'';
     return '<div style="display:flex;align-items:flex-start;flex-shrink:0;">'+
       '<div onclick="wfOpenStepTasks(\''+c.id+'\','+st.id+')" style="display:flex;flex-direction:column;align-items:center;gap:6px;cursor:pointer;flex-shrink:0;width:124px;">'+
         '<div style="width:44px;height:44px;border-radius:50%;background:'+bg+';border:2.5px solid '+ring+';color:'+numCol+';display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;box-shadow:'+(current?'0 0 0 5px var(--accent-bg)':'none')+';transition:all .15s;">'+(done?'✓':(i+1))+'</div>'+
         '<div style="font-size:11px;font-weight:600;color:'+(done||current?'var(--ink)':'var(--ink3)')+';text-align:center;line-height:1.3;">'+escapeHtml(st.title)+'</div>'+
         (subTxt?'<div style="font-size:9px;font-weight:600;color:'+(done?'var(--green)':'var(--ink3)')+';">'+subTxt+'</div>':'')+
-        dueChip+
+        dueChip+ asgChip+
       '</div>'+ connector +
     '</div>';
   }).join('');
@@ -17936,8 +17989,17 @@ function wfOpenStepTasks(caseId, stepId) {
   const k = uid => stepId+':'+uid;
   const doneN = hasSubs ? step.subs.filter(su=>subSet.has(k(su.id))).length : 0;
   const allDone = hasSubs ? (doneN===step.subs.length) : (c.checkedSteps||[]).includes(stepId);
-  const ownerBadge = step.owner?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink2);white-space:nowrap;">👤 ${escapeHtml(step.owner)}</span>`:'';
   const timeBadge = step.timeframe?`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:var(--surface2);color:var(--ink3);white-space:nowrap;">⏱ ${escapeHtml(step.timeframe)}</span>`:'';
+  const _asg=wfStepAssignee(c, step);
+  const _due=wfStepDue(c, stepId); const _dueSt=wfDueStatus(_due, allDone);
+  const _asgName=_asg.name||_asg.ownerLabel||'Unassigned';
+  const _dueCol=_dueSt?(_dueSt.kind==='overdue'?WF_DUE_COL.overdue:_dueSt.kind==='soon'?WF_DUE_COL.soon:'var(--ink3)'):'var(--ink3)';
+  const asgRow=`<div style="display:flex;align-items:center;gap:8px;margin-top:10px;flex-wrap:wrap;">
+    <span style="font-size:11px;color:var(--ink3);">Assignee</span>
+    <span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:600;color:var(--ink);">${_asg.name?hbAvatar(_asg.name,18):''}${escapeHtml(_asgName)}</span>
+    <button onclick="event.stopPropagation();wfReassignPrompt('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:10px;">Reassign</button>
+    ${_due?`<span style="font-size:11px;font-weight:600;margin-left:auto;color:${_dueCol};">${_dueSt?wfDueLabel(_dueSt):('due '+wfFmtDue(new Date(_due+'T00:00:00')))}</span>`:''}
+  </div>`;
   const stepEmailBtn = step.action?.type==='email'?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:11px;color:#047857;">✉️ ${escapeHtml(step.action.label||'Draft email')} →</button>`:'';
   const stepDocBtn = step.action?.type==='doc'?`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">${escapeHtml(step.action.label||'Generate document')} →</button>`:'';
   let bodyHtml;
@@ -17965,12 +18027,37 @@ function wfOpenStepTasks(caseId, stepId) {
   const ov = document.createElement('div'); ov.id='wfStepTasks';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:985;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
-    <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${hasSubs?`${doneN} of ${step.subs.length} tasks complete${allDone?' · stage done ✓':''}`:(allDone?'Stage complete ✓':'Not started')}</div>${(step.owner||step.timeframe)?`<div style="display:flex;gap:6px;margin-top:8px;">${ownerBadge}${timeBadge}</div>`:''}${headBtns}</div>
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${hasSubs?`${doneN} of ${step.subs.length} tasks complete${allDone?' · stage done ✓':''}`:(allDone?'Stage complete ✓':'Not started')}</div>${timeBadge?`<div style="display:flex;gap:6px;margin-top:8px;">${timeBadge}</div>`:''}${asgRow}${headBtns}</div>
     <div style="padding:16px 22px;display:flex;flex-direction:column;gap:8px;">${bodyHtml}</div>
     <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;"><button class="btn btn-primary btn-sm" onclick="document.getElementById('wfStepTasks').remove()">Done</button></div>
   </div>`;
   document.body.appendChild(ov);
   ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+// Person-picker fallback: reassign a step to an HRIS person (or free text).
+function wfReassignPrompt(caseId, stepId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=wfGetSteps(c).find(s=>s.id===stepId)||{id:stepId};
+  const cur=wfStepAssignee(c, step);
+  let mo=document.getElementById('wfReassign'); if(!mo){ mo=document.createElement('div'); mo.id='wfReassign'; document.body.appendChild(mo); }
+  mo.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:990;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mo.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:380px;box-shadow:var(--shadow-lg);padding:18px 20px;">
+    <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:3px;">Assign this step</div>
+    <div style="font-size:11px;color:var(--ink3);margin-bottom:12px;">${escapeHtml(step.title||'')}${cur.ownerLabel?' · owner: '+escapeHtml(cur.ownerLabel):''}</div>
+    <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Person</label>
+    <input id="wfReassignInp" value="${escapeHtml(cur.name||'')}" placeholder="Search your HR system, or type a name" autocomplete="off" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" oninput="showHrisDropdown(this,this.value,emp=>{const i=document.getElementById('wfReassignInp');if(i){i.value=emp.display_full_name||'';i.dataset.email=emp.work_email||'';}})">
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:16px;">
+      <button class="btn btn-secondary btn-sm" onclick="document.getElementById('wfReassign').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="wfReassignConfirm('${caseId}',${stepId})">Assign</button>
+    </div></div>`;
+  setTimeout(()=>document.getElementById('wfReassignInp')?.focus(),40);
+}
+async function wfReassignConfirm(caseId, stepId){
+  const inp=document.getElementById('wfReassignInp');
+  const name=(inp?.value||'').trim(); const email=(inp?.dataset?.email||'').trim();
+  await wfSetAssignee(caseId, stepId, name, email);
+  document.getElementById('wfReassign')?.remove();
+  wfOpenStepTasks(caseId, stepId);
 }
 async function wfToggleStepDetail(caseId, stepId){
   const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
