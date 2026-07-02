@@ -7,11 +7,11 @@ const API = 'https://api.anthropic.com/v1';
 const MODEL = 'claude-sonnet-4-6';
 const TOOL = 'code_execution_20250825';
 const BETA = 'code-execution-2025-08-25,files-api-2025-04-14';
-const MAX_TOKENS = 4096;
-const MAX_TURNS = 3;              // server-tool (pause_turn) continuations - bounds per-request cost
-// Internal deadline: abort and let the caller fall back to the converter BEFORE Vercel's 60s
-// function cap kills us (which would return a raw 504 with no document).
-const DEADLINE_MS = 45000;
+const MAX_TOKENS = 8000;
+const MAX_TURNS = 6;              // server-tool (pause_turn) continuations - bounds per-request cost
+// Internal deadline: abort and fall back to the converter with headroom before the function's
+// 300s Vercel cap, so we never return a raw 504 with no document.
+const DEADLINE_MS = 260000;
 
 // Best-effort cumulative spend guard (per warm serverless instance, like chat.js's rate limiter).
 let _spend = 0;

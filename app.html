@@ -8574,7 +8574,7 @@ async function downloadArtifactPremium() {
   roiMarkDoc();
   const pbtn = [...document.querySelectorAll('.artifact-btn')].find(b => b.textContent.includes('Premium'));
   const label = pbtn ? pbtn.textContent : '';
-  if (pbtn) { pbtn.textContent = 'Building… (~30s)'; pbtn.disabled = true; }
+  if (pbtn) { pbtn.textContent = 'Building… (~1-2 min)'; pbtn.disabled = true; }
   try {
     const src = currentArtifact._edited ? (document.getElementById('artifactDoc')?.innerText || currentArtifact.draft) : (currentArtifact._md || currentArtifact.draft);
     const fileName = artifactFileName(currentArtifact);

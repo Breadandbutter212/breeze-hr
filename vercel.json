@@ -20,7 +20,7 @@
       "maxDuration": 300
     },
     "api/generate-doc.js": {
-      "maxDuration": 60
+      "maxDuration": 300
     }
   },
   "headers": [
