@@ -1,7 +1,6 @@
 import PizZip from 'pizzip';
 import Docxtemplater from 'docxtemplater';
 import { createClient } from '@supabase/supabase-js';
-import { renderDocx } from './_docx-render.js';
 
 
 // ── DOCUMENT THEME ──
@@ -62,6 +61,18 @@ async function verifyAuth(req) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // TEMP diagnostic (safe: only fires for an explicit probe body). Surfaces the real
+  // docx-renderer load error that Vercel otherwise hides behind FUNCTION_INVOCATION_FAILED.
+  if (req.body?.__diag === 'docx') {
+    try {
+      const m = await import('./_docx-render.js');
+      const buf = await m.renderDocx('# Diag\n\nok');
+      return res.status(200).json({ ok: true, bytes: buf.length });
+    } catch (e) {
+      return res.status(500).json({ ok: false, error: String((e && e.message) || e), code: e && e.code, stack: ((e && e.stack) || '').split('\n').slice(0, 6) });
+    }
+  }
+
   // Require an authenticated caller for every path (doc render, template fill and transcribe).
   if (!(await verifyAuth(req))) return res.status(401).json({ error: 'Unauthorized' });
 
@@ -95,6 +106,7 @@ export default async function handler(req, res) {
     const { templateBase64, fields, plainText, templateName, accent } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';
     if (!templateBase64 && plainText) {
+      const { renderDocx } = await import('./_docx-render.js');
       const buf = await renderDocx(plainText, resolveTheme(accent));
       res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
       res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
