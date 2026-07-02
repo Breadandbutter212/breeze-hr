@@ -137,19 +137,20 @@ function parseSpec(text) {
         continue;
       }
 
-      // Bullet list item
+      // Bullet list item. Does NOT reset ordered numbering — bullets are commonly
+      // sub-steps nested under a numbered step, so the parent 1,2,3… must keep counting.
       const bulletMatch = trimmed.match(/^[•▪◦·*-]\s+(.+)$/);
       if (bulletMatch) {
-        resetNumbering();
         blocks.push({ type: 'listitem', ordered: false, level, runs: parseRuns(bulletMatch[1]) });
         continue;
       }
 
-      // Callout / blockquote
+      // Callout / blockquote (may sit between numbered steps — don't reset numbering)
       const quoteMatch = trimmed.match(/^>\s?(.*)$/);
-      if (quoteMatch) { resetNumbering(); blocks.push({ type: 'callout', runs: parseRuns(quoteMatch[1]) }); continue; }
+      if (quoteMatch) { blocks.push({ type: 'callout', runs: parseRuns(quoteMatch[1]) }); continue; }
 
-      resetNumbering();
+      // Plain paragraph (e.g. explanatory text under a step) — keep numbering running.
+      // Numbering only restarts at a real structural break: heading, rule or table.
       blocks.push({ type: 'para', runs: parseRuns(trimmed) });
     }
   }
