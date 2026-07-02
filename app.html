@@ -8478,6 +8478,7 @@ function showArtifact(artifact, msgIdx) {
     <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
     <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
     <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
+    ${isDoc ? `<button class="artifact-btn" style="background:#6D28D9;color:white;" onclick="downloadArtifactPremium()" title="Beta: Claude builds the Word file natively for higher-quality formatting (slower)">✨ Premium</button>` : ''}
     ${!isDoc && emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
     <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
   const previewSrc = isDoc ? docBodyWithTitle(artifact, artifact.draft) : artifact.draft;
@@ -8564,6 +8565,44 @@ async function downloadArtifact() {
     URL.revokeObjectURL(url);
   }
   if (btn) { btn.textContent = '⬇ .docx'; btn.disabled = false; }
+}
+
+// Premium (beta): Claude builds the .docx natively via the code execution tool. Slower, higher-fidelity.
+// Falls back to the standard converter server-side; the X-Premium-Status header reports which ran.
+async function downloadArtifactPremium() {
+  if (!currentArtifact) return;
+  roiMarkDoc();
+  const pbtn = [...document.querySelectorAll('.artifact-btn')].find(b => b.textContent.includes('Premium'));
+  const label = pbtn ? pbtn.textContent : '';
+  if (pbtn) { pbtn.textContent = 'Building… (~30s)'; pbtn.disabled = true; }
+  try {
+    const src = currentArtifact._edited ? (document.getElementById('artifactDoc')?.innerText || currentArtifact.draft) : (currentArtifact._md || currentArtifact.draft);
+    const fileName = artifactFileName(currentArtifact);
+    const titledSrc = (currentArtifact.type === 'Document' && !currentArtifact._edited) ? docBodyWithTitle(currentArtifact, src) : src;
+    const res = await fetch('/api/generate-doc', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + (await getAuthToken()) },
+      // markdown = rich source for Claude; plainText = fallback source for the converter
+      body: JSON.stringify({ premium: true, markdown: titledSrc, plainText: mdToDocSource(titledSrc), templateName: fileName, accent: currentArtifact.accent || null })
+    });
+    if (res.ok) {
+      const status = res.headers.get('X-Premium-Status') || '';
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = `${fileName}.docx`; a.click();
+      URL.revokeObjectURL(url);
+      auditLog('document.generate', { type: 'docx-premium' });
+      if (typeof showBreezeToast === 'function') {
+        showBreezeToast(status.startsWith('fallback') ? ('Premium unavailable - downloaded standard version. ' + status.replace('fallback:', '').trim()) : 'Premium document ready.');
+      }
+    } else {
+      const t = await res.text();
+      if (typeof showBreezeToast === 'function') showBreezeToast('Premium failed: ' + t.slice(0, 140));
+    }
+  } catch (e) {
+    if (typeof showBreezeToast === 'function') showBreezeToast('Premium error: ' + e.message);
+  }
+  if (pbtn) { pbtn.textContent = label || '✨ Premium'; pbtn.disabled = false; }
 }
 
 // ── SPREADSHEET ARTIFACT (multi-tab workbook with formatting + charts) ──

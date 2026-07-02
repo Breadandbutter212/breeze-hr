@@ -93,6 +93,28 @@ export default async function handler(req, res) {
   try {
     const { templateBase64, fields, plainText, templateName, accent } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';
+    // Premium path (beta): Claude builds the .docx natively via the code execution tool.
+    // Falls back to the standard converter on any failure so the caller always gets a document.
+    if (req.body?.premium && (plainText || req.body?.markdown)) {
+      const source = req.body.markdown || plainText;
+      try {
+        const { generatePremiumDocx } = await import('./_premium-docx.mjs');
+        const buf = await generatePremiumDocx(source, accent);
+        res.setHeader('X-Premium-Status', 'ok');
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
+        return res.status(200).send(buf);
+      } catch (e) {
+        console.error('Premium docx failed, falling back to converter:', e.message);
+        const { renderDocx } = await import('./_docx-render.mjs');
+        const buf = await renderDocx(plainText || source, resolveTheme(accent));
+        res.setHeader('X-Premium-Status', 'fallback: ' + String(e.message || 'error').slice(0, 140));
+        res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+        res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
+        return res.status(200).send(buf);
+      }
+    }
+
     if (!templateBase64 && plainText) {
       const { renderDocx } = await import('./_docx-render.mjs');
       const buf = await renderDocx(plainText, resolveTheme(accent));

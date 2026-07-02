@@ -18,6 +18,9 @@
     },
     "api/chat.js": {
       "maxDuration": 300
+    },
+    "api/generate-doc.js": {
+      "maxDuration": 60
     }
   },
   "headers": [
