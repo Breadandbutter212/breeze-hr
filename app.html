@@ -8585,22 +8585,27 @@ async function downloadArtifactPremium() {
       // markdown = rich source for Claude; plainText = fallback source for the converter
       body: JSON.stringify({ premium: true, markdown: titledSrc, plainText: mdToDocSource(titledSrc), templateName: fileName, accent: currentArtifact.accent || null })
     });
+    const status = res.headers.get('X-Premium-Status') || '';
+    console.log('[premium] HTTP', res.status, '| X-Premium-Status:', status || '(none)');
     if (res.ok) {
-      const status = res.headers.get('X-Premium-Status') || '';
       const blob = await res.blob();
+      console.log('[premium] downloaded', blob.size, 'bytes');
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a'); a.href = url; a.download = `${fileName}.docx`; a.click();
       URL.revokeObjectURL(url);
       auditLog('document.generate', { type: 'docx-premium' });
-      if (typeof showBreezeToast === 'function') {
-        showBreezeToast(status.startsWith('fallback') ? ('Premium unavailable - downloaded standard version. ' + status.replace('fallback:', '').trim()) : 'Premium document ready.');
-      }
+      // TEMP DIAGNOSTIC: unmissable so we can see what happened on this run.
+      alert(status.startsWith('fallback')
+        ? ('Downloaded the STANDARD version - premium fell back.\nReason: ' + status.replace('fallback:', '').trim())
+        : ('Premium document ready (' + blob.size + ' bytes). Check your Downloads.'));
     } else {
       const t = await res.text();
-      if (typeof showBreezeToast === 'function') showBreezeToast('Premium failed: ' + t.slice(0, 140));
+      console.error('[premium] failed', res.status, t.slice(0, 300));
+      alert('Premium request failed - HTTP ' + res.status + '\n' + t.slice(0, 300));
     }
   } catch (e) {
-    if (typeof showBreezeToast === 'function') showBreezeToast('Premium error: ' + e.message);
+    console.error('[premium] error', e);
+    alert('Premium request errored before a response:\n' + (e && e.message));
   }
   if (pbtn) { pbtn.textContent = label || '✨ Premium'; pbtn.disabled = false; }
 }
