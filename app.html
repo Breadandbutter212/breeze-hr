@@ -7943,10 +7943,10 @@ async function _authH(extra) {
 async function auditLog(action, detail) {
   try {
     const token = await getAuthToken(); if (!token) return;
-    await fetch('/api/audit', {
+    await fetch('/api/analyze-edit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
-      body: JSON.stringify({ action, detail: detail || null }),
+      body: JSON.stringify({ action: 'audit-log', event: action, detail: detail || null }),
       keepalive: true
     });
   } catch (e) { /* audit must never affect the app */ }
