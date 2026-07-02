@@ -22,6 +22,21 @@ async function verifyAuth(req) {
   }
 }
 
+// Lightweight per-user rate limit. Serverless instances are reused while warm, so
+// this catches bursts/abuse from a single user within an instance. It is a first
+// line, not a distributed guarantee - pair with a platform WAF / edge limit for hard caps.
+const RL_WINDOW_MS = 60_000;
+const RL_MAX = 40;                 // requests per user per minute
+const _rl = new Map();             // userId -> { count, reset }
+function rateLimited(userId) {
+  const now = Date.now();
+  if (_rl.size > 5000) _rl.clear(); // bound memory
+  let e = _rl.get(userId);
+  if (!e || now > e.reset) { e = { count: 0, reset: now + RL_WINDOW_MS }; _rl.set(userId, e); }
+  e.count++;
+  return e.count > RL_MAX;
+}
+
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
@@ -29,6 +44,11 @@ export default async function handler(req, res) {
   if (!user) {
     console.error('Unauthorized chat request:', authError);
     return res.status(401).json({ error: 'Unauthorized', detail: authError });
+  }
+
+  if (rateLimited(user.id)) {
+    res.setHeader('Retry-After', '30');
+    return res.status(429).json({ error: 'Too many requests. Please wait a moment and try again.' });
   }
 
   const { messages, system, max_tokens, model, temperature } = req.body;

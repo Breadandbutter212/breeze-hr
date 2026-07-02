@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logAudit, clientIp } from './_audit.js';
 
 const BASE = 'https://backend.composio.dev/api/v3.1';
 
@@ -53,6 +54,19 @@ export default async function handler(req, res) {
     try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
 
     if (!r.ok) return res.status(r.status).json({ error: raw.substring(0, 400) });
+
+    // Audit the send (server-side, tamper-proof). Record metadata only, never the body/recipient PII.
+    try {
+      const sb = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);
+      const { data: prof } = await sb.from('profiles').select('company_id').eq('id', user.id).single();
+      const toDomain = String(to || '').split('@')[1] || null;
+      await logAudit(sb, {
+        company_id: prof?.company_id || null, user_id: user.id, user_email: user.email || null,
+        action: 'email.send', ip: clientIp(req),
+        detail: { provider, reply: !!threadId, to_domain: toDomain },
+      });
+    } catch (e) { /* audit must not affect the send result */ }
+
     return res.status(200).json({ success: true, data });
   } catch(e) {
     return res.status(500).json({ error: e.message });

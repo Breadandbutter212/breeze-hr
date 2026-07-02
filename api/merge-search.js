@@ -1,4 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
+import { logAudit, clientIp } from './_audit.js';
 
 const MERGE_BASE = 'https://api.merge.dev/api';
 const SUPER_ADMINS = (process.env.ADMIN_EMAILS || 'dwgordon7@icloud.com').split(',').map(e => e.trim().toLowerCase());
@@ -102,6 +103,7 @@ export default async function handler(req, res) {
         await sb.from('merge_connections').upsert({
           company_id: companyId, account_token, integration, connected_at: new Date().toISOString(),
         }, { onConflict: 'company_id' });
+        await logAudit(sb, { company_id: companyId, user_id: user.id, user_email: user.email || null, action: 'hris.connect', ip: clientIp(req), detail: { integration: integration || null } });
         return res.status(200).json({ connected: true, integration });
       } catch (e) { return res.status(500).json({ error: e.message }); }
     }
@@ -109,6 +111,7 @@ export default async function handler(req, res) {
     // 3. Forget the stored token for this company.
     if (action === 'disconnect') {
       await sb.from('merge_connections').delete().eq('company_id', companyId);
+      await logAudit(sb, { company_id: companyId, user_id: user.id, user_email: user.email || null, action: 'hris.disconnect', ip: clientIp(req) });
       return res.status(200).json({ disconnected: true });
     }
 

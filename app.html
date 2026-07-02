@@ -2094,6 +2094,7 @@ async function handleAuth() {
     const { data, error } = await sb.auth.signInWithPassword({ email, password });
     if (error) { errEl.textContent = error.message; btn.textContent = 'Sign in'; btn.disabled = false; return; }
     await onSignedIn(data.user);
+    auditLog('login', { method: 'password' });
   } else {
     const name = document.getElementById('loginName').value.trim();
     const company = document.getElementById('loginCompany').value.trim();
@@ -2307,6 +2308,7 @@ function showOnboardingTour() {
 window.showOnboardingTour = showOnboardingTour;
 
 async function signOut() {
+  await auditLog('logout');   // log before the session token is cleared
   await sb.auth.signOut();
   currentUser = null; currentProfile = null;
   chatMessages = []; chatSystemPrompt = null; chatList = []; currentChatId = null;
@@ -3813,7 +3815,7 @@ async function _downloadPresentationPython(btn) {
     const bytes = Uint8Array.from(atob(data.pptxBase64), c => c.charCodeAt(0));
     const blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+    a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href); auditLog('data.export',{type:'pptx'});
     window._presPatchOps = []; // clear after successful download
     presLog('Downloaded successfully via Python engine', 'ok');
     btn.textContent = '✓ Downloaded'; btn.disabled = false;
@@ -3909,7 +3911,7 @@ async function _downloadPresentationPythonGenerate(btn) {
       blob = new Blob([bytes], { type: 'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
     }
     const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-    a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+    a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href); auditLog('data.export',{type:'pptx'});
     _stopGenProgress();
     document.getElementById('pres-slides').style.display = 'flex';
     presLog('Downloaded via Anthropic pptx skill', 'ok');
@@ -4086,7 +4088,7 @@ ${bgXml}
 
       const blob = new Blob([zip.generate({ type:'uint8array' })], { type:'application/vnd.openxmlformats-officedocument.presentationml.presentation' });
       const a = document.createElement('a'); a.href = URL.createObjectURL(blob);
-      a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href);
+      a.download = `${presTitle||'presentation'}.pptx`; a.click(); URL.revokeObjectURL(a.href); auditLog('data.export',{type:'pptx'}); auditLog('data.export',{type:'pptx'});
       btn.textContent = '✓ Downloaded'; btn.disabled = false;
       setTimeout(() => btn.textContent = '⬇ Download .pptx', 2500);
       return;
@@ -7935,6 +7937,19 @@ async function getAuthToken() {
 async function _authH(extra) {
   return Object.assign({ 'Authorization': 'Bearer ' + (await getAuthToken()) }, extra || {});
 }
+// Fire-and-forget security audit event. Server resolves company_id + identity from
+// the session, so the client cannot forge them. Never blocks or throws into the UI.
+async function auditLog(action, detail) {
+  try {
+    const token = await getAuthToken(); if (!token) return;
+    await fetch('/api/audit', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + token },
+      body: JSON.stringify({ action, detail: detail || null }),
+      keepalive: true
+    });
+  } catch (e) { /* audit must never affect the app */ }
+}
 
 async function callClaude(messages, systemPrompt, opts) {
   try {
@@ -8519,7 +8534,7 @@ async function downloadArtifact() {
     if (res.ok) {
       const blob = await res.blob();
       const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href=url; a.download=`${fileName}.docx`; a.click();
+      const a = document.createElement('a'); a.href=url; a.download=`${fileName}.docx`; a.click(); auditLog('document.generate',{type:'docx'});
       URL.revokeObjectURL(url);
     } else {
       // Fallback to txt if docx fails
@@ -8730,7 +8745,7 @@ async function downloadRichXlsx(btn) {
     if (!res.ok) throw new Error('Server error ' + res.status);
     const blob = await res.blob();
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href = url; a.download = base + '.xlsx'; a.click();
+    const a = document.createElement('a'); a.href = url; a.download = base + '.xlsx'; a.click(); auditLog('data.export',{type:'xlsx'});
     URL.revokeObjectURL(url);
   } catch (e) {
     // Fall back to the instant client-side build
@@ -8760,7 +8775,7 @@ function downloadXlsx() {
     const bytes = buildWorkbook(currentArtifact.title, currentArtifact.sheets);
     const blob = new Blob([bytes], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
     const url = URL.createObjectURL(blob);
-    const a = document.createElement('a'); a.href=url; a.download = base + '.xlsx'; a.click();
+    const a = document.createElement('a'); a.href=url; a.download = base + '.xlsx'; a.click(); auditLog('data.export',{type:'xlsx'});
     URL.revokeObjectURL(url);
   } catch(e) {
     const rows = (currentArtifact.sheets[0] && currentArtifact.sheets[0].rows) || [];
