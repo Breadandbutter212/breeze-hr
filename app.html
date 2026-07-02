@@ -13740,6 +13740,10 @@ function wfbRender(){
       <button onclick="closeCenteredModal('wfBuilderModal')" style="background:none;border:none;color:var(--ink3);font-size:20px;cursor:pointer;flex-shrink:0;">✕</button>
     </div>
     <div style="flex:1;overflow-y:auto;padding:18px 22px;display:flex;flex-direction:column;gap:8px;">
+      <div style="margin-bottom:4px;">
+        <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Context for AI <span style="font-weight:400;color:var(--ink3);">(optional - the more you add, the better the draft)</span></label>
+        <textarea id="wfb-context" rows="3" oninput="if(_wfBuilder)_wfBuilder.context=this.value" placeholder="Describe the process for the AI to build from: what it's for, any company-specific steps, policies or systems involved, who does what, and timings. Used alongside the name above." style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);box-sizing:border-box;resize:vertical;min-height:58px;line-height:1.5;">${escapeHtml(b.context||'')}</textarea>
+      </div>
       ${stepsHtml}
     </div>
     <div style="flex-shrink:0;padding:14px 22px;border-top:1px solid var(--border);background:white;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
@@ -13955,10 +13959,11 @@ async function wfbGenerateAI(btn){
   const name=(nameEl?.value||_wfBuilder.label||'').trim();
   if(!name){ if(nameEl){nameEl.style.borderColor='rgba(239,68,68,0.7)';nameEl.focus();} return; }
   _wfBuilder.label=name;
+  const ctx=(document.getElementById('wfb-context')?.value||_wfBuilder.context||'').trim();
   const orig=btn.textContent; btn.textContent='⏳ Drafting…'; btn.disabled=true;
   try{
     const token=await getAuthToken();
-    const userPrompt=`Generate a practical HR process checklist for a workflow called: "${name}".
+    const userPrompt=`Generate a practical HR process checklist for a workflow called: "${name}".${ctx?`\n\nUse this context from the user to build from - reflect their specific steps, policies, systems, people and timings wherever given:\n${ctx.substring(0,3000)}`:''}
 Return ONLY valid JSON, no markdown fences, no explanation:
 {"icon":"<one emoji>","steps":[{"title":"Short stage title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","offsetDays":<integer days after the process start/anchor date this stage is due>,"owner":"Who typically does it (e.g. HR, Line manager, IT)","subs":[{"title":"Specific tickable sub-task","owner":"Who does this sub-task","email":{"subject":"...","body":"..."}}]}]}
 Each step is a STAGE. Break each stage into 2-4 concrete "subs" (sub-tasks) that someone ticks off to complete the stage. Set "offsetDays" to the number of days after the process start date each stage should be completed (0 = the start day itself), increasing sensibly across the stages so the process runs in order. For any sub-task whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for sub-tasks that are not emails.
