@@ -2238,26 +2238,27 @@ async function onSignedIn(user) {
 function showOnboardingTour() {
   // Each step walks to a real page so the feature is explained in context.
   const steps = [
-    { icon:'✨', title:'Welcome to Breeze HR', desc:'A quick tour of what you can do. It takes about a minute and visits the real pages as it goes, so you can see each feature in context. You can skip at any time.', nav:'home' },
-    { icon:'≋', title:'It learns how your team works', desc:'Breeze adapts to your business over time. It learns from every conversation, the decisions you make and your writing style and tone, and gets sharper the more your team uses it. Answers start to feel like they came from someone who already knows your company, its policies and its history.', nav:'chat' },
-    { icon:'💬', title:'Ask anything, or paste an email', desc:'Ask a policy question, paste an employee email, or request a letter. Breeze answers grounded in your own policies first, points to where the guidance comes from, and can draft a ready-to-send reply in your tone. With your inbox connected, you can send it straight back without leaving the chat.', nav:'chat' },
-    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary and grievance letters, references and more, from a library of over 25 UK templates. Answer a few questions and the document builds live, formatted to your house style and ready to download as Word. You can upload your own templates too and Breeze fills them in for you.', nav:'docs', img:'img/tour-contracts.png' },
-    { icon:'🧭', title:'Open a role in seconds', desc:'Hiring? Ask Breeze to open a role and it drafts the job description, grounded in your existing JDs and house style. Plan and track vacancies under Your people, Headcount planning, and see the cost and structure impact before you commit.', nav:'headcount' },
-    { icon:'📋', title:'Grounded in your policies', desc:'Upload your handbook, policies and templates, or connect SharePoint so Breeze reads your real files directly. It uses them first when answering, so advice reflects your actual rules, your tone and your way of doing things, with clear ACAS and UK employment law backing where it matters.', nav:'manage' },
-    { icon:'✉️', title:'From an email to the right tracker', desc:'Open an inbox email and hit Smart action. Breeze reads it - spotting maternity, sickness, a grievance or a resignation - and either adds the person to the right tracker, or, if they are already there, logs the message and ticks the matching checklist step. Any attachment, like a fit note, MATB1 or ID for a right-to-work check, is saved straight onto the case. No mailbox connected yet? Try it all on the built-in test inbox, where you can add your own sample emails.', nav:'trackers' },
-    { icon:'✅', title:'Trackers with built-in checklists', desc:'Family leave, sickness absence, disciplinary, grievances, right to work and more. Each case gets a step-by-step checklist grounded in ACAS guidance and UK employment law, with key dates, reminders and a full contact log, so nothing slips and you always have an audit trail.', nav:'trackers' },
-    { icon:'⚡', title:'Automate your HR workflows', desc:'Build your own repeatable processes, or start from the ready-made ones: new-starter onboarding, employee offboarding and probation reviews. Each stage carries its own sub-tasks, owners and timings, with emails drafted and documents generated for you. Kick one off for a named employee and track every step through to done.', nav:'automations' },
+    { icon:'✨', title:'Welcome to Breeze HR', desc:'A quick tour of what Breeze can do. It takes about a minute and moves through the real pages as it goes, so you can see each feature in place. Skip whenever you like.', nav:'home' },
+    { icon:'≋', title:'It learns how your team works', desc:'Breeze adapts to your business over time. It learns from your conversations, the decisions you make and the way you write, so answers start to feel like they came from someone who already knows your company, its policies and its history.', nav:'chat' },
+    { icon:'💬', title:'Ask anything, or paste an email', desc:'Ask a policy question, paste an employee email, or request a letter. Breeze answers from your own policies first, shows where its guidance comes from, and drafts a ready-to-send reply in your tone. With your inbox connected you can send it straight back without leaving the chat.', nav:'chat' },
+    { icon:'✉️', title:'From an email to the right tracker', desc:'Open an email and press Smart action. Breeze reads it, spots maternity, sickness, a grievance or a resignation, and either adds the person to the right tracker or, if they are already there, logs the message and ticks the matching step. Attachments like a fit note, MATB1 or right-to-work ID are saved straight onto the case. No mailbox connected yet? Try it on the built-in test inbox.', nav:'trackers' },
+    { icon:'✅', title:'Trackers with built-in checklists', desc:'Family leave, sickness, disciplinary, grievances, right to work and more. Every case gets a step-by-step checklist built on ACAS guidance and UK employment law, with key dates, reminders and a full contact log, so nothing slips and you keep a clean record.', nav:'trackers' },
+    { icon:'⚡', title:'Automate your HR workflows', desc:'Build your own repeatable processes, or start from the ready-made ones: new-starter onboarding, employee offboarding and probation reviews. Each stage carries its own tasks, owners and timings, with emails drafted and documents produced for you. Kick one off for a named employee and track every step to done.', nav:'automations' },
+    { icon:'📄', title:'Draft contracts and letters', desc:'Offer letters, contracts, disciplinary and grievance letters, references and more, from a library of over 25 UK templates. Answer a few questions and the document builds live in your house style, ready to download as Word. Upload your own templates and Breeze fills them in too.', nav:'docs' },
+    { icon:'🧭', title:'Open a role in seconds', desc:'Hiring? Ask Breeze to open a role and it drafts the job description from your existing ones and house style. Plan and track vacancies under Headcount planning, and see the cost and structure impact before you commit.', nav:'headcount' },
+    { icon:'📋', title:'Built around your policies', desc:'Upload your handbook, policies and templates, or connect SharePoint so Breeze reads your real files directly. It draws on them first, so advice reflects your actual rules and tone, with ACAS and UK employment law behind it where it matters.', nav:'manage' },
     { icon:'📊', title:'See the whole picture', desc:'Turn your people data into clear analytics: headcount, pay, diversity, turnover and trends. Ask a question in plain English and Breeze builds the chart, so you can spot issues and answer the board in seconds.', nav:'analytics' },
-    { icon:'💰', title:'Compare comp statements and data', desc:'Cross-check compensation letters against your payroll or HR data. Upload a spreadsheet and a batch of comp letters and Breeze matches each letter to the right employee, reads it whatever the format, and flags any mismatch in salary, bonus or allowances. It can also compare two system exports to validate a migration or audit.', nav:'compare' },
-    { icon:'👥', title:'Built for your whole team', desc:'Everyone gets their own secure login with the same policies, documents and history, kept private to your company. Consistent answers and tone, whether it is day one or your hundredth.', nav:'home' },
+    { icon:'💰', title:'Compare comp statements and data', desc:'Cross-check compensation letters against your payroll or HR data. Upload a spreadsheet and a batch of comp letters and Breeze matches each letter to the right employee, reads any format, and flags any mismatch in salary, bonus or allowances. It can also compare two exports to validate a migration.', nav:'compare' },
+    { icon:'👥', title:'Built for your whole team', desc:'Everyone gets their own secure login, with the same policies, documents and history kept private to your company. Consistent answers and tone, whether it is day one or your hundredth.', nav:'home' },
   ];
   let step = 0;
 
   document.getElementById('tourOverlay')?.remove();
   const overlay = document.createElement('div');
   overlay.id = 'tourOverlay';
-  // Light scrim so the page stays visible behind the centred card while each step explains it.
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:2000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  // Very light scrim, and the card sits at the bottom, so the real page stays
+  // fully visible and you can watch the tour walk to each section behind it.
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.08);z-index:2000;display:flex;align-items:flex-end;justify-content:center;padding:0 20px 28px;pointer-events:none;';
 
   function endTour() { overlay.remove(); localStorage.setItem('breeze_tour_done','1'); }
 
@@ -2265,33 +2266,25 @@ function showOnboardingTour() {
     const s = steps[step];
     const isLast = step === steps.length - 1;
     if (s.nav) { try { showView(s.nav); } catch(e){} }
-    const head = s.img
-      ? `<div style="background:#EEF3FF;padding:16px;display:flex;align-items:center;justify-content:center;border-bottom:1px solid #E2E8F0;">
-           <img src="${s.img}" alt="" style="max-width:100%;max-height:172px;object-fit:contain;display:block;">
-         </div>
-         <div style="padding:20px 30px 0;">
-           <div style="font-size:19px;font-weight:700;color:#0A1628;letter-spacing:-0.02em;">${s.title}</div>
-           <div style="font-size:12px;color:#94A3B8;margin-top:4px;">${step+1} of ${steps.length}</div>
-         </div>`
-      : `<div style="background:linear-gradient(135deg,#0A1628,#0F2044);padding:26px 30px 22px;">
-           <div style="font-size:32px;margin-bottom:10px;">${s.icon}</div>
+    const head = `<div style="background:linear-gradient(135deg,#5B47E0,#3B2C9A);padding:24px 30px 20px;">
+           <div style="font-size:30px;margin-bottom:10px;">${s.icon}</div>
            <div style="font-size:19px;font-weight:700;color:white;letter-spacing:-0.02em;">${s.title}</div>
-           <div style="font-size:12px;color:rgba(255,255,255,0.5);margin-top:4px;">${step+1} of ${steps.length}</div>
+           <div style="font-size:12px;color:rgba(255,255,255,0.65);margin-top:4px;">${step+1} of ${steps.length}</div>
          </div>`;
     overlay.innerHTML = `
-      <div style="background:white;border-radius:16px;width:100%;max-width:500px;box-shadow:0 24px 80px rgba(0,0,0,0.35);overflow:hidden;position:relative;">
-        <button onclick="tourEnd()" title="Skip tour" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:rgba(15,25,45,0.40);border:none;color:white;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:1;">×</button>
+      <div style="background:white;border-radius:16px;width:100%;max-width:480px;box-shadow:0 24px 80px rgba(15,23,42,0.28);overflow:hidden;position:relative;pointer-events:auto;">
+        <button onclick="tourEnd()" title="Skip tour" style="position:absolute;top:14px;right:14px;width:26px;height:26px;border-radius:50%;background:rgba(255,255,255,0.18);border:none;color:white;cursor:pointer;font-size:15px;line-height:1;display:flex;align-items:center;justify-content:center;z-index:1;">×</button>
         ${head}
-        <div style="padding:${s.img?'14px':'22px'} 30px 24px;">
+        <div style="padding:22px 30px 24px;">
           <div style="font-size:14px;color:#4A5568;line-height:1.72;">${s.desc}</div>
           <div style="display:flex;gap:6px;margin-top:18px;margin-bottom:4px;">
-            ${steps.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<=step?'#0A1628':'#E2E8F0'};transition:background 0.2s;"></div>`).join('')}
+            ${steps.map((_,i)=>`<div style="height:3px;flex:1;border-radius:2px;background:${i<=step?'#5B47E0':'#E2E8F0'};transition:background 0.2s;"></div>`).join('')}
           </div>
           <div style="display:flex;align-items:center;justify-content:space-between;margin-top:18px;">
             <button onclick="tourEnd()" style="font-size:12px;color:#8A94A6;background:none;border:none;cursor:pointer;font-family:inherit;font-weight:500;">Skip tour</button>
             <div style="display:flex;gap:8px;">
               ${step>0?`<button onclick="tourBack()" style="background:#EDF1F6;color:#475569;border:none;border-radius:8px;padding:10px 18px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">Back</button>`:''}
-              <button onclick="tourNext()" style="background:#0A1628;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">${isLast?'Get started':'Next'}</button>
+              <button onclick="tourNext()" style="background:#5B47E0;color:white;border:none;border-radius:8px;padding:10px 24px;font-size:14px;font-weight:600;cursor:pointer;font-family:inherit;">${isLast?'Get started':'Next'}</button>
             </div>
           </div>
         </div>
