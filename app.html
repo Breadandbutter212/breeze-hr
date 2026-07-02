@@ -15574,9 +15574,19 @@ function ocDeptFaces(node, max) {
 
 const OC_GRID_COLS = 8; // max children per row before wrapping to grid
 
+// Grid (compact wrap) is only safe when every child is a leaf/collapsed. As soon
+// as a child is expanded its subtree extends downward, so we must switch to the
+// flow layout that reserves real horizontal width per subtree - otherwise an
+// expanded child overlaps its neighbours.
+function ocUseGrid(n) {
+  const kids = _ocCollapsed.has(n.id) ? [] : (n.children || []);
+  if (kids.length <= OC_GRID_COLS) return false;
+  return !kids.some(c => (c.children?.length) && !_ocCollapsed.has(c.id));
+}
+
 function ocSubW(n) {
   if (!n.children?.length || _ocCollapsed.has(n.id)) return OC_W + OC_HG;
-  if (n.children.length > OC_GRID_COLS) return OC_GRID_COLS * (OC_W + OC_HG);
+  if (ocUseGrid(n)) return OC_GRID_COLS * (OC_W + OC_HG);
   return n.children.reduce((s,c) => s + ocSubW(c), 0);
 }
 
@@ -15585,7 +15595,7 @@ function ocLayout(n, depth, sx) {
   const children = _ocCollapsed.has(n.id) ? [] : (n.children || []);
   if (!children.length) { n._x = sx; return; }
 
-  if (children.length > OC_GRID_COLS) {
+  if (ocUseGrid(n)) {
     // Grid layout: wrap into rows of OC_GRID_COLS
     children.forEach((c, i) => {
       const col = i % OC_GRID_COLS, row = Math.floor(i / OC_GRID_COLS);
