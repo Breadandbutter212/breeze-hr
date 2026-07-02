@@ -9649,6 +9649,37 @@ function wfScenarioFor(c) {
   return { label:'case', steps: c.stepsOverride||[] };
 }
 
+// Compute per-step due dates for a running case from its anchorDate + each step's
+// offsetDays. Stored on the instance (c.stepDue map) so later template edits don't
+// shift running cases. onlyUnticked=true (used when the anchor is changed) leaves
+// already-completed steps untouched.
+function wfComputeDueDates(c, opts){
+  if(!c || !c.anchorDate) return;
+  const anchor = new Date(c.anchorDate + 'T00:00:00'); if(isNaN(anchor)) return;
+  const steps = (wfScenarioFor(c)||{}).steps || [];
+  c.stepDue = c.stepDue || {};
+  const onlyUnticked = !!(opts && opts.onlyUnticked);
+  const checked = new Set((c.checkedSteps||[]).map(String));
+  steps.forEach(s=>{
+    if(s.offsetDays==null || !isFinite(Number(s.offsetDays))) return;
+    if(onlyUnticked && checked.has(String(s.id))) return;
+    const d = new Date(anchor); d.setDate(d.getDate() + Math.max(0, Math.round(Number(s.offsetDays))));
+    c.stepDue[String(s.id)] = d.toISOString().slice(0,10);
+  });
+}
+// The stored due date for a step, or null.
+function wfStepDue(c, stepId){ return (c && c.stepDue && c.stepDue[String(stepId)]) || null; }
+// Change a running case's anchor/start date and re-derive due dates for steps that
+// are NOT yet ticked (completed steps keep the date they were done against).
+async function wfSetAnchor(caseId, val){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const v=(val||'').trim(); if(!v) return;
+  c.anchorDate=v;
+  wfComputeDueDates(c, {onlyUnticked:true});
+  try{ await saveWfCases(); }catch(e){}
+  if(typeof wfRunRefresh==='function') wfRunRefresh();
+}
+
 let _smartEmail = null, _smartAnalysis = null;
 
 async function aiAnalyseEmail(emailId) {
@@ -9740,6 +9771,10 @@ function showSmartActionModal(email, a){
     </div>
     <div style="font-size:13px;color:var(--ink2);line-height:1.55;background:var(--surface2);border-radius:10px;padding:11px 13px;margin-bottom:14px;">${escapeHtml(a.summary||'')}</div>
     <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px 0;margin-bottom:14px;">${actions.join('')}</div>
+    ${a.createScenario?`<div style="margin-bottom:14px;">
+      <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Start date <span style="font-weight:400;color:var(--ink3);">(step due dates are calculated from this)</span></label>
+      <input id="smartAnchorDate" type="date" value="${new Date().toISOString().slice(0,10)}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;">
+    </div>`:''}
     ${(matchedCase||a.createScenario)?`<div style="margin-bottom:16px;">
       <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Add a note ${step?`for "${escapeHtml(step.title)}" `:''}<span style="font-weight:400;color:var(--ink3);">(optional)</span></label>
       <textarea id="smartNote" rows="2" placeholder="e.g. Still to return: laptop and building pass" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;resize:vertical;min-height:48px;"></textarea>
@@ -9793,7 +9828,9 @@ async function applySmartCreate(){
   if(typeof wfCases==='undefined') return;
   if(!wfCases) wfCases=[];
   const id='wfc_'+Date.now();
-  const newCase={ id, employeeName:a.employee||'New employee', scenarioId:a.createScenario, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
+  const _anchor=(document.getElementById('smartAnchorDate')?.value||'').trim() || new Date().toISOString().slice(0,10);
+  const newCase={ id, employeeName:a.employee||'New employee', scenarioId:a.createScenario, checkedSteps:[], startedAt:new Date().toISOString(), anchorDate:_anchor, stepDue:{}, notes:'', status:'active', docs:[], contactLog:[] };
+  wfComputeDueDates(newCase);
   newCase.contactLog.push({ date:new Date().toISOString(), type:'email', note:a.summary||'Email received.' });
   const firstAtt = _smartSaveAttachments(newCase, email);
   if(firstAtt){ const e=newCase.contactLog[0]; e.docFilename=firstAtt.filename; e.docBase64=firstAtt.base64; e.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
@@ -13562,8 +13599,9 @@ function wfbStepEditor(idx){
       <div><label class="wfb-lab">Step title *</label><input id="wfbs-title" value="${escapeHtml(s.title)}" placeholder="e.g. Send welcome email" style="${inp}"></div>
       <div><label class="wfb-lab">Guidance <span style="font-weight:400;color:var(--ink3);">(optional)</span></label><textarea id="wfbs-desc" rows="2" style="${inp}resize:vertical;min-height:54px;">${escapeHtml(s.desc||'')}</textarea></div>
       <div style="display:flex;gap:10px;">
-        <div style="flex:1;"><label class="wfb-lab">Timeframe</label><input id="wfbs-time" value="${escapeHtml(s.timeframe||'')}" placeholder="e.g. Day 1" style="${inp}"></div>
-        <div style="flex:1;"><label class="wfb-lab">Assign to (owner)</label><input id="wfbs-owner" value="${escapeHtml(s.owner||'')}" placeholder="e.g. IT, Line manager" style="${inp}"></div>
+        <div style="flex:1.2;"><label class="wfb-lab">Timeframe</label><input id="wfbs-time" value="${escapeHtml(s.timeframe||'')}" placeholder="e.g. Day 1" style="${inp}"></div>
+        <div style="width:118px;flex-shrink:0;"><label class="wfb-lab">Due <span style="font-weight:400;color:var(--ink3);">(days)</span></label><input id="wfbs-offset" type="number" min="0" value="${s.offsetDays!=null?s.offsetDays:''}" placeholder="e.g. 7" title="Days after the start date this step is due" style="${inp}"></div>
+        <div style="flex:1.2;"><label class="wfb-lab">Assign to (owner)</label><input id="wfbs-owner" value="${escapeHtml(s.owner||'')}" placeholder="e.g. IT, Line manager" style="${inp}"></div>
       </div>
       <div>
         <label class="wfb-lab">Checklist sub-tasks <span style="font-weight:400;color:var(--ink3);">(optional - break this stage into tickable tasks)</span></label>
@@ -13709,10 +13747,13 @@ function wfbSaveStep(idx){
     }};
   }
   const subs=wfbCollectSubs();
+  const _offV=document.getElementById('wfbs-offset')?.value;
+  const _offset=(_offV!=null && _offV!=='' && isFinite(Number(_offV))) ? Math.max(0,Math.round(Number(_offV))) : null;
   const step={
     title,
     desc:document.getElementById('wfbs-desc')?.value?.trim()||'',
     timeframe:document.getElementById('wfbs-time')?.value?.trim()||'',
+    offsetDays:_offset,
     owner:document.getElementById('wfbs-owner')?.value?.trim()||'',
     tag:(idx!=null&&_wfBuilder.steps[idx]?.tag)||'recommended',
     action
@@ -13737,8 +13778,8 @@ async function wfbGenerateAI(btn){
     const token=await getAuthToken();
     const userPrompt=`Generate a practical HR process checklist for a workflow called: "${name}".
 Return ONLY valid JSON, no markdown fences, no explanation:
-{"icon":"<one emoji>","steps":[{"title":"Short stage title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","owner":"Who typically does it (e.g. HR, Line manager, IT)","subs":[{"title":"Specific tickable sub-task","owner":"Who does this sub-task","email":{"subject":"...","body":"..."}}]}]}
-Each step is a STAGE. Break each stage into 2-4 concrete "subs" (sub-tasks) that someone ticks off to complete the stage. For any sub-task whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for sub-tasks that are not emails.
+{"icon":"<one emoji>","steps":[{"title":"Short stage title","desc":"1-2 sentences of practical UK HR guidance.","timeframe":"When to do it","offsetDays":<integer days after the process start/anchor date this stage is due>,"owner":"Who typically does it (e.g. HR, Line manager, IT)","subs":[{"title":"Specific tickable sub-task","owner":"Who does this sub-task","email":{"subject":"...","body":"..."}}]}]}
+Each step is a STAGE. Break each stage into 2-4 concrete "subs" (sub-tasks) that someone ticks off to complete the stage. Set "offsetDays" to the number of days after the process start date each stage should be completed (0 = the start day itself), increasing sensibly across the stages so the process runs in order. For any sub-task whose main action is sending an email (e.g. a welcome note, an invite, a confirmation), include an "email" object with a ready-to-send draft subject and body in a warm, professional UK HR tone. Use {employee} as a placeholder for the person's name and leave recipients blank. Omit the "email" field entirely for sub-tasks that are not emails.
 Generate 5-8 stages, each with 2-4 sub-tasks.`;
     const res=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':`Bearer ${token}`},body:JSON.stringify({system:'You are an expert UK HR professional. Return only valid JSON - no markdown, no explanation, no extra text.',messages:[{role:'user',content:userPrompt}]})});
     if(!res.ok) throw new Error('Chat API '+res.status);
@@ -13761,7 +13802,8 @@ Generate 5-8 stages, each with 2-4 sub-tasks.`;
           }
           return o;
         });
-      const step={id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',owner:s.owner||'',tag:'recommended',action};
+      const _off=(s.offsetDays!=null && isFinite(Number(s.offsetDays))) ? Math.max(0,Math.round(Number(s.offsetDays))) : null;
+      const step={id:wfbNextId(),title:s.title||'Step',desc:s.desc||'',timeframe:s.timeframe||'',offsetDays:_off,owner:s.owner||'',tag:'recommended',action};
       if(subs.length) step.subs=subs;
       _wfBuilder.steps.push(step);
     });
@@ -14053,6 +14095,8 @@ function autoStartPick(){
 async function autoStartRun(autoId){
   if(!automations) await loadAutomations();
   const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
+  const _anchorLbl = /offboard|exit|leaver|resign/i.test(a.label||'') ? 'Notice start date' : /probation/i.test(a.label||'') ? 'Probation start date' : 'Start date';
+  const _today = new Date().toISOString().slice(0,10);
   document.getElementById('autoRunName')?.remove();
   const ov=document.createElement('div'); ov.id='autoRunName';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:986;display:flex;align-items:center;justify-content:center;padding:20px;';
@@ -14065,6 +14109,9 @@ async function autoStartRun(autoId){
       <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Employee</label>
       <input id="autoRunNameInp" placeholder="Search your HR system…" autocomplete="off" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;" oninput="showHrisDropdown(this,this.value,emp=>{const i=document.getElementById('autoRunNameInp');if(i)i.value=emp.display_full_name||emp.full_name||'';})" onkeydown="if(event.key==='Enter'){event.preventDefault();autoRunNameConfirm('${autoId}')}">
       <div style="font-size:11px;color:var(--ink3);margin-top:7px;">Pick someone from your HR system, or just type a name.</div>
+      <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin:14px 0 5px;">${_anchorLbl}</label>
+      <input id="autoRunAnchor" type="date" value="${_today}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;outline:none;box-sizing:border-box;">
+      <div style="font-size:11px;color:var(--ink3);margin-top:7px;">Step due dates are calculated from this.</div>
     </div>
     <div style="padding:12px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:8px;">
       <button class="btn btn-secondary btn-sm" onclick="document.getElementById('autoRunName').remove()">Cancel</button>
@@ -14081,7 +14128,9 @@ async function autoRunNameConfirm(autoId){
   if(!name){ if(inp) inp.style.borderColor='var(--red)'; return; }
   const a=(automations||[]).find(x=>x.id===autoId); if(!a) return;
   if(!wfCases) await loadWfCases();
-  const newCase={ id:'wfc_'+Date.now(), employeeName:name, scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
+  const _anchor=(document.getElementById('autoRunAnchor')?.value||'').trim() || new Date().toISOString().slice(0,10);
+  const newCase={ id:'wfc_'+Date.now(), employeeName:name, scenarioId:autoId, checkedSteps:[], startedAt:new Date().toISOString(), anchorDate:_anchor, stepDue:{}, notes:'', status:'active', docs:[], contactLog:[] };
+  wfComputeDueDates(newCase);
   wfCases.push(newCase);
   await saveWfCases();
   document.getElementById('hris-dd')?.remove();
@@ -17443,8 +17492,11 @@ function wfCaseCalendar(caseId) {
   const meetingSteps=sc.steps.filter(s=>/meeting|interview|hearing|panel|review|discussion|welfare|invite|induction/i.test(s.title+' '+s.desc));
   if (!meetingSteps.length) { showBreezeToast('No schedulable steps found in this checklist'); return; }
   const events = meetingSteps.map((step,i)=>{
-    const start=calTomorrow(10+i);
-    return {title:`${step.title} - ${c.employeeName}`,start,end:new Date(start.getTime()+3600000),icon:'📅',dateLabel:'Suggested: '+(i===0?'tomorrow':'day '+(i+1))+', '+(10+i)+':00',description:step.desc};
+    const hr=10+(i%6);
+    const due=wfStepDue(c, step.id);
+    const start=due?new Date(due+'T'+String(hr).padStart(2,'0')+':00:00'):calTomorrow(hr);
+    const dateLabel=due?('Due '+start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+hr+':00'):('Suggested: '+(i===0?'tomorrow':'day '+(i+1))+', '+hr+':00');
+    return {title:`${step.title} - ${c.employeeName}`,start,end:new Date(start.getTime()+3600000),icon:'📅',dateLabel,description:step.desc};
   });
   showCalendarModal(events, `${c.employeeName} · ${sc.label}`, `${sc.label} ${c.employeeName}`);
 }
@@ -17452,12 +17504,13 @@ function wfStepCalendarInvite(caseId, stepId) {
   const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
   const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
   const step=sc.steps.find(s=>s.id===stepId); if(!step) return;
-  const start=calTomorrow(10);
+  const due=wfStepDue(c, stepId);
+  const start=due?new Date(due+'T10:00:00'):calTomorrow(10);
   showCalendarModal([{
     title:`${step.title} - ${c.employeeName}`,
     start, end:new Date(start.getTime()+3600000),
     icon:'📅',
-    dateLabel:'Suggested: tomorrow 10-11am (edit after import)',
+    dateLabel:due?('Due '+start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', 10-11am'):'Suggested: tomorrow 10-11am (edit after import)',
     description:`${step.desc}\n\nTimeframe: ${step.timeframe}`,
   }], `${c.employeeName} · ${sc.label}`, `${step.title} ${c.employeeName}`);
 }
@@ -19028,76 +19081,76 @@ window.seedDemoData = async function() {
   // ── AUTOMATIONS - visual workflow with sub-tasked stages (for the runner) ──
   const autoData = [
     { id:'auto_onboard', label:'New starter onboarding', icon:'🚀', cat:'Automation', createdAt:new Date().toISOString(), steps:[
-      {id:1,title:'Offer & contract',timeframe:'On acceptance',owner:'HR',desc:'Issue the contract and confirm start details.',subs:[
+      {id:1,title:'Offer & contract',timeframe:'On acceptance',offsetDays:0,owner:'HR',desc:'Issue the contract and confirm start details.',subs:[
         {id:'a',title:'Send signed contract for return',owner:'HR',email:{subject:'Your contract - {employee}',body:'Hi {employee},\n\nPlease find your contract attached. Sign and return it at your earliest convenience and let us know if you have any questions.\n\nWelcome aboard!\nHR'}},
         {id:'b',title:'Confirm start date and first-day logistics',owner:'HR'},
         {id:'c',title:'Add to HR system and payroll',owner:'HR'}
       ]},
-      {id:2,title:'Right to work',timeframe:'Before day 1',owner:'HR',desc:'Complete the statutory right-to-work check before the first day.',subs:[
+      {id:2,title:'Right to work',timeframe:'Before day 1',offsetDays:0,owner:'HR',desc:'Complete the statutory right-to-work check before the first day.',subs:[
         {id:'a',title:'Email new starter to bring ID on day 1',owner:'HR',email:{subject:'Your first day - please bring your ID',body:'Hi {employee},\n\nWe are looking forward to welcoming you. So we can complete a quick right-to-work check, please bring your original passport (or other right-to-work documents) on your first day.\n\nBest wishes,\nHR'}},
         {id:'b',title:'Verify original documents in person',owner:'HR'},
         {id:'c',title:'Take and date-stamp copies for the file',owner:'HR'}
       ]},
-      {id:3,title:'IT & equipment',timeframe:'Before day 1',owner:'IT',desc:'Set up accounts and hardware ready for day one.',subs:[
+      {id:3,title:'IT & equipment',timeframe:'Before day 1',offsetDays:0,owner:'IT',desc:'Set up accounts and hardware ready for day one.',subs:[
         {id:'a',title:'Request accounts, logins and laptop',owner:'IT',email:{subject:'New starter IT setup - {employee}',body:'Hi IT team,\n\nPlease set up the following for our new starter, {employee}:\n\n- Email and system logins\n- Laptop and peripherals\n- Access to relevant tools and shared drives\n\nStart date to follow. Thank you.'}},
         {id:'b',title:'Prepare desk or remote-work kit',owner:'Facilities'}
       ]},
-      {id:4,title:'Background screening',timeframe:'Before day 1',owner:'HR',desc:'Complete references and any role-specific checks.',subs:[
+      {id:4,title:'Background screening',timeframe:'Before day 1',offsetDays:0,owner:'HR',desc:'Complete references and any role-specific checks.',subs:[
         {id:'pre',title:'Initiate pre-screening with provider',owner:'HR',autofill:true},
         {id:'a',title:'Request references',owner:'HR'},
         {id:'b',title:'Complete any role-specific checks (DBS etc.)',owner:'HR'}
       ]},
-      {id:5,title:'First day & induction',timeframe:'Day 1',owner:'Line manager',desc:'Welcome, induction and buddy introductions.',subs:[
+      {id:5,title:'First day & induction',timeframe:'Day 1',offsetDays:0,owner:'Line manager',desc:'Welcome, induction and buddy introductions.',subs:[
         {id:'a',title:'Send welcome email and first-day agenda',owner:'HR',email:{subject:'Welcome to the team, {employee}!',body:'Hi {employee},\n\nA warm welcome to the team! Here is what your first day looks like, and who you will be meeting.\n\nWe are really glad to have you with us.\nThe team'}},
         {id:'b',title:'Assign a buddy and book induction sessions',owner:'Line manager'},
         {id:'c',title:'Issue handbook and key policies',owner:'HR'}
       ]},
-      {id:6,title:'30-day check-in',timeframe:'Week 4',owner:'Line manager',desc:'Probation kick-off and first review.',subs:[
+      {id:6,title:'30-day check-in',timeframe:'Week 4',offsetDays:30,owner:'Line manager',desc:'Probation kick-off and first review.',subs:[
         {id:'a',title:'Book 30-day review',owner:'Line manager'},
         {id:'b',title:'Confirm objectives for probation',owner:'Line manager'}
       ]}
     ]},
     { id:'auto_offboard', label:'Employee offboarding', icon:'👋', cat:'Automation', createdAt:new Date().toISOString(), steps:[
-      {id:1,title:'Acknowledge resignation',timeframe:'Same day',owner:'HR',desc:'Confirm receipt in writing and agree the leaving date.',subs:[
+      {id:1,title:'Acknowledge resignation',timeframe:'Same day',offsetDays:0,owner:'HR',desc:'Confirm receipt in writing and agree the leaving date.',subs:[
         {id:'a',title:'Send resignation acknowledgement',owner:'HR',email:{subject:'Your resignation - {employee}',body:'Hi {employee},\n\nThank you for letting us know. This confirms we have received your resignation and that your last working day will be as agreed. We will be in touch shortly with details of your handover and exit arrangements.\n\nWishing you all the best,\nHR'}},
         {id:'b',title:'Confirm notice period and final working day',owner:'HR'},
         {id:'c',title:'Notify line manager and payroll',owner:'HR'}
       ]},
-      {id:2,title:'Handover & knowledge transfer',timeframe:'During notice',owner:'Line manager',desc:'Capture key knowledge and reassign responsibilities.',subs:[
+      {id:2,title:'Handover & knowledge transfer',timeframe:'During notice',offsetDays:3,owner:'Line manager',desc:'Capture key knowledge and reassign responsibilities.',subs:[
         {id:'a',title:'Agree handover plan and priorities',owner:'Line manager'},
         {id:'b',title:'Document key contacts, passwords and in-flight work',owner:'Line manager'},
         {id:'c',title:'Reassign ongoing responsibilities',owner:'Line manager'}
       ]},
-      {id:3,title:'Exit interview',timeframe:'Final week',owner:'HR',desc:'Understand reasons for leaving and gather feedback.',subs:[
+      {id:3,title:'Exit interview',timeframe:'Final week',offsetDays:10,owner:'HR',desc:'Understand reasons for leaving and gather feedback.',subs:[
         {id:'a',title:'Invite to exit interview',owner:'HR',email:{subject:'Exit interview - {employee}',body:'Hi {employee},\n\nBefore you go we would love to hear your feedback. Could we book a short exit interview in your final week? It is a relaxed, confidential chat and your thoughts genuinely help us improve.\n\nLet me know what works for you.\nHR'}},
         {id:'b',title:'Hold exit interview and record notes',owner:'HR'}
       ]},
-      {id:4,title:'IT & access removal',timeframe:'Last day',owner:'IT',desc:'Revoke access and recover equipment on the final day.',subs:[
+      {id:4,title:'IT & access removal',timeframe:'Last day',offsetDays:14,owner:'IT',desc:'Revoke access and recover equipment on the final day.',subs:[
         {id:'a',title:'Schedule account and access removal',owner:'IT',email:{subject:'Leaver access removal - {employee}',body:'Hi IT team,\n\n{employee} is leaving us. Please schedule the following for their last working day:\n\n- Disable email and system logins\n- Revoke building and remote access\n- Wipe and reclaim devices\n\nLast day to follow. Thank you.'}},
         {id:'b',title:'Recover laptop, phone and any equipment',owner:'IT'},
         {id:'c',title:'Return security passes and keys',owner:'Facilities'}
       ]},
-      {id:5,title:'Final pay & records',timeframe:'Final payroll',owner:'HR',desc:'Settle final pay and close records correctly.',subs:[
+      {id:5,title:'Final pay & records',timeframe:'Final payroll',offsetDays:20,owner:'HR',desc:'Settle final pay and close records correctly.',subs:[
         {id:'a',title:'Confirm final salary, holiday pay and deductions',owner:'HR'},
         {id:'b',title:'Issue P45 and update HR system',owner:'HR'},
         {id:'c',title:'Archive employee file per retention policy',owner:'HR'}
       ]}
     ]},
     { id:'auto_probation', label:'Probation review', icon:'✅', cat:'Automation', createdAt:new Date().toISOString(), steps:[
-      {id:1,title:'Set probation objectives',timeframe:'Week 1',owner:'Line manager',desc:'Agree clear, measurable goals for the probation period.',subs:[
+      {id:1,title:'Set probation objectives',timeframe:'Week 1',offsetDays:1,owner:'Line manager',desc:'Agree clear, measurable goals for the probation period.',subs:[
         {id:'a',title:'Draft objectives and success measures',owner:'Line manager'},
         {id:'b',title:'Share objectives with the new starter',owner:'Line manager',email:{subject:'Your probation objectives - {employee}',body:'Hi {employee},\n\nWelcome again! To help you settle in, here are the objectives we will focus on during your probation. None of this should be a surprise - we will check in regularly and support you throughout.\n\nLet me know if you have any questions.\nYour manager'}}
       ]},
-      {id:2,title:'Mid-probation check-in',timeframe:'Halfway point',owner:'Line manager',desc:'Review progress early enough to course-correct.',subs:[
+      {id:2,title:'Mid-probation check-in',timeframe:'Halfway point',offsetDays:45,owner:'Line manager',desc:'Review progress early enough to course-correct.',subs:[
         {id:'a',title:'Hold informal progress review',owner:'Line manager'},
         {id:'b',title:'Note any support or training needs',owner:'Line manager'}
       ]},
-      {id:3,title:'Final probation review',timeframe:'End of probation',owner:'Line manager',desc:'Formally assess against objectives and decide the outcome.',subs:[
+      {id:3,title:'Final probation review',timeframe:'End of probation',offsetDays:85,owner:'Line manager',desc:'Formally assess against objectives and decide the outcome.',subs:[
         {id:'a',title:'Complete probation review form',owner:'Line manager'},
         {id:'b',title:'Hold review meeting with the employee',owner:'Line manager'},
         {id:'c',title:'Decide outcome: pass, extend or not confirmed',owner:'HR'}
       ]},
-      {id:4,title:'Confirm outcome',timeframe:'Within 5 days',owner:'HR',desc:'Put the decision in writing and update records.',subs:[
+      {id:4,title:'Confirm outcome',timeframe:'Within 5 days',offsetDays:90,owner:'HR',desc:'Put the decision in writing and update records.',subs:[
         {id:'a',title:'Send outcome confirmation letter',owner:'HR',email:{subject:'Probation outcome - {employee}',body:'Hi {employee},\n\nFollowing your probation review, I am pleased to confirm that you have successfully passed your probation period. Thank you for a great start - we are really glad to have you with us.\n\nBest wishes,\nHR'}},
         {id:'b',title:'Update HR system and confirm employment terms',owner:'HR'}
       ]}
