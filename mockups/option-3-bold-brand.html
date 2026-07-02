@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Breeze HR - Home / Today</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --bg:#F5F6FA;
+    --surface:#FFFFFF;
+    --ink:#1E1B33;
+    --ink2:#5B5872;
+    --ink3:#8E8BA3;
+    --line:#ECEBF3;
+    --brand:#5B47E0;
+    --brand-deep:#6D28D9;
+    --indigo:#4F46E5;
+
+    --tint-indigo:#EEEBFF;   --ic-indigo:#5B47E0;
+    --tint-teal:#DBF5F1;     --ic-teal:#0E9384;
+    --tint-amber:#FDF0DA;    --ic-amber:#DC8A0A;
+    --tint-rose:#FCE7EE;     --ic-rose:#E0356E;
+
+    --green:#12B76A; --amber:#F79009; --red:#F04438; --grey:#98A2B3;
+
+    --r-sm:12px; --r-md:16px; --r-lg:20px; --r-xl:24px;
+    --shadow:0 1px 2px rgba(28,25,60,.05), 0 8px 24px rgba(28,25,60,.05);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);}
+  body{font-family:'Sora',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;font-size:14px;line-height:1.5;}
+  svg{display:block}
+  .app{display:grid;grid-template-columns:248px 1fr;min-height:100vh;max-width:1440px;margin:0 auto;}
+
+  /* ───────────── Sidebar ───────────── */
+  .sidebar{
+    background:linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%);
+    color:#fff;padding:24px 16px 20px;display:flex;flex-direction:column;position:sticky;top:0;height:100vh;
+  }
+  .sidebar{overflow-y:auto;scrollbar-width:none;}
+  .sidebar::-webkit-scrollbar{display:none;}
+  .brand{display:flex;align-items:center;gap:10px;padding:4px 8px 0;margin-bottom:24px;}
+  .brand-mark{width:30px;height:30px;border-radius:8px;background:#2C2C2E;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .brand-mark span{font-size:10px;font-weight:700;letter-spacing:.5px;color:#3B82F6;}
+  .brand-name{font-size:16px;font-weight:600;letter-spacing:-.03em;color:#fff;}
+
+  .nav-group{font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,255,255,.42);padding:0 12px;margin:16px 0 7px;}
+  .nav-group:first-of-type{margin-top:2px;}
+  .nav{display:flex;flex-direction:column;gap:2px;}
+  .nav a{display:flex;align-items:center;gap:12px;padding:9px 12px;border-radius:11px;color:rgba(255,255,255,.82);text-decoration:none;font-size:13px;font-weight:500;transition:background .15s;}
+  .nav a:hover{background:rgba(255,255,255,.10);color:#fff;}
+  .nav a.active{background:#fff;color:var(--brand);font-weight:600;box-shadow:0 6px 16px rgba(28,25,60,.18);}
+  .nav a.active svg{stroke:var(--brand);}
+  .nav a svg{width:18px;height:18px;stroke:rgba(255,255,255,.9);flex-shrink:0;}
+  .nav a .nav-txt{flex:1;}
+  .nav-badge{font-size:10.5px;font-weight:700;line-height:1;color:#fff;background:rgba(255,255,255,.22);border-radius:999px;padding:3px 7px;flex-shrink:0;}
+  .nav-foot{margin-top:20px;padding-top:14px;}
+  .nav-foot .div{height:1px;background:rgba(255,255,255,.14);margin:0 8px 12px;}
+  .logout{display:flex;align-items:center;gap:12px;padding:10px 12px;border-radius:12px;color:rgba(255,255,255,.75);text-decoration:none;font-size:13.5px;font-weight:500;}
+  .logout:hover{background:rgba(255,255,255,.10);color:#fff;}
+  .logout svg{width:19px;height:19px;stroke:rgba(255,255,255,.85);}
+
+  /* ───────────── Main ───────────── */
+  .main{padding:22px 30px 40px;}
+  .topbar{display:flex;align-items:center;gap:18px;margin-bottom:24px;}
+  .search{flex:1;max-width:460px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:11px 18px;box-shadow:0 1px 2px rgba(28,25,60,.04);}
+  .search svg{width:18px;height:18px;stroke:var(--ink3);flex-shrink:0;}
+  .search input{border:0;outline:0;font-family:inherit;font-size:13.5px;color:var(--ink);background:transparent;width:100%;}
+  .search input::placeholder{color:var(--ink3);}
+  .topbar-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
+  .icon-btn{position:relative;width:42px;height:42px;border-radius:12px;background:var(--surface);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 2px rgba(28,25,60,.04);}
+  .icon-btn svg{width:19px;height:19px;stroke:var(--ink2);}
+  .icon-btn .dot{position:absolute;top:9px;right:10px;width:7px;height:7px;border-radius:50%;background:var(--red);border:2px solid #fff;}
+  .profile{display:flex;align-items:center;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:999px;padding:5px 14px 5px 5px;cursor:pointer;box-shadow:0 1px 2px rgba(28,25,60,.04);}
+  .avatar{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0;}
+  .face{width:34px;height:34px;border-radius:50%;object-fit:cover;flex-shrink:0;background:#EEE;}
+  .face.sm{width:28px;height:28px;}
+  .tname.sm .face{width:30px;height:30px;}
+  .profile .name{font-size:13.5px;font-weight:600;}
+  .profile svg{width:15px;height:15px;stroke:var(--ink3);}
+
+  /* Hero */
+  .hero{position:relative;overflow:hidden;border-radius:var(--r-xl);padding:30px 34px;margin-bottom:24px;
+    background:linear-gradient(115deg,#4F46E5 0%,#6D28D9 100%);color:#fff;box-shadow:0 12px 30px rgba(91,71,224,.28);}
+  .hero-eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-bottom:10px;}
+  .hero h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;}
+  .hero p{font-size:14.5px;color:rgba(255,255,255,.85);margin-top:10px;max-width:420px;}
+  .hero p b{color:#fff;font-weight:600;}
+  .hero-btn{margin-top:20px;display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--brand);border:0;border-radius:12px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 18px rgba(28,25,60,.18);}
+  .hero-btn svg{width:17px;height:17px;stroke:var(--brand);}
+  .hero-art{position:absolute;inset:0;pointer-events:none;}
+
+  /* Layout grid */
+  .grid{display:grid;grid-template-columns:1fr 336px;gap:24px;align-items:start;}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--shadow);}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 0;}
+  .card-h h3{font-size:15.5px;font-weight:600;letter-spacing:-.01em;}
+  .card-sub{font-size:12px;color:var(--ink3);margin-top:3px;}
+  .card-h a{font-size:12.5px;font-weight:500;color:var(--brand);text-decoration:none;}
+  .link-more{display:inline-flex;align-items:center;gap:4px;}
+  .link-more svg{width:14px;height:14px;stroke:var(--brand);}
+
+  /* Section heading */
+  .sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+  .sec-head h2{font-size:16px;font-weight:600;letter-spacing:-.01em;color:var(--ink);}
+  .sec-sub{font-size:12px;color:var(--ink3);}
+
+  /* Stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:24px;}
+  .spark{width:100%;height:26px;margin-top:12px;}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-md);padding:18px;box-shadow:var(--shadow);}
+  .stat-chip{width:44px;height:44px;border-radius:13px;display:flex;align-items:center;justify-content:center;margin-bottom:16px;}
+  .stat-chip svg{width:22px;height:22px;}
+  .stat-val{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1;}
+  .stat-label{font-size:12.5px;color:var(--ink2);margin-top:7px;}
+  .stat-delta{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;margin-top:11px;padding:3px 8px;border-radius:999px;}
+  .stat-delta svg{width:12px;height:12px;}
+  .up{color:#12854E;background:#E6F7EE;}
+  .down{color:#B42318;background:#FEECEB;}
+  .flat{color:var(--ink2);background:#F2F1F7;}
+
+  /* col-left inner */
+  .col-left{display:flex;flex-direction:column;gap:24px;}
+  .two{display:grid;grid-template-columns:1fr 1fr;gap:24px;}
+  .row-hp{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;}
+  .row-hp > .card{display:flex;flex-direction:column;}
+  .row-hp .proj-list{display:flex;flex-direction:column;justify-content:space-around;flex:1;}
+  .donut-wrap.col{flex-direction:column;gap:18px;align-items:center;padding:18px 22px 24px;flex:1;justify-content:center;}
+  .donut-wrap.col .legend{width:100%;gap:10px;}
+
+  /* Donut */
+  .donut-wrap{padding:22px;display:flex;gap:24px;align-items:center;}
+  .donut{position:relative;width:150px;height:150px;flex-shrink:0;}
+  .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;line-height:1;}
+  .donut-center .pct{font-size:30px;font-weight:700;letter-spacing:-.03em;line-height:1;}
+  .donut-center .cap{font-size:10.5px;color:var(--ink3);margin-top:3px;line-height:1;}
+  .legend{display:flex;flex-direction:column;gap:12px;flex:1;}
+  .leg{display:flex;align-items:center;gap:10px;}
+  .leg .swatch{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+  .leg .lk{font-size:12.5px;color:var(--ink2);}
+  .leg .lv{margin-left:auto;font-size:12.5px;font-weight:600;color:var(--ink);}
+  .leg-note{font-size:11.5px;color:var(--ink3);margin-top:2px;}
+
+  /* Star employee */
+  .emp{display:flex;align-items:center;gap:13px;padding:14px 22px;}
+  .emp + .emp{border-top:1px solid var(--line);}
+  .emp .avatar{width:42px;height:42px;border-radius:12px;font-size:14px;}
+  .emp-name{font-size:14px;font-weight:600;}
+  .emp-role{font-size:12px;color:var(--ink3);margin-top:2px;}
+  .emp-meta{margin-left:auto;text-align:right;}
+  .emp-meta .t{font-size:13.5px;font-weight:700;color:var(--brand);}
+  .emp-meta .s{font-size:11px;color:var(--ink3);margin-top:2px;}
+  .star{width:18px;height:18px;fill:var(--ic-amber);flex-shrink:0;}
+
+  /* Right column */
+  .col-right{display:flex;flex-direction:column;gap:24px;}
+  .cal-head{display:flex;align-items:center;justify-content:space-between;}
+  .cal-nav{display:flex;gap:6px;}
+  .cal-nav button{width:28px;height:28px;border-radius:9px;border:1px solid var(--line);background:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+  .cal-nav svg{width:14px;height:14px;stroke:var(--ink2);}
+  .cal{padding:16px 22px 22px;}
+  .cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:2px;margin-top:12px;}
+  .cal-dow{font-size:10.5px;font-weight:600;color:var(--ink3);text-align:center;padding:6px 0;}
+  .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--ink2);border-radius:10px;position:relative;}
+  .cal-day.muted{color:var(--ink3);opacity:.5;}
+  .cal-day.today{background:var(--brand);color:#fff;font-weight:600;}
+  .cal-day.mark{background:var(--tint-indigo);color:var(--brand);font-weight:600;}
+  .cal-day.mark-teal{background:var(--tint-teal);color:var(--ic-teal);font-weight:600;}
+
+  /* Schedule list */
+  .sched{padding:6px 22px 20px;}
+  .sitem{display:flex;align-items:center;gap:13px;padding:12px 0;}
+  .sitem + .sitem{border-top:1px solid var(--line);}
+  .sdate{width:44px;flex-shrink:0;text-align:center;border-radius:11px;padding:6px 0;}
+  .sdate .d{font-size:16px;font-weight:700;line-height:1;}
+  .sdate .m{font-size:9.5px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;margin-top:2px;}
+  .sitem .st{font-size:13.5px;font-weight:600;}
+  .sitem .ss{font-size:11.5px;color:var(--ink3);margin-top:2px;}
+  .pdot{width:36px;height:36px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .pdot svg{width:18px;height:18px;}
+  .sbody{flex:1;min-width:0;}
+  .sright{flex-shrink:0;font-size:12.5px;font-weight:600;color:var(--ink2);}
+
+  /* Who's online table */
+  .online{margin-top:24px;}
+  table{width:100%;border-collapse:collapse;}
+  thead th{font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--ink3);text-align:left;padding:0 22px 12px;}
+  thead th:first-child{padding-left:22px;}
+  tbody td{padding:13px 22px;border-top:1px solid var(--line);font-size:13.5px;color:var(--ink2);vertical-align:middle;}
+  .tname{display:flex;align-items:center;gap:12px;}
+  .tname .avatar{width:36px;height:36px;font-size:12.5px;}
+  .tname .tn{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .tname .te{font-size:11.5px;color:var(--ink3);}
+  .pill{display:inline-flex;align-items:center;gap:7px;font-size:12px;font-weight:600;padding:5px 11px;border-radius:999px;}
+  .pill.online{color:#12854E;background:#E6F7EE;}
+  .pill.away{color:#B25E09;background:#FDF0DA;}
+  .pill .pd{width:7px;height:7px;border-radius:50%;background:currentColor;}
+
+  /* Projects list */
+  .proj{display:flex;align-items:center;gap:15px;padding:18px 22px;}
+  .proj + .proj{border-top:1px solid var(--line);}
+  .proj-ring{position:relative;width:46px;height:46px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
+  .proj-pct{position:absolute;font-size:11px;font-weight:700;color:var(--ink);letter-spacing:-.02em;}
+  .proj-body{flex:1;min-width:0;}
+  .proj-name{font-size:14px;font-weight:600;color:var(--ink);}
+  .proj-owner{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink3);margin-top:6px;}
+  .proj-right{flex-shrink:0;display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .proj-due{font-size:11.5px;color:var(--ink3);}
+  .rag{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;}
+  .rag::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;}
+  .rag-green{color:#12854E;background:#E6F7EE;}
+  .rag-amber{color:#B25E09;background:#FDF0DA;}
+  .rag-grey{color:#5B5872;background:#F2F1F7;}
+
+  /* Calendar event dot */
+  .cdot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;}
+
+  /* Needs your attention table */
+  .td-task{font-weight:600;color:var(--ink);}
+  .tname.sm{gap:9px;}
+  .tname.sm .avatar{width:30px;height:30px;font-size:11px;}
+  .tname.sm .tn{font-size:13px;font-weight:600;color:var(--ink);}
+  .tpill{display:inline-flex;align-items:center;font-size:11.5px;font-weight:600;padding:4px 10px;border-radius:999px;}
+  .tp-indigo{color:var(--ic-indigo);background:var(--tint-indigo);}
+  .tp-teal{color:var(--ic-teal);background:var(--tint-teal);}
+  .tp-amber{color:#B25E09;background:var(--tint-amber);}
+  .tp-rose{color:var(--ic-rose);background:var(--tint-rose);}
+  .due{font-size:12.5px;font-weight:500;color:var(--ink2);}
+  .due-red{color:#B42318;font-weight:600;}
+  .due-amber{color:#B25E09;font-weight:600;}
+  .td-act{text-align:right;}
+  .act-btn{font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:9px;padding:7px 14px;cursor:pointer;}
+  .act-btn:hover{background:#F5F6FA;}
+  .act-btn.primary{color:#fff;background:var(--brand);border-color:var(--brand);}
+  .act-btn.primary:hover{background:#4F3ACF;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ═══════════ SIDEBAR ═══════════ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark"><span>HR</span></div>
+      <div class="brand-name">Breeze</div>
+    </div>
+
+    <div class="nav-group">Main</div>
+    <nav class="nav">
+      <a href="#" class="active">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5L12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M9.5 21v-6h5v6"/></svg>
+        <span class="nav-txt">Home</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/></svg>
+        <span class="nav-txt">Chat</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/><path d="M9 13h6M9 17h6"/></svg>
+        <span class="nav-txt">Documents</span>
+      </a>
+    </nav>
+
+    <div class="nav-group">People</div>
+    <nav class="nav">
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="15" width="6" height="5" rx="1"/><rect x="15" y="15" width="6" height="5" rx="1"/><path d="M12 8v4M6 15v-3h12v3"/></svg>
+        <span class="nav-txt">Org structure</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3v3M16 3v3"/><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M3.5 10h17"/><path d="M8 14h3M8 17h6"/></svg>
+        <span class="nav-txt">People plan</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5"/><path d="M17 8.5a3 3 0 0 0 0-1M18 14c2.5.6 3.5 2.4 3.5 5"/></svg>
+        <span class="nav-txt">Headcount</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>
+        <span class="nav-txt">Talent</span>
+      </a>
+    </nav>
+
+    <div class="nav-group">Work</div>
+    <nav class="nav">
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9l-2-2M20 17h-9l2 2"/><circle cx="17" cy="7" r="2"/><circle cx="7" cy="17" r="2"/></svg>
+        <span class="nav-txt">Automations</span>
+        <span class="nav-badge">3</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 14 3-9 2 4h4"/></svg>
+        <span class="nav-txt">Trackers</span>
+        <span class="nav-badge">2</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 4v16"/></svg>
+        <span class="nav-txt">Projects</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="5" rx="1.2"/><rect x="15" y="4" width="6" height="5" rx="1.2"/><rect x="9" y="15" width="6" height="5" rx="1.2"/><path d="M6 9v3h12V9M12 12v3"/></svg>
+        <span class="nav-txt">Process maps</span>
+      </a>
+    </nav>
+
+    <div class="nav-group">Library</div>
+    <nav class="nav">
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3.5v5c0 5-3.4 8-8 9.5-4.6-1.5-8-4.5-8-9.5v-5z"/><path d="M9 12l2 2 4-4"/></svg>
+        <span class="nav-txt">Policies</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/></svg>
+        <span class="nav-txt">Presentations</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+        <span class="nav-txt">Meeting notes</span>
+      </a>
+    </nav>
+
+    <div class="nav-group">Insights</div>
+    <nav class="nav">
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9M12 20V4M19 20v-7"/></svg>
+        <span class="nav-txt">Analytics</span>
+      </a>
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><rect x="4" y="8" width="5" height="8" rx="1"/><rect x="15" y="5" width="5" height="11" rx="1"/></svg>
+        <span class="nav-txt">Compare</span>
+      </a>
+    </nav>
+
+    <div class="nav-group">Admin</div>
+    <nav class="nav">
+      <a href="#">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.6 1.6 0 0 0-2.7 1.1V21a2 2 0 1 1-4 0v-.1a1.6 1.6 0 0 0-2.7-1.1l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1A1.6 1.6 0 0 0 4.6 15H4.5a2 2 0 1 1 0-4h.1a1.6 1.6 0 0 0 1.1-2.7l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1A1.6 1.6 0 0 0 11 4.6V4.5a2 2 0 1 1 4 0v.1a1.6 1.6 0 0 0 2.7 1.1l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.6 1.6 0 0 0-1.1 2.7v.1a2 2 0 1 1 0 4z"/></svg>
+        <span class="nav-txt">Settings</span>
+      </a>
+    </nav>
+
+    <div class="nav-foot">
+      <div class="div"></div>
+      <a href="#" class="logout">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5M21 12H9"/></svg>
+        Logout
+      </a>
+    </div>
+  </aside>
+
+  <!-- ═══════════ MAIN ═══════════ -->
+  <main class="main">
+
+    <!-- Top bar -->
+    <div class="topbar">
+      <div class="search">
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>
+        <input placeholder="Looking for something?" value="">
+      </div>
+      <div class="topbar-right">
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+          <span class="dot"></span>
+        </div>
+        <div class="icon-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>
+        </div>
+        <div class="profile">
+          <img class="face" src="https://i.pravatar.cc/72?img=47" alt="Dougie">
+          <span class="name">Dougie</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero">
+      <svg class="hero-art" viewBox="0 0 900 220" preserveAspectRatio="xMaxYMid slice" fill="none">
+        <circle cx="760" cy="40" r="150" fill="#fff" opacity=".06"/>
+        <circle cx="850" cy="180" r="110" fill="#fff" opacity=".08"/>
+        <circle cx="640" cy="200" r="70" fill="#fff" opacity=".05"/>
+        <path d="M700 20 q40 40 0 80 q-40 40 0 80" stroke="#fff" stroke-width="2" opacity=".14"/>
+      </svg>
+      <div class="hero-eyebrow">Tuesday, 1 July 2025</div>
+      <h1>Welcome back, Dougie</h1>
+      <p>You have <b>5 things to review</b> today - holiday requests, two new starters and a payroll approval.</p>
+      <button class="hero-btn">
+        Review now
+        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
+      </button>
+    </section>
+
+    <!-- Section heading -->
+    <div class="sec-head">
+      <h2>Breeze at a glance</h2>
+      <span class="sec-sub">This month</span>
+    </div>
+
+    <!-- Stat cards -->
+    <div class="stats">
+      <div class="stat">
+        <div class="stat-chip" style="background:var(--tint-indigo)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ic-indigo)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h8l4 4v16H6z"/><path d="M14 2v4h4"/><path d="M9 13h6M9 17h4"/></svg>
+        </div>
+        <div class="stat-val">33</div>
+        <div class="stat-label">Docs &amp; letters drafted</div>
+        <span class="stat-delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>18% vs last month</span>
+      </div>
+      <div class="stat">
+        <div class="stat-chip" style="background:var(--tint-teal)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ic-teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>
+        </div>
+        <div class="stat-val">18</div>
+        <div class="stat-label">Meeting notes</div>
+        <span class="stat-delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>9% vs last month</span>
+      </div>
+      <div class="stat">
+        <div class="stat-chip" style="background:var(--tint-rose)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ic-rose)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.4A8 8 0 1 1 21 12z"/><path d="M9 11h6M9 14h4"/></svg>
+        </div>
+        <div class="stat-val">24</div>
+        <div class="stat-label">AI conversations</div>
+        <span class="stat-delta up"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>22% vs last month</span>
+      </div>
+      <div class="stat">
+        <div class="stat-chip" style="background:var(--tint-amber)">
+          <svg viewBox="0 0 24 24" fill="none" stroke="var(--ic-amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2"/><path d="M9 2h6"/></svg>
+        </div>
+        <div class="stat-val">17h</div>
+        <div class="stat-label">Est. time saved</div>
+        <svg class="spark" viewBox="0 0 96 26" fill="none" preserveAspectRatio="none">
+          <path d="M2 22 L18 18 L34 20 L50 12 L66 14 L82 6 L94 4" stroke="#DC8A0A" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 22 L18 18 L34 20 L50 12 L66 14 L82 6 L94 4 L94 26 L2 26 Z" fill="#FDF0DA" opacity=".7"/>
+        </svg>
+      </div>
+    </div>
+
+    <!-- Two column grid -->
+    <div class="grid">
+
+      <!-- LEFT -->
+      <div class="col-left">
+        <!-- Row: Headcount donut + Projects -->
+        <div class="row-hp">
+
+        <!-- Headcount -->
+        <div class="card">
+          <div class="card-h"><h3>Headcount</h3><a href="#" class="link-more">By type</a></div>
+          <div class="donut-wrap col">
+            <div class="donut">
+              <svg viewBox="0 0 42 42" width="138" height="138">
+                <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#F1F0F7" stroke-width="6"/>
+                <!-- Permanent 206 (81%) violet, Contract 34 (13%) teal, Probation 14 (6%) amber -->
+                <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#5B47E0" stroke-width="6" stroke-dasharray="81 19" stroke-dashoffset="25" stroke-linecap="round"/>
+                <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#0E9384" stroke-width="6" stroke-dasharray="13 87" stroke-dashoffset="-56" stroke-linecap="round"/>
+                <circle cx="21" cy="21" r="15.9155" fill="none" stroke="#F79009" stroke-width="6" stroke-dasharray="6 94" stroke-dashoffset="-69" stroke-linecap="round"/>
+              </svg>
+              <div class="donut-center"><div class="pct">254</div><div class="cap">total</div></div>
+            </div>
+            <div class="legend">
+              <div class="leg"><span class="swatch" style="background:#5B47E0"></span><span class="lk">Permanent</span><span class="lv">206</span></div>
+              <div class="leg"><span class="swatch" style="background:#0E9384"></span><span class="lk">Contract</span><span class="lv">34</span></div>
+              <div class="leg"><span class="swatch" style="background:#F79009"></span><span class="lk">Probation</span><span class="lv">14</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Projects -->
+        <div class="card">
+          <div class="card-h"><div><h3>Projects</h3><div class="card-sub">HR initiatives in progress</div></div><a href="#" class="link-more">See all</a></div>
+
+          <div class="proj-list">
+          <div class="proj">
+            <div class="proj-ring">
+              <svg viewBox="0 0 36 36" width="46" height="46">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#F1F0F7" stroke-width="4"/>
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#12B76A" stroke-width="4" stroke-dasharray="62 38" stroke-dashoffset="25" stroke-linecap="round" pathLength="100"/>
+              </svg>
+              <span class="proj-pct">62%</span>
+            </div>
+            <div class="proj-body">
+              <div class="proj-name">HRIS implementation</div>
+              <div class="proj-owner"><img class="face sm" src="https://i.pravatar.cc/72?img=5" alt="Sarah Mitchell">Sarah Mitchell</div>
+            </div>
+            <div class="proj-right"><span class="rag rag-green">On track</span><span class="proj-due">Due 30 Sep</span></div>
+          </div>
+
+          <div class="proj">
+            <div class="proj-ring">
+              <svg viewBox="0 0 36 36" width="46" height="46">
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#F1F0F7" stroke-width="4"/>
+                <circle cx="18" cy="18" r="15.5" fill="none" stroke="#F79009" stroke-width="4" stroke-dasharray="45 55" stroke-dashoffset="25" stroke-linecap="round" pathLength="100"/>
+              </svg>
+              <span class="proj-pct">45%</span>
+            </div>
+            <div class="proj-body">
+              <div class="proj-name">Annual pay &amp; bonus review</div>
+              <div class="proj-owner"><img class="face sm" src="https://i.pravatar.cc/72?img=12" alt="James Okafor">James Okafor</div>
+            </div>
+            <div class="proj-right"><span class="rag rag-amber">At risk</span><span class="proj-due">Due 22 Aug</span></div>
+          </div>
+          </div>
+        </div>
+        </div><!-- /row-hp -->
+
+        <!-- Needs your attention -->
+        <div class="card online">
+          <div class="card-h"><h3>Needs your attention</h3><a href="#" class="link-more">View queue<svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></a></div>
+          <div style="height:14px"></div>
+          <table>
+            <thead><tr><th>Task</th><th>Employee</th><th>Type</th><th>Due</th><th></th></tr></thead>
+            <tbody>
+              <tr>
+                <td class="td-task">Right to work check</td>
+                <td><div class="tname sm"><img class="face" src="https://i.pravatar.cc/72?img=15" alt="James Chen"><span class="tn">James Chen</span></div></td>
+                <td><span class="tpill tp-indigo">Onboarding</span></td>
+                <td><span class="due due-red">Due today</span></td>
+                <td class="td-act"><button class="act-btn primary">Chase</button></td>
+              </tr>
+              <tr>
+                <td class="td-task">Confirm return date</td>
+                <td><div class="tname sm"><img class="face" src="https://i.pravatar.cc/72?img=5" alt="Sarah Mitchell"><span class="tn">Sarah Mitchell</span></div></td>
+                <td><span class="tpill tp-teal">Maternity</span></td>
+                <td><span class="due">12 Aug</span></td>
+                <td class="td-act"><button class="act-btn">Confirm</button></td>
+              </tr>
+              <tr>
+                <td class="td-task">Send contract</td>
+                <td><div class="tname sm"><img class="face" src="https://i.pravatar.cc/72?img=23" alt="Priya Nair"><span class="tn">Priya Nair</span></div></td>
+                <td><span class="tpill tp-amber">New hire</span></td>
+                <td><span class="due due-amber">Tomorrow</span></td>
+                <td class="td-act"><button class="act-btn">Send</button></td>
+              </tr>
+              <tr>
+                <td class="td-task">Probation review</td>
+                <td><div class="tname sm"><img class="face" src="https://i.pravatar.cc/72?img=31" alt="Alexander Stan"><span class="tn">Alexander Stan</span></div></td>
+                <td><span class="tpill tp-rose">Review</span></td>
+                <td><span class="due">In 3 days</span></td>
+                <td class="td-act"><button class="act-btn">Schedule</button></td>
+              </tr>
+            </tbody>
+          </table>
+          <div style="height:6px"></div>
+        </div>
+      </div>
+
+      <!-- RIGHT -->
+      <div class="col-right">
+        <!-- Calendar -->
+        <div class="card cal">
+          <div class="cal-head">
+            <h3 style="font-size:15.5px;font-weight:600">Schedule</h3>
+            <div class="cal-nav">
+              <button><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
+              <button><svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
+            </div>
+          </div>
+          <div style="font-size:12.5px;color:var(--ink3);margin-top:4px">July 2025</div>
+          <div class="cal-grid">
+            <div class="cal-dow">M</div><div class="cal-dow">T</div><div class="cal-dow">W</div><div class="cal-dow">T</div><div class="cal-dow">F</div><div class="cal-dow">S</div><div class="cal-dow">S</div>
+            <!-- July 2025 starts Tue. Event dots: 4 Jul (indigo/start), 15 Jul (teal/probation), 18 Jul (amber/anniversary) -->
+            <div class="cal-day muted">30</div>
+            <div class="cal-day today">1</div><div class="cal-day">2</div><div class="cal-day">3</div>
+            <div class="cal-day">4<span class="cdot" style="background:var(--ic-indigo)"></span></div><div class="cal-day muted">5</div><div class="cal-day muted">6</div>
+            <div class="cal-day">7</div><div class="cal-day">8</div><div class="cal-day">9</div><div class="cal-day">10</div><div class="cal-day">11</div><div class="cal-day muted">12</div><div class="cal-day muted">13</div>
+            <div class="cal-day">14</div><div class="cal-day">15<span class="cdot" style="background:var(--ic-teal)"></span></div><div class="cal-day">16</div><div class="cal-day">17</div><div class="cal-day">18<span class="cdot" style="background:var(--ic-amber)"></span></div><div class="cal-day muted">19</div><div class="cal-day muted">20</div>
+            <div class="cal-day">21</div><div class="cal-day">22</div><div class="cal-day">23</div><div class="cal-day">24</div><div class="cal-day">25</div><div class="cal-day muted">26</div><div class="cal-day muted">27</div>
+            <div class="cal-day">28</div><div class="cal-day">29</div><div class="cal-day">30</div><div class="cal-day">31</div><div class="cal-day muted">1</div><div class="cal-day muted">2</div><div class="cal-day muted">3</div>
+          </div>
+        </div>
+
+        <!-- People plan -->
+        <div class="card">
+          <div class="card-h"><h3>People plan</h3><a href="#" class="link-more">See all</a></div>
+          <div class="sched">
+            <div class="sitem">
+              <span class="pdot" style="background:var(--tint-indigo);color:var(--ic-indigo)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="3.5"/><path d="M5 20c0-3.5 3-5.5 7-5.5s7 2 7 5.5"/><path d="M18 4v4M20 6h-4"/></svg>
+              </span>
+              <div class="sbody"><div class="st">James Chen starts</div><div class="ss">Onboarding</div></div>
+              <div class="sright">4 Jul</div>
+            </div>
+            <div class="sitem">
+              <span class="pdot" style="background:var(--tint-teal);color:var(--ic-teal)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12l5 5L20 6"/></svg>
+              </span>
+              <div class="sbody"><div class="st">Alexander Stan</div><div class="ss">Probation ends</div></div>
+              <div class="sright">15 Jul</div>
+            </div>
+            <div class="sitem">
+              <span class="pdot" style="background:var(--tint-amber);color:var(--ic-amber)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 15a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/><path d="M9.5 14.5L8 22l4-2.2L16 22l-1.5-7.5"/></svg>
+              </span>
+              <div class="sbody"><div class="st">Priya Nair</div><div class="ss">2 year anniversary</div></div>
+              <div class="sright">18 Jul</div>
+            </div>
+            <div class="sitem">
+              <span class="pdot" style="background:var(--tint-rose);color:var(--ic-rose)">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 12v8a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1v-8"/><path d="M3 8h18v4H3z"/><path d="M12 21V8M12 8S9.5 4 7.5 5.5 8 8 12 8s4.5-1 2.5-2.5S12 8 12 8z"/></svg>
+              </span>
+              <div class="sbody"><div class="st">Sarah Mitchell returns</div><div class="ss">Maternity leave</div></div>
+              <div class="sright">12 Aug</div>
+            </div>
+            <div class="sitem">
+              <span class="pdot" style="background:#EEF0F4;color:#667085">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v2M18.4 5.6l-1.4 1.4M21 12h-2M5.6 5.6l1.4 1.4M5 12H3"/><circle cx="12" cy="13" r="4"/></svg>
+              </span>
+              <div class="sbody"><div class="st">Summer bank holiday</div><div class="ss">Company holiday</div></div>
+              <div class="sright">25 Aug</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

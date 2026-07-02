@@ -1,7 +1,7 @@
 const { createClient } = require('@supabase/supabase-js');
 
 const sb = createClient(
-  process.env.SUPABASE_URL || 'https://uxwmlxbsqhtwexpfcemu.supabase.co',
+  process.env.SUPABASE_URL,
   process.env.SUPABASE_SERVICE_KEY
 );
 
@@ -43,8 +43,16 @@ module.exports = async function handler(req, res) {
     else if (bodyLower.match(/resign|leav(ing|e the company)|notice period/)) type = 'Offboarding';
     else if (bodyLower.match(/redundan|restructur|at risk/)) type = 'Offboarding';
 
+    // Which tenant inbound mail belongs to must be configured explicitly - never a
+    // silent shared default, or one customer's inbound email lands in another's data.
+    const inboundCompanyId = process.env.INBOUND_DEFAULT_COMPANY_ID;
+    if (!inboundCompanyId) {
+      console.error('INBOUND_DEFAULT_COMPANY_ID not set - refusing to route inbound email');
+      return res.status(500).json({ error: 'Inbound email routing not configured' });
+    }
+
     const { data: message, error } = await sb.from('messages').insert({
-      company_id: 'a1b2c3d4-0000-0000-0000-000000000001',
+      company_id: inboundCompanyId,
       from_name: fromName,
       from_email: fromEmail,
       source: 'email',

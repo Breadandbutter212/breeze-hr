@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en-GB">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard background mock-up | Breeze</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap">
+<style>
+  :root{
+    --bg:#FBFAF8; --surface:#FFFFFF; --surface2:#F4F2EE;
+    --border:rgba(0,0,0,0.08); --border2:rgba(0,0,0,0.14);
+    --ink:#2E3D52; --ink2:#6B6F76; --ink3:#9AA0A6;
+    --accent:#D85A30; --accent-bg:#FAECE7; --accent-mid:#EBB9A4;
+    --green:#15803D; --amber:#E0A800; --red:#B42318;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--ink);-webkit-font-smoothing:antialiased;}
+
+  /* ── background variants ── */
+  .grey  { background:radial-gradient(120% 80% at 50% -8%, #FBFAF6 0%, #F3F2EC 55%, #EEF0E9 100%); }
+  .blue  { background:radial-gradient(120% 80% at 50% -8%, #F6FAFF 0%, #EAF2FC 55%, #DFEAF8 100%); }
+
+  /* ── toggle bar (not part of the app, just for this preview) ── */
+  .flagbar{position:sticky;top:0;z-index:50;background:#16284A;color:#fff;display:flex;align-items:center;justify-content:center;gap:14px;padding:9px;font-size:12.5px;font-weight:600;letter-spacing:.01em;}
+  .flagbar .seg{display:inline-flex;background:rgba(255,255,255,0.12);border-radius:9px;padding:3px;gap:3px;}
+  .flagbar button{border:none;background:none;color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:5px 14px;border-radius:7px;cursor:pointer;opacity:.7;}
+  .flagbar button.on{background:#fff;color:#16284A;opacity:1;}
+  .flagbar .muted{opacity:.55;font-weight:500;}
+
+  .home{max-width:1120px;margin:0 auto;padding:40px 28px 70px;}
+
+  /* head */
+  .home-head{display:flex;align-items:flex-start;justify-content:space-between;gap:26px;flex-wrap:wrap;}
+  .home-greet-eyebrow{font-size:11px;font-weight:600;letter-spacing:.16em;text-transform:uppercase;color:var(--ink3);}
+  .home-greet{font-size:38px;font-weight:700;letter-spacing:-0.025em;color:var(--ink);margin-top:9px;line-height:1.08;}
+  .home-sub{font-size:14px;color:var(--ink2);margin-top:10px;max-width:600px;line-height:1.55;}
+  .home-sub b{color:var(--ink);font-weight:700;}
+
+  .home-week{flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:16px;padding:12px 16px 10px;min-width:238px;box-shadow:0 1px 2px rgba(0,0,0,0.03);}
+  .home-wk-h{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:9px;}
+  .home-wk-t{font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;}
+  .home-wk-tot{font-size:12px;font-weight:700;color:var(--ink);}
+  .home-wk-bars{display:flex;align-items:flex-end;gap:7px;height:46px;}
+  .home-wk-bar{flex:1;background:var(--accent);border-radius:4px 4px 2px 2px;opacity:.82;min-height:4px;}
+  .home-wk-bar.today{opacity:1;box-shadow:0 0 0 3px var(--accent-bg);}
+  .home-wk-days{display:flex;gap:7px;margin-top:6px;}
+  .home-wk-day{flex:1;text-align:center;font-size:9px;color:var(--ink3);}
+  .home-wk-day.today{color:var(--accent);font-weight:700;}
+
+  /* main grid */
+  .home-main{display:grid;grid-template-columns:1.05fr 1fr;gap:20px;align-items:start;margin-top:30px;}
+  .home-hero{position:relative;display:flex;flex-direction:column;align-items:stretch;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:0 1px 2px rgba(0,0,0,0.03);}
+  .home-ring{position:relative;width:240px;height:240px;margin:4px auto 12px;}
+  .home-ring svg{display:block;}
+  .home-ring-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+  .home-ring-num{font-size:56px;font-weight:700;letter-spacing:-0.05em;color:var(--ink);line-height:1;}
+  .home-ring-label{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.13em;color:var(--ink2);margin-top:9px;}
+  .home-ring-cap{font-size:11px;color:var(--ink3);margin-top:4px;}
+  .home-legend{display:flex;flex-direction:column;gap:2px;}
+  .leg{display:flex;align-items:center;gap:11px;padding:9px 8px;border-radius:11px;cursor:pointer;}
+  .leg:hover{background:var(--surface2);}
+  .leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+  .leg-name{font-size:13px;font-weight:600;color:var(--ink);}
+  .leg-desc{font-size:11px;color:var(--ink3);margin-top:1px;}
+  .leg-flag{margin-left:auto;font-size:10px;font-weight:700;color:var(--red);background:#FCECEC;padding:2px 8px;border-radius:20px;}
+  .leg-num{margin-left:auto;font-size:15px;font-weight:700;color:var(--ink);}
+
+  .home-side{display:flex;flex-direction:column;gap:20px;min-width:0;}
+  .home-roi{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  .home-roi-tile{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px 16px;}
+  .home-roi-tile.accent{background:linear-gradient(135deg,#0A1628,#143058);border-color:transparent;}
+  .home-roi-val{font-size:24px;font-weight:700;letter-spacing:-0.02em;color:var(--ink);line-height:1.1;}
+  .home-roi-label{font-size:11px;color:var(--ink3);margin-top:4px;font-weight:500;}
+  .home-roi-tile.accent .home-roi-val{color:#fff;}
+  .home-roi-tile.accent .home-roi-label{color:rgba(255,255,255,0.6);}
+  .home-roi-delta{margin-top:10px;font-size:11px;font-weight:600;color:#1F8A5B;}
+
+  /* bento */
+  .home-bento{display:grid;grid-template-columns:repeat(3,1fr);gap:18px;margin-top:20px;}
+  .home-card{background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:22px;box-shadow:0 1px 2px rgba(0,0,0,0.03);}
+  .home-card-eyebrow{display:flex;align-items:center;gap:8px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--ink3);margin-bottom:14px;}
+  .home-card h3{font-size:15px;font-weight:700;color:var(--ink);letter-spacing:-0.01em;}
+  .home-card p{font-size:12.5px;color:var(--ink2);margin-top:6px;line-height:1.55;}
+  .home-card .row{display:flex;align-items:center;gap:9px;padding:9px 0;border-top:1px solid var(--border);font-size:12.5px;color:var(--ink);}
+  .home-card .row:first-of-type{border-top:none;}
+  .home-card .row .ico{width:26px;height:26px;border-radius:8px;background:var(--accent-bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;}
+  @media(max-width:900px){.home-main{grid-template-columns:1fr;}.home-bento{grid-template-columns:1fr;}}
+</style>
+</head>
+<body>
+<div class="flagbar">
+  Dashboard background preview
+  <span class="seg">
+    <button id="btnGrey" class="on" onclick="setBg('grey')">Current (warm grey)</button>
+    <button id="btnBlue" onclick="setBg('blue')">Light blue</button>
+  </span>
+  <span class="muted">concept preview - not live</span>
+</div>
+
+<div class="home grey" id="home">
+  <div class="home-head">
+    <div>
+      <div class="home-greet-eyebrow">Today · Friday, 19 June</div>
+      <div class="home-greet">Good afternoon, Dougie.</div>
+      <div class="home-sub"><b>2</b> overdue tasks and <b>3</b> events in the next 60 days need a look.</div>
+    </div>
+    <div class="home-week">
+      <div class="home-wk-h"><span class="home-wk-t">Activity · this week</span><span class="home-wk-tot">41 actions</span></div>
+      <div class="home-wk-bars">
+        <div class="home-wk-bar" style="height:22px"></div>
+        <div class="home-wk-bar" style="height:34px"></div>
+        <div class="home-wk-bar" style="height:18px"></div>
+        <div class="home-wk-bar today" style="height:44px"></div>
+        <div class="home-wk-bar" style="height:28px"></div>
+        <div class="home-wk-bar" style="height:10px"></div>
+        <div class="home-wk-bar" style="height:6px"></div>
+      </div>
+      <div class="home-wk-days"><div class="home-wk-day">M</div><div class="home-wk-day">T</div><div class="home-wk-day">W</div><div class="home-wk-day today">T</div><div class="home-wk-day">F</div><div class="home-wk-day">S</div><div class="home-wk-day">S</div></div>
+    </div>
+  </div>
+
+  <div class="home-main">
+    <div class="home-hero">
+      <div class="home-ring" id="ring"></div>
+      <div class="home-legend" id="legend"></div>
+    </div>
+    <div class="home-side">
+      <div class="home-roi">
+        <div class="home-roi-tile accent"><div class="home-roi-val">18.5 hrs</div><div class="home-roi-label">Time saved this month</div><div class="home-roi-delta" style="color:rgba(255,255,255,0.75)">▲ vs last month</div></div>
+        <div class="home-roi-tile"><div class="home-roi-val">34</div><div class="home-roi-label">Documents created</div><div class="home-roi-delta">▲ 12 this week</div></div>
+        <div class="home-roi-tile"><div class="home-roi-val">7</div><div class="home-roi-label">Meeting notes</div></div>
+        <div class="home-roi-tile"><div class="home-roi-val">126</div><div class="home-roi-label">Saved chats</div></div>
+      </div>
+      <div class="home-card">
+        <div class="home-card-eyebrow">📅 Coming up</div>
+        <div class="row"><span class="ico">🤱</span>Amelia Hart · maternity leave starts <b style="margin-left:auto;color:var(--ink3);font-weight:600">in 9 days</b></div>
+        <div class="row"><span class="ico">📄</span>3 fixed-term contracts expiring <b style="margin-left:auto;color:var(--ink3);font-weight:600">this quarter</b></div>
+        <div class="row"><span class="ico">⭐</span>Q3 performance reviews open <b style="margin-left:auto;color:var(--ink3);font-weight:600">1 July</b></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="home-bento">
+    <div class="home-card">
+      <div class="home-card-eyebrow">💬 Pick up where you left off</div>
+      <h3>Maternity leave query</h3>
+      <p>Confirming KIT days and return-to-work arrangements for Amelia.</p>
+    </div>
+    <div class="home-card">
+      <div class="home-card-eyebrow">📋 Trackers</div>
+      <h3>5 open cases</h3>
+      <p>2 in disciplinary, 2 family leave and 1 right-to-work check in progress.</p>
+    </div>
+    <div class="home-card">
+      <div class="home-card-eyebrow">📊 Projects</div>
+      <h3>3 active · 2 overdue</h3>
+      <p>Engagement survey rollout is behind on two milestones.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+  function setBg(mode){
+    document.getElementById('home').className = 'home ' + mode;
+    document.getElementById('btnGrey').classList.toggle('on', mode==='grey');
+    document.getElementById('btnBlue').classList.toggle('on', mode==='blue');
+  }
+
+  // Paint the signature segmented ring (same approach as the live dashboard)
+  (function(){
+    const segs=[
+      {name:'People plan', color:'#D85A30', count:3, desc:'3 events in the next 60 days'},
+      {name:'Projects',    color:'#E0A800', count:3, desc:'3 active', flag:'2 overdue'},
+      {name:'Open roles',  color:'#1D9E75', count:2, desc:'2 roles being hired', flag:'1 urgent'},
+      {name:'Open cases',  color:'#3B82F6', count:5, desc:'5 cases in progress'},
+    ];
+    const total=segs.reduce((s,x)=>s+x.count,0);
+    const r=84,c=120,C=2*Math.PI*r;
+    let svg=`<svg width="240" height="240" viewBox="0 0 240 240"><circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="rgba(0,0,0,0.055)" stroke-width="17"/>`;
+    let cum=0;
+    segs.forEach(x=>{ const frac=x.count/total; let len=frac*C-22; if(len<1)len=1;
+      svg+=`<circle cx="${c}" cy="${c}" r="${r}" fill="none" stroke="${x.color}" stroke-width="17" stroke-linecap="round" stroke-dasharray="${len} ${C-len}" stroke-dashoffset="${-cum}" transform="rotate(-90 ${c} ${c})"/>`;
+      cum+=frac*C; });
+    svg+=`</svg>`;
+    document.getElementById('ring').innerHTML = svg +
+      `<div class="home-ring-center"><div class="home-ring-num">${total}</div><div class="home-ring-label">active</div><div class="home-ring-cap">items across your workspace</div></div>`;
+    document.getElementById('legend').innerHTML = segs.map(x=>`
+      <div class="leg"><span class="leg-dot" style="background:${x.color}"></span>
+        <div><div class="leg-name">${x.name}</div><div class="leg-desc">${x.desc}</div></div>
+        ${x.flag?`<span class="leg-flag">${x.flag}</span>`:`<span class="leg-num">${x.count}</span>`}
+      </div>`).join('');
+  })();
+</script>
+</body>
+</html>

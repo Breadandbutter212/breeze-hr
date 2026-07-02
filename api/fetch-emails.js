@@ -63,8 +63,7 @@ export default async function handler(req, res) {
     let data;
     try { data = JSON.parse(raw); } catch(e) { data = { raw }; }
     if (!r.ok) return res.status(r.status).json({ error: raw.substring(0, 600) });
-    // Include raw for debugging so frontend can log the structure
-    return res.status(200).json({ data, _raw: raw.substring(0, 2000) });
+    return res.status(200).json({ data });
   } catch(e) {
     return res.status(500).json({ error: e.message });
   }

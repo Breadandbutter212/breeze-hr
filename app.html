@@ -4406,7 +4406,7 @@ async function downloadSavedMeeting(id, label) {
   const { data } = await sb.from('policies').select('content').eq('id', id).single();
   if (!data?.content) return;
   const res = await fetch('/api/generate-doc', {
-    method: 'POST', headers: {'Content-Type':'application/json'},
+    method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},
     body: JSON.stringify({ plainText: data.content, templateName: label })
   });
   const blob = await res.blob();
@@ -5397,7 +5397,7 @@ async function downloadAsDocx() {
     const text = htmlToMarkdownText(docPage ? docPage.innerHTML : (body ? body.innerHTML : ''));
     const res=await fetch('/api/generate-doc',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},
       body:JSON.stringify({
         templateBase64: null,
         fields: genVals,
@@ -5626,7 +5626,7 @@ async function downloadDocx() {
       const dpBody=document.getElementById('dpBody');
       payload={plainText:dpBody?htmlToMarkdownText(dpBody.innerHTML):'',templateName:selTmpl.name};
     }
-    const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)});
+    const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},body:JSON.stringify(payload)});
     if(!res.ok){const err=await res.json();showBreezeToast('Error: '+err.error);btn.textContent='⬇ Word';btn.disabled=false;return;}
     const blob=await res.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;
     // Server sends .doc for plainText path, .docx for template path
@@ -6133,7 +6133,7 @@ async function downloadPolicyFile(id, name) {
   }
   const res = await fetch('/api/generate-doc', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer '+(await getAuthToken()) },
     body: JSON.stringify({ plainText: policyText(data.content), templateName: name })
   });
   if (res.ok) {
@@ -7694,7 +7694,7 @@ async function runBulkGenerate() {
           fields[k]=v; fields[k.toLowerCase().replace(/\s+/g,'_')]=v;
         });
         const res = await fetch('/api/generate-doc', {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},
           body: JSON.stringify({ templateBase64: t.base64, fields, templateName: `${t.name} - ${name}` })
         });
         if (res.ok) {
@@ -7722,7 +7722,7 @@ async function runBulkGenerate() {
         document.body.removeChild(body);
         selTmpl = savedTmpl; genVals = savedVals; genStep = savedStep;
         const res = await fetch('/api/generate-doc', {
-          method:'POST', headers:{'Content-Type':'application/json'},
+          method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},
           body: JSON.stringify({ plainText: text, templateName: `${t.name} - ${name}` })
         });
         if (res.ok) {
@@ -8513,7 +8513,7 @@ async function downloadArtifact() {
     const titledSrc = (currentArtifact.type === 'Document' && !currentArtifact._edited) ? docBodyWithTitle(currentArtifact, src) : src;
     const res = await fetch('/api/generate-doc', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {'Content-Type': 'application/json', 'Authorization': 'Bearer '+(await getAuthToken())},
       body: JSON.stringify({ plainText: mdToDocSource(titledSrc), templateName: fileName, accent: currentArtifact.accent || null })
     });
     if (res.ok) {
@@ -9297,7 +9297,6 @@ async function loadEmailInbox(pageToken = null) {
       list.innerHTML = `<div style="padding:32px 20px;text-align:center;color:var(--red);font-size:12px;">Could not load emails.<br><span style="color:var(--ink3);font-size:11px;">${escapeHtml(data?.error||res.status)}</span></div>`;
       return;
     }
-    if (provider === 'outlook') console.log('[Outlook raw]', JSON.stringify(data).substring(0, 3000));
     const newEmails = parseEmailList(data, provider);
     _emailNextPageToken = data?.data?.data?.nextPageToken || data?.data?.nextPageToken || null;
     if (pageToken) {
@@ -18014,7 +18013,7 @@ async function wfDocDownload(){
   const fname=(title||'document').replace(/[^a-z0-9]+/gi,'_').replace(/^_+|_+$/g,'')||'document';
   try{
     if(typeof roiAddDoc==='function') roiAddDoc(1);
-    const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({templateBase64:null,fields:{},plainText:text,templateName:title})});
+    const res=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},body:JSON.stringify({templateBase64:null,fields:{},plainText:text,templateName:title})});
     if(!res.ok){ const blob=new Blob([text],{type:'text/plain'}); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=fname+'.txt';a.click();URL.revokeObjectURL(url); }
     else { const blob=await res.blob(); const url=URL.createObjectURL(blob); const a=document.createElement('a');a.href=url;a.download=fname+'.docx';a.click();URL.revokeObjectURL(url); }
     showBreezeToast('Document downloaded');

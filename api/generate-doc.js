@@ -268,6 +268,9 @@ function textToDocxBuffer(text, theme = { accent: '1F3864', tint: 'EAF1F8' }) {
 export default async function handler(req, res) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
+  // Require an authenticated caller for every path (doc render, template fill and transcribe).
+  if (!(await verifyAuth(req))) return res.status(401).json({ error: 'Unauthorized' });
+
   // Transcription action — uses Groq Whisper (server key), so require an authenticated caller
   if (req.body?.action === 'transcribe') {
     if (!(await verifyAuth(req))) return res.status(401).json({ error: 'Unauthorized' });
