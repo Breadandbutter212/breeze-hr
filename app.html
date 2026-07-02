@@ -16125,16 +16125,21 @@ function ocFit() {
   if(!_ocTree) return;
   const vp=document.getElementById('ocVP'); if(!vp) return;
   const r=vp.getBoundingClientRect();
+  if(!r.width || !r.height) return;                 // viewport not laid out yet - avoid a NaN transform
   const all=[]; const col=n=>{all.push(n);(n.children||[]).forEach(col);}; col(_ocTree);
   let minX=Infinity,minY=Infinity,maxX=-Infinity,maxY=-Infinity;
   all.forEach(n=>{const p=ocPos(n);minX=Math.min(minX,p.x);minY=Math.min(minY,p.y);maxX=Math.max(maxX,p.x+OC_W);maxY=Math.max(maxY,p.y+OC_H);});
-  const pad=48,pw=maxX-minX+pad*2,ph=maxY-minY+pad*2;
-  // Never shrink below 0.28 - nodes stay legible; prefer fitting height over width for tall trees
-  const k=Math.max(0.28, Math.min(0.95, Math.min(r.width/pw, r.height/ph)));
+  if(!isFinite(minX)||!isFinite(minY)||maxX<=minX||maxY<=minY) return;
+  const pad=40, w0=maxX-minX, h0=maxY-minY;
+  // Fit the WHOLE tree. Allow shrinking to an overview for very wide trees (down to
+  // 0.12) - the old 0.28 floor was larger than the fit scale, so wide trees ended
+  // up positioned off-screen and Fit looked like it did nothing.
+  const k=Math.max(0.12, Math.min(0.95, Math.min((r.width-pad*2)/w0, (r.height-pad*2)/h0)));
   _ocT.k=k;
-  // Centre horizontally; anchor top of tree 60px below toolbar
-  _ocT.x=(r.width-pw*k)/2-minX*k+pad*k;
-  _ocT.y=60-minY*k;
+  const cw=w0*k, ch=h0*k;
+  // Centre when it fits the viewport; otherwise anchor top-left so the tree is never off-screen.
+  _ocT.x = cw<=r.width  ? (r.width-cw)/2 - minX*k : pad - minX*k;
+  _ocT.y = ch<=r.height ? Math.max(60,(r.height-ch)/2) - minY*k : 60 - minY*k;
   ocApplyT();
 }
 
