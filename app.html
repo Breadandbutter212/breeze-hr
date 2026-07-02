@@ -8604,7 +8604,9 @@ async function downloadArtifactPremium() {
       body: JSON.stringify({ premium: true, markdown: titledSrc, plainText: mdToDocSource(titledSrc), templateName: fileName, accent: currentArtifact.accent || null })
     });
     const status = res.headers.get('X-Premium-Status') || '';
-    console.log('[premium] HTTP', res.status, '| X-Premium-Status:', status || '(none)');
+    const cost = res.headers.get('X-Premium-Cost');
+    const costStr = cost ? `$${Number(cost).toFixed(2)}` : null;
+    console.log('[premium] HTTP', res.status, '| X-Premium-Status:', status || '(none)', '| cost:', costStr || '(none)');
     if (res.ok) {
       const blob = await res.blob();
       console.log('[premium] downloaded', blob.size, 'bytes');
@@ -8612,18 +8614,20 @@ async function downloadArtifactPremium() {
       const a = document.createElement('a'); a.href = url; a.download = `${fileName}.docx`; a.click();
       URL.revokeObjectURL(url);
       auditLog('document.generate', { type: 'docx-premium' });
-      // TEMP DIAGNOSTIC: unmissable so we can see what happened on this run.
-      alert(status.startsWith('fallback')
-        ? ('Downloaded the STANDARD version - premium fell back.\nReason: ' + status.replace('fallback:', '').trim())
-        : ('Premium document ready (' + blob.size + ' bytes). Check your Downloads.'));
+      const toast = status.startsWith('fallback')
+        ? ('Premium unavailable - downloaded standard version. ' + status.replace('fallback:', '').trim())
+        : (`Premium document ready${costStr ? ` - cost ${costStr}` : ''}.`);
+      if (typeof showBreezeToast === 'function') showBreezeToast(toast); else alert(toast);
     } else {
       const t = await res.text();
       console.error('[premium] failed', res.status, t.slice(0, 300));
-      alert('Premium request failed - HTTP ' + res.status + '\n' + t.slice(0, 300));
+      const msg = 'Premium failed (HTTP ' + res.status + '). Use the standard .docx button.';
+      if (typeof showBreezeToast === 'function') showBreezeToast(msg); else alert(msg);
     }
   } catch (e) {
     console.error('[premium] error', e);
-    alert('Premium request errored before a response:\n' + (e && e.message));
+    const msg = 'Premium error: ' + (e && e.message);
+    if (typeof showBreezeToast === 'function') showBreezeToast(msg); else alert(msg);
   }
   if (pbtn) { pbtn.textContent = label || '✨ Premium'; pbtn.disabled = false; }
 }

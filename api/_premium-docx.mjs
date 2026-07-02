@@ -87,6 +87,7 @@ export async function generatePremiumDocx(sourceText, accent) {
   };
 
   let data;
+  let callCost = 0;   // cost of THIS document build (across its turns)
   for (let turn = 0; turn < MAX_TURNS; turn++) {
     const r = await withDeadline((signal) => fetch(`${API}/messages`, {
       method: 'POST', headers, signal,
@@ -98,7 +99,8 @@ export async function generatePremiumDocx(sourceText, accent) {
     const txt = await r.text();
     if (!r.ok) throw new Error(`messages ${r.status}: ${txt.slice(0, 180)}`);
     data = JSON.parse(txt);
-    _spend += costOf(data.usage);
+    const c = costOf(data.usage);
+    _spend += c; callCost += c;
     if (data.stop_reason === 'pause_turn') { messages.push({ role: 'assistant', content: data.content }); continue; }
     break;
   }
@@ -118,5 +120,5 @@ export async function generatePremiumDocx(sourceText, accent) {
     headers: { 'x-api-key': key, 'anthropic-version': '2023-06-01', 'anthropic-beta': 'files-api-2025-04-14' },
   });
   if (!dl.ok) throw new Error(`download ${dl.status}`);
-  return Buffer.from(await dl.arrayBuffer());
+  return { buffer: Buffer.from(await dl.arrayBuffer()), cost: callCost };
 }
