@@ -15508,25 +15508,40 @@ function ocBuildDeptTree(nodes) {
   nodes.forEach(n => { if (!depts[n.dept]) depts[n.dept]=[]; depts[n.dept].push(n); });
   const coName = currentProfile?.company_name || 'Organisation';
   const entries = Object.entries(depts).sort((a,b) => b[1].length - a[1].length);
-  if (entries.length === 1) return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:entries[0][1] };
+  // Build each department's INTERNAL reporting hierarchy from fresh clones, so a
+  // person appears once - either as a department-top or nested under their manager,
+  // never both. Cross-department manager links are cut inside a department.
+  const buildDeptChildren = (ns) => {
+    const idsInDept = new Set(ns.map(n => n.id));
+    const clones = {};
+    ns.forEach(n => { clones[n.id] = { ...n, children: [] }; });
+    const tops = [];
+    ns.forEach(n => {
+      const mgr = (n.managerId && idsInDept.has(n.managerId)) ? clones[n.managerId] : null;
+      if (mgr) mgr.children.push(clones[n.id]); else tops.push(clones[n.id]);
+    });
+    return tops;
+  };
+  if (entries.length === 1) return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:buildDeptChildren(entries[0][1]) };
   const deptNodes = entries.map(([dept,ns]) => ({
     id:'__dept__'+dept, name:dept, title:`${ns.length} ${ns.length===1?'person':'people'}`,
-    dept, color:_ocDeptColors[dept]||'var(--ink2)', isDept:true, children:ns
+    dept, color:_ocDeptColors[dept]||'var(--ink2)', isDept:true, peopleCount:ns.length, children:buildDeptChildren(ns)
   }));
   return { id:'__org__', name:coName, title:'', dept:'', color:'#1D1D1F', children:deptNodes };
 }
 
-// Up to `max` member faces under a node (people only), for the department face pile.
+// Up to `max` member faces anywhere under a node (people only), for the department face pile.
 function ocDeptFaces(node, max) {
   const out = [], seen = new Set();
   (function walk(n) {
     for (const c of (n.children || [])) {
       if (out.length >= max) return;
-      if (c.isDept) { walk(c); continue; }
-      if (c.isOpen || !c.name || seen.has(c.name)) continue;
-      const f = c.photo || (typeof _projMockFace === 'function' ? _projMockFace(c.name) : '');
-      if (!f) continue;
-      seen.add(c.name); out.push(f);
+      if (!c.isDept && !c.isOpen && c.name && !seen.has(c.name)) {
+        const f = c.photo || (typeof _projMockFace === 'function' ? _projMockFace(c.name) : '');
+        if (f) { seen.add(c.name); out.push(f); }
+      }
+      if (out.length >= max) return;
+      walk(c);
     }
   })(node);
   return out;
@@ -15677,7 +15692,7 @@ function ocRender(root) {
       const btn = document.createElement('button');
       btn.className = 'oc-toggle' + (collapsed ? ' collapsed' : '');
       btn.title = collapsed ? 'Expand' : 'Collapse';
-      btn.innerHTML = (collapsed ? '&#9658;' : '&#9660;') + ' ' + node.children.length;
+      btn.innerHTML = (collapsed ? '&#9658;' : '&#9660;') + ' ' + (node.peopleCount || node.children.length);
       btn.onclick = e => { e.stopPropagation(); ocToggleCollapse(node.id); };
       div.appendChild(btn);
     }
