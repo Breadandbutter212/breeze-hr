@@ -15386,10 +15386,23 @@ async function ocLoadData() {
   // Inject headcount planning open roles as nodes
   if (hcRoles === null) await loadHCRoles();
   const hcInactive = new Set(['hired','withdrawn']);
+  const _titleOf = e => (e.employments?.[0]?.job_title) || e.job_title || '';
+  const _ceoEmp = _ocEmps.find(e => !e.isOpen && /chief exec|\bceo\b/i.test(_titleOf(e)));
   (hcRoles||[]).filter(r => !hcInactive.has(r.stage)).forEach(r => {
     const count = Math.max(1, r.headcount||1);
     const mgrName = (r.hiringManager||'').toLowerCase().trim();
-    const mgrEmp = mgrName ? _ocEmps.find(e => !e.isOpen && (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
+    let mgrEmp = mgrName ? _ocEmps.find(e => !e.isOpen && (e.display_full_name||'').toLowerCase().trim()===mgrName) : null;
+    // No named manager match: report the vacancy into the head of its department
+    // (VP/Director), else anyone in that department, else the CEO. Keeps open
+    // roles connected to the tree instead of floating as extra roots.
+    if (!mgrEmp) {
+      const dept = String(ocNormalizeDept(r.dept || 'General')||'').toLowerCase();
+      const inDept = _ocEmps.filter(e => { if (e.isOpen) return false; const ed = String(ocExtractDept(e)||'').toLowerCase(); return ed && (ed === dept || ed.startsWith(dept) || dept.startsWith(ed)); });
+      mgrEmp = inDept.find(e => /chief|\bvp\b|vice president|head|director|general counsel/i.test(_titleOf(e)))
+            || inDept.find(e => /lead|principal|manager/i.test(_titleOf(e)))
+            || inDept[0]
+            || _ceoEmp || null;
+    }
     for (let i=0; i<count; i++) {
       _ocEmps.push({ id:`hc_open_${r.id}_${i}`, display_full_name:r.title+(count>1?` (${i+1}/${count})`:''), employments:[{job_title:r.title,department:r.dept||'General'}], manager:mgrEmp?String(mgrEmp.id):null, isOpen:true, hcRoleId:r.id, hcStage:r.stage });
     }
@@ -15468,7 +15481,11 @@ function ocBuild() {
   });
   const hasReal = Object.values(nodeMap).some(n => n.managerId && nodeMap[n.managerId]);
   let root;
-  if (_ocFilter || (hasReal && roots.length <= 5)) {
+  // Whenever there's a real reporting structure, show it as a hierarchy (names
+  // reporting into names, CEO at the top). Only fall back to department grouping
+  // when there are no manager relationships at all. Department grouping is still
+  // available via search/filter.
+  if (_ocFilter || hasReal) {
     if (roots.length === 1) {
       root = roots[0];
     } else {
