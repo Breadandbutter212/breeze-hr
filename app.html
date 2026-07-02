@@ -20492,13 +20492,13 @@ async function projConfirmEmailToTask(){
       'readiness must be one of "ready" (ready now), "1to2" (ready in 1-2 years), "3to5" (ready in 3-5 years), "5to10" (longer-term, 5-10 years), "emergency" (emergency cover only). '+
       'successors are names from the dataset; if none are suitable, return [] and set gap=true with a short gapNote. '+
       'Set gap=true when there is no ready-now internal successor.\n'+
-      '- A "summary": a CHRO-ready board narrative grounded in THIS performance review data, written in Markdown with these exact section headings, each on its own line starting with "## ":\n'+
-      '## Bench strength  (2-3 sentences referencing the actual 9-box distribution and named standouts)\n'+
-      '## Key risks  (3-5 bullet points starting with "- ", each naming the specific people/roles from the data; bold the names with **)\n'+
-      '## Retention priorities  (2-4 bullets naming the at-risk people who matter most)\n'+
-      '## Recommended actions  (a numbered list "1." "2." "3." of concrete next-quarter actions)\n'+
-      '## Overall  (one decisive closing sentence)\n'+
-      'Use the real names, departments and ratings from the dataset - never generic placeholders. Keep it tight (about 180-260 words total).\n\n'+
+      '- A "summary": a board-grade talent and succession narrative for the CHRO, grounded in THIS performance review data. Write in British English in a measured, authoritative voice - the way a highly experienced UK HR director would brief a board. No management jargon or Americanisms (never use "bench strength", "top-right", "bottom-left", "A players"). No em dashes; use a single hyphen. Use Markdown with these exact section headings, each on its own line starting with "## ":\n'+
+      '## Talent position  (2-3 sentences on the overall shape of the review - the standouts, the dependable core and the tail - referencing the actual 9-box distribution and naming real people)\n'+
+      '## Principal risks  (3-5 bullets starting with "- ", each naming the specific people/roles from the data and explaining plainly why it matters to the business; bold the names with **)\n'+
+      '## Retention priorities  (2-4 bullets naming the people who most need holding, each with the specific lever to use)\n'+
+      '## Recommended actions  (a numbered list "1." "2." "3." of concrete, proportionate actions for the coming quarter)\n'+
+      '## In summary  (two or three decisive closing sentences a chair would be satisfied with)\n'+
+      'Be precise, calm and specific. Use the real names, departments and ratings from the dataset - never generic placeholders. Keep it tight (about 200-280 words total).\n\n'+
       'Return EXACTLY this JSON shape and nothing else:\n'+
       '{"succession":[{"role":"","incumbent":"","successors":[{"name":"","readiness":"ready"}],"gap":false,"gapNote":""}],"summary":""}\n\n'+
       'DATASET:\n'+JSON.stringify(full);
@@ -21066,7 +21066,7 @@ async function projConfirmEmailToTask(){
     var strip='<div class="tl-sum-stats">'+talentSummaryStats().map(function(s){
       return '<div class="tl-sum-stat"><div class="v"'+(s.c?' style="color:'+s.c+'"':'')+'>'+s.n+'</div><div class="l">'+esc(s.l)+'</div></div>';
     }).join('')+'</div>';
-    var bar='<div class="tl-bar"><div style="font-size:12px;color:var(--ink2);">A board-ready narrative on bench strength and talent risk, drawn from this review data.</div>'+
+    var bar='<div class="tl-bar"><div style="font-size:12px;color:var(--ink2);">A board-ready view of talent and succession, drawn from this review data.</div>'+
       '<div style="margin-left:auto;display:flex;gap:8px;">'+
         '<button class="btn btn-secondary btn-sm" onclick="talentToggleSummaryEdit()">'+(_talentSummaryEdit?'Done':'Edit')+'</button>'+
         '<button class="btn btn-secondary btn-sm" onclick="talentCopySummary()">Copy</button></div></div>';
@@ -21136,22 +21136,22 @@ async function projConfirmEmailToTask(){
       {role:'Engineering Manager',incumbent:'Aisha Khan',successors:[{name:'Tom Reilly',readiness:'1to2'},{name:'Oliver Grant',readiness:'emergency'}],gap:false,gapNote:''},
       {role:'Head of Operations',incumbent:'(vacant, covered by Grace Owusu)',successors:[{name:'Grace Owusu',readiness:'ready'},{name:'Daniel Foster',readiness:'emergency'}],gap:false,gapNote:''}
     ];
-    var summary='## Bench strength\n'+
-      'Broadly healthy across 14 reviewed. **2 Stars** (Priya Sharma, Raj Patel) and a strong high-potential pipeline in Engineering and Finance sit above a dependable core. The tail is small: one clear under-performer (Emma Clarke).\n\n'+
-      '## Key risks\n'+
-      '- **Concentration:** our two highest-value people, **Raj Patel** and **Tom Reilly**, both carry High flight risk.\n'+
-      '- **Single point of failure:** **Raj Patel** is the only credible successor to the Head of Finance.\n'+
-      '- **Sales succession gap:** no ready-now cover for the Sales Director (**Marcus Bell**) - a single departure would expose revenue.\n'+
-      '- **Softening engagement** in the middle of the grid (**Sofia Marino**, Marketing; **Liam Murphy**, BizDev).\n\n'+
+    var summary='## Talent position\n'+
+      'Across the fourteen colleagues reviewed, the picture is encouraging but uneven. Two people, **Priya Sharma** and **Raj Patel**, are performing strongly against both delivery and potential, and a genuine high-potential group is forming in Engineering and Finance. Beneath them sits a broad and dependable core. Only **Emma Clarke** is currently falling short of the expected standard, so the underperforming tail is small and manageable.\n\n'+
+      '## Principal risks\n'+
+      '- **Over-reliance on a small number of individuals.** Our two most valuable people, **Raj Patel** and **Tom Reilly**, both present a high likelihood of leaving. Losing either would be felt immediately.\n'+
+      '- **A single point of failure in Finance.** **Raj Patel** is at present the only credible successor to the Head of Finance, so the function carries real key-person risk until that changes.\n'+
+      '- **A succession gap in Sales.** There is no internal candidate ready to step up for **Marcus Bell**. A sudden departure would leave revenue exposed with no proper cover in place.\n'+
+      '- **Early signs of disengagement in the core.** Engagement is softening among some solid mid-grid performers, notably **Sofia Marino** (Marketing) and **Liam Murphy** (Business Development). Quiet disengagement, left unaddressed, tends to become resignation.\n\n'+
       '## Retention priorities\n'+
-      '- **Raj Patel** - comp review and a named, written path to FD.\n'+
-      '- **Tom Reilly** - mentor plus an explicit growth path before a competitor moves.\n\n'+
+      '- **Raj Patel.** A prompt, well-benchmarked pay review alongside a clear and written route to Finance Director, so his future here is in no doubt.\n'+
+      '- **Tom Reilly.** A senior mentor and an explicit development path, agreed before the market approaches him rather than after.\n\n'+
       '## Recommended actions\n'+
-      '1. Lock in Raj and Tom with comp reviews and explicit growth paths.\n'+
-      '2. Build a Sales successor pipeline rather than relying on emergency cover.\n'+
-      '3. Move **Emma Clarke** onto a clear performance plan with a 60-day review.\n\n'+
-      '## Overall\n'+
-      'Invest to retain the top-right, fix the Sales gap, and act decisively on the bottom-left.';
+      '1. Secure **Raj Patel** and **Tom Reilly** this quarter through pay reviews and documented growth paths.\n'+
+      '2. Begin building a Sales succession pipeline now, through internal development and, where needed, targeted external hiring, rather than relying on emergency cover.\n'+
+      '3. Move **Emma Clarke** onto a fair and clearly documented performance plan with a sixty-day review point.\n\n'+
+      '## In summary\n'+
+      'The fundamentals are sound and the priorities are clear: invest deliberately to keep our strongest people, close the Sales succession gap before it is tested, and address underperformance promptly and fairly. Handled now, none of this is difficult; left for later, each becomes considerably harder.';
     talentState={ people:people, succession:succession, summary:summary, truncatedAt:null };
     talentTab='grid'; talentSelPlanId=null;
     bzToast('Sample talent review loaded. Drag, edit and switch tabs. Nothing is saved.');
