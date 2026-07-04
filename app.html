@@ -13799,7 +13799,7 @@ function wfbStepEditor(idx){
           <button type="button" onclick="wfbAddSub('doc')" class="btn btn-secondary btn-sm" style="font-size:11px;display:inline-flex;align-items:center;gap:5px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Document</button>
         </div>
       </div>
-      <div><label class="wfb-lab">Action <span style="font-weight:400;color:var(--ink3);">(optional automation)</span></label>
+      <div><label class="wfb-lab">Stage action <span style="font-weight:400;color:var(--ink3);">(optional - applies to the whole stage; individual sub-tasks above can each have their own email or document)</span></label>
         <select id="wfbs-acttype" style="${inp}" onchange="wfbToggleActionFields(this.value)">
           <option value="none" ${actType==='none'?'selected':''}>None - just a task to tick off</option>
           <option value="doc" ${actType==='doc'?'selected':''}>📄 Generate a document from a template</option>
@@ -17989,6 +17989,7 @@ function wfRunRender(){
           (c.anchorDate?'<div style="font-size:11px;color:var(--ink3);margin-top:6px;display:flex;align-items:center;gap:6px;">Start date <input type="date" value="'+c.anchorDate+'" onchange="wfSetAnchor(\''+c.id+'\',this.value)" onclick="event.stopPropagation()" title="Changing this recalculates due dates for steps not yet done" style="border:1px solid var(--border);border-radius:6px;padding:3px 7px;font-size:11px;font-family:inherit;color:var(--ink2);"></div>':'')+
         '</div>'+
         '<div style="text-align:right;flex-shrink:0;"><div style="font-size:22px;font-weight:800;color:'+(pct===100?'var(--green)':'var(--accent)')+';line-height:1;">'+pct+'%</div></div>'+
+        '<button onclick="wfRunActivity(\''+c.id+'\')" title="Emails, attachments and notes logged to this run" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--ink2);">📝 Notes &amp; activity'+((c.contactLog||[]).length?' ('+(c.contactLog||[]).length+')':'')+'</button>'+
         '<button onclick="wfRunDeleteCase(\''+c.id+'\')" title="Remove this person from the workflow" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--red);">Remove</button>'+
       '</div>'+
       '<div style="height:4px;background:var(--surface3);"><div style="width:'+pct+'%;height:100%;background:'+(pct===100?'var(--green)':'var(--accent)')+';transition:width .3s;"></div></div>'+
@@ -18016,6 +18017,56 @@ async function wfStepNote(caseId, stepId){
   }
   try{ await saveWfCases(); }catch(e){}
   wfRunRefresh();
+  if(document.getElementById('wfStepTasks')) wfOpenStepTasks(caseId, stepId); // refresh the open step panel
+}
+
+// ── Run "Notes & activity": everything logged to this case (emails picked up,
+// attachments, notes), plus a place to add a note. ──
+function wfDownloadLogDoc(caseId, dateStr){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const entry=(c.contactLog||[]).find(e=>e.date===dateStr); if(!entry?.docBase64) return;
+  try{
+    const bytes=Uint8Array.from(atob(entry.docBase64),ch=>ch.charCodeAt(0));
+    const blob=new Blob([bytes],{type:entry.docMimeType||'application/octet-stream'});
+    const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download=entry.docFilename||'attachment'; a.click(); URL.revokeObjectURL(url);
+  }catch(e){ showBreezeToast('Could not open attachment'); }
+}
+async function wfAddCaseNote(caseId){
+  const inp=document.getElementById('wfActNoteInp'); const v=(inp?.value||'').trim(); if(!v) return;
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  c.contactLog=c.contactLog||[]; c.contactLog.push({ date:new Date().toISOString(), type:'note', note:v });
+  try{ await saveWfCases(); }catch(e){}
+  wfRunActivity(caseId); wfRunRefresh();
+}
+function wfRunActivity(caseId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const icon={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const log=(c.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const rows=log.length?log.map(e=>{
+    const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+    const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const doc=e.docFilename?`<button onclick="wfDownloadLogDoc('${caseId}','${jsAttr(e.date)}')" style="margin-top:6px;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:8px;padding:3px 9px;cursor:pointer;font-family:inherit;">📎 ${escapeHtml(e.docFilename)}</button>`:'';
+    return `<div style="display:flex;gap:10px;padding:11px 0;border-bottom:1px solid var(--border);">
+      <div style="font-size:14px;flex-shrink:0;line-height:1.4;">${icon[e.type]||'📝'}</div>
+      <div style="flex:1;min-width:0;">
+        <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:11px;font-weight:600;color:var(--ink);text-transform:capitalize;">${escapeHtml(e.type||'note')}</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;white-space:nowrap;">${d}, ${t}</span></div>
+        <div style="font-size:12px;color:var(--ink2);line-height:1.5;margin-top:3px;white-space:pre-wrap;">${escapeHtml(e.note||'')}</div>${doc}
+      </div>
+    </div>`;
+  }).join(''):'<div style="text-align:center;padding:26px 0;color:var(--ink3);font-size:12px;line-height:1.6;">Nothing logged yet.<br>Emails you action from the inbox, their attachments, and notes you add will appear here.</div>';
+  let mo=document.getElementById('wfActivity'); if(!mo){ mo=document.createElement('div'); mo.id='wfActivity'; document.body.appendChild(mo); }
+  mo.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:988;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const ta='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;resize:vertical;min-height:40px;';
+  mo.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:86vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="padding:16px 22px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Notes &amp; activity</div><div style="font-size:12px;color:var(--ink3);">${escapeHtml(c.employeeName||'')}</div><button onclick="document.getElementById('wfActivity').remove()" style="margin-left:auto;background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;">×</button></div>
+    <div style="padding:4px 22px 10px;overflow-y:auto;flex:1;">${rows}</div>
+    <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;gap:8px;align-items:flex-end;">
+      <textarea id="wfActNoteInp" rows="1" placeholder="Add a note to this run…" style="${ta}"></textarea>
+      <button class="btn btn-primary btn-sm" onclick="wfAddCaseNote('${caseId}')" style="flex-shrink:0;">Add note</button>
+    </div>
+  </div>`;
+  mo.onclick=e=>{ if(e.target===mo) mo.remove(); };
+  setTimeout(()=>document.getElementById('wfActNoteInp')?.focus(),40);
 }
 
 // Pre-screening: hand the new starter's details to the Breeze Autofill extension.
@@ -18072,6 +18123,11 @@ function wfOpenStepTasks(caseId, stepId) {
     ${!allDone?`<button onclick="event.stopPropagation();wfNudge('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:10px;color:var(--accent);" title="Draft a reminder email to the assignee">🔔 Nudge</button>`:''}
     ${_due?`<span style="font-size:11px;font-weight:600;margin-left:auto;color:${_dueCol};">${_dueSt?wfDueLabel(_dueSt):('due '+wfFmtDue(new Date(_due+'T00:00:00')))}</span>`:''}
   </div>`;
+  const _note=(c.stepNotes&&c.stepNotes[stepId])||'';
+  const noteRow=`<div style="margin-top:8px;">`+
+    (_note?`<div style="font-size:12px;color:var(--ink2);background:var(--surface2);border-radius:8px;padding:8px 10px;line-height:1.5;white-space:pre-wrap;">📝 ${escapeHtml(_note)}</div>`:'')+
+    `<button onclick="event.stopPropagation();wfStepNote('${caseId}',${stepId})" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:4px 0;">${_note?'Edit note':'+ Add note'}</button>`+
+  `</div>`;
   const stepEmailBtn = step.action?.type==='email'?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:11px;color:#047857;">✉️ ${escapeHtml(step.action.label||'Draft email')} →</button>`:'';
   const stepDocBtn = step.action?.type==='doc'?`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">${escapeHtml(step.action.label||'Generate document')} →</button>`:'';
   let bodyHtml;
@@ -18099,7 +18155,7 @@ function wfOpenStepTasks(caseId, stepId) {
   const ov = document.createElement('div'); ov.id='wfStepTasks';
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:985;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
-    <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${hasSubs?`${doneN} of ${step.subs.length} tasks complete${allDone?' · stage done ✓':''}`:(allDone?'Stage complete ✓':'Not started')}</div>${timeBadge?`<div style="display:flex;gap:6px;margin-top:8px;">${timeBadge}</div>`:''}${asgRow}${headBtns}</div>
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${hasSubs?`${doneN} of ${step.subs.length} tasks complete${allDone?' · stage done ✓':''}`:(allDone?'Stage complete ✓':'Not started')}</div>${timeBadge?`<div style="display:flex;gap:6px;margin-top:8px;">${timeBadge}</div>`:''}${asgRow}${noteRow}${headBtns}</div>
     <div style="padding:16px 22px;display:flex;flex-direction:column;gap:8px;">${bodyHtml}</div>
     <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;"><button class="btn btn-primary btn-sm" onclick="document.getElementById('wfStepTasks').remove()">Done</button></div>
   </div>`;
