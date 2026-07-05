@@ -8923,10 +8923,10 @@ function isHeavyDocRequest(msg) {
 }
 
 // Detect a workforce/HRIS data question (who's off, headcount, new joiners, teams,
-// managers, start dates) that the HRIS tool-calling agent should answer. Only routes when
-// an HRIS is actually connected - otherwise normal chat handles it as before.
+// managers, start dates) that the HRIS tool-calling agent should answer. The backend is the
+// source of truth for connection state: if no HRIS is connected (or the user isn't an admin)
+// it returns { fallback:true } and askHris yields null, so we drop back to normal chat.
 function isPeopleDataRequest(msg) {
-  if (!(window._mergeConnected || mergeEmployeeCache)) return false;
   const t = (msg || '').toLowerCase();
   const patterns = [
     /\b(who|anyone|anybody)\b.*\b(off|on (holiday|leave|annual leave)|away|absent|booked (time )?off)/,
@@ -19272,6 +19272,660 @@ function downloadHCCSV() {
     rows.push([r.title,r.dept,r.country||'',r.hiringManager,r.stage,r.priority||'normal',r.compMin||'',r.compMax||'',r.targetStart,hcDaysOpen(r),r.source,r.agencyName,r.agencyFee||'',r.budget||'',r.headcount,cands.length,cands.filter(c=>!HC_CAND_FINAL.includes(c.stage)).length,cands.filter(c=>c.stage==='Hired').length,r.interviewProcess,r.notes]);
   });
   downloadCSV(rows,'Headcount planning '+new Date().toLocaleDateString('en-GB'));
+}
+
+// ── JOB DESCRIPTION LIBRARY ──
+// Best-practice JD templates, filed in folders by function, built on shared
+// "boilerplate" blocks (About us, Benefits, DEI, How to apply). Editing a shared
+// block instantly updates every template AND every role's live job description
+// that links it - company copy stays consistent everywhere, edited once.
+let jdLib = null;
+let _jdFolder = '', _jdSearch = '', _jdTab = 'templates';
+let _jdWork = null, _jdWorkMode = 'template', _jdWorkRoleId = null, _jdWorkIsNew = false;
+let _jdSid = 0, _jdPickCb = null;
+function jdNewSid(){ return 's_'+Date.now()+'_'+(_jdSid++); }
+
+const JD_FUNCTIONS = [
+  {id:'engineering', name:'Engineering',        icon:'💻'},
+  {id:'product',     name:'Product',            icon:'🧭'},
+  {id:'design',      name:'Design',             icon:'🎨'},
+  {id:'data',        name:'Data & Analytics',   icon:'📊'},
+  {id:'sales',       name:'Sales',              icon:'📈'},
+  {id:'marketing',   name:'Marketing',          icon:'📣'},
+  {id:'cs',          name:'Customer Success',   icon:'🤝'},
+  {id:'people',      name:'People & HR',        icon:'👥'},
+  {id:'finance',     name:'Finance',            icon:'💷'},
+  {id:'operations',  name:'Operations',         icon:'⚙️'},
+  {id:'legal',       name:'Legal & Compliance', icon:'⚖️'},
+  {id:'general',     name:'General / Other',    icon:'📁'},
+];
+function jdFuncName(id){ const f=JD_FUNCTIONS.find(x=>x.id===id); return f?f.name:'General / Other'; }
+function jdFuncIcon(id){ const f=JD_FUNCTIONS.find(x=>x.id===id); return f?f.icon:'📁'; }
+
+// Placeholders auto-fill from the role + company profile.
+function jdPlaceholders(role){
+  role = role||{};
+  return {
+    role_title: role.title||'[Role title]',
+    department: role.dept||'[Department]',
+    location: role.country||'[Location]',
+    salary_range: (role.compMin||role.compMax)?hcFmtComp(role):'[Salary range]',
+    company_name: (currentProfile&&currentProfile.company_name)||'[Company name]',
+    hiring_manager: role.hiringManager||'[Hiring manager]',
+    reports_to: role.hiringManager||'[Manager]',
+  };
+}
+function jdFill(text, role){
+  if(!text) return '';
+  const p = jdPlaceholders(role);
+  return String(text).replace(/\{\{\s*([a-z_]+)\s*\}\}/gi,(m,k)=> (k in p)?p[k]:m);
+}
+
+// Inclusive-language check - flags biased / exclusionary wording with a suggestion.
+const JD_BIAS_TERMS = [
+  {re:/\brock ?stars?\b/gi, why:'hype term, can deter thoughtful applicants', fix:'high performer'},
+  {re:/\bninjas?\b/gi, why:'hype / gendered term', fix:'expert'},
+  {re:/\bgurus?\b/gi, why:'hype term', fix:'specialist'},
+  {re:/\bguys\b/gi, why:'gendered', fix:'team / everyone'},
+  {re:/\bhe\/she\b|\bs\/he\b|\bhis\/her\b|\bhim\/her\b/gi, why:'gendered pronoun', fix:'they / their'},
+  {re:/\baggressive\b/gi, why:'masculine-coded', fix:'driven / proactive'},
+  {re:/\bdominant\b/gi, why:'masculine-coded', fix:'leading'},
+  {re:/\byoung\b|\bdigital native\b/gi, why:'age bias', fix:'early-career / describe skills, not age'},
+  {re:/\brecent (college |uni |university )?grad(uate)?s?\b/gi, why:'age bias', fix:'early career'},
+  {re:/\bmature\b/gi, why:'age bias', fix:'experienced'},
+  {re:/\bmanpower\b/gi, why:'gendered', fix:'workforce / staffing'},
+  {re:/\bsalesm[ae]n\b/gi, why:'gendered', fix:'salesperson'},
+  {re:/\bchairman\b/gi, why:'gendered', fix:'chair'},
+  {re:/\bnative english\b/gi, why:'may indirectly discriminate on nationality', fix:'fluent English'},
+  {re:/\bable[- ]bodied\b/gi, why:'disability discrimination', fix:'remove; state genuine physical requirements only'},
+  {re:/\bwork hard,? play hard\b/gi, why:'may deter carers / older applicants', fix:'remove'},
+];
+function jdBiasScan(text){
+  const out=[]; const seen=new Set(); const src=String(text||'');
+  JD_BIAS_TERMS.forEach(t=>{
+    t.re.lastIndex=0; let m;
+    while((m=t.re.exec(src))){ const k=m[0].toLowerCase(); if(!seen.has(k)){ seen.add(k); out.push({term:m[0], why:t.why, fix:t.fix}); } if(!t.re.global) break; }
+  });
+  return out;
+}
+function jdBiasPanelHtml(text){
+  const f=jdBiasScan(text);
+  if(!f.length) return `<div style="font-size:11px;color:#12854E;background:#E6F7EE;border:1px solid #A7E3C6;border-radius:var(--r-sm);padding:8px 10px;">✓ No biased or exclusionary language detected.</div>`;
+  return `<div style="font-size:11px;font-weight:700;color:#B45309;margin-bottom:6px;">${f.length} thing${f.length>1?'s':''} to review</div>`+
+    f.map(x=>`<div style="font-size:11px;color:var(--ink2);background:#FFFBEB;border:1px solid #FDE68A;border-radius:var(--r-sm);padding:6px 8px;margin-bottom:5px;line-height:1.45;"><strong style="color:#92400E;">"${escapeHtml(x.term)}"</strong> - ${escapeHtml(x.why)}. Try: <em>${escapeHtml(x.fix)}</em></div>`).join('');
+}
+
+async function loadJDLib(){
+  if(jdLib!==null) return;
+  let stored=null;
+  if(currentProfile){
+    const {data}=await sb.from('policies').select('content').eq('company_id',currentProfile.company_id).eq('name','SETTING:JDLibrary').maybeSingle();
+    stored=data&&data.content;
+  }
+  try{ jdLib = stored?JSON.parse(stored):null; }catch(e){ jdLib=null; }
+  if(!jdLib || !Array.isArray(jdLib.templates) || !Array.isArray(jdLib.blocks)){ jdLib=jdSeedDefaults(); await saveJDLib(); }
+}
+async function saveJDLib(){
+  if(!jdLib) return;
+  jdLib.updatedAt=new Date().toISOString();
+  if(!currentProfile) return;
+  const json=JSON.stringify(jdLib);
+  const {data:ex}=await sb.from('policies').select('id').eq('company_id',currentProfile.company_id).eq('name','SETTING:JDLibrary').maybeSingle();
+  if(ex) await sb.from('policies').update({content:json}).eq('id',ex.id);
+  else await sb.from('policies').insert({company_id:currentProfile.company_id, name:'SETTING:JDLibrary', content:json});
+}
+
+// ── Compose a template's sections into rendered HTML / plain text ──
+function jdRenderBody(text, role){
+  const lines=jdFill(text,role).split('\n'); let html='', inUl=false;
+  const flush=()=>{ if(inUl){ html+='</ul>'; inUl=false; } };
+  lines.forEach(ln=>{
+    const t=ln.trim();
+    if(!t){ flush(); return; }
+    if(/^[-••]\s+/.test(t)){ if(!inUl){ html+='<ul style="margin:6px 0 10px 18px;padding:0;">'; inUl=true; } html+=`<li style="margin:3px 0;">${escapeHtml(t.replace(/^[-••]\s+/,''))}</li>`; }
+    else { flush(); html+=`<p style="margin:6px 0;">${escapeHtml(t)}</p>`; }
+  });
+  flush(); return html;
+}
+function jdBlockHtml(b, role, clean){
+  const lines=jdFill(b.content,role).split('\n');
+  const heading=(lines[0]||'').trim();
+  const rest=lines.slice(1).join('\n');
+  const badge=clean?'':` <span style="font-size:9px;font-weight:600;color:var(--accent);background:var(--accent-bg);padding:1px 6px;border-radius:20px;vertical-align:middle;">shared</span>`;
+  return `<h3 style="font-size:14px;font-weight:700;color:var(--ink);margin:18px 0 6px;">${escapeHtml(heading)}${badge}</h3>`+jdRenderBody(rest,role);
+}
+function jdSectionHtml(s, role, clean){
+  if(s.kind==='block'){ const b=(jdLib.blocks||[]).find(x=>x.id===s.blockId); return b?jdBlockHtml(b,role,clean):''; }
+  let h=`<h3 style="font-size:14px;font-weight:700;color:var(--ink);margin:18px 0 6px;">${escapeHtml(jdFill(s.title,role))}</h3>`;
+  if(s.intro) h+=`<p style="margin:6px 0;">${escapeHtml(jdFill(s.intro,role))}</p>`;
+  if(s.kind==='bullets' && (s.items||[]).length) h+='<ul style="margin:6px 0 10px 18px;padding:0;">'+s.items.map(it=>`<li style="margin:3px 0;">${escapeHtml(jdFill(it,role))}</li>`).join('')+'</ul>';
+  return h;
+}
+function jdComposeHtml(t, role, clean){ return ((t&&t.sections)||[]).map(s=>jdSectionHtml(s,role,clean)).join(''); }
+function jdSectionText(s, role){
+  if(s.kind==='block'){ const b=(jdLib.blocks||[]).find(x=>x.id===s.blockId); return b?jdFill(b.content,role):''; }
+  let out=jdFill(s.title,role)+'\n';
+  if(s.intro) out+=jdFill(s.intro,role)+'\n';
+  if(s.kind==='bullets') (s.items||[]).forEach(it=> out+='- '+jdFill(it,role)+'\n');
+  return out;
+}
+function jdComposeText(t, role){ return ((t&&t.sections)||[]).map(s=>jdSectionText(s,role).trim()).filter(Boolean).join('\n\n'); }
+
+function jdSeedDefaults(){
+  const now=new Date().toISOString();
+  const blocks=[
+    {id:'blk_about', name:'About the company', icon:'🏢', updatedAt:now, content:'About {{company_name}}\n\n{{company_name}} is a growing organisation where people do their best work and are trusted to make a real impact. We are proud of our culture, our customers and the difference our teams make every day. This is an exciting time to join us as we scale our {{department}} team.'},
+    {id:'blk_benefits', name:'What we offer', icon:'🎁', updatedAt:now, content:'What we offer\n\n- Competitive salary of {{salary_range}}\n- 25 days holiday plus bank holidays\n- Pension scheme with employer contribution\n- Flexible and hybrid working\n- Annual learning and development budget\n- Enhanced parental leave\n- Employee assistance programme and wellbeing support'},
+    {id:'blk_dei', name:'Diversity, equity & inclusion', icon:'🌍', updatedAt:now, content:'Our commitment to inclusion\n\n{{company_name}} is an equal opportunities employer. We welcome applications from everyone regardless of age, disability, gender identity, marital status, race, religion or belief, sex or sexual orientation.\n\nWe are committed to building a diverse and inclusive workplace. If you need any adjustments during the recruitment process, please let us know and we will be glad to help.'},
+    {id:'blk_apply', name:'How to apply', icon:'✉️', updatedAt:now, content:'How to apply\n\nTo apply, please send your CV and a short note about why this role interests you. We review applications on a rolling basis and aim to respond within 10 working days. Our process is a CV review, an initial conversation, and interviews with the team.'},
+  ];
+  const std=['blk_about','blk_benefits','blk_dei','blk_apply'];
+  const mk=(id,func,name,purpose,resps,essential,desirable)=>({
+    id, func, name, createdAt:now, updatedAt:now,
+    sections:[
+      {id:'s_'+id+'_purpose', kind:'text',    title:'Role purpose',            intro:purpose, items:[]},
+      {id:'s_'+id+'_resp',    kind:'bullets', title:'Key responsibilities',    intro:'In this role you will:', items:resps},
+      {id:'s_'+id+'_ess',     kind:'bullets', title:'About you - essential',   intro:'We are looking for someone who has:', items:essential},
+      {id:'s_'+id+'_des',     kind:'bullets', title:'Nice to have',            intro:'', items:desirable},
+    ].concat(std.map(bid=>({id:'s_'+id+'_'+bid, kind:'block', blockId:bid}))),
+  });
+  const templates=[
+    mk('gen','general','Standard role (best practice)',
+      'As a {{role_title}} in our {{department}} team at {{company_name}}, reporting to {{reports_to}}, you will play a key part in delivering our goals. This is a great opportunity for someone who wants to make an impact and grow with us.',
+      ['Own and deliver the core responsibilities of the role to a high standard','Work closely with colleagues across {{department}} and the wider business','Bring ideas and improvements that raise the bar for how we work','Manage priorities and deliver to agreed timelines','Represent {{company_name}} professionally with internal and external stakeholders'],
+      ['Relevant experience in a similar role','Strong communication and collaboration skills','A proactive, ownership mindset','The ability to organise and prioritise their own work'],
+      ['Experience in our sector','Familiarity with the tools we use']),
+    mk('eng','engineering','Software Engineer',
+      'As a Software Engineer in our {{department}} team, you will design, build and ship reliable software that our customers rely on every day. You will work in a collaborative, high-trust team that values clean code, thoughtful review and continuous improvement.',
+      ['Design, build, test and maintain features across our stack','Write clean, well-tested and maintainable code','Take part in code reviews and share knowledge with the team','Collaborate with product and design to shape solutions','Help improve our engineering practices, tooling and reliability','Support and monitor services in production'],
+      ['Solid experience building production software','Strong knowledge of at least one modern language and framework','A good understanding of testing, version control and CI/CD','Clear communication and a collaborative approach'],
+      ['Experience with cloud platforms (AWS, GCP or Azure)','Exposure to our tech stack','Interest in mentoring others']),
+    mk('pm','product','Product Manager',
+      'As a Product Manager, you will own the vision, strategy and roadmap for your product area. You will partner with engineering, design and stakeholders to deliver products customers love and that move the business forward.',
+      ['Define and communicate a clear product vision and roadmap','Discover customer needs through research and data','Prioritise the backlog and make clear trade-off decisions','Work closely with engineering and design through delivery','Measure outcomes and iterate based on evidence','Keep stakeholders aligned and informed'],
+      ['Experience shipping products in a Product Manager role','Strong analytical and prioritisation skills','Excellent communication and stakeholder management','A customer-first, outcome-driven mindset'],
+      ['Experience in our sector or with our customer base','Familiarity with product analytics tools']),
+    mk('sales','sales','Sales / Account Executive',
+      'As an Account Executive, you will drive new business and grow existing relationships. You will own your pipeline end to end and be a trusted advisor to prospects and customers, helping them get real value from {{company_name}}.',
+      ['Build and manage a healthy sales pipeline','Run discovery, demos and negotiations through to close','Hit and exceed agreed revenue targets','Build trusted, long-term customer relationships','Keep the CRM accurate and forecast reliably','Work with marketing and customer success to grow accounts'],
+      ['A track record of meeting or exceeding sales targets','Strong discovery, negotiation and closing skills','Excellent verbal and written communication','A resilient, goal-focused and organised approach'],
+      ['Experience selling in our sector','Familiarity with a modern CRM']),
+    mk('mkt','marketing','Marketing Manager',
+      'As a Marketing Manager, you will plan and deliver campaigns that build our brand, generate demand and support growth. You will work across channels and partner closely with sales and product.',
+      ['Plan and deliver integrated marketing campaigns','Own content, channels and campaign performance','Grow our brand and generate qualified demand','Analyse results and optimise for return on investment','Work closely with sales to support the pipeline','Manage agencies, budgets and timelines'],
+      ['Experience delivering multi-channel marketing campaigns','Strong writing and creative judgement','Comfort with data and campaign analytics','Excellent organisation and project management'],
+      ['Experience with marketing automation tools','Sector experience']),
+    mk('hr','people','HR / People Partner',
+      'As a People Partner, you will support managers and employees across the full employee lifecycle. You will be a trusted advisor on people matters and help build a great place to work at {{company_name}}.',
+      ['Advise managers on employee relations, performance and policy','Support recruitment, onboarding and induction','Help deliver engagement, wellbeing and development initiatives','Ensure people practices are fair, compliant and consistent','Use people data to spot trends and inform decisions','Contribute to continuous improvement of our HR processes'],
+      ['Experience in an HR / People role','Sound knowledge of employment practice and policy','Excellent interpersonal and coaching skills','Discretion and sound judgement with confidential matters'],
+      ['CIPD qualification (or working towards)','Experience with an HRIS']),
+    mk('fin','finance','Finance Analyst',
+      'As a Finance Analyst, you will provide the insight and reporting that helps {{company_name}} make good decisions. You will support budgeting, forecasting and month-end, and partner with teams across the business.',
+      ['Prepare accurate management reporting and analysis','Support budgeting, forecasting and month-end close','Partner with budget holders to explain performance','Build and maintain financial models','Help improve controls, processes and automation','Support audit and compliance requirements'],
+      ['Experience in a finance or FP&A role','Strong Excel and analytical skills','Attention to detail and accuracy','Clear communication with non-finance colleagues'],
+      ['Part- or fully-qualified (ACA, ACCA or CIMA)','Experience with finance systems and BI tools']),
+    mk('csm','cs','Customer Success Manager',
+      'As a Customer Success Manager, you will own a portfolio of customers and make sure they get real, lasting value from {{company_name}}. You will drive adoption, retention and growth through trusted relationships.',
+      ['Own onboarding, adoption and ongoing success for your accounts','Build trusted relationships with key stakeholders','Drive retention and identify expansion opportunities','Run regular reviews and act on customer feedback','Be the voice of the customer internally','Work with sales and support to resolve issues quickly'],
+      ['Experience in a customer-facing success or account role','Strong relationship-building and communication skills','A proactive, problem-solving mindset','The ability to manage several accounts at once'],
+      ['Experience with a customer success platform','Sector experience']),
+  ];
+  return { blocks, templates, updatedAt:now };
+}
+
+// ── Library overlay ──
+async function openJDLibrary(){
+  await loadJDLib();
+  document.getElementById('jdLibOverlay')?.remove();
+  const ov=document.createElement('div'); ov.id='jdLibOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:900;display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML='<div id="jdLibCard" style="background:var(--bg);border-radius:var(--r-xl);width:100%;max-width:1080px;height:88vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;"></div>';
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  renderJDLibrary();
+}
+function jdSetTab(t){ _jdTab=t; renderJDLibrary(); }
+function jdSetFolder(f){ _jdFolder=f; renderJDLibrary(); }
+function renderJDLibrary(){
+  const card=document.getElementById('jdLibCard'); if(!card||!jdLib) return;
+  const tabBtn=(id,label)=>`<button onclick="jdSetTab('${id}')" style="background:${_jdTab===id?'var(--accent)':'transparent'};color:${_jdTab===id?'white':'var(--ink2)'};border:none;border-radius:20px;padding:5px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">${label}</button>`;
+  card.innerHTML=`
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:12px;flex-shrink:0;">
+      <div><div style="font-size:15px;font-weight:700;color:var(--ink);">Job description library</div><div style="font-size:11px;color:var(--ink3);">Best-practice templates, filed by function - built on shared company blocks.</div></div>
+      <div style="display:flex;gap:4px;background:var(--surface2);border-radius:20px;padding:3px;margin-left:8px;">${tabBtn('templates','Templates')}${tabBtn('blocks','Shared blocks')}</div>
+      <div style="flex:1;"></div>
+      ${_jdTab==='templates'?`<input value="${escapeHtml(_jdSearch)}" oninput="_jdSearch=this.value;jdRenderMain()" placeholder="Search templates..." style="width:200px;border:1px solid var(--border);border-radius:20px;padding:7px 12px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);">`:''}
+      <button onclick="document.getElementById('jdLibOverlay').remove()" style="background:var(--surface2);border:none;color:var(--ink);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
+    </div>
+    <div style="flex:1;overflow:hidden;display:flex;">
+      ${_jdTab==='templates'?'<div id="jdFolders" style="width:210px;flex-shrink:0;border-right:1px solid var(--border);overflow-y:auto;padding:10px;background:var(--surface);"></div>':''}
+      <div id="jdMain" style="flex:1;overflow-y:auto;padding:18px;"></div>
+    </div>`;
+  if(_jdTab==='templates') jdRenderFolders();
+  jdRenderMain();
+}
+function jdRenderFolders(){
+  const el=document.getElementById('jdFolders'); if(!el) return;
+  const tmpls=jdLib.templates||[];
+  const count=fid=> fid===''?tmpls.length:tmpls.filter(t=>t.func===fid).length;
+  const item=(fid,icon,name)=>`<div onclick="jdSetFolder('${fid}')" style="display:flex;align-items:center;gap:8px;padding:7px 9px;border-radius:var(--r-sm);cursor:pointer;font-size:12px;margin-bottom:2px;${_jdFolder===fid?'background:var(--accent-bg);color:var(--accent-ink);font-weight:600;':'color:var(--ink2);'}"><span>${icon}</span><span style="flex:1;">${escapeHtml(name)}</span><span style="font-size:10px;color:var(--ink3);">${count(fid)}</span></div>`;
+  el.innerHTML=item('','🗂','All templates')+JD_FUNCTIONS.map(f=>item(f.id,f.icon,f.name)).join('');
+}
+function jdRenderMain(){
+  const el=document.getElementById('jdMain'); if(!el) return;
+  if(_jdTab==='blocks'){ jdRenderBlocksList(el); return; }
+  const q=_jdSearch.trim().toLowerCase();
+  const tmpls=(jdLib.templates||[]).filter(t=>{
+    if(_jdFolder && t.func!==_jdFolder) return false;
+    if(q){ const hay=(t.name+' '+jdFuncName(t.func)+' '+(t.sections||[]).map(s=>(s.title||'')+' '+(s.intro||'')+' '+(s.items||[]).join(' ')).join(' ')).toLowerCase(); if(!hay.includes(q)) return false; }
+    return true;
+  });
+  const cards=tmpls.map(t=>{
+    const purpose=(t.sections||[]).find(s=>s.kind!=='block'&&(s.intro||''));
+    const snippet=purpose?jdFill(purpose.intro,null):'';
+    const nBul=(t.sections||[]).filter(s=>s.kind==='bullets').reduce((n,s)=>n+(s.items||[]).length,0);
+    const nBlk=(t.sections||[]).filter(s=>s.kind==='block').length;
+    return `<div style="border:1px solid var(--border);background:white;border-radius:var(--r);padding:14px;display:flex;flex-direction:column;">
+      <div style="display:flex;align-items:center;gap:6px;margin-bottom:6px;"><span style="font-size:9px;font-weight:600;background:var(--surface2);color:var(--ink2);padding:2px 8px;border-radius:20px;">${jdFuncIcon(t.func)} ${escapeHtml(jdFuncName(t.func))}</span></div>
+      <div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:4px;">${escapeHtml(t.name)}</div>
+      <div style="font-size:11px;color:var(--ink3);line-height:1.5;flex:1;display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px;">${escapeHtml(snippet)||'<em>No intro yet</em>'}</div>
+      <div style="font-size:10px;color:var(--ink3);margin-bottom:10px;">${(t.sections||[]).length} sections · ${nBul} bullets · ${nBlk} shared block${nBlk!==1?'s':''}</div>
+      <div style="display:flex;gap:6px;">
+        <button onclick="jdEditTemplate('${t.id}')" class="btn btn-primary btn-sm" style="font-size:11px;flex:1;">Edit</button>
+        <button onclick="jdDuplicateTemplate('${t.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;" title="Duplicate">⧉</button>
+        <button onclick="jdDeleteTemplate('${t.id}')" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" title="Delete">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--ink);">${_jdFolder?jdFuncIcon(_jdFolder)+' '+escapeHtml(jdFuncName(_jdFolder)):'🗂 All templates'} <span style="font-weight:400;color:var(--ink3);">(${tmpls.length})</span></div>
+      <button onclick="jdEditTemplate('new')" class="btn btn-primary btn-sm" style="font-size:11px;">+ New template</button>
+    </div>
+    ${tmpls.length?`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:12px;">${cards}</div>`:`<div style="text-align:center;padding:50px 20px;color:var(--ink3);"><div style="font-size:32px;margin-bottom:8px;">📄</div><div style="font-size:13px;margin-bottom:12px;">No templates in this folder yet.</div><button onclick="jdEditTemplate('new')" class="btn btn-primary btn-sm">+ Create one</button></div>`}`;
+}
+function jdRenderBlocksList(el){
+  const blocks=jdLib.blocks||[];
+  const usage=bid=>(jdLib.templates||[]).filter(t=>(t.sections||[]).some(s=>s.kind==='block'&&s.blockId===bid)).length;
+  el.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:13px;font-weight:700;color:var(--ink);">Shared blocks <span style="font-weight:400;color:var(--ink3);">(${blocks.length})</span></div><button onclick="jdEditBlock('')" class="btn btn-primary btn-sm" style="font-size:11px;">+ New block</button></div>
+    <div style="font-size:11px;color:var(--accent-ink);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:8px 10px;margin-bottom:14px;">🔗 Blocks are your reusable company boilerplate. Edit one here and it updates in <strong>every</strong> template and every role's job description at once.</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px;">
+    ${blocks.map(b=>`<div style="border:1px solid var(--border);background:white;border-radius:var(--r);padding:14px;">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;"><span style="font-size:18px;">${escapeHtml(b.icon||'📌')}</span><span style="font-size:13px;font-weight:700;color:var(--ink);flex:1;">${escapeHtml(b.name)}</span></div>
+      <div style="font-size:11px;color:var(--ink3);line-height:1.5;display:-webkit-box;-webkit-line-clamp:4;-webkit-box-orient:vertical;overflow:hidden;margin-bottom:10px;white-space:pre-wrap;">${escapeHtml((b.content||'').split('\n').slice(1).join('\n').trim())}</div>
+      <div style="display:flex;align-items:center;gap:8px;"><span style="font-size:10px;color:var(--ink3);flex:1;">Used in ${usage(b.id)} template${usage(b.id)!==1?'s':''}</span><button onclick="jdEditBlock('${b.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Edit</button></div>
+    </div>`).join('')||'<div style="font-size:12px;color:var(--ink3);grid-column:1/-1;">No shared blocks yet.</div>'}
+    </div>`;
+}
+async function jdDuplicateTemplate(id){ const t=(jdLib.templates||[]).find(x=>x.id===id); if(!t) return; const copy=JSON.parse(JSON.stringify(t)); copy.id='jd_'+Date.now(); copy.name=t.name+' (copy)'; copy.createdAt=new Date().toISOString(); copy.updatedAt=null; (copy.sections||[]).forEach(s=>{ if(s.kind!=='block') s.id=jdNewSid(); }); jdLib.templates.push(copy); await saveJDLib(); renderJDLibrary(); showBreezeToast('✓ Template duplicated'); }
+async function jdDeleteTemplate(id){ if(!await uiConfirm('Delete this template? Roles already using it keep their job description.')) return; jdLib.templates=(jdLib.templates||[]).filter(t=>t.id!==id); await saveJDLib(); renderJDLibrary(); }
+
+// ── Section-card editor (shared by template + role editing) ──
+function jdEnsureEditorOverlay(){
+  if(document.getElementById('jdEditorOverlay')) return;
+  const ov=document.createElement('div'); ov.id='jdEditorOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:940;display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML='<div id="jdEditorCard" style="background:var(--bg);border-radius:var(--r-xl);width:100%;max-width:1040px;height:90vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;"></div>';
+  document.body.appendChild(ov);
+}
+function jdCloseEditor(){ document.getElementById('jdEditorOverlay')?.remove(); }
+function jdRerenderWork(){ if(_jdWorkMode==='role') jdRoleEditRender(); else jdRenderEditor(); }
+function jdSyncWork(){
+  if(!_jdWork) return;
+  const nm=document.getElementById('jde-name'); if(nm) _jdWork.name=nm.value.trim()||'Untitled template';
+  const fn=document.getElementById('jde-func'); if(fn) _jdWork.func=fn.value;
+  (_jdWork.sections||[]).forEach(s=>{
+    if(s.kind==='block') return;
+    const ti=document.getElementById('jds-title-'+s.id); if(ti) s.title=ti.value;
+    const it=document.getElementById('jds-intro-'+s.id); if(it) s.intro=it.value;
+    if(s.kind==='bullets'){ const bi=document.getElementById('jds-items-'+s.id); if(bi) s.items=bi.value.split('\n').map(x=>x.replace(/^[-••\s]+/,'').trim()).filter(Boolean); }
+  });
+}
+function jdRefreshPreview(){
+  if(!_jdWork) return;
+  const role=_jdWorkMode==='role'?(hcRoles||[]).find(x=>x.id===_jdWorkRoleId):null;
+  const pv=document.getElementById('jde-preview'); if(pv) pv.innerHTML=jdComposeHtml(_jdWork,role,false)||'<em>Empty</em>';
+  const bz=document.getElementById('jde-bias'); if(bz) bz.innerHTML=jdBiasPanelHtml(jdComposeText(_jdWork,role));
+}
+function jdAddSection(kind){
+  jdSyncWork();
+  if(kind==='block'){ jdPickBlock(bid=>{ _jdWork.sections.push({id:jdNewSid(),kind:'block',blockId:bid}); jdRerenderWork(); }); return; }
+  _jdWork.sections.push({id:jdNewSid(),kind,title:kind==='bullets'?'New responsibilities':'New section',intro:'',items:[]});
+  jdRerenderWork();
+}
+function jdMoveSection(sid,dir){ jdSyncWork(); const a=_jdWork.sections; const i=a.findIndex(s=>s.id===sid); const j=i+dir; if(i<0||j<0||j>=a.length) return; const tmp=a[i]; a[i]=a[j]; a[j]=tmp; jdRerenderWork(); }
+function jdDeleteSection(sid){ jdSyncWork(); _jdWork.sections=(_jdWork.sections||[]).filter(s=>s.id!==sid); jdRerenderWork(); }
+function jdSecCard(s,i,total){
+  const inp='width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 9px;font-size:12px;font-family:inherit;outline:none;background:white;box-sizing:border-box;';
+  const lbl='font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;';
+  const mv=`<div style="display:flex;flex-direction:column;gap:2px;">
+    <button title="Move up" onclick="jdMoveSection('${s.id}',-1)" style="background:none;border:1px solid var(--border);border-radius:5px;width:22px;height:20px;cursor:pointer;color:var(--ink3);font-size:9px;${i===0?'opacity:.3;':''}">▲</button>
+    <button title="Move down" onclick="jdMoveSection('${s.id}',1)" style="background:none;border:1px solid var(--border);border-radius:5px;width:22px;height:20px;cursor:pointer;color:var(--ink3);font-size:9px;${i===total-1?'opacity:.3;':''}">▼</button>
+  </div>`;
+  if(s.kind==='block'){
+    const b=(jdLib.blocks||[]).find(x=>x.id===s.blockId);
+    return `<div style="border:1px solid var(--accent-mid);background:var(--accent-bg);border-radius:var(--r);padding:12px;margin-bottom:10px;display:flex;align-items:center;gap:10px;">
+      ${mv}
+      <div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:700;color:var(--accent-ink);">${b?escapeHtml((b.icon||'📌')+' '+b.name):'Missing block'} <span style="font-size:9px;font-weight:600;background:white;color:var(--accent);padding:1px 6px;border-radius:20px;">shared</span></div><div style="font-size:11px;color:var(--accent-ink);opacity:.85;margin-top:2px;">Managed centrally - edits apply to every template &amp; JD.</div></div>
+      ${b?`<button onclick="jdEditBlock('${b.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;">Edit block</button>`:''}
+      <button onclick="jdDeleteSection('${s.id}')" title="Remove" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;">✕</button>
+    </div>`;
+  }
+  const isB=s.kind==='bullets';
+  return `<div style="border:1px solid var(--border);background:white;border-radius:var(--r);padding:12px;margin-bottom:10px;display:flex;gap:10px;">
+    ${mv}
+    <div style="flex:1;min-width:0;">
+      <input id="jds-title-${s.id}" value="${escapeHtml(s.title||'')}" placeholder="Section heading" style="${inp}font-weight:700;margin-bottom:6px;" onchange="jdSyncWork();jdRefreshPreview()">
+      <label style="${lbl}">Intro text ${isB?'<span style="font-weight:400;color:var(--ink3);">(the paragraph above the bullets)</span>':''}</label>
+      <textarea id="jds-intro-${s.id}" rows="2" placeholder="${isB?'e.g. As part of our growing team, you will:':'Describe the role, team and context. Use {{role_title}}, {{department}}, {{company_name}}...'}" style="${inp}resize:vertical;min-height:44px;margin-bottom:${isB?'6px':'0'};" onchange="jdSyncWork();jdRefreshPreview()">${escapeHtml(s.intro||'')}</textarea>
+      ${isB?`<label style="${lbl}">Bullet points <span style="font-weight:400;color:var(--ink3);">(one per line)</span></label><textarea id="jds-items-${s.id}" rows="5" placeholder="One point per line" style="${inp}resize:vertical;min-height:90px;" onchange="jdSyncWork();jdRefreshPreview()">${escapeHtml((s.items||[]).join('\n'))}</textarea>`:''}
+    </div>
+    <button onclick="jdDeleteSection('${s.id}')" title="Delete section" style="background:none;border:none;cursor:pointer;color:var(--ink3);font-size:14px;align-self:flex-start;">✕</button>
+  </div>`;
+}
+
+function jdEditTemplate(id){
+  if(id==='new'){ _jdWork={ id:'jd_'+Date.now(), func:_jdFolder||'general', name:'New job description', createdAt:new Date().toISOString(), updatedAt:null, sections:[{id:jdNewSid(),kind:'text',title:'Role purpose',intro:'As a {{role_title}} in our {{department}} team, reporting to {{reports_to}}, you will ...',items:[]}] }; _jdWorkIsNew=true; }
+  else { const t=(jdLib.templates||[]).find(x=>x.id===id); if(!t) return; _jdWork=JSON.parse(JSON.stringify(t)); _jdWorkIsNew=false; }
+  _jdWorkMode='template'; _jdWorkRoleId=null;
+  jdEnsureEditorOverlay(); jdRenderEditor();
+}
+function jdRenderEditor(){
+  const card=document.getElementById('jdEditorCard'); if(!card||!_jdWork) return;
+  const t=_jdWork;
+  const funcOpts=JD_FUNCTIONS.map(f=>`<option value="${f.id}"${t.func===f.id?' selected':''}>${f.icon} ${escapeHtml(f.name)}</option>`).join('');
+  const secs=(t.sections||[]).map((s,i)=>jdSecCard(s,i,t.sections.length)).join('');
+  card.innerHTML=`
+   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+     <button onclick="jdSyncWork();jdCloseEditor();(document.getElementById('jdLibCard')?renderJDLibrary():openJDLibrary())" class="btn btn-secondary btn-sm" style="font-size:11px;">← Library</button>
+     <div style="flex:1;min-width:0;font-size:13px;font-weight:700;color:var(--ink);">${_jdWorkIsNew?'New template':'Edit template'}</div>
+     <button onclick="jdSaveWork()" class="btn btn-primary btn-sm" style="font-size:11px;">Save template</button>
+   </div>
+   <div style="flex:1;overflow:hidden;display:flex;">
+     <div style="flex:1;overflow-y:auto;padding:18px;border-right:1px solid var(--border);">
+       <div style="display:flex;gap:10px;margin-bottom:14px;">
+         <div style="flex:1;"><label style="font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;">Template name</label><input id="jde-name" value="${escapeHtml(t.name||'')}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-weight:600;font-family:inherit;outline:none;box-sizing:border-box;" onchange="jdSyncWork()"></div>
+         <div style="width:200px;"><label style="font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;">Folder / function</label><select id="jde-func" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:12px;font-family:inherit;outline:none;cursor:pointer;box-sizing:border-box;" onchange="jdSyncWork()">${funcOpts}</select></div>
+       </div>
+       <div style="font-size:10px;color:var(--ink3);margin-bottom:12px;background:var(--surface2);border-radius:var(--r-sm);padding:6px 9px;line-height:1.7;">Placeholders auto-fill from the role: <code>{{role_title}}</code> <code>{{department}}</code> <code>{{location}}</code> <code>{{salary_range}}</code> <code>{{company_name}}</code> <code>{{reports_to}}</code></div>
+       ${secs}
+       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+         <button onclick="jdAddSection('text')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Text section</button>
+         <button onclick="jdAddSection('bullets')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Bulleted section</button>
+         <button onclick="jdAddSection('block')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Shared block</button>
+       </div>
+     </div>
+     <div style="width:340px;flex-shrink:0;overflow-y:auto;padding:18px;background:var(--bg);">
+       <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Live preview</div>
+       <div id="jde-preview" style="background:white;border:1px solid var(--border);border-radius:var(--r);padding:18px;font-size:12.5px;color:var(--ink2);line-height:1.5;">${jdComposeHtml(t,null,false)||'<em>Empty</em>'}</div>
+       <div style="font-size:11px;font-weight:700;color:var(--ink);margin:16px 0 8px;">🔎 Inclusive-language check</div>
+       <div id="jde-bias">${jdBiasPanelHtml(jdComposeText(t,null))}</div>
+     </div>
+   </div>`;
+}
+async function jdSaveWork(){
+  jdSyncWork();
+  if(_jdWorkMode==='template'){
+    _jdWork.updatedAt=new Date().toISOString();
+    jdLib.templates=jdLib.templates||[];
+    const idx=jdLib.templates.findIndex(t=>t.id===_jdWork.id);
+    if(idx>-1) jdLib.templates[idx]=_jdWork; else jdLib.templates.push(_jdWork);
+    await saveJDLib(); _jdFolder=_jdWork.func; jdCloseEditor();
+    if(document.getElementById('jdLibCard')) renderJDLibrary(); else openJDLibrary();
+    showBreezeToast('✓ Template saved');
+    return;
+  }
+  const r=(hcRoles||[]).find(x=>x.id===_jdWorkRoleId); if(!r||!r.jd) return;
+  const base=(jdLib.templates||[]).find(t=>t.id===r.jd.templateId);
+  const baseSecs=base?(base.sections||[]):[];
+  const baseById={}; baseSecs.forEach(s=>baseById[s.id]=s);
+  const overrides={}, extra=[];
+  _jdWork.sections.forEach(s=>{
+    if(baseById[s.id]){
+      if(s.kind!=='block'){
+        const bs=baseById[s.id];
+        if(JSON.stringify([s.title,s.intro,s.items||[]])!==JSON.stringify([bs.title,bs.intro,bs.items||[]])) overrides[s.id]={title:s.title,intro:s.intro,items:s.items||[]};
+      }
+    } else if(s.kind==='block') extra.push({id:s.id,kind:'block',blockId:s.blockId});
+      else extra.push({id:s.id,kind:s.kind,title:s.title,intro:s.intro,items:s.items||[]});
+  });
+  const workIds=new Set(_jdWork.sections.map(s=>s.id));
+  r.jd.overrides=overrides; r.jd.extraSections=extra;
+  r.jd.removed=baseSecs.map(s=>s.id).filter(id=>!workIds.has(id));
+  r.jd.order=_jdWork.sections.map(s=>s.id);
+  r.jd.updatedAt=new Date().toISOString(); r.updatedAt=new Date().toISOString();
+  await saveHCRoles(); jdCloseEditor(); showBreezeToast('✓ Job description saved'); jdRoleView(_jdWorkRoleId);
+}
+
+// ── Shared blocks: edit / pick / delete ──
+function jdPickBlock(cb){
+  const blocks=jdLib.blocks||[];
+  const ov=document.createElement('div'); ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:960;display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:440px;box-shadow:var(--shadow-lg);overflow:hidden;max-height:80vh;display:flex;flex-direction:column;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 18px;font-size:14px;font-weight:700;color:var(--ink);">Insert a shared block</div>
+    <div style="padding:12px;overflow-y:auto;">
+      ${blocks.map(b=>`<button onclick="_jdPickCb&&_jdPickCb('${b.id}')" style="display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:white;border:1px solid var(--border);border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;cursor:pointer;font-family:inherit;"><span style="font-size:18px;">${escapeHtml(b.icon||'📌')}</span><span style="flex:1;min-width:0;"><span style="font-size:12px;font-weight:600;color:var(--ink);display:block;">${escapeHtml(b.name)}</span><span style="font-size:10px;color:var(--ink3);">${escapeHtml((b.content||'').split('\n').slice(1).join(' ').slice(0,58))}...</span></span></button>`).join('')||'<div style="font-size:12px;color:var(--ink3);padding:10px;">No blocks yet.</div>'}
+    </div>
+    <div style="padding:10px 18px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;"><button class="btn btn-secondary btn-sm" onclick="_jdPickCb=null;this.closest('div[style*=fixed]').remove()">Cancel</button></div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov){ _jdPickCb=null; ov.remove(); } };
+  _jdPickCb=(id)=>{ ov.remove(); _jdPickCb=null; cb(id); };
+}
+function jdEditBlock(id){
+  const b=id?(jdLib.blocks||[]).find(x=>x.id===id):null;
+  const isNew=!b;
+  const cur=b||{id:'blk_'+Date.now(), name:'', icon:'📌', content:''};
+  const ov=document.createElement('div'); ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:965;display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:560px;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;max-height:88vh;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 18px;"><div style="font-size:14px;font-weight:700;color:var(--ink);">${isNew?'New shared block':'Edit shared block'}</div><div style="font-size:11px;color:var(--accent-ink);margin-top:2px;">🔗 Saving updates this block everywhere it is used - every template and every role's job description.</div></div>
+    <div style="padding:16px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;">
+      <div style="display:flex;gap:10px;">
+        <div style="width:70px;"><label style="font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;">Icon</label><input id="jdblk-icon" value="${escapeHtml(cur.icon||'')}" maxlength="2" style="width:100%;text-align:center;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px;font-size:16px;box-sizing:border-box;"></div>
+        <div style="flex:1;"><label style="font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;">Block name</label><input id="jdblk-name" value="${escapeHtml(cur.name||'')}" placeholder="e.g. About the company" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;box-sizing:border-box;"></div>
+      </div>
+      <div><label style="font-size:10px;font-weight:600;color:var(--ink2);margin-bottom:3px;display:block;">Content <span style="font-weight:400;color:var(--ink3);">- first line is the heading. Start a line with "- " for a bullet. Placeholders like {{company_name}} are supported.</span></label>
+      <textarea id="jdblk-content" rows="10" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:12.5px;font-family:inherit;line-height:1.5;resize:vertical;box-sizing:border-box;">${escapeHtml(cur.content||'')}</textarea></div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;align-items:center;">
+      ${!isNew?`<button onclick="jdDeleteBlock('${cur.id}',this)" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:11px;">Delete block</button>`:'<span></span>'}
+      <div style="display:flex;gap:8px;"><button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+      <button class="btn btn-primary btn-sm" onclick="jdSaveBlock('${cur.id}',this)">Save block</button></div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+  setTimeout(()=>document.getElementById('jdblk-name')?.focus(),60);
+}
+async function jdSaveBlock(id,btn){
+  const nameEl=document.getElementById('jdblk-name'); const name=nameEl?.value?.trim();
+  if(!name){ if(nameEl) nameEl.style.borderColor='var(--red)'; return; }
+  btn.textContent='Saving...'; btn.disabled=true;
+  const rec={ id, name, icon:document.getElementById('jdblk-icon')?.value?.trim()||'📌', content:document.getElementById('jdblk-content')?.value||'', updatedAt:new Date().toISOString() };
+  jdLib.blocks=jdLib.blocks||[];
+  const idx=jdLib.blocks.findIndex(b=>b.id===id);
+  if(idx>-1) jdLib.blocks[idx]=rec; else jdLib.blocks.push(rec);
+  await saveJDLib();
+  btn.closest('div[style*=fixed]').remove();
+  showBreezeToast('✓ Block saved - applied everywhere it is used');
+  if(document.getElementById('jdLibCard')) renderJDLibrary();
+  if(document.getElementById('jdEditorCard')&&_jdWork){ jdRerenderWork(); }
+}
+async function jdDeleteBlock(id,btn){
+  if(!await uiConfirm('Delete this shared block? It will be removed from every template that uses it.')) return;
+  jdLib.blocks=(jdLib.blocks||[]).filter(b=>b.id!==id);
+  (jdLib.templates||[]).forEach(t=>{ t.sections=(t.sections||[]).filter(s=>!(s.kind==='block'&&s.blockId===id)); });
+  await saveJDLib();
+  btn.closest('div[style*=fixed]').remove();
+  showBreezeToast('Block deleted');
+  if(document.getElementById('jdLibCard')) renderJDLibrary();
+  if(document.getElementById('jdEditorCard')&&_jdWork) jdRerenderWork();
+}
+
+// ── Role integration: draft / view / edit a role's job description ──
+function jdRoleTemplate(r){
+  const base=(jdLib.templates||[]).find(t=>t.id===r.jd.templateId);
+  if(!base) return null;
+  const ov=r.jd.overrides||{}, extra=r.jd.extraSections||[], removed=new Set(r.jd.removed||[]);
+  const bySid={};
+  (base.sections||[]).forEach(s=>{ let sec=JSON.parse(JSON.stringify(s)); if(sec.kind!=='block'&&ov[sec.id]) sec=Object.assign(sec,ov[sec.id]); bySid[sec.id]=sec; });
+  extra.forEach(s=>{ bySid[s.id]=JSON.parse(JSON.stringify(s)); });
+  const order=(r.jd.order&&r.jd.order.length)?r.jd.order.slice():[];
+  const known=new Set(order);
+  (base.sections||[]).forEach(s=>{ if(!known.has(s.id)){ order.push(s.id); known.add(s.id); } });
+  extra.forEach(s=>{ if(!known.has(s.id)){ order.push(s.id); known.add(s.id); } });
+  const sections=order.filter(id=>!removed.has(id)).map(id=>bySid[id]).filter(Boolean);
+  return Object.assign({}, base, {sections});
+}
+function jdGuessFunc(r){
+  const s=((r.dept||'')+' '+(r.title||'')).toLowerCase();
+  const map=[['engineer|developer|software|devops|platform|sre','engineering'],['product manager|product owner|product','product'],['design|ux|ui|creative','design'],['data|analyst|analytics|scien|\\bbi\\b','data'],['sales|account exec|business development|revenue','sales'],['market|brand|content|growth|seo|comms','marketing'],['customer success|support|\\bcsm\\b|account manager','cs'],['\\bhr\\b|people|talent|recruit|culture','people'],['finance|account|payroll|controller','finance'],['operations|\\bops\\b|logistics|supply','operations'],['legal|compliance|counsel|\\brisk\\b','legal']];
+  for(const pair of map){ if(new RegExp(pair[0]).test(s)) return pair[1]; }
+  return 'general';
+}
+async function jdOpenForRole(roleId){
+  await loadJDLib();
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  if(r.jd && (jdLib.templates||[]).some(t=>t.id===r.jd.templateId)) jdRoleView(roleId);
+  else jdPickTemplateForRole(roleId);
+}
+function jdPickTemplateForRole(roleId){
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  const tmpls=jdLib.templates||[];
+  const guess=jdGuessFunc(r);
+  const groups=JD_FUNCTIONS.map(f=>({f, list:tmpls.filter(t=>t.func===f.id)})).filter(g=>g.list.length);
+  groups.sort((a,b)=> (b.f.id===guess?1:0)-(a.f.id===guess?1:0));
+  const ov=document.createElement('div'); ov.id='jdPickOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.55);z-index:930;display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;max-height:86vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:16px 20px;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Choose a starting template</div><div style="font-size:11px;color:var(--ink3);margin-top:2px;">For ${escapeHtml(r.title||'this role')}. Role details fill in automatically; you can edit everything after.</div></div>
+    <div style="padding:14px 18px;overflow-y:auto;flex:1;">
+    ${groups.map(g=>`<div style="font-size:10px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin:10px 0 6px;">${g.f.icon} ${escapeHtml(g.f.name)}${g.f.id===guess?' <span style="color:var(--accent);">· suggested</span>':''}</div>
+      ${g.list.map(t=>`<button onclick="jdAssignTemplate('${roleId}','${t.id}')" style="display:block;width:100%;text-align:left;background:white;border:1px solid ${g.f.id===guess?'var(--accent-mid)':'var(--border)'};border-radius:var(--r-sm);padding:10px 12px;margin-bottom:6px;cursor:pointer;font-family:inherit;"><span style="font-size:12.5px;font-weight:600;color:var(--ink);">${escapeHtml(t.name)}</span><span style="font-size:10px;color:var(--ink3);display:block;margin-top:2px;">${(t.sections||[]).length} sections · ${(t.sections||[]).filter(s=>s.kind==='block').length} shared blocks</span></button>`).join('')}`).join('')||'<div style="font-size:12px;color:var(--ink3);padding:12px;">No templates yet - create one in the JD library.</div>'}
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;">
+      <button onclick="this.closest('div[style*=fixed]').remove();openJDLibrary()" class="btn btn-secondary btn-sm" style="font-size:11px;">Manage library</button>
+      <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+async function jdAssignTemplate(roleId,tid){
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  const keep=r.jd&&r.jd.templateId===tid;
+  r.jd={ templateId:tid, overrides:(keep&&r.jd.overrides)||{}, extraSections:(keep&&r.jd.extraSections)||[], removed:(keep&&r.jd.removed)||[], order:(keep&&r.jd.order)||[], createdAt:(r.jd&&r.jd.createdAt)||new Date().toISOString(), updatedAt:new Date().toISOString() };
+  r.updatedAt=new Date().toISOString();
+  await saveHCRoles();
+  document.getElementById('jdPickOverlay')?.remove();
+  document.getElementById('hcRolePanel')?.remove();
+  renderHeadcount();
+  jdRoleView(roleId);
+}
+async function jdChangeTemplate(roleId){
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  if(!await uiConfirm('Switch template? Your role-specific edits will be cleared, but shared blocks stay in sync.')) return;
+  if(r.jd){ r.jd.overrides={}; r.jd.extraSections=[]; r.jd.removed=[]; r.jd.order=[]; }
+  document.getElementById('jdRoleOverlay')?.remove();
+  jdPickTemplateForRole(roleId);
+}
+function jdMetaLineHtml(r){
+  const bits=[]; if(r.dept) bits.push(escapeHtml(r.dept)); if(r.country) bits.push(escapeHtml(r.country));
+  const comp=(r.compMin||r.compMax)?hcFmtComp(r):''; if(comp) bits.push(comp);
+  if(r.hiringManager) bits.push('Reports to '+escapeHtml(r.hiringManager));
+  return bits.length?`<div style="font-size:12px;color:var(--ink3);margin:0 0 16px;padding-bottom:12px;border-bottom:1px solid var(--border);">${bits.join(' &nbsp;·&nbsp; ')}</div>`:'';
+}
+async function jdRoleView(roleId){
+  await loadJDLib();
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r) return;
+  if(!r.jd || !(jdLib.templates||[]).some(t=>t.id===r.jd.templateId)){ jdPickTemplateForRole(roleId); return; }
+  const t=jdRoleTemplate(r);
+  const tmplName=((jdLib.templates||[]).find(x=>x.id===r.jd.templateId)||{}).name||'Template';
+  const docText=t?jdComposeText(t,r):'';
+  document.getElementById('jdRoleOverlay')?.remove();
+  const ov=document.createElement('div'); ov.id='jdRoleOverlay';
+  ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:920;display:flex;align-items:center;justify-content:center;padding:24px;';
+  ov.innerHTML=`<div style="background:var(--bg);border-radius:var(--r-xl);width:100%;max-width:940px;height:90vh;box-shadow:var(--shadow-lg);overflow:hidden;display:flex;flex-direction:column;">
+    <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:14px 20px;display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <div style="flex:1;min-width:0;"><div style="font-size:15px;font-weight:700;color:var(--ink);">Job description</div><div style="font-size:11px;color:var(--ink3);">${escapeHtml(r.title||'')} · from template: ${escapeHtml(tmplName)}${r.jd.updatedAt?' · edited '+hcFmt(r.jd.updatedAt):''}</div></div>
+      <button onclick="jdRoleEdit('${roleId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">✏️ Edit</button>
+      <button onclick="jdChangeTemplate('${roleId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Change template</button>
+      <button onclick="jdRoleCopy('${roleId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">Copy</button>
+      <button onclick="jdRoleDownload('${roleId}')" class="btn btn-primary btn-sm" style="font-size:11px;">⬇ .doc</button>
+      <button onclick="document.getElementById('jdRoleOverlay').remove()" style="background:var(--surface2);border:none;color:var(--ink);width:28px;height:28px;border-radius:50%;cursor:pointer;font-size:16px;flex-shrink:0;">✕</button>
+    </div>
+    <div style="flex:1;overflow-y:auto;padding:22px;display:flex;gap:20px;">
+      <div style="flex:1;min-width:0;background:white;border:1px solid var(--border);border-radius:var(--r);padding:30px 38px;box-shadow:0 1px 2px rgba(0,0,0,0.04);">
+        <h1 style="font-size:22px;font-weight:800;color:var(--ink);margin:0 0 6px;">${escapeHtml(r.title||'Job description')}</h1>
+        ${jdMetaLineHtml(r)}
+        <div style="color:var(--ink2);font-size:13.5px;line-height:1.55;">${t?jdComposeHtml(t,r,false):'<em>Template not found.</em>'}</div>
+      </div>
+      <div style="width:250px;flex-shrink:0;">
+        <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r);padding:12px;margin-bottom:12px;">
+          <div style="font-size:11px;font-weight:700;color:var(--ink);margin-bottom:8px;">🔎 Inclusive-language check</div>
+          ${jdBiasPanelHtml(docText)}
+        </div>
+        <div style="background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r);padding:12px;font-size:11px;color:var(--accent-ink);line-height:1.5;">
+          <strong>Shared sections stay in sync.</strong> About us, benefits, DEI and how-to-apply come from your JD library. Edit them once and every role updates automatically.
+          <div style="margin-top:8px;"><button onclick="document.getElementById('jdRoleOverlay').remove();jdSetTab('blocks');openJDLibrary()" style="background:white;border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:4px 8px;font-size:11px;color:var(--accent-ink);cursor:pointer;font-family:inherit;">Edit shared blocks →</button></div>
+        </div>
+      </div>
+    </div>
+  </div>`;
+  document.body.appendChild(ov);
+  ov.onclick=e=>{ if(e.target===ov) ov.remove(); };
+}
+async function jdRoleEdit(roleId){
+  await loadJDLib();
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r||!r.jd) return;
+  const merged=jdRoleTemplate(r); if(!merged){ showBreezeToast('Template not found - pick a new one'); jdPickTemplateForRole(roleId); return; }
+  _jdWork=JSON.parse(JSON.stringify(merged)); _jdWorkMode='role'; _jdWorkRoleId=roleId; _jdWorkIsNew=false;
+  document.getElementById('jdRoleOverlay')?.remove();
+  jdEnsureEditorOverlay(); jdRoleEditRender();
+}
+function jdRoleEditRender(){
+  const card=document.getElementById('jdEditorCard'); if(!card||!_jdWork) return;
+  const role=(hcRoles||[]).find(x=>x.id===_jdWorkRoleId)||null;
+  const secs=(_jdWork.sections||[]).map((s,i)=>jdSecCard(s,i,_jdWork.sections.length)).join('');
+  card.innerHTML=`
+   <div style="background:var(--surface);border-bottom:1px solid var(--border);padding:12px 18px;display:flex;align-items:center;gap:10px;flex-shrink:0;">
+     <button onclick="jdSyncWork();jdCloseEditor();jdRoleView('${_jdWorkRoleId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">← Back</button>
+     <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:700;color:var(--ink);">Editing job description</div><div style="font-size:11px;color:var(--ink3);">${escapeHtml(role?role.title:'')} · role-specific edits. Shared blocks stay centrally managed.</div></div>
+     <button onclick="jdSaveWork()" class="btn btn-primary btn-sm" style="font-size:11px;">Save</button>
+   </div>
+   <div style="flex:1;overflow:hidden;display:flex;">
+     <div style="flex:1;overflow-y:auto;padding:18px;border-right:1px solid var(--border);">
+       <div style="font-size:10px;color:var(--ink3);margin-bottom:12px;background:var(--surface2);border-radius:var(--r-sm);padding:6px 9px;line-height:1.6;">Placeholders fill from this role: <code>{{role_title}}</code>=${escapeHtml(role&&role.title||'-')}, <code>{{department}}</code>=${escapeHtml(role&&role.dept||'-')}, <code>{{salary_range}}</code>=${escapeHtml(role&&(role.compMin||role.compMax)?hcFmtComp(role):'-')}</div>
+       ${secs}
+       <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;">
+         <button onclick="jdAddSection('text')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Text section</button>
+         <button onclick="jdAddSection('bullets')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Bulleted section</button>
+         <button onclick="jdAddSection('block')" class="btn btn-secondary btn-sm" style="font-size:11px;">+ Shared block</button>
+       </div>
+     </div>
+     <div style="width:340px;flex-shrink:0;overflow-y:auto;padding:18px;background:var(--bg);">
+       <div style="font-size:11px;font-weight:700;color:var(--ink3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px;">Live preview</div>
+       <div id="jde-preview" style="background:white;border:1px solid var(--border);border-radius:var(--r);padding:18px;font-size:12.5px;color:var(--ink2);line-height:1.5;">${jdComposeHtml(_jdWork,role,false)||'<em>Empty</em>'}</div>
+       <div style="font-size:11px;font-weight:700;color:var(--ink);margin:16px 0 8px;">🔎 Inclusive-language check</div>
+       <div id="jde-bias">${jdBiasPanelHtml(jdComposeText(_jdWork,role))}</div>
+     </div>
+   </div>`;
+}
+async function jdRoleCopy(roleId){
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r||!r.jd) return;
+  const t=jdRoleTemplate(r); if(!t) return;
+  const text=(r.title||'')+'\n\n'+jdComposeText(t,r);
+  try{ await navigator.clipboard.writeText(text); showBreezeToast('✓ Copied to clipboard'); }catch(e){ showBreezeToast('Copy failed'); }
+}
+function jdRoleDownload(roleId){
+  const r=(hcRoles||[]).find(x=>x.id===roleId); if(!r||!r.jd) return;
+  const t=jdRoleTemplate(r); if(!t) return;
+  const title=r.title||'Job description';
+  const body=`<h1>${escapeHtml(title)}</h1>`+jdMetaLineHtml(r)+jdComposeHtml(t,r,true);
+  const html=`<html><head><meta charset="utf-8"><style>body{font-family:Calibri,Arial,sans-serif;color:#222;line-height:1.5;} h1{font-size:20px;margin:0 0 4px;} h3{font-size:14px;margin:16px 0 4px;} ul{margin:6px 0 6px 18px;} p{margin:6px 0;}</style></head><body>${body}</body></html>`;
+  const blob=new Blob([html],{type:'application/msword'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download=title.replace(/[^a-z0-9]+/gi,'-').replace(/^-|-$/g,'')+'-JD.doc'; a.click(); setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+  showBreezeToast('✓ Downloaded '+a.download);
 }
 
 // ── ORG CHART STATE ──
