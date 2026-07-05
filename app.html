@@ -10807,6 +10807,14 @@ VV_TOKENS,
 '- Be genuinely interactive where it helps: filters, toggles, sliders, sortable tables, click-to-drill - all computed client-side from the payload.',
 '- Use font-family:"Plus Jakarta Sans",-apple-system,sans-serif and tabular figures for numbers.',
 '',
+'CHART QUALITY - make every chart genuinely readable:',
+'- Aggregate before plotting. Never draw one thin bar/spike per employee or per day. For anything over time, bucket into months, quarters or years so there are at most ~12-16 bars/points across the axis - pick the granularity from the date range.',
+'- Do not render near-empty charts (all values 0 or 1 with lots of whitespace). If a breakdown would be sparse, aggregate it up or show a summary stat / table instead.',
+'- Prefer a few strong, well-labelled visuals (aim for 3-6) over many cramped ones. Give bars real width and spacing; give lines/areas visible points; leave headroom above the max value.',
+'- Match the chart to the question: distribution -> histogram; trend over time -> line or area (aggregated); composition -> stacked bar or donut; comparison between groups -> horizontal bars sorted by value.',
+'- Label axes and series clearly; add a legend when there is more than one series; skip or rotate tick labels if they would overlap. Round money to sensible units (e.g. £92k).',
+'- Every chart must be understandable in 2 seconds. If in doubt, aggregate more and show fewer, bigger elements.',
+'',
 'Build exactly what the user asks for. Make it look like a polished, top-tier analytics product.'
   ].join('\n');
 }
@@ -10831,13 +10839,29 @@ function vvValidate(html){
   return null;
 }
 
-// Guarantee the no-exfiltration boundary regardless of what the model produced.
+// Guarantee the no-exfiltration boundary + auto-height reporting, regardless of what the model produced.
 function vvHardenCsp(html){
   var csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; img-src data:; connect-src \'none\'; font-src \'none\'">';
   html = html.replace(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/ig,'');
-  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, function(m){ return m+csp; });
-  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, function(m){ return m+'<head>'+csp+'</head>'; });
-  return '<!doctype html><html><head>'+csp+'</head>'+html+'</html>';
+  if (/<head[^>]*>/i.test(html)) html = html.replace(/<head[^>]*>/i, function(m){ return m+csp; });
+  else if (/<html[^>]*>/i.test(html)) html = html.replace(/<html[^>]*>/i, function(m){ return m+'<head>'+csp+'</head>'; });
+  else html = '<!doctype html><html><head>'+csp+'</head>'+html+'</html>';
+  // Sandboxed frame can't be measured by the parent, so it measures itself and reports its height.
+  // We add this AFTER validation so it can't be blamed on the model (validation forbids parent.*).
+  var reporter = '<script>(function(){var last=0;function h(){try{var b=document.body,e=document.documentElement,H=Math.max(b?b.scrollHeight:0,b?b.offsetHeight:0,e.scrollHeight,e.offsetHeight);if(H&&Math.abs(H-last)>2){last=H;parent.postMessage({__type:"vibe-height",height:H},"*");}}catch(_){}}window.addEventListener("load",h);window.addEventListener("resize",h);window.addEventListener("message",function(){setTimeout(h,60);setTimeout(h,400);});[120,600,1500].forEach(function(t){setTimeout(h,t);});try{if(window.ResizeObserver)new ResizeObserver(h).observe(document.documentElement);}catch(_){}})();<\/script>';
+  if (/<\/body>/i.test(html)) return html.replace(/<\/body>/i, reporter+'</body>');
+  return html + reporter;
+}
+
+// Parent listens for height reports and sizes the single visible iframe to fit (one scrollbar). Hooked once.
+if (!window._vvHeightHooked){
+  window._vvHeightHooked = true;
+  window.addEventListener('message', function(ev){
+    if (!ev || !ev.data || ev.data.__type !== 'vibe-height') return;
+    var f = document.getElementById('vvFrame'); if (!f || !ev.data.height) return;
+    var target = Math.max(320, Math.min(20000, ev.data.height));
+    if (Math.abs(parseInt(f.style.height,10) - target) > 2) f.style.height = target + 'px';
+  });
 }
 
 // Shared generation core: generate -> validate -> one repair -> CSP-harden. Used by create + refine.
@@ -10955,7 +10979,7 @@ function vvRenderView(body){
         <button onclick="vvNewView()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New view</button>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
-        <iframe id="vvFrame" sandbox="allow-scripts" style="width:100%;height:940px;border:0;display:block;background:transparent;"></iframe>
+        <iframe id="vvFrame" sandbox="allow-scripts" scrolling="no" style="width:100%;height:620px;border:0;display:block;background:transparent;transition:height .18s ease;"></iframe>
         <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">AI can make mistakes. Check important info.</div>
       </div>
     </div>`;
