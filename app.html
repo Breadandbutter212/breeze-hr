@@ -7986,6 +7986,24 @@ async function callClaude(messages, systemPrompt, opts) {
   } catch(e) { return `Connection error: ${e.message}`; }
 }
 
+// Ask the HRIS tool-calling agent (api/hris-chat). It runs Claude with live Merge HRIS
+// tools server-side and returns a plain text answer. Returns null on any fallback/error
+// (no HRIS, not an admin, timeout...) so the caller drops back to the normal chat path.
+async function askHris(messages) {
+  try {
+    const token = await getAuthToken();
+    const res = await fetch('/api/hris-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+      body: JSON.stringify({ messages })
+    });
+    const data = await res.json();
+    if (!res.ok || data.fallback) return null;
+    if (data.content && data.content[0]) return data.content[0].text.replace(/[--]/g,'-');
+    return null;
+  } catch(e) { return null; }
+}
+
 async function buildChatSystemPrompt() {
   let policyContext = '', learningContext = '', ratingContext = '';
   if (currentProfile) {
@@ -8904,6 +8922,25 @@ function isHeavyDocRequest(msg) {
   return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
 }
 
+// Detect a workforce/HRIS data question (who's off, headcount, new joiners, teams,
+// managers, start dates) that the HRIS tool-calling agent should answer. Only routes when
+// an HRIS is actually connected - otherwise normal chat handles it as before.
+function isPeopleDataRequest(msg) {
+  if (!(window._mergeConnected || mergeEmployeeCache)) return false;
+  const t = (msg || '').toLowerCase();
+  const patterns = [
+    /\b(who|anyone|anybody)\b.*\b(off|on (holiday|leave|annual leave)|away|absent|booked (time )?off)/,
+    /\b(time off|time-off|on holiday|on leave|annual leave|absent|booked off)\b.*\b(on|this|next|tomorrow|today|week|month|\d{1,2}(st|nd|rd|th)?)/,
+    /\bhow many\b.*\b(employees|people|staff|work here|in (the|our)|team|department|office|based)/,
+    /\bheadcount\b/,
+    /\b(who|which people|which employees|list (of )?(the )?(people|employees|staff))\b.*\b(joined|started|new (hires?|starters?|joiners?)|leavers?|in (the |our )?[a-z ]*(team|department)|report to|reports to|manager)/,
+    /\b(new (starters?|joiners?|hires?)|(who|people|anyone) (joined|started) (us|the (company|team|business)|in the last))/,
+    /\bwho\b.*\b(manages|reports? to|is (the )?manager (of|for))/,
+    /\b(start date|when did .* (start|join)|how long has .* (been here|worked here))\b/
+  ];
+  return patterns.some(re => re.test(t));
+}
+
 // Detect a colour/theme the user asked for ("in orange", "green theme", "#5B47E0") so a
 // generated document can be produced in that accent. Returns a colour name/hex or null.
 // Client-side colour resolver (mirrors the server) so the preview accent matches the download.
@@ -9046,7 +9083,12 @@ async function sendChat(overrideMsg) {
   // Document-style requests get the Opus model and a large output budget so the draft
   // reads like a proper document; quick chat stays on the cheaper, faster default.
   const heavyDoc = isHeavyDocRequest(msg);
-  const reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
+  // People/roster/time-off questions go to the HRIS tool-calling agent, which queries the
+  // connected HRIS live. Anything else - and any HRIS miss - uses the existing chat path,
+  // unchanged. askHris returns null on any fallback/error so we always degrade gracefully.
+  let reply = null;
+  if (isPeopleDataRequest(msg)) reply = await askHris(apiMessages);
+  if (reply == null) reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
     heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 } : null);
   chatLoading = false;
   stopThinkingWords();
@@ -19095,6 +19137,7 @@ function openRolePanel(id) {
       <div style="padding:14px 22px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
         <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deleteHCRole('${id}')">Delete role</button>
         <div style="flex:1;"></div>
+        <button onclick="jdOpenForRole('${id}')" class="btn ${r.jd?'btn-secondary':'btn-primary'} btn-sm" style="font-size:11px;">📄 ${r.jd?'View job description':'Draft job description'}</button>
         <button onclick="document.getElementById('hcRolePanel').remove();openAddRoleModal((hcRoles||[]).find(x=>x.id==='${id}'))" class="btn btn-secondary btn-sm" style="font-size:11px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit details</button>
         <button class="btn btn-secondary btn-sm" onclick="document.getElementById('hcRolePanel').remove()">Close</button>
       </div>

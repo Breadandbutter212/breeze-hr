@@ -19,6 +19,9 @@
     "api/chat.js": {
       "maxDuration": 300
     },
+    "api/hris-chat.js": {
+      "maxDuration": 120
+    },
     "api/generate-doc.js": {
       "maxDuration": 300
     }
