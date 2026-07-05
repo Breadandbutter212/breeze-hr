@@ -19,8 +19,8 @@
     "api/chat.js": {
       "maxDuration": 300
     },
-    "api/hris-chat.js": {
-      "maxDuration": 120
+    "api/merge-search.js": {
+      "maxDuration": 60
     },
     "api/generate-doc.js": {
       "maxDuration": 300

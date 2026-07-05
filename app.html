@@ -7992,10 +7992,10 @@ async function callClaude(messages, systemPrompt, opts) {
 async function askHris(messages) {
   try {
     const token = await getAuthToken();
-    const res = await fetch('/api/hris-chat', {
+    const res = await fetch('/api/merge-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ messages })
+      body: JSON.stringify({ action: 'chat', messages })
     });
     const data = await res.json();
     if (!res.ok || data.fallback) return null;
