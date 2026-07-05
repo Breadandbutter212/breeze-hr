@@ -585,7 +585,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
 /* ── LOGIN ── */
 .login-screen { position: fixed; inset: 0; display: flex; z-index: 999; }
-.login-left { flex: 0 0 50%; max-width: 50%; background: linear-gradient(160deg, rgba(79,70,229,.82) 0%, rgba(93,51,214,.88) 45%, rgba(45,20,90,.94) 100%), url('/img/all-hands.jpg') center/cover no-repeat; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 48px; position: relative; overflow: hidden; }
+.login-left { flex: 0 0 50%; max-width: 50%; background: var(--sidebar-grad); display: flex; flex-direction: column; justify-content: space-between; padding: 40px 48px; position: relative; overflow: hidden; }
 .login-left::before { content: ''; position: absolute; inset: 0; background: radial-gradient(ellipse at 30% 15%, rgba(255,255,255,0.10) 0%, transparent 55%), radial-gradient(ellipse at 80% 80%, rgba(45,20,90,0.30) 0%, transparent 50%); pointer-events: none; }
 .login-left-logo { display: flex; align-items: center; gap: 12px; position: relative; }
 .login-left-logo-icon { width: 40px; height: 40px; background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); border-radius: 10px; display: flex; align-items: center; justify-content: center; backdrop-filter: blur(8px); }
@@ -6449,10 +6449,12 @@ function applyAccent(name){
   try { localStorage.setItem('bz_accent', name); } catch(e) {}
   document.querySelectorAll('.bz-swatch').forEach(function(s){ s.classList.toggle('sel', s.dataset.accent===name); });
 }
-function bzCurrentAccent(){ try { return localStorage.getItem('bz_accent') || 'purple'; } catch(e){ return 'purple'; } }
+const BZ_VISIBLE = ['aurora'];            // only these appear in the picker; others stay defined but hidden
+const BZ_DEFAULT = 'aurora';
+function bzCurrentAccent(){ try { const v=localStorage.getItem('bz_accent'); return (v && BZ_VISIBLE.indexOf(v)>=0) ? v : BZ_DEFAULT; } catch(e){ return BZ_DEFAULT; } }
 function bzSwatchHtml(){
   const cur = bzCurrentAccent();
-  return Object.keys(BZ_THEMES).map(function(k){ const t=BZ_THEMES[k], v=t.vars;
+  return BZ_VISIBLE.map(function(k){ const t=BZ_THEMES[k], v=t.vars;
     const heroPrev = (v['--hero-grad'] && v['--hero-grad']!=='none') ? v['--hero-grad'] : (v['--home-bg'] || '#eee');
     return '<button class="bz-swatch'+(k===cur?' sel':'')+'" data-accent="'+k+'" onclick="applyAccent(\''+k+'\')" title="'+t.label+'">'+
       '<span class="prev"><span class="side" style="background:'+v['--sidebar-grad']+'"></span>'+
