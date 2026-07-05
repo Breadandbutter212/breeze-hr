@@ -10948,7 +10948,7 @@ function vvRenderView(body){
     <div style="max-width:1140px;margin:0 auto;padding:14px 20px 30px;">
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div>
-          <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${_vvTitle}</div>
+          <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_vvTitle)}</div>
           <div style="font-size:11px;color:var(--ink3);">Sandboxed frame · fed via postMessage · no network access</div>
         </div>
         <button onclick="vvRefine()" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">↻ Refine</button>
