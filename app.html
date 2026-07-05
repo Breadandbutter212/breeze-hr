@@ -547,11 +547,11 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .es-prompt:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
 .es-prompt svg { width:13px; height:13px; flex-shrink:0; }
 /* chat: HRIS people-data box */
-.es-hris { margin-top:22px; width:100%; max-width:430px; border:1px solid var(--border); border-radius:14px; background:white; padding:14px 15px 13px; text-align:left; }
+.es-hris { margin-top:22px; width:100%; max-width:360px; border:1px solid var(--border); border-radius:14px; background:white; padding:16px 16px 14px; text-align:center; display:flex; flex-direction:column; align-items:center; }
 .es-hris-head { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; letter-spacing:.01em; color:var(--green,#15803D); background:rgba(21,128,61,.08); border:1px solid rgba(21,128,61,.16); padding:3px 10px 3px 8px; border-radius:20px; margin-bottom:12px; }
 .es-hris-dot { width:6px; height:6px; border-radius:50%; background:var(--green,#15803D); box-shadow:0 0 0 3px rgba(21,128,61,.18); flex-shrink:0; }
-.es-hris-prompts { display:flex; flex-direction:column; gap:2px; }
-.es-hris-q { display:flex; align-items:center; gap:9px; font-size:13px; color:var(--ink2); padding:7px 8px; margin:0 -8px; border-radius:8px; cursor:pointer; transition:background .12s,color .12s; }
+.es-hris-prompts { display:flex; flex-direction:column; gap:4px; width:100%; }
+.es-hris-q { display:flex; align-items:center; justify-content:center; gap:9px; font-size:13px; color:var(--ink2); padding:8px 12px; border-radius:8px; cursor:pointer; transition:background .12s,color .12s; }
 .es-hris-q:hover { background:var(--accent-bg); color:var(--accent); }
 .es-hris-q svg { width:15px; height:15px; flex-shrink:0; color:var(--ink3); transition:color .12s; }
 .es-hris-q:hover svg { color:var(--accent); }
@@ -9211,18 +9211,11 @@ function renderChatHistory() {
     el.innerHTML = `<div class="chat-welcome">
       <div class="chat-welcome-title">${firstName ? 'Hi ' + firstName + ', how can I help?' : 'How can I help?'}</div>
       <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or ask me to draft a letter. I'll keep it in your company's style.</div>
-      <div class="es-prompts">
-        <div class="es-prompt" onclick="sendChat('Draft an offer letter for a new hire')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Draft an offer letter</div>
-        <div class="es-prompt" onclick="sendChat('Summarise our maternity leave policy')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2Z"/></svg>Summarise a policy</div>
-        <div class="es-prompt" onclick="sendChat('What are the steps for a fair redundancy process?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>Redundancy steps</div>
-      </div>
       <div class="es-hris">
         <div class="es-hris-head"><span class="es-hris-dot"></span>Connected to your HRIS</div>
         <div class="es-hris-prompts">
           <div class="es-hris-q" onclick="sendChat('What is our current headcount?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>What is our current headcount?</div>
           <div class="es-hris-q" onclick="sendChat('Who is on leave next week?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Who is on leave next week?</div>
-          <div class="es-hris-q" onclick="sendChat('Who has joined in the last 30 days?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/></svg>Who has joined recently?</div>
-          <div class="es-hris-q" onclick="sendChat('How many people are in each department?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><rect x="7" y="12" width="3" height="6"/><rect x="12" y="8" width="3" height="10"/><rect x="17" y="5" width="3" height="13"/></svg>Headcount by department</div>
         </div>
       </div>
     </div>`;
