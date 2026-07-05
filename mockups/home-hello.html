@@ -1,0 +1,295 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Breeze — Home (light blue) mockup</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --blue:#2F6FE0; --blue-ink:#1E4FA8; --blue-soft:#EAF2FF; --blue-soft2:#DCEAFF;
+    --navy:#23324A; --ink:#1F2A3D; --ink2:#5B6B84; --ink3:#93A0B4;
+    --bg:#F6F9FE; --surface:#FFFFFF; --line:#E6EDF7;
+    --teal:#0E9384; --teal-bg:#DBF5F1; --amber:#DC8A0A; --amber-bg:#FDF0DA; --rose:#E0356E; --rose-bg:#FCE7EE;
+    --green:#12854E; --green-bg:#E6F7EE;
+    --r:16px; --r-lg:20px; --r-xl:24px;
+    --font:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --sh:0 1px 2px rgba(28,40,72,.05),0 10px 26px rgba(28,40,72,.06);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;display:flex;height:100vh;overflow:hidden;background:var(--bg);color:var(--ink);
+    font-family:var(--font);-webkit-font-smoothing:antialiased}
+  svg{display:block}
+  .tabular{font-variant-numeric:tabular-nums}
+
+  /* ---------- SIDEBAR (light blue) ---------- */
+  .sidebar{width:246px;flex-shrink:0;height:100%;display:flex;flex-direction:column;
+    background:linear-gradient(180deg,#EAF2FF 0%,#E1ECFF 60%,#DCEAFF 100%);
+    border-right:1px solid var(--line);padding:16px 14px}
+  .brand{display:flex;align-items:center;gap:10px;padding:6px 8px 14px}
+  .brand .logo{width:28px;height:28px;border-radius:9px;background:var(--blue);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 14px rgba(47,111,224,.35)}
+  .brand .logo svg{width:16px;height:16px;stroke:#fff}
+  .brand .name{font-weight:700;font-size:16px;letter-spacing:-.02em;color:var(--navy)}
+  .nav{flex:1;overflow-y:auto;margin-top:4px}
+  .nav::-webkit-scrollbar{width:0}
+  .sg-label{font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--ink3);padding:14px 10px 5px}
+  .ni{display:flex;align-items:center;gap:10px;width:100%;border:0;background:none;cursor:pointer;
+    font-family:inherit;font-size:13px;font-weight:500;color:var(--navy);padding:8px 10px;border-radius:10px;text-align:left}
+  .ni svg{width:17px;height:17px;stroke:var(--ink2);flex-shrink:0}
+  .ni:hover{background:rgba(47,111,224,.09)}
+  .ni.active{background:var(--blue);color:#fff;font-weight:600;box-shadow:0 8px 18px rgba(47,111,224,.32)}
+  .ni.active svg{stroke:#fff}
+  .ni .beta{font-size:9px;font-weight:600;background:rgba(47,111,224,.14);color:var(--blue-ink);padding:1px 6px;border-radius:6px;margin-left:auto}
+  .ni.active .beta{background:rgba(255,255,255,.24);color:#fff}
+  .userbar{display:flex;align-items:center;gap:10px;padding:10px;margin-top:8px;border-top:1px solid var(--line)}
+  .userbar img{width:34px;height:34px;border-radius:50%;object-fit:cover}
+  .userbar .u-name{font-size:13px;font-weight:600;color:var(--navy);line-height:1.2}
+  .userbar .u-role{font-size:11px;color:var(--ink2)}
+  .userbar .cog{margin-left:auto;width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:var(--surface);display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .userbar .cog svg{width:15px;height:15px;stroke:var(--ink2)}
+
+  /* ---------- MAIN ---------- */
+  .main{flex:1;overflow-y:auto}
+  .topbar{position:sticky;top:0;z-index:5;display:flex;align-items:center;gap:14px;padding:14px 32px;
+    background:rgba(246,249,254,.85);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+  .search{flex:1;max-width:420px;display:flex;align-items:center;gap:9px;background:var(--surface);border:1px solid var(--line);
+    border-radius:12px;padding:9px 13px;color:var(--ink3);font-size:13px}
+  .search svg{width:16px;height:16px;stroke:var(--ink3)}
+  .top-btn{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface);
+    display:flex;align-items:center;justify-content:center;cursor:pointer}
+  .top-btn svg{width:18px;height:18px;stroke:var(--ink2)}
+  .wrap{max-width:1120px;margin:0 auto;padding:26px 32px 60px}
+
+  /* Hero greeting */
+  .hero{position:relative;overflow:hidden;border-radius:var(--r-xl);padding:32px 34px;margin-bottom:26px;
+    background:linear-gradient(120deg,#EAF2FF 0%,#F2F7FF 55%,#FFFFFF 100%);border:1px solid var(--line);box-shadow:var(--sh)}
+  .hero .eyebrow{font-size:12px;font-weight:600;color:var(--blue);letter-spacing:.02em;margin-bottom:10px}
+  .hero h1{margin:0;font-size:34px;font-weight:700;letter-spacing:-.025em;color:var(--navy);line-height:1.05}
+  .hero p{margin:12px 0 0;font-size:15px;color:var(--ink2);max-width:520px;line-height:1.6}
+  .hero p b{color:var(--navy);font-weight:600}
+  .hero .cta{margin-top:22px;display:inline-flex;align-items:center;gap:9px;background:var(--blue);color:#fff;border:0;
+    border-radius:12px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 10px 22px rgba(47,111,224,.30)}
+  .hero .cta svg{width:16px;height:16px;stroke:#fff}
+  .hero-art{position:absolute;right:-30px;top:-30px;width:260px;height:260px;pointer-events:none;opacity:.9}
+  .hero-art .c1{fill:#DCEAFF}.hero-art .c2{fill:#EAF2FF}.hero-art .c3{fill:none;stroke:#C9DEFF;stroke-width:2}
+
+  /* Stat cards */
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-bottom:26px}
+  .stat{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:18px;box-shadow:var(--sh)}
+  .stat-chip{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;margin-bottom:15px}
+  .stat-chip svg{width:21px;height:21px}
+  .stat-val{font-size:26px;font-weight:700;letter-spacing:-.02em;line-height:1;color:var(--navy)}
+  .stat-label{font-size:12.5px;color:var(--ink2);margin-top:7px}
+  .stat-delta{display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:600;margin-top:12px;padding:3px 8px;border-radius:999px;background:var(--green-bg);color:var(--green)}
+  .stat-delta svg{width:12px;height:12px;stroke:var(--green)}
+
+  /* Grid + cards */
+  .grid{display:grid;grid-template-columns:1fr 356px;gap:24px;align-items:start}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);box-shadow:var(--sh)}
+  .card-h{display:flex;align-items:center;justify-content:space-between;padding:20px 22px 4px}
+  .card-h h3{margin:0;font-size:15.5px;font-weight:600;letter-spacing:-.01em;color:var(--navy)}
+  .card-h .more{font-size:12.5px;font-weight:500;color:var(--blue);text-decoration:none;cursor:pointer}
+  .card-sub{padding:0 22px;font-size:12px;color:var(--ink3);margin-top:3px}
+  .col{display:flex;flex-direction:column;gap:24px}
+
+  /* Attention list */
+  .att{display:flex;align-items:center;gap:13px;padding:14px 22px;border-top:1px solid var(--line)}
+  .att:first-of-type{border-top:1px solid var(--line);margin-top:14px}
+  .att-ic{width:38px;height:38px;border-radius:11px;flex-shrink:0;display:flex;align-items:center;justify-content:center}
+  .att-ic svg{width:18px;height:18px}
+  .att-body{flex:1;min-width:0}
+  .att-title{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .att-meta{font-size:12px;color:var(--ink3);margin-top:2px}
+  .att-cta{font-size:12px;font-weight:600;color:var(--blue);border:1px solid var(--blue-soft2);background:var(--blue-soft);
+    padding:6px 12px;border-radius:9px;cursor:pointer;white-space:nowrap}
+
+  /* Area chart card */
+  .chartcard{padding-bottom:8px}
+  .area-svg{width:100%;height:150px;margin-top:6px;padding:0 8px}
+
+  /* Quick actions */
+  .qa{display:flex;align-items:center;gap:12px;padding:13px 22px;border-top:1px solid var(--line);cursor:pointer}
+  .qa:hover{background:var(--blue-soft)}
+  .qa:first-of-type{margin-top:12px}
+  .qa-ic{width:36px;height:36px;border-radius:10px;background:var(--blue-soft);display:flex;align-items:center;justify-content:center;flex-shrink:0}
+  .qa-ic svg{width:18px;height:18px;stroke:var(--blue)}
+  .qa-t{font-size:13.5px;font-weight:600;color:var(--ink)}
+  .qa-s{font-size:11.5px;color:var(--ink3);margin-top:1px}
+  .qa .arr{margin-left:auto;stroke:var(--ink3);width:16px;height:16px}
+
+  /* donut */
+  .donut-wrap{padding:20px 22px 24px;display:flex;flex-direction:column;align-items:center;gap:16px}
+  .donut{position:relative;width:150px;height:150px}
+  .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut-center .n{font-size:30px;font-weight:700;letter-spacing:-.02em;color:var(--navy)}
+  .donut-center .l{font-size:11px;color:var(--ink3)}
+  .legend{width:100%;display:flex;flex-direction:column;gap:9px}
+  .legend .row{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink2)}
+  .legend .row i{width:10px;height:10px;border-radius:3px}
+  .legend .row b{margin-left:auto;color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums}
+
+  @media(max-width:980px){.grid{grid-template-columns:1fr}.stats{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <span class="logo"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14c4-1 6-3 8-7 3 5 6 6 8 5-1 5-5 8-8 8s-8-2-8-6z"/></svg></span>
+      <span class="name">Breeze</span>
+    </div>
+
+    <nav class="nav">
+      <button class="ni active"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>Dashboard</button>
+
+      <div class="sg-label">Main</div>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Chat</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg>History</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>Documents</button>
+
+      <div class="sg-label">People</div>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="5" rx="1"/><rect x="3" y="15" width="6" height="5" rx="1"/><rect x="15" y="15" width="6" height="5" rx="1"/><path d="M12 8v4M6 15v-3h12v3"/></svg>Org structure</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3.5" y="5.5" width="17" height="15" rx="2.5"/><path d="M8 3v4M16 3v4M3.5 10h17"/></svg>People plan</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5"/><path d="M17 8.5a3 3 0 0 0 0-1M18 14c2.5.6 3.5 2.4 3.5 5"/></svg>Headcount</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.9 6.3 6.9.7-5.1 4.6 1.4 6.8L12 17.8 5.9 20.4l1.4-6.8L2.2 9l6.9-.7z"/></svg>Talent<span class="beta">Beta</span></button>
+
+      <div class="sg-label">Insights</div>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9M12 20V4M19 20v-7"/></svg>Analytics</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg>Vibe Views<span class="beta">Beta</span></button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v18"/><rect x="4" y="8" width="5" height="8" rx="1"/><rect x="15" y="5" width="5" height="11" rx="1"/></svg>Compare</button>
+
+      <div class="sg-label">Work</div>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h9M20 17h-9"/><circle cx="17" cy="7" r="2.5"/><circle cx="7" cy="17" r="2.5"/></svg>Automations<span class="beta">Beta</span></button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12h4l2-6 4 14 3-9 2 4h4"/></svg>Trackers</button>
+      <button class="ni"><svg fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 4v16"/></svg>Projects</button>
+    </nav>
+
+    <div class="userbar">
+      <img src="https://i.pravatar.cc/80?img=13" alt="">
+      <div>
+        <div class="u-name">Dougie Gordon</div>
+        <div class="u-role">Admin</div>
+      </div>
+      <button class="cog"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8M4.3 9a1.6 1.6 0 0 0 .3-1.8M12 2v3M12 19v3M2 12h3M19 12h3"/></svg></button>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <div class="topbar">
+      <div class="search"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4-4"/></svg>Search people, policies, documents…</div>
+      <button class="top-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.5 21a1.7 1.7 0 0 1-3 0"/></svg></button>
+      <button class="top-btn"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+    </div>
+
+    <div class="wrap">
+
+      <!-- Hello hero -->
+      <section class="hero">
+        <svg class="hero-art" viewBox="0 0 260 260"><circle class="c1" cx="180" cy="80" r="90"/><circle class="c2" cx="230" cy="150" r="60"/><circle class="c3" cx="150" cy="60" r="120"/></svg>
+        <div class="eyebrow">Sunday, 5 July 2025</div>
+        <h1>Hello, Dougie</h1>
+        <p>Here's what's happening across your workspace today. You have <b>3 things</b> that need attention and <b>2 documents</b> waiting to send.</p>
+        <button class="cta"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>Ask Breeze anything</button>
+      </section>
+
+      <!-- Stats -->
+      <section class="stats">
+        <div class="stat">
+          <div class="stat-chip" style="background:var(--blue-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 19c0-3.3 2.9-5 6.5-5s6.5 1.7 6.5 5"/><path d="M18 14c2.5.6 3.5 2.4 3.5 5"/></svg></div>
+          <div class="stat-val tabular">254</div><div class="stat-label">Total headcount</div>
+          <span class="stat-delta"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>+12 this quarter</span>
+        </div>
+        <div class="stat">
+          <div class="stat-chip" style="background:var(--amber-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg></div>
+          <div class="stat-val tabular">21</div><div class="stat-label">Active tasks</div>
+          <span class="stat-delta"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>8 due this week</span>
+        </div>
+        <div class="stat">
+          <div class="stat-chip" style="background:var(--teal-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--teal)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></div>
+          <div class="stat-val tabular">128</div><div class="stat-label">Documents</div>
+          <span class="stat-delta"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>+9 this month</span>
+        </div>
+        <div class="stat">
+          <div class="stat-chip" style="background:var(--rose-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><polyline points="12 7 12 12 15 14"/></svg></div>
+          <div class="stat-val tabular">42h</div><div class="stat-label">Time saved</div>
+          <span class="stat-delta"><svg viewBox="0 0 24 24" fill="none" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6"/></svg>this month</span>
+        </div>
+      </section>
+
+      <!-- Grid -->
+      <div class="grid">
+        <div class="col">
+          <!-- Needs attention -->
+          <div class="card">
+            <div class="card-h"><h3>Needs your attention</h3><a class="more">View all</a></div>
+            <div class="att">
+              <span class="att-ic" style="background:var(--amber-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--amber)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg></span>
+              <div class="att-body"><div class="att-title">Probation review — Priya Shah</div><div class="att-meta">Due in 2 days · People team</div></div>
+              <button class="att-cta">Review</button>
+            </div>
+            <div class="att">
+              <span class="att-ic" style="background:var(--blue-soft)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--blue)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v16H4z" opacity="0"/><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg></span>
+              <div class="att-body"><div class="att-title">Offer letter ready to send — Tom Reid</div><div class="att-meta">Drafted by Breeze · awaiting your approval</div></div>
+              <button class="att-cta">Send</button>
+            </div>
+            <div class="att">
+              <span class="att-ic" style="background:var(--rose-bg)"><svg viewBox="0 0 24 24" fill="none" stroke="var(--rose)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 3.5v5c0 5-3.4 8-8 9.5-4.6-1.5-8-4.5-8-9.5v-5z"/></svg></span>
+              <div class="att-body"><div class="att-title">Data protection policy expires soon</div><div class="att-meta">Renews 18 Jul · Legal requirement</div></div>
+              <button class="att-cta">Update</button>
+            </div>
+          </div>
+
+          <!-- Headcount growth -->
+          <div class="card chartcard">
+            <div class="card-h"><h3>Headcount growth</h3><a class="more">Open analytics</a></div>
+            <div class="card-sub">Cumulative employees over the last 12 months</div>
+            <svg class="area-svg" viewBox="0 0 620 150" preserveAspectRatio="none" style="height:150px">
+              <defs><linearGradient id="ag" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2F6FE0" stop-opacity=".22"/><stop offset="1" stop-color="#2F6FE0" stop-opacity="0"/></linearGradient></defs>
+              <path d="M0,120 C80,112 120,96 200,84 C280,72 320,66 400,50 C480,34 540,30 620,18 L620,150 L0,150 Z" fill="url(#ag)"/>
+              <path d="M0,120 C80,112 120,96 200,84 C280,72 320,66 400,50 C480,34 540,30 620,18" fill="none" stroke="#2F6FE0" stroke-width="2.5" stroke-linecap="round"/>
+              <circle cx="620" cy="18" r="4" fill="#2F6FE0"/>
+            </svg>
+          </div>
+        </div>
+
+        <!-- Right column -->
+        <div class="col">
+          <div class="card">
+            <div class="card-h"><h3>Quick actions</h3></div>
+            <div class="qa"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg></span><div><div class="qa-t">Draft a document</div><div class="qa-s">Contracts, letters, policies</div></div><svg class="arr" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="qa"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></span><div><div class="qa-t">Build a Vibe View</div><div class="qa-s">Ask for any people dashboard</div></div><svg class="arr" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+            <div class="qa"><span class="qa-ic"><svg viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2.5"/><path d="M3 9h18M8 4v16"/></svg></span><div><div class="qa-t">Start a project</div><div class="qa-s">Onboarding, restructure, review</div></div><svg class="arr" viewBox="0 0 24 24" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></div>
+          </div>
+
+          <div class="card">
+            <div class="card-h"><h3>Headcount by team</h3></div>
+            <div class="donut-wrap">
+              <div class="donut">
+                <svg viewBox="0 0 140 140" style="width:150px;height:150px">
+                  <circle cx="70" cy="70" r="54" fill="none" stroke="#2F6FE0" stroke-width="22" stroke-dasharray="119 220" stroke-dashoffset="0" transform="rotate(-90 70 70)"/>
+                  <circle cx="70" cy="70" r="54" fill="none" stroke="#23324A" stroke-width="22" stroke-dasharray="70 269" stroke-dashoffset="-119" transform="rotate(-90 70 70)"/>
+                  <circle cx="70" cy="70" r="54" fill="none" stroke="#0E9384" stroke-width="22" stroke-dasharray="51 288" stroke-dashoffset="-189" transform="rotate(-90 70 70)"/>
+                  <circle cx="70" cy="70" r="54" fill="none" stroke="#DC8A0A" stroke-width="22" stroke-dasharray="43 296" stroke-dashoffset="-240" transform="rotate(-90 70 70)"/>
+                  <circle cx="70" cy="70" r="54" fill="none" stroke="#E0356E" stroke-width="22" stroke-dasharray="56 283" stroke-dashoffset="-283" transform="rotate(-90 70 70)"/>
+                </svg>
+                <div class="donut-center"><div class="n tabular">254</div><div class="l">people</div></div>
+              </div>
+              <div class="legend">
+                <div class="row"><i style="background:#2F6FE0"></i>Engineering <b>89</b></div>
+                <div class="row"><i style="background:#23324A"></i>Sales <b>52</b></div>
+                <div class="row"><i style="background:#0E9384"></i>Product <b>38</b></div>
+                <div class="row"><i style="background:#DC8A0A"></i>Marketing <b>32</b></div>
+                <div class="row"><i style="background:#E0356E"></i>People <b>43</b></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </main>
+</body>
+</html>
