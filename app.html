@@ -18024,6 +18024,34 @@ async function wfStepNote(caseId, stepId){
   if(document.getElementById('wfStepTasks')) wfOpenStepTasks(caseId, stepId); // refresh the open step panel
 }
 
+// Add a note to a specific SUB-TASK (logged against step + sub).
+async function wfSubNote(caseId, stepId, subId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const v=await uiPromptText('Add a note', {icon:'📝', subtitle:'Logged against this task on this run.', label:'Note', type:'textarea', submitLabel:'Save note'});
+  if(v===null || !v.trim()) return;
+  c.contactLog=c.contactLog||[];
+  c.contactLog.push({ date:new Date().toISOString(), type:'note', stepId:(Number.isFinite(Number(stepId))?Number(stepId):stepId), subId:String(subId), note:v.trim() });
+  try{ await saveWfCases(); }catch(e){}
+  wfOpenStepTasks(caseId, stepId); wfRunRefresh();
+}
+// Attach a file to a specific SUB-TASK (stored on the run, downloadable later).
+function wfSubAttach(caseId, stepId, subId){
+  const inp=document.createElement('input'); inp.type='file';
+  inp.onchange=async()=>{
+    const f=inp.files&&inp.files[0]; if(!f) return;
+    if(f.size>4*1024*1024){ showBreezeToast('File too large (max 4MB)'); return; }
+    try{
+      const b64=await new Promise((res,rej)=>{ const r=new FileReader(); r.onload=()=>res(String(r.result).split(',')[1]||''); r.onerror=rej; r.readAsDataURL(f); });
+      const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+      c.contactLog=c.contactLog||[];
+      c.contactLog.push({ date:new Date().toISOString(), type:'note', stepId:(Number.isFinite(Number(stepId))?Number(stepId):stepId), subId:String(subId), note:'Attachment added', docFilename:f.name, docBase64:b64, docMimeType:f.type||'application/octet-stream' });
+      try{ await saveWfCases(); }catch(e){}
+      wfOpenStepTasks(caseId, stepId); wfRunRefresh();
+      showBreezeToast('Attachment added');
+    }catch(e){ showBreezeToast('Could not attach file'); }
+  };
+  inp.click();
+}
 // ── Run "Notes & activity": everything logged to this case (emails picked up,
 // attachments, notes), plus a place to add a note. ──
 function wfDownloadLogDoc(caseId, dateStr){
@@ -18129,7 +18157,7 @@ function wfOpenStepTasks(caseId, stepId) {
   </div>`;
   const noteRow=`<div style="margin-top:6px;"><button onclick="event.stopPropagation();wfStepNote('${caseId}',${stepId})" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:4px 0;">+ Add note</button></div>`;
   // Per-step activity: emails/attachments linked from the inbox smart action, and notes - all scoped to THIS step.
-  const _stepLog=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const _stepLog=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId) && e.subId==null).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
   const _logIcon={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
   const logSection=_stepLog.length?('<div><div style="font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:8px;">Linked activity</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px;">'+_stepLog.map(e=>{
     const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
@@ -18149,9 +18177,24 @@ function wfOpenStepTasks(caseId, stepId) {
       const af = (su.autofill || /\b(screen|dbs|vetting)\b|background check/i.test(su.title))
         ? `<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><button onclick="event.stopPropagation();wfScreeningAutofill('${caseId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:var(--accent);">⚡ Pre-fill screening form</button><span onclick="event.stopPropagation();wfScreeningAutofillInfo()" title="How it works" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--ink3);font-size:9px;font-style:italic;font-weight:700;cursor:pointer;flex-shrink:0;">i</span></span>`
         : '';
-      return `<div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);cursor:pointer;background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
-        <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
-        <div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>${(ob||eb||db||af)?`<div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}${db}${af}</div>`:''}</div>
+      const nb = `<button onclick="event.stopPropagation();wfSubNote('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">📝 Note</button>`;
+      const ab = `<button onclick="event.stopPropagation();wfSubAttach('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">📎 Attach</button>`;
+      // Inline activity for THIS sub-task: notes/attachments/linked emails scoped to it.
+      const subLog=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)&&String(e.subId)===String(su.id)).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+      const subLogHtml=subLog.length?('<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">'+subLog.map(e=>{
+        const when=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+        const doc=e.docFilename?('<button onclick="event.stopPropagation();wfDownloadLogDoc(\''+caseId+'\',\''+jsAttr(e.date)+'\')" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:7px;padding:2px 7px;cursor:pointer;font-family:inherit;margin-top:3px;">📎 '+escapeHtml(e.docFilename)+'</button>'):'';
+        return '<div style="font-size:11px;color:var(--ink2);background:white;border:1px solid var(--border);border-radius:8px;padding:6px 9px;"><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:10px;">'+({email:'✉️',note:'📝'}[e.type]||'📝')+'</span><span style="font-size:9px;color:var(--ink3);margin-left:auto;">'+when+'</span></div>'+(e.note?'<div style="line-height:1.45;margin-top:2px;white-space:pre-wrap;">'+escapeHtml(e.note)+'</div>':'')+doc+'</div>';
+      }).join('')+'</div>'):'';
+      return `<div style="border:1px solid var(--border);border-radius:var(--r);background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
+        <div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;cursor:pointer;">
+          <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>
+            <div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}${db}${af}${nb}${ab}</div>
+            ${subLogHtml}
+          </div>
+        </div>
       </div>`;
     }).join('');
   } else {
