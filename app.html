@@ -991,7 +991,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   #homeBody .hero p b{color:var(--hero-fg);font-weight:600;}
   #homeBody .hero-btn{margin-top:20px;display:inline-flex;align-items:center;gap:9px;background:var(--hero-btn-bg);color:var(--hero-btn-fg);border:0;border-radius:12px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 18px rgba(28,25,60,.18);}
   #homeBody .hero-btn svg{width:17px;height:17px;stroke:var(--hero-btn-fg);}
-  #homeBody .hero-art{position:absolute;inset:0;pointer-events:none;}
+  #homeBody .hero-art{position:absolute;inset:0;pointer-events:none;opacity:var(--hero-art-op,1);}
 
   /* Section heading */
   #homeBody .sec-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
@@ -6450,11 +6450,11 @@ const BZ_THEMES = {
     '--accent':'#7B6CF0','--accent-ink':'#5A49D6','--accent-bg':'#EEEBFF','--accent-mid':'#C7BFF5',
     '--sidebar-grad':'linear-gradient(180deg,#201F27 0%,#191920 55%,#131319 100%)',
     '--hero-grad':'none','--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.82)',
-    '--hero-btn-bg':'rgba(20,20,26,0.55)','--hero-btn-fg':'#ffffff','--hero-shadow':'none',
+    '--hero-btn-bg':'rgba(20,20,26,0.55)','--hero-btn-fg':'#ffffff','--hero-shadow':'none','--hero-art-op':'0',
     '--home-bg':'linear-gradient(120deg,#F0654E 0%,#E24E8B 42%,#7B6CF0 72%,#5B8DEF 100%)',
     '--home-surface':'rgba(24,22,30,0.62)','--home-ink':'#F5F5F8','--home-ink2':'rgba(245,245,248,0.82)','--home-ink3':'rgba(245,245,248,0.60)','--home-line':'rgba(255,255,255,0.14)' }}
 };
-const BZ_KEYS = ['--accent','--accent-ink','--accent-bg','--accent-mid','--sidebar-grad','--hero-grad','--hero-fg','--hero-fg-dim','--hero-btn-bg','--hero-btn-fg','--hero-shadow','--home-bg','--home-surface','--home-ink','--home-ink2','--home-ink3','--home-line','--bg','--surface','--surface2','--surface3','--border','--border2','--ink','--ink2','--ink3','--navy'];
+const BZ_KEYS = ['--accent','--accent-ink','--accent-bg','--accent-mid','--sidebar-grad','--hero-grad','--hero-fg','--hero-fg-dim','--hero-btn-bg','--hero-btn-fg','--hero-shadow','--hero-art-op','--home-bg','--home-surface','--home-ink','--home-ink2','--home-ink3','--home-line','--bg','--surface','--surface2','--surface3','--border','--border2','--ink','--ink2','--ink3','--navy'];
 function applyAccent(name){
   name = BZ_THEMES[name] ? name : 'purple';
   const t = BZ_THEMES[name], r = document.documentElement.style;
