@@ -8936,7 +8936,14 @@ function isPeopleDataRequest(msg) {
     /\b(who|which people|which employees|list (of )?(the )?(people|employees|staff))\b.*\b(joined|started|new (hires?|starters?|joiners?)|leavers?|in (the |our )?[a-z ]*(team|department)|report to|reports to|manager)/,
     /\b(new (starters?|joiners?|hires?)|(who|people|anyone) (joined|started) (us|the (company|team|business)|in the last))/,
     /\bwho\b.*\b(manages|reports? to|is (the )?manager (of|for))/,
-    /\b(start date|when did .* (start|join)|how long has .* (been here|worked here))\b/
+    /\b(start date|when did .* (start|join)|how long has .* (been here|worked here))\b/,
+    // Meta / linkage questions - the agent holds the HRIS connection so it answers truthfully
+    // when connected; if nothing is connected it declines rather than the advisor guessing "no".
+    /\b(linked|connected|integrat\w*|sync\w*|hooked up|plugged in)\b.*\b(hris|payroll|bamboo\w*|workday|hibob|gusto|merge|system)\b/,
+    /\b(hris|payroll)\b.*\b(linked|connected|live|integrat\w*|sync\w*|real[ -]?time)\b/,
+    /\b(is|are)\s+(this|you|it|the data|these figures?|the numbers?)\s+(linked|connected|live|real[ -]?time|accurate|up[ -]?to[ -]?date|pulling|coming)/,
+    /\bwhere (does|is|are|do)\b.*\b(data|figures?|numbers?|headcount|info\w*)\b.*\b(come|coming|from|pulled|get)/,
+    /\b(live|real[ -]?time|up[ -]?to[ -]?date)\b.*\b(data|figures?|numbers?|headcount|info)\b/
   ];
   return patterns.some(re => re.test(t));
 }
