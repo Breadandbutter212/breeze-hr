@@ -9084,10 +9084,15 @@ async function sendChat(overrideMsg) {
   // reads like a proper document; quick chat stays on the cheaper, faster default.
   const heavyDoc = isHeavyDocRequest(msg);
   // People/roster/time-off questions go to the HRIS tool-calling agent, which queries the
-  // connected HRIS live. Anything else - and any HRIS miss - uses the existing chat path,
-  // unchanged. askHris returns null on any fallback/error so we always degrade gracefully.
+  // connected HRIS live. It must NEVER guess: if the agent can't reach live data it returns
+  // null, and for a data question we decline honestly rather than fall through to the normal
+  // advisor (which would guess from tracker/session context). Non-data questions use the
+  // existing chat path, unchanged.
   let reply = null;
-  if (isPeopleDataRequest(msg)) reply = await askHris(apiMessages);
+  if (isPeopleDataRequest(msg)) {
+    reply = await askHris(apiMessages);
+    if (reply == null) reply = "I can only answer questions about your people from your live HRIS, and I can't reach it right now - so I won't guess.\n\nConnect your HRIS under **Analytics → Connect HRIS** (you'll need admin access) and I'll pull the exact figures.";
+  }
   if (reply == null) reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
     heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 } : null);
   chatLoading = false;

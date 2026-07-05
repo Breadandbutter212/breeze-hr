@@ -175,13 +175,21 @@ async function hcRunTool(name, input, ctx) {
   }
   if (name === 'headcount') {
     if (!cache.employees) cache.employees = await hcGetEmployees(apiKey, accountToken);
-    const active = cache.employees.filter(e => !e.employment_status || e.employment_status.toUpperCase() === 'ACTIVE');
+    const emps = cache.employees;
+    const isActive = e => !e.employment_status || e.employment_status.toUpperCase() === 'ACTIVE';
+    const active = emps.filter(isActive);
+    const byStatus = {};
+    emps.forEach(e => { const s = (e.employment_status || 'UNKNOWN').toUpperCase(); byStatus[s] = (byStatus[s] || 0) + 1; });
+    // total_records is every record in the HRIS (active + leavers/inactive) - it must match
+    // the total shown elsewhere in the app. active is the current-employee subset. Always
+    // returned together so the agent can reconcile the two and never give a bare, contradictory number.
     const g = input.group_by || 'none';
-    if (g === 'none') return { total_active: active.length };
-    const key = g === 'team' ? 'team' : g === 'office' ? 'office' : 'employment_status';
+    if (g === 'none') return { total_records: emps.length, active: active.length, inactive: emps.length - active.length, by_status: byStatus };
+    if (g === 'status') return { total_records: emps.length, active: active.length, inactive: emps.length - active.length, by_status: byStatus };
+    const key = g === 'team' ? 'team' : 'office';
     const counts = {};
     active.forEach(e => { const k = e[key] || 'Unknown'; counts[k] = (counts[k] || 0) + 1; });
-    return { total_active: active.length, group_by: g, breakdown: counts };
+    return { total_records: emps.length, active: active.length, group_by: g, active_breakdown: counts };
   }
   return { error: `Unknown tool: ${name}` };
 }
@@ -195,9 +203,10 @@ function hcSystemPrompt() {
 Today is ${pretty} (${today}). Resolve relative dates ("next week", "last 3 months", "on the 12th") against today, and pass ISO YYYY-MM-DD dates to the tools.
 
 RULES:
-- Always call a tool to get real data. NEVER invent employees, dates, counts or leave bookings. If a tool returns nothing, say so plainly (e.g. "No one has time off booked on that date.").
+- Always call a tool to get real data. NEVER invent or estimate employees, dates, counts, salaries or leave bookings. If a tool returns nothing, say so plainly (e.g. "No one has time off booked on that date."). Never guess.
 - If a name is ambiguous or a question needs a date you don't have, ask one short clarifying question instead of guessing.
 - Only report what the tools return. This is the connected HRIS only.
+- HEADCOUNT - ALWAYS RECONCILE so the numbers can never look contradictory. The HRIS holds every record: current employees plus leavers/inactive. The headcount tool returns total_records (all records - this matches the total shown elsewhere in the app), active (current employees), and inactive. When you give a headcount, state the active figure AND the total together and how they relate, e.g. "**86 active employees** (108 records in total, including 22 leavers/inactive)." Never give a bare number that could conflict with the total the user sees elsewhere.
 
 FORMATTING (match the rest of the app):
 - UK English. holiday (not vacation), annual leave, CV (not resume).
