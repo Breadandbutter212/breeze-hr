@@ -37,6 +37,7 @@
   --hero-fg-dim: rgba(255,255,255,0.85);
   --hero-btn-bg: #ffffff;
   --hero-btn-fg: #5B47E0;
+  --hero-shadow: 0 12px 30px rgba(46,61,82,.16);
   --green: #15803D;
   --green-bg: #F0FAF3;
   --amber: #E0A800;
@@ -960,8 +961,9 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <!-- ═══ HOME dashboard (option-3-bold-brand) - all selectors scoped to #homeBody ═══ -->
 <style>
   #homeBody{
-    --hb-surface:#FFFFFF; --hb-ink:#1E1B33; --hb-ink2:#5B5872; --hb-ink3:#8E8BA3; --hb-line:#ECEBF3;
+    --hb-surface:var(--home-surface,#FFFFFF); --hb-ink:var(--home-ink,#1E1B33); --hb-ink2:var(--home-ink2,#5B5872); --hb-ink3:var(--home-ink3,#8E8BA3); --hb-line:var(--home-line,#ECEBF3);
     --hb-brand:var(--accent);
+    background:var(--home-bg,transparent); min-height:100%;
     --hb-tint-indigo:#EEEBFF; --hb-ic-indigo:#5B47E0;
     --hb-tint-teal:#DBF5F1;   --hb-ic-teal:#0E9384;
     --hb-tint-amber:#FDF0DA;  --hb-ic-amber:#DC8A0A;
@@ -976,7 +978,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
   /* Hero */
   #homeBody .hero{position:relative;overflow:hidden;border-radius:var(--hb-r-xl);padding:30px 34px;margin-bottom:24px;
-    background:var(--hero-grad);color:var(--hero-fg);box-shadow:0 12px 30px rgba(46,61,82,.16);}
+    background:var(--hero-grad);color:var(--hero-fg);box-shadow:var(--hero-shadow);}
   #homeBody .hero-eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:var(--hero-fg-dim);margin-bottom:10px;}
   #homeBody .hero h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--hero-fg);}
   #homeBody .hero p{font-size:14.5px;color:var(--hero-fg-dim);margin-top:10px;max-width:440px;}
@@ -6434,14 +6436,23 @@ const BZ_THEMES = {
     '--hero-grad':'linear-gradient(120deg,#EAEEF4 0%,#DCE3EE 60%,#F3F6FA 100%)',
     '--hero-fg':'#23324A','--hero-fg-dim':'#5B6B84','--hero-btn-bg':'#2E3D52','--hero-btn-fg':'#ffffff' }},
   aurora:{ label:'Aurora', vars:{
-    '--accent':'#2C2C36','--accent-ink':'#1B1B22','--accent-bg':'#ECECEF','--accent-mid':'#C9C9D2',
+    '--accent':'#A24CD6','--accent-ink':'#7A2FA8','--accent-bg':'#F6EAFB','--accent-mid':'#E1B6F0',
     '--sidebar-grad':'linear-gradient(180deg,#2B2B33 0%,#232329 55%,#1B1B21 100%)',
     '--hero-grad':'linear-gradient(120deg,#F0654E 0%,#E24E8B 42%,#7B6CF0 72%,#5B8DEF 100%)',
-    '--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.86)','--hero-btn-bg':'#26262E','--hero-btn-fg':'#ffffff' }}
+    '--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.86)','--hero-btn-bg':'#A24CD6','--hero-btn-fg':'#ffffff' }},
+  nightfall:{ label:'Nightfall', vars:{
+    '--accent':'#7B6CF0','--accent-ink':'#5A49D6','--accent-bg':'#EEEBFF','--accent-mid':'#C7BFF5',
+    '--sidebar-grad':'linear-gradient(180deg,#201F27 0%,#191920 55%,#131319 100%)',
+    '--hero-grad':'none','--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.82)',
+    '--hero-btn-bg':'rgba(20,20,26,0.55)','--hero-btn-fg':'#ffffff','--hero-shadow':'none',
+    '--home-bg':'linear-gradient(120deg,#F0654E 0%,#E24E8B 42%,#7B6CF0 72%,#5B8DEF 100%)',
+    '--home-surface':'rgba(24,22,30,0.62)','--home-ink':'#F5F5F8','--home-ink2':'rgba(245,245,248,0.82)','--home-ink3':'rgba(245,245,248,0.60)','--home-line':'rgba(255,255,255,0.14)' }}
 };
+const BZ_KEYS = ['--accent','--accent-ink','--accent-bg','--accent-mid','--sidebar-grad','--hero-grad','--hero-fg','--hero-fg-dim','--hero-btn-bg','--hero-btn-fg','--hero-shadow','--home-bg','--home-surface','--home-ink','--home-ink2','--home-ink3','--home-line'];
 function applyAccent(name){
   name = BZ_THEMES[name] ? name : 'purple';
   const t = BZ_THEMES[name], r = document.documentElement.style;
+  BZ_KEYS.forEach(function(k){ r.removeProperty(k); });          // reset so themes don't bleed into each other
   Object.keys(t.vars).forEach(function(k){ r.setProperty(k, t.vars[k]); });
   try { localStorage.setItem('bz_accent', name); } catch(e) {}
   document.querySelectorAll('.bz-swatch').forEach(function(s){ s.classList.toggle('sel', s.dataset.accent===name); });
@@ -6450,9 +6461,10 @@ function bzCurrentAccent(){ try { return localStorage.getItem('bz_accent') || 'p
 function bzSwatchHtml(){
   const cur = bzCurrentAccent();
   return Object.keys(BZ_THEMES).map(function(k){ const t=BZ_THEMES[k], v=t.vars;
+    const heroPrev = (v['--hero-grad'] && v['--hero-grad']!=='none') ? v['--hero-grad'] : (v['--home-bg'] || '#eee');
     return '<button class="bz-swatch'+(k===cur?' sel':'')+'" data-accent="'+k+'" onclick="applyAccent(\''+k+'\')" title="'+t.label+'">'+
       '<span class="prev"><span class="side" style="background:'+v['--sidebar-grad']+'"></span>'+
-      '<span class="body" style="background:'+v['--hero-grad']+'"><span class="dot" style="background:'+v['--accent']+'"></span></span></span>'+
+      '<span class="body" style="background:'+heroPrev+'"><span class="dot" style="background:'+v['--accent']+'"></span></span></span>'+
       '<span class="lbl">'+t.label+'</span></button>';
   }).join('');
 }
