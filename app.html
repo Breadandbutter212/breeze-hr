@@ -9938,6 +9938,16 @@ function showSmartActionModal(email, a){
   } else {
     actions.push(`<div style="font-size:13px;color:var(--ink3);padding:7px 0;">No matching open case found - open Trackers to handle this manually.</div>`);
   }
+  // If the matched stage has sub-tasks, let the user pin the email to a specific one.
+  const subPicker = (matchedCase && step && step.subs && step.subs.length)
+    ? `<div style="margin-bottom:14px;">
+        <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Link to task <span style="font-weight:400;color:var(--ink3);">(within "${escapeHtml(step.title)}")</span></label>
+        <select id="smartSubPick" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;">
+          <option value="">— Whole stage —</option>
+          ${step.subs.map(su=>`<option value="${escapeHtml(String(su.id))}">${escapeHtml(su.title)}</option>`).join('')}
+        </select>
+      </div>`
+    : '';
   let primary='';
   if(matchedCase) primary=`<button onclick="editSmartActionCase()" class="btn btn-secondary btn-sm">Edit</button><button onclick="applySmartAction()" class="btn btn-primary btn-sm">Apply</button>`;
   else if(a.createScenario) primary=`<button onclick="applySmartCreate()" class="btn btn-primary btn-sm">Create &amp; log</button>`;
@@ -9952,6 +9962,7 @@ function showSmartActionModal(email, a){
     </div>
     <div style="font-size:13px;color:var(--ink2);line-height:1.55;background:var(--surface2);border-radius:10px;padding:11px 13px;margin-bottom:14px;">${escapeHtml(a.summary||'')}</div>
     <div style="border-top:1px solid var(--border);border-bottom:1px solid var(--border);padding:4px 0;margin-bottom:14px;">${actions.join('')}</div>
+    ${subPicker}
     ${a.createScenario?`<div style="margin-bottom:14px;">
       <label style="font-size:11px;font-weight:600;color:var(--ink2);display:block;margin-bottom:5px;">Start date <span style="font-weight:400;color:var(--ink3);">(step due dates are calculated from this)</span></label>
       <input id="smartAnchorDate" type="date" value="${new Date().toISOString().slice(0,10)}" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;">
@@ -9979,25 +9990,36 @@ async function applySmartAction(){
   if(!c.contactLog) c.contactLog=[];
   const sid = Number(a.stepId); // AI may return the id as a string; tracker step ids are numbers
   const _hasStep = (a.stepId!=null && Number.isFinite(sid));
+  const _subId = (document.getElementById('smartSubPick')?.value||'').trim(); // pin to a specific sub-task
+  const _hasSub = _hasStep && !!_subId;
   const entry={ date:new Date().toISOString(), type:'email', note: a.summary || ('Email received from '+(a.employee||'employee')+'.') };
   if(_hasStep) entry.stepId=sid;  // link this email (and its attachment) to the matched step
+  if(_hasSub) entry.subId=_subId; //  ...and to the chosen task within it
   const firstAtt = _smartSaveAttachments(c, email);
   if(firstAtt){ entry.docFilename=firstAtt.filename; entry.docBase64=firstAtt.base64; entry.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
   c.contactLog.push(entry);
   let ticked='';
   const _tickEl = document.getElementById('smartTickStep');
   const _doTick = _tickEl ? _tickEl.checked : true; // untick in the modal to just note it
-  if(_doTick && a.stepId!=null && Number.isFinite(sid) && !(c.checkedSteps||[]).map(String).includes(String(sid))){
-    if(!c.checkedSteps) c.checkedSteps=[];
-    c.checkedSteps.push(sid); ticked=' · step ticked';
+  if(_doTick && _hasStep){
+    if(_hasSub){
+      c.checkedSubs=c.checkedSubs||[]; const _key=sid+':'+_subId;
+      if(!c.checkedSubs.includes(_key)) c.checkedSubs.push(_key);
+      const _stepObj=((wfScenarioFor(c)||{}).steps||[]).find(s=>String(s.id)===String(sid));
+      if(_stepObj&&_stepObj.subs){ const _set=new Set(c.checkedSubs); if(_stepObj.subs.every(su=>_set.has(sid+':'+su.id)) && !(c.checkedSteps||[]).map(String).includes(String(sid))){ c.checkedSteps=c.checkedSteps||[]; c.checkedSteps.push(sid); } }
+      ticked=' · task ticked';
+    } else if(!(c.checkedSteps||[]).map(String).includes(String(sid))){
+      c.checkedSteps=c.checkedSteps||[]; c.checkedSteps.push(sid); ticked=' · step ticked';
+    }
   }
-  // Optional note typed in the Apply modal - logged, and pinned to the step if there is one.
+  // Optional note typed in the Apply modal - logged, and pinned to the step/task if there is one.
   const _noteTxt=(document.getElementById('smartNote')?.value||'').trim();
   let _noted='';
   if(_noteTxt){
     const _st=(a.stepId!=null && typeof wfScenarioFor==='function') ? (((wfScenarioFor(c)||{}).steps||[]).find(s=>String(s.id)===String(a.stepId))||{}).title : '';
     const _noteEntry={ date:new Date().toISOString(), type:'note', note:(_st?_st+' - ':'')+_noteTxt };
     if(_hasStep) _noteEntry.stepId=sid;
+    if(_hasSub) _noteEntry.subId=_subId;
     c.contactLog.push(_noteEntry);
     if(_hasStep){ c.stepNotes=c.stepNotes||{}; c.stepNotes[sid]=_noteTxt; }
     _noted=' · note added';
@@ -18226,18 +18248,12 @@ function wfOpenStepTasks(caseId, stepId) {
       const af = (su.autofill || /\b(screen|dbs|vetting)\b|background check/i.test(su.title))
         ? `<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><button onclick="event.stopPropagation();wfScreeningAutofill('${caseId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:var(--accent);">⚡ Pre-fill screening form</button><span onclick="event.stopPropagation();wfScreeningAutofillInfo()" title="How it works" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--ink3);font-size:9px;font-style:italic;font-weight:700;cursor:pointer;flex-shrink:0;">i</span></span>`
         : '';
-      const subCount=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)&&String(e.subId)===String(su.id)).length;
-      const flagChip=(txt,bg,col)=>`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:${bg};color:${col};white-space:nowrap;">${txt}</span>`;
-      const chips = ob
-        + (su.email?flagChip('✉️ Email','#E7F6EF','#047857'):'')
-        + (su.doc?flagChip('📄 Doc','#EEEBFF','#5B47E0'):'')
-        + (subCount?flagChip('📎 '+subCount,'var(--surface2)','var(--ink2)'):'');
       // Clicking the row opens the task's own panel (note / attach / linked email); the checkbox just ticks it.
       return `<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
         <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
         <div onclick="wfOpenSubTask('${caseId}',${stepId},'${su.id}')" style="flex:1;min-width:0;cursor:pointer;">
           <div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>
-          <div style="display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap;">${chips}<span style="font-size:10px;color:var(--accent);font-weight:600;margin-left:auto;">Open →</span></div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}<span style="font-size:10px;color:var(--accent);font-weight:600;margin-left:auto;">Open →</span></div>
         </div>
       </div>`;
     }).join('');
@@ -18823,6 +18839,7 @@ function renderHeadcount() {
           ${HC_PRIORITIES.map(p=>`<option value="${p.id}"${_hcFilterPriority===p.id?' selected':''}>${escapeHtml(p.label)}</option>`).join('')}
         </select>
         <button onclick="downloadHCCSV()" style="font-size:11px;color:#15803D;background:#DCFCE7;border:1px solid #86EFAC;border-radius:20px;padding:4px 12px;cursor:pointer;font-family:inherit;">⬇ Export</button>
+        <button onclick="openJDLibrary()" class="btn btn-secondary btn-sm" title="Job description templates, organised by function">📄 JD library</button>
         <button onclick="openAddRoleModal()" class="btn btn-primary btn-sm">+ Add role</button>
       </div>
     </div>
