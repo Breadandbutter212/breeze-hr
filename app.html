@@ -9977,12 +9977,14 @@ async function applySmartAction(){
   const a=_smartAnalysis, email=_smartEmail; if(!a||!email) return;
   const c=(wfCases||[]).find(x=>x.id===a.caseId); if(!c){ smartActionClose(); return; }
   if(!c.contactLog) c.contactLog=[];
+  const sid = Number(a.stepId); // AI may return the id as a string; tracker step ids are numbers
+  const _hasStep = (a.stepId!=null && Number.isFinite(sid));
   const entry={ date:new Date().toISOString(), type:'email', note: a.summary || ('Email received from '+(a.employee||'employee')+'.') };
+  if(_hasStep) entry.stepId=sid;  // link this email (and its attachment) to the matched step
   const firstAtt = _smartSaveAttachments(c, email);
   if(firstAtt){ entry.docFilename=firstAtt.filename; entry.docBase64=firstAtt.base64; entry.docMimeType=firstAtt.mimeType||'application/octet-stream'; }
   c.contactLog.push(entry);
   let ticked='';
-  const sid = Number(a.stepId); // AI may return the id as a string; tracker step ids are numbers
   const _tickEl = document.getElementById('smartTickStep');
   const _doTick = _tickEl ? _tickEl.checked : true; // untick in the modal to just note it
   if(_doTick && a.stepId!=null && Number.isFinite(sid) && !(c.checkedSteps||[]).map(String).includes(String(sid))){
@@ -9994,8 +9996,10 @@ async function applySmartAction(){
   let _noted='';
   if(_noteTxt){
     const _st=(a.stepId!=null && typeof wfScenarioFor==='function') ? (((wfScenarioFor(c)||{}).steps||[]).find(s=>String(s.id)===String(a.stepId))||{}).title : '';
-    c.contactLog.push({ date:new Date().toISOString(), type:'note', note:(_st?_st+' - ':'')+_noteTxt });
-    if(a.stepId!=null && Number.isFinite(sid)){ c.stepNotes=c.stepNotes||{}; c.stepNotes[sid]=_noteTxt; }
+    const _noteEntry={ date:new Date().toISOString(), type:'note', note:(_st?_st+' - ':'')+_noteTxt };
+    if(_hasStep) _noteEntry.stepId=sid;
+    c.contactLog.push(_noteEntry);
+    if(_hasStep){ c.stepNotes=c.stepNotes||{}; c.stepNotes[sid]=_noteTxt; }
     _noted=' · note added';
   }
   try{ await saveWfCases(); }catch(e){}
@@ -18011,7 +18015,7 @@ async function wfStepNote(caseId, stepId){
     // Also drop a dated line into the contact log so there's a history.
     const step=(typeof wfGetSteps==='function'?wfGetSteps(c):[]).find(s=>String(s.id)===String(stepId));
     c.contactLog=c.contactLog||[];
-    c.contactLog.push({ date:new Date().toISOString(), type:'note', note:(step&&step.title?step.title+' - ':'')+v.trim() });
+    c.contactLog.push({ date:new Date().toISOString(), type:'note', stepId:(Number.isFinite(Number(stepId))?Number(stepId):stepId), note:(step&&step.title?step.title+' - ':'')+v.trim() });
   } else {
     delete c.stepNotes[stepId];
   }
@@ -18123,11 +18127,16 @@ function wfOpenStepTasks(caseId, stepId) {
     ${!allDone?`<button onclick="event.stopPropagation();wfNudge('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:10px;color:var(--accent);" title="Draft a reminder email to the assignee">🔔 Nudge</button>`:''}
     ${_due?`<span style="font-size:11px;font-weight:600;margin-left:auto;color:${_dueCol};">${_dueSt?wfDueLabel(_dueSt):('due '+wfFmtDue(new Date(_due+'T00:00:00')))}</span>`:''}
   </div>`;
-  const _note=(c.stepNotes&&c.stepNotes[stepId])||'';
-  const noteRow=`<div style="margin-top:8px;">`+
-    (_note?`<div style="font-size:12px;color:var(--ink2);background:var(--surface2);border-radius:8px;padding:8px 10px;line-height:1.5;white-space:pre-wrap;">📝 ${escapeHtml(_note)}</div>`:'')+
-    `<button onclick="event.stopPropagation();wfStepNote('${caseId}',${stepId})" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:4px 0;">${_note?'Edit note':'+ Add note'}</button>`+
-  `</div>`;
+  const noteRow=`<div style="margin-top:6px;"><button onclick="event.stopPropagation();wfStepNote('${caseId}',${stepId})" class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);padding:4px 0;">+ Add note</button></div>`;
+  // Per-step activity: emails/attachments linked from the inbox smart action, and notes - all scoped to THIS step.
+  const _stepLog=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)).slice().sort((a,b)=>new Date(b.date)-new Date(a.date));
+  const _logIcon={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const logSection=_stepLog.length?('<div><div style="font-size:11px;font-weight:700;color:var(--ink2);margin-bottom:8px;">Linked activity</div><div style="display:flex;flex-direction:column;gap:8px;margin-bottom:4px;">'+_stepLog.map(e=>{
+    const d=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    const t=new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const doc=e.docFilename?('<button onclick="wfDownloadLogDoc(\''+caseId+'\',\''+jsAttr(e.date)+'\')" style="margin-top:5px;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:8px;padding:3px 9px;cursor:pointer;font-family:inherit;">📎 '+escapeHtml(e.docFilename)+'</button>'):'';
+    return '<div style="display:flex;gap:9px;padding:9px 11px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);"><div style="font-size:13px;flex-shrink:0;line-height:1.3;">'+(_logIcon[e.type]||'📝')+'</div><div style="flex:1;min-width:0;"><div style="display:flex;gap:8px;align-items:center;"><span style="font-size:10px;font-weight:600;color:var(--ink);text-transform:capitalize;">'+escapeHtml(e.type||'note')+'</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;">'+d+', '+t+'</span></div><div style="font-size:12px;color:var(--ink2);line-height:1.5;margin-top:2px;white-space:pre-wrap;">'+escapeHtml(e.note||'')+'</div>'+doc+'</div></div>';
+  }).join('')+'</div></div>'):'';
   const stepEmailBtn = step.action?.type==='email'?`<button onclick="event.stopPropagation();wfOpenEmailDraft('${caseId}',${stepId})" class="btn btn-secondary btn-sm" style="font-size:11px;color:#047857;">✉️ ${escapeHtml(step.action.label||'Draft email')} →</button>`:'';
   const stepDocBtn = step.action?.type==='doc'?`<button onclick="event.stopPropagation();wfOpenDoc('${step.action.docId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">${escapeHtml(step.action.label||'Generate document')} →</button>`:'';
   let bodyHtml;
@@ -18156,7 +18165,7 @@ function wfOpenStepTasks(caseId, stepId) {
   ov.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:985;display:flex;align-items:center;justify-content:center;padding:20px;';
   ov.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:540px;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg);">
     <div style="padding:18px 22px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">${escapeHtml(step.title)}</div><div style="font-size:12px;color:${allDone?'var(--green)':'var(--ink3)'};margin-top:3px;">${hasSubs?`${doneN} of ${step.subs.length} tasks complete${allDone?' · stage done ✓':''}`:(allDone?'Stage complete ✓':'Not started')}</div>${timeBadge?`<div style="display:flex;gap:6px;margin-top:8px;">${timeBadge}</div>`:''}${asgRow}${noteRow}${headBtns}</div>
-    <div style="padding:16px 22px;display:flex;flex-direction:column;gap:8px;">${bodyHtml}</div>
+    <div style="padding:16px 22px;display:flex;flex-direction:column;gap:8px;">${logSection}${bodyHtml}</div>
     <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;"><button class="btn btn-primary btn-sm" onclick="document.getElementById('wfStepTasks').remove()">Done</button></div>
   </div>`;
   document.body.appendChild(ov);
