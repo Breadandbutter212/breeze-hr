@@ -1404,6 +1404,20 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   <div class="manage-body" id="analyticsBody"></div>
 </div>
 
+<!-- VIBE VIEWS -->
+<div class="view manage-view" id="view-vibeviews">
+  <style>
+    .vv-chip{border:1px solid var(--border);background:var(--bg);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:7px 11px;border-radius:999px;cursor:pointer}
+    .vv-chip:hover{border-color:var(--accent);color:var(--accent-ink);background:var(--accent-bg)}
+    .vv-spin{width:34px;height:34px;border-radius:50%;border:3px solid var(--accent-bg);border-top-color:var(--accent);animation:vvspin .8s linear infinite}
+    @keyframes vvspin{to{transform:rotate(360deg)}}
+  </style>
+  <div class="manage-topbar">
+    <div><div class="manage-title">Vibe Views <span style="font-size:10px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:8px;margin-left:4px;font-weight:600;vertical-align:middle;">Beta</span></div><div class="manage-sub">Describe any view of your people data - Breeze builds it live.</div></div>
+  </div>
+  <div class="manage-body" id="vibeBody"></div>
+</div>
+
 <!-- PRESENTATIONS -->
 <div class="view manage-view" id="view-presentations">
   <div class="manage-topbar">
@@ -6751,6 +6765,7 @@ function showView(v,navEl) {
   if(v==='chat')renderChatHistory();
   if(v==='chats')renderChatsPage();
   if(v==='analytics')renderAnalytics();
+  if(v==='vibeviews')renderVibeViews();
   if(v==='compare') { initCompareHelp(); }
   if(v==='recorder')initRecorder();
   if(v==='presentations')initPresentations();
@@ -10458,6 +10473,7 @@ async function disconnectMerge() {
 
 // ── ANALYTICS ──
 let analyticsData = null, analyticsSource = '', analyticsCharts = {};
+let _analyticsTab = 'dashboard', _vvHtml = null, _vvTitle = 'People analytics — comp & headcount', _vvLastPrompt = '';
 
 function renderAnalytics() {
   const body = document.getElementById('analyticsBody'); if (!body) return;
@@ -10490,6 +10506,490 @@ function renderAnalytics() {
     return;
   }
   renderDashboard();
+}
+
+// ===== VIBE VIEWS (Insights) =====
+function vvActive(){ return document.getElementById('view-vibeviews')?.classList.contains('active'); }
+
+// Demo people data — stands in for the payload builder until an HRIS/CSV is connected.
+const VV_DEMO = (function(){
+  const teams = {
+    Engineering:[["Ada Powell","Senior",92000],["Ravi Menon","Senior",88000],["Jo Fisher","Mid",71000],
+      ["Sam Ortiz","Mid",68000],["Priya Shah","Junior",52000],["Leo Grant","Staff",118000]],
+    Sales:[["Marcus Bell","Senior",76000],["Nina Alvarez","Mid",58000],["Tom Reid","Mid",56000],["Chloe Day","Junior",41000]],
+    Product:[["Isla Fenn","Senior",95000],["Deniz Kaya","Mid",74000],["Owen Pryce","Junior",55000]],
+    People:[["Grace Lin","Senior",70000],["Harry Bloom","Mid",52000]],
+    Marketing:[["Freya Cole","Senior",68000],["Amir Zadeh","Mid",50000],["Ella Rhodes","Junior",39000]]
+  };
+  const out=[]; let id=1; const yearFor={Staff:2019,Senior:2020,Mid:2022,Junior:2024};
+  for(const [team,rows] of Object.entries(teams))
+    for(const [name,seniority,salary] of rows){
+      const y=(yearFor[seniority]||2022)+(id%3), mo=((id*5)%12)+1;
+      out.push({name,team,seniority,salary,start_date:y+'-'+String(mo).padStart(2,'0')+'-01'}); id++;
+    }
+  return out;
+})();
+
+function vvNum(x){ if(x==null) return null; var n=typeof x==='number'?x:parseFloat(String(x).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
+function vvSeniority(title){ title=(title||'').toLowerCase();
+  if(/head|lead|principal|staff|chief|director| vp|vp /.test(title)) return 'Staff';
+  if(/senior|sr\b/.test(title)) return 'Senior';
+  if(/junior|jr\b|associate|graduate|intern|trainee|assistant/.test(title)) return 'Junior';
+  return 'Mid'; }
+
+// Builds the iframe payload from live analytics data when present, else demo data.
+function vvBuildPayload(){
+  var live = Array.isArray(analyticsData) && analyticsData.length ? analyticsData : null;
+  var src = live || VV_DEMO;
+  var employees = src.map(function(r,i){
+    return {
+      id:'e'+i,
+      name: r.name || r.Name || ('Employee '+(i+1)),
+      team: r.team || r.department || r.Department || r.dept || 'Unknown',
+      seniority: r.seniority || vvSeniority(r.job_title || r.role || r.title || r['Job title']),
+      salary: vvNum(r.salary!=null?r.salary:(r.Salary!=null?r.Salary:r.pay_rate)),
+      currency:'GBP',
+      startDate: r.startDate || r.start_date || r['Start date'] || null
+    };
+  });
+  return {
+    employees: employees,
+    meta:{ orgName: live ? (analyticsSource || 'Your org') : 'Demo data', generatedAt:'',
+      fieldCatalog:[
+        {key:'team',label:'Team',type:'string'},
+        {key:'seniority',label:'Seniority',type:'string'},
+        {key:'salary',label:'Salary',type:'number'},
+        {key:'startDate',label:'Start date',type:'date'}
+      ]},
+    theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
+  };
+}
+
+// The "generated view": one self-contained HTML document. In the full build this comes back
+// from claude-sonnet-4-6; here it is hand-written to the bar we tune the system prompt to hit.
+// CSP locks connect-src to 'none' — the real no-exfiltration boundary. Renders only from postMessage.
+function vvGeneratedDoc(){ return `<!-- title: People analytics — comp & headcount -->
+<!doctype html><html><head><meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy"
+  content="default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; font-src 'none'">
+<style>
+  :root{
+    --accent:#5B47E0; --accent-bg:#EEEBFF; --accent-ink:#4F3ACF;
+    --navy:#2E3D52; --bg:#FBFAF8; --surface:#FFFFFF; --ink:#2E3D52; --ink2:#6B6F76; --ink3:#9AA0A6;
+    --line:rgba(0,0,0,.08);
+    --c1:#5B47E0; --c2:#2E3D52; --c3:#1D9E75; --c4:#E0A800; --c5:#F97316; --grid:rgba(0,0,0,.06);
+  }
+  [data-theme="dark"]{
+    --navy:#E8ECF2; --bg:#171F2B; --surface:#1F2836; --ink:#EDF0F4; --ink2:#A7AEBB; --ink3:#7A8290;
+    --line:rgba(255,255,255,.10); --accent-bg:#2A2550; --accent-ink:#C7BFF5;
+    --c1:#8577F0; --c2:#8DA2C0; --c3:#33C08E; --c4:#EDBB3A; --c5:#FB8C4B; --grid:rgba(255,255,255,.08);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Plus Jakarta Sans',-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    background:var(--bg);color:var(--ink);-webkit-font-smoothing:antialiased}
+  .pad{padding:22px 24px 30px}
+  h2{margin:0 0 2px;font-size:20px;letter-spacing:-.01em}
+  .muted{color:var(--ink2);font-size:13px;margin:0 0 18px}
+  .kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px}
+  .kpi{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 15px}
+  .kpi .n{font-size:22px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+  .kpi .l{font-size:11.5px;color:var(--ink2);margin-top:2px}
+  .kpi.hi{background:var(--accent-bg)} .kpi.hi .n{color:var(--accent-ink)}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+  .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:16px}
+  .card h3{margin:0 0 4px;font-size:14px;color:var(--ink);font-weight:600}
+  .card .cap{font-size:12px;color:var(--ink3);margin:0 0 14px}
+  svg{display:block;width:100%;overflow:visible}
+  .legend{display:flex;flex-wrap:wrap;gap:10px 16px;margin-top:12px}
+  .legend span{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--ink2)}
+  .legend i{width:10px;height:10px;border-radius:3px;display:inline-block}
+  .bar-row{display:flex;align-items:center;gap:12px;margin:8px 0}
+  .bar-row .name{width:104px;font-size:13px;color:var(--ink);font-weight:500}
+  .track{flex:1;height:24px;background:var(--accent-bg);border-radius:8px;overflow:hidden}
+  .fill{height:100%;background:var(--accent);border-radius:8px;transition:width .5s cubic-bezier(.4,0,.2,1)}
+  .bar-row .val{width:74px;text-align:right;font-size:13px;font-variant-numeric:tabular-nums;color:var(--ink2)}
+  .donutwrap{display:flex;align-items:center;gap:18px}
+  .donut-c{position:relative;flex:0 0 150px}
+  .donut-center{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .donut-center .n{font-size:26px;font-weight:700;color:var(--navy);line-height:1}
+  .donut-center .l{font-size:11px;color:var(--ink3)}
+  .sim{display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+  .sim label{font-size:13px;color:var(--ink2);font-weight:500}
+  input[type=range]{-webkit-appearance:none;appearance:none;height:6px;border-radius:3px;
+    background:var(--accent-bg);flex:1;min-width:180px;cursor:pointer}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:var(--accent);border:3px solid var(--surface);box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer}
+  .pct{font-weight:700;color:var(--accent-ink);background:var(--accent-bg);padding:4px 10px;border-radius:8px;
+    font-variant-numeric:tabular-nums;min-width:52px;text-align:center}
+  select{font:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:10px;
+    background:var(--surface);color:var(--ink)}
+  .totals{display:flex;gap:26px;margin-top:16px;flex-wrap:wrap}
+  .totals .t .n{font-size:22px;font-weight:700;color:var(--navy);font-variant-numeric:tabular-nums}
+  .totals .t.delta .n{color:var(--c3)}
+  .totals .t .l{font-size:12px;color:var(--ink2)}
+  .state{display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;gap:10px;color:var(--ink2)}
+  .sp{width:30px;height:30px;border-radius:50%;border:3px solid var(--accent-bg);border-top-color:var(--accent);animation:s .8s linear infinite}
+  @keyframes s{to{transform:rotate(360deg)}}
+  @media(max-width:640px){.kpis{grid-template-columns:1fr 1fr}.grid2{grid-template-columns:1fr}.donutwrap{flex-direction:column}}
+</style></head>
+<body>
+  <div id="loading" class="state"><div class="sp"></div><div>Waiting for your people data…</div></div>
+  <div id="empty" class="state" style="display:none"><div style="font-size:15px;font-weight:600">No employees yet</div>
+    <div style="font-size:13px">Add people to Breeze and this view fills in automatically.</div></div>
+  <div id="app" class="pad" style="display:none">
+    <h2>People analytics</h2>
+    <p class="muted" id="sub"></p>
+    <div class="kpis">
+      <div class="kpi"><div class="n" id="kHead">–</div><div class="l">Headcount</div></div>
+      <div class="kpi"><div class="n" id="kAvg">–</div><div class="l">Average salary</div></div>
+      <div class="kpi"><div class="n" id="kMed">–</div><div class="l">Median salary</div></div>
+      <div class="kpi hi"><div class="n" id="kPay">–</div><div class="l">Annual payroll</div></div>
+    </div>
+    <div class="card"><h3>Headcount growth</h3><p class="cap">Cumulative headcount by hire date</p><div id="growth"></div></div>
+    <div class="grid2">
+      <div class="card"><h3>Headcount by team</h3><p class="cap">Share of the org</p>
+        <div class="donutwrap"><div class="donut-c"><div id="donut"></div>
+          <div class="donut-center"><div class="n" id="donutN">–</div><div class="l">people</div></div></div>
+          <div class="legend" id="donutLeg" style="flex-direction:column;flex:1"></div></div></div>
+      <div class="card"><h3>Salary distribution</h3><p class="cap">Number of people per band</p><div id="hist"></div></div>
+    </div>
+    <div class="card"><h3>Average salary by team</h3><p class="cap">Sorted high to low</p><div id="bars"></div></div>
+    <div class="grid2">
+      <div class="card"><h3>Pay range by team</h3><p class="cap">Min · median · max</p><div id="range2"></div></div>
+      <div class="card"><h3>Seniority mix</h3><p class="cap">Headcount by level</p><div id="seniority"></div><div class="legend" id="senLeg"></div></div>
+    </div>
+    <div class="card"><h3>Raise simulator</h3><p class="cap">Model an across-the-board or per-team raise</p>
+      <div class="sim">
+        <label>Apply to</label><select id="scope"><option value="__all">Everyone</option></select>
+        <label>Raise</label><input type="range" id="rng" min="0" max="15" step="0.5" value="0"><span class="pct" id="pct">0%</span>
+      </div>
+      <div class="totals">
+        <div class="t"><div class="n" id="newPay">–</div><div class="l">New annual payroll</div></div>
+        <div class="t delta"><div class="n" id="cost">+£0</div><div class="l">Added cost / year</div></div>
+      </div>
+    </div>
+  </div>
+<script>
+  var DATA=null, PAL=['var(--c1)','var(--c2)','var(--c3)','var(--c4)','var(--c5)'];
+  function $(id){return document.getElementById(id);}
+  function gbp(n){return '£'+Math.round(n).toLocaleString('en-GB');}
+  function gbpK(n){return '£'+Math.round(n/1000)+'k';}
+  function median(a){var s=a.slice().sort(function(x,y){return x-y;}),m=Math.floor(s.length/2);return s.length%2?s[m]:(s[m-1]+s[m])/2;}
+  function groupSum(emps,key){var m={};emps.forEach(function(e){(m[e[key]]=m[e[key]]||[]).push(e.salary);});return m;}
+  function growthChart(emps){
+    var wd=emps.filter(function(e){return e.startDate;}).sort(function(a,b){return a.startDate<b.startDate?-1:1;});
+    if(!wd.length){return '';}
+    var W=1000,H=190,pad=34,n=wd.length,maxY=n;
+    var pts=wd.map(function(e){return e.startDate.slice(0,7);});
+    var X=function(i){return pad+i/(n-1||1)*(W-pad-8);};
+    var Y=function(v){return H-22-v/maxY*(H-40);};
+    var line='M'+X(0)+' '+Y(1);
+    for(var i=1;i<n;i++){line+=' L'+X(i)+' '+Y(i+1);}
+    var area=line+' L'+X(n-1)+' '+(H-22)+' L'+X(0)+' '+(H-22)+' Z';
+    var yl='',gstep=Math.max(1,Math.ceil(maxY/4));
+    for(var g=0;g<=maxY;g+=gstep){yl+='<line x1="'+pad+'" y1="'+Y(g)+'" x2="'+W+'" y2="'+Y(g)+'" stroke="var(--grid)"/><text x="0" y="'+(Y(g)+4)+'" font-size="11" fill="var(--ink3)">'+g+'</text>';}
+    var xl='',step=Math.max(1,Math.floor(n/5));
+    for(var j=0;j<n;j+=step){xl+='<text x="'+X(j)+'" y="'+(H-6)+'" font-size="11" fill="var(--ink3)" text-anchor="middle">'+pts[j]+'</text>';}
+    return '<svg viewBox="0 0 '+W+' '+H+'" style="width:100%;height:auto">'+yl+'<path d="'+area+'" fill="var(--accent-bg)"/><path d="'+line+'" fill="none" stroke="var(--accent)" stroke-width="2.5" stroke-linejoin="round"/><circle cx="'+X(n-1)+'" cy="'+Y(n)+'" r="4" fill="var(--accent)"/>'+xl+'</svg>';
+  }
+  function donutChart(emps){
+    var m={};emps.forEach(function(e){m[e.team]=(m[e.team]||0)+1;});
+    var teams=Object.keys(m).sort(function(a,b){return m[b]-m[a];});
+    var tot=emps.length,C=2*Math.PI*54,off=0,segs='';
+    teams.forEach(function(t,i){var len=m[t]/tot*C;segs+='<circle cx="70" cy="70" r="54" fill="none" stroke="'+PAL[i%5]+'" stroke-width="22" stroke-dasharray="'+len+' '+(C-len)+'" stroke-dashoffset="'+(-off)+'" transform="rotate(-90 70 70)"/>';off+=len;});
+    $('donut').innerHTML='<svg viewBox="0 0 140 140" style="height:150px">'+segs+'</svg>';
+    $('donutN').textContent=tot;
+    $('donutLeg').innerHTML=teams.map(function(t,i){return '<span><i style="background:'+PAL[i%5]+'"></i>'+t+' <b style="color:var(--ink);font-weight:600;margin-left:2px">'+m[t]+'</b></span>';}).join('');
+  }
+  function histChart(emps){
+    var edges=[0,40000,55000,70000,90000,110000,1e9],labels=['<40k','40-55k','55-70k','70-90k','90-110k','110k+'],cnt=labels.map(function(){return 0;});
+    emps.forEach(function(e){for(var i=0;i<edges.length-1;i++){if(e.salary>=edges[i]&&e.salary<edges[i+1]){cnt[i]++;break;}}});
+    var W=560,H=180,pad=24,n=cnt.length,maxC=Math.max.apply(null,cnt)||1,gap=(W-pad)/n,bw=gap*0.62,bars='';
+    for(var i=0;i<n;i++){var h=cnt[i]/maxC*(H-46),x=pad+i*gap+(gap-bw)/2,y=H-28-h;
+      bars+='<rect x="'+x+'" y="'+y+'" width="'+bw+'" height="'+h+'" rx="5" fill="var(--accent)"/><text x="'+(x+bw/2)+'" y="'+(y-6)+'" font-size="11" font-weight="600" fill="var(--ink2)" text-anchor="middle">'+(cnt[i]||'')+'</text><text x="'+(x+bw/2)+'" y="'+(H-10)+'" font-size="10" fill="var(--ink3)" text-anchor="middle">'+labels[i]+'</text>';}
+    $('hist').innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="height:180px">'+bars+'</svg>';
+  }
+  function rangeChart(emps){
+    var g=groupSum(emps,'team'),teams=Object.keys(g),all=emps.map(function(e){return e.salary;}),lo=Math.min.apply(null,all),hi=Math.max.apply(null,all);
+    teams.sort(function(a,b){return median(g[b])-median(g[a]);});
+    var W=560,padL=96,padR=16,rh=34,H=teams.length*rh+24,X=function(v){return padL+(v-lo)/(hi-lo||1)*(W-padL-padR);},rows='';
+    teams.forEach(function(t,i){var a=g[t],mn=Math.min.apply(null,a),mx=Math.max.apply(null,a),md=median(a),y=18+i*rh;
+      rows+='<text x="0" y="'+(y+4)+'" font-size="12" fill="var(--ink)" font-weight="500">'+t+'</text><line x1="'+X(mn)+'" y1="'+y+'" x2="'+X(mx)+'" y2="'+y+'" stroke="var(--accent-bg)" stroke-width="7" stroke-linecap="round"/><circle cx="'+X(mn)+'" cy="'+y+'" r="5" fill="var(--c5)"/><circle cx="'+X(mx)+'" cy="'+y+'" r="5" fill="var(--c2)"/><circle cx="'+X(md)+'" cy="'+y+'" r="6" fill="var(--accent)" stroke="var(--surface)" stroke-width="2"/>';});
+    $('range2').innerHTML='<svg viewBox="0 0 '+W+' '+H+'" style="height:'+H+'px">'+rows+'</svg><div class="legend"><span><i style="background:var(--c5)"></i>Min</span><span><i style="background:var(--accent)"></i>Median</span><span><i style="background:var(--c2)"></i>Max</span></div>';
+  }
+  function seniorityChart(emps){
+    var order=['Staff','Senior','Mid','Junior'],col={Staff:'var(--c2)',Senior:'var(--c1)',Mid:'var(--c3)',Junior:'var(--c4)'},m={};
+    emps.forEach(function(e){m[e.seniority]=(m[e.seniority]||0)+1;});
+    var tot=emps.length,W=560,x=0,segs='';
+    order.forEach(function(s){var c=m[s]||0;if(!c)return;var w=c/tot*W;segs+='<rect x="'+x+'" y="0" width="'+(w-2)+'" height="34" rx="6" fill="'+col[s]+'"/><text x="'+(x+w/2)+'" y="22" font-size="12" font-weight="600" fill="#fff" text-anchor="middle">'+c+'</text>';x+=w;});
+    $('seniority').innerHTML='<svg viewBox="0 0 '+W+' 34" style="height:34px">'+segs+'</svg>';
+    $('senLeg').innerHTML=order.filter(function(s){return m[s];}).map(function(s){return '<span><i style="background:'+col[s]+'"></i>'+s+'</span>';}).join('');
+  }
+  function barsChart(emps){
+    var g=groupSum(emps,'team'),rows=Object.keys(g).map(function(t){var a=g[t];return {team:t,avg:a.reduce(function(x,y){return x+y;},0)/a.length};}).sort(function(a,b){return b.avg-a.avg;});
+    var mx=Math.max.apply(null,rows.map(function(r){return r.avg;}));
+    $('bars').innerHTML=rows.map(function(r){return '<div class="bar-row"><span class="name">'+r.team+'</span><span class="track"><span class="fill" style="width:'+(r.avg/mx*100).toFixed(1)+'%"></span></span><span class="val">'+gbp(r.avg)+'</span></div>';}).join('');
+  }
+  function render(){
+    var emps=(DATA.employees||[]).filter(function(e){return typeof e.salary==='number';});
+    $('loading').style.display='none';
+    if(DATA.theme==='dark')document.documentElement.setAttribute('data-theme','dark');else document.documentElement.removeAttribute('data-theme');
+    if(!emps.length){$('app').style.display='none';$('empty').style.display='flex';return;}
+    $('empty').style.display='none';$('app').style.display='block';
+    var sal=emps.map(function(e){return e.salary;}),total=sal.reduce(function(a,b){return a+b;},0);
+    $('sub').textContent=(DATA.meta&&DATA.meta.orgName?DATA.meta.orgName+' · ':'')+emps.length+' people with comp data';
+    $('kHead').textContent=emps.length;$('kAvg').textContent=gbp(total/emps.length);$('kMed').textContent=gbp(median(sal));$('kPay').textContent=gbpK(total);
+    $('growth').innerHTML=growthChart(DATA.employees||[]);
+    donutChart(emps);histChart(emps);barsChart(emps);rangeChart(emps);seniorityChart(emps);
+    var scope=$('scope');scope.length=1;
+    Object.keys(groupSum(emps,'team')).forEach(function(t){var o=document.createElement('option');o.value=t;o.textContent=t;scope.appendChild(o);});
+    function recalc(){var pct=parseFloat($('rng').value),sel=scope.value;$('pct').textContent=pct+'%';var added=emps.reduce(function(s,e){return s+((sel==='__all'||e.team===sel)?e.salary*pct/100:0);},0);$('newPay').textContent=gbpK(total+added);$('cost').textContent='+'+gbp(added);}
+    $('rng').oninput=recalc;scope.onchange=recalc;recalc();
+  }
+  window.addEventListener('message',function(ev){if(!ev.data||ev.data.__type!=='vibe-data')return;DATA=ev.data.payload;render();});
+<\/script>
+</body></html>`; }
+
+const VV_STATUS=['Designing your view…','Reading your data schema…','Wiring up your people data…','Drawing the charts…','Adding interactivity…','Testing everything works…'];
+
+// Design tokens the model must use for every colour (kept identical to the app + the sample view).
+const VV_TOKENS = `:root{
+  --accent:#5B47E0; --accent-bg:#EEEBFF; --accent-ink:#4F3ACF;
+  --navy:#2E3D52; --bg:#FBFAF8; --surface:#FFFFFF; --ink:#2E3D52; --ink2:#6B6F76; --ink3:#9AA0A6;
+  --line:rgba(0,0,0,.08);
+  --c1:#5B47E0; --c2:#2E3D52; --c3:#1D9E75; --c4:#E0A800; --c5:#F97316; --grid:rgba(0,0,0,.06);
+}
+[data-theme="dark"]{
+  --navy:#E8ECF2; --bg:#171F2B; --surface:#1F2836; --ink:#EDF0F4; --ink2:#A7AEBB; --ink3:#7A8290;
+  --line:rgba(255,255,255,.10); --accent-bg:#2A2550; --accent-ink:#C7BFF5;
+  --c1:#8577F0; --c2:#8DA2C0; --c3:#33C08E; --c4:#EDBB3A; --c5:#FB8C4B; --grid:rgba(255,255,255,.08);
+}`;
+
+// Five anonymised FAKE rows sent to the AI in place of real people (same shape the payload builder emits).
+const VV_FAKE = [
+  {id:'e0',name:'A. Example',team:'Engineering',seniority:'Senior',salary:90000,currency:'GBP',startDate:'2021-03-01'},
+  {id:'e1',name:'B. Sample',team:'Sales',seniority:'Mid',salary:58000,currency:'GBP',startDate:'2022-07-01'},
+  {id:'e2',name:'C. Demo',team:'Product',seniority:'Junior',salary:52000,currency:'GBP',startDate:'2024-01-01'},
+  {id:'e3',name:'D. Placeholder',team:'People',seniority:'Staff',salary:110000,currency:'GBP',startDate:'2019-09-01'},
+  {id:'e4',name:'E. Test',team:'Marketing',seniority:'Mid',salary:49000,currency:'GBP',startDate:'2023-05-01'}
+];
+
+function vvSystemPrompt(){
+  var e0 = VV_FAKE[0];
+  var fields = Object.keys(e0).map(function(k){ return k+': '+(k==='salary'?'number|null':(k==='startDate'?'string|null (ISO date)':typeof e0[k])); }).join('; ');
+  return [
+'You generate ONE complete, self-contained HTML document that renders an HR analytics view inside a sandboxed iframe (desktop-first, ~900-1200px wide, must also work down to 380px).',
+'',
+'The document is given its data at runtime via a window "message" event. You MUST wire this up:',
+'  window.addEventListener("message", function(e){ if(e.data && e.data.__type==="vibe-data"){ /* render from */ e.data.payload } });',
+'',
+'payload shape (OrgViewData):',
+'{',
+'  employees: Array<{ '+fields+' }>,',
+'  meta: { orgName: string, fieldCatalog: Array<{key:string,label:string,type:string}> },',
+'  theme: "light" | "dark"',
+'}',
+'',
+'Example employees rows (FAKE, anonymised - never assume these exact values):',
+JSON.stringify(VV_FAKE),
+'',
+'HARD RULES:',
+'- Output ONLY the HTML document. No markdown, no code fences, no commentary before or after.',
+'- Line 1 must be an HTML comment giving a short view title, e.g: <!-- title: Salary bands by team -->',
+'- Show a loading state until the message arrives; show a friendly empty state if employees is empty.',
+'- ZERO network: no fetch, no XMLHttpRequest, no WebSocket, no dynamic import(), no <script src>, no <link>, no external fonts/images/CDNs. Everything inline.',
+'- Draw all charts yourself as inline SVG from the payload. No chart libraries.',
+'- Exactly one <script> tag, vanilla JS only. No frameworks.',
+'- Use ONLY these CSS custom properties for every colour, and include this :root block verbatim in your <style>:',
+VV_TOKENS,
+'- Respect payload.theme: when it is "dark", set document.documentElement.setAttribute("data-theme","dark").',
+'- Tolerate missing/null fields everywhere (salary, startDate, seniority may be null or absent).',
+'- Be genuinely interactive where it helps: filters, toggles, sliders, sortable tables, click-to-drill - all computed client-side from the payload.',
+'- Use font-family:"Plus Jakarta Sans",-apple-system,sans-serif and tabular figures for numbers.',
+'',
+'Build exactly what the user asks for. Make it look like a polished, top-tier analytics product.'
+  ].join('\n');
+}
+
+function vvExtractHtml(t){
+  t = (t||'').trim();
+  var fence = t.match(/```(?:html)?\s*([\s\S]*?)```/i);
+  if (fence) t = fence[1].trim();
+  var i = t.search(/<!--|<!doctype|<html/i);
+  if (i > 0) t = t.slice(i);
+  return t.trim();
+}
+
+function vvValidate(html){
+  if (!html || html.length < 80) return 'empty document';
+  var banned = [[/\bfetch\s*\(/,'fetch()'],[/XMLHttpRequest/,'XMLHttpRequest'],[/\bimport\s*\(/,'dynamic import'],
+    [/WebSocket/,'WebSocket'],[/<script[^>]*\ssrc=/i,'external script'],[/<link\b/i,'<link> tag'],
+    [/src\s*=\s*["']https?:/i,'external src'],[/document\.cookie/,'document.cookie'],
+    [/localStorage|sessionStorage/,'storage access'],[/\bparent\./,'parent access'],[/\btop\./,'top access']];
+  for (var i=0;i<banned.length;i++){ if (banned[i][0].test(html)) return 'contains '+banned[i][1]; }
+  if (!/addEventListener\(\s*["']message["']/.test(html)) return 'no message-event listener';
+  return null;
+}
+
+// Guarantee the no-exfiltration boundary regardless of what the model produced.
+function vvHardenCsp(html){
+  var csp = '<meta http-equiv="Content-Security-Policy" content="default-src \'none\'; style-src \'unsafe-inline\'; script-src \'unsafe-inline\'; img-src data:; connect-src \'none\'; font-src \'none\'">';
+  html = html.replace(/<meta[^>]+http-equiv=["']Content-Security-Policy["'][^>]*>/ig,'');
+  if (/<head[^>]*>/i.test(html)) return html.replace(/<head[^>]*>/i, function(m){ return m+csp; });
+  if (/<html[^>]*>/i.test(html)) return html.replace(/<html[^>]*>/i, function(m){ return m+'<head>'+csp+'</head>'; });
+  return '<!doctype html><html><head>'+csp+'</head>'+html+'</html>';
+}
+
+// Shared generation core: generate -> validate -> one repair -> CSP-harden. Used by create + refine.
+async function vvChat(messages){
+  const token = await getAuthToken();
+  const sys = vvSystemPrompt();
+  async function post(msgs){
+    const r = await fetch('/api/chat', { method:'POST',
+      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+      body: JSON.stringify({ system:sys, messages:msgs, model:'claude-sonnet-4-6', max_tokens:16000, temperature:0.35 }) });
+    const d = await r.json().catch(function(){ return {}; });
+    if (!r.ok) throw new Error(d.error || ('Generation failed ('+r.status+')'));
+    var text = (d.content && d.content[0] && d.content[0].text) || '';
+    if (!text) throw new Error('The AI returned an empty response');
+    return text;
+  }
+  let raw = await post(messages);
+  let html = vvExtractHtml(raw);
+  let bad = vvValidate(html);
+  if (bad){ // one repair attempt with the specific failure
+    raw = await post(messages.concat([
+      { role:'assistant', content: raw },
+      { role:'user', content: 'That document failed validation: '+bad+'. Return a corrected, complete HTML document only - no code fences, no commentary. Keep it fully self-contained with the message listener and no network calls.' }
+    ]));
+    html = vvExtractHtml(raw); bad = vvValidate(html);
+    if (bad) throw new Error('Could not produce a safe view ('+bad+'). Try rephrasing.');
+  }
+  return vvHardenCsp(html);
+}
+async function vvGenerate(prompt){
+  return vvChat([{ role:'user', content: prompt }]);
+}
+async function vvRefineGen(instruction){
+  return vvChat([
+    { role:'user', content: _vvLastPrompt || 'Create a people analytics view.' },
+    { role:'assistant', content: _vvHtml || '' },
+    { role:'user', content: 'Refine that view: '+instruction+'. Return the complete updated HTML document only - no code fences, no commentary.' }
+  ]);
+}
+
+function renderVibeViews(body){
+  body = body || document.getElementById('vibeBody'); if(!body) return;
+  if(_vvHtml){ vvRenderView(body); return; }
+  body.innerHTML = `
+    <div style="max-width:680px;margin:40px auto 0;padding:0 20px;text-align:center;">
+      <div style="font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-0.03em;margin-bottom:8px;">Let's build something incredible.</div>
+      <div style="font-size:13px;color:var(--ink3);line-height:1.7;margin-bottom:22px;">Describe the view you want over your people data. Breeze generates a live, interactive dashboard - no spreadsheets, no setup.</div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:14px;box-shadow:var(--shadow-sm);text-align:left;">
+        <textarea id="vvPrompt" rows="2" placeholder="Build me a…  (e.g. average salary by team with a raise simulator)" style="width:100%;border:none;outline:none;resize:none;font-family:inherit;font-size:15px;color:var(--ink);background:transparent;padding:6px 8px;"></textarea>
+        <div style="display:flex;align-items:center;gap:10px;margin-top:6px;flex-wrap:wrap;">
+          <div style="display:flex;gap:8px;flex:1;flex-wrap:wrap;">
+            <button class="vv-chip" onclick="vvChip(this)" data-p="Average salary by team with an interactive raise simulator">Raise simulator</button>
+            <button class="vv-chip" onclick="vvChip(this)" data-p="Salary bands by seniority for hiring">Salary band generator</button>
+            <button class="vv-chip" onclick="vvChip(this)" data-p="Headcount growth over time by team">Headcount growth</button>
+          </div>
+          <button onclick="vvRun(document.getElementById('vvPrompt').value)" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:14px;font-weight:600;padding:10px 18px;border-radius:var(--r-sm);cursor:pointer;">Create view</button>
+        </div>
+      </div>
+      <div style="font-size:11px;color:var(--ink3);margin-top:14px;">Rendered in a sandboxed frame. Your employee data never leaves your browser - only the prompt is sent to the AI.</div>
+    </div>`;
+}
+
+function vvChip(el){ document.getElementById('vvPrompt').value = el.dataset.p; vvRun(el.dataset.p); }
+
+async function vvRun(prompt){
+  _vvLastPrompt = (prompt || _vvLastPrompt || '').trim();
+  if (!_vvLastPrompt){ if(window.showBreezeToast) showBreezeToast('Describe the view you want first'); return; }
+  const body = document.getElementById('vibeBody');
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
+      <div class="vv-spin"></div>
+      <div id="vvGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">Designing your view…</div>
+      <div style="font-size:12px;color:var(--ink3);">This usually takes 30-120 seconds - hang tight.</div>
+    </div>`;
+  let i=0; const iv=setInterval(function(){ i=(i+1)%VV_STATUS.length; const l=document.getElementById('vvGenLine'); if(l)l.textContent=VV_STATUS[i]; }, 2200);
+  try {
+    const html = await vvGenerate(_vvLastPrompt);
+    clearInterval(iv);
+    _vvHtml = html;
+    const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i);
+    _vvTitle = tm ? tm[1].trim() : 'Generated view';
+    if (!vvActive()) return; // user navigated away mid-generation
+    vvRenderView(document.getElementById('vibeBody'));
+  } catch(e) {
+    clearInterval(iv);
+    if (!vvActive()) return;
+    vvRenderError(document.getElementById('vibeBody'), e.message);
+  }
+}
+
+function vvRenderError(body, msg){
+  body.innerHTML = `
+    <div style="max-width:520px;margin:70px auto;text-align:center;padding:0 20px;">
+      <div style="width:48px;height:48px;background:var(--red-bg);border-radius:12px;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--red)" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+      </div>
+      <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px;">That didn't quite work</div>
+      <div style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:22px;">${escapeHtml(msg||'The AI could not generate a valid view.')}</div>
+      <div style="display:flex;gap:10px;justify-content:center;">
+        <button onclick="vvRun(_vvLastPrompt)" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;">Try again</button>
+        <button onclick="vvNewView()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;">Start over</button>
+      </div>
+    </div>`;
+}
+
+function vvRenderView(body){
+  body.innerHTML = `
+    <div style="max-width:1140px;margin:0 auto;padding:14px 20px 30px;">
+      <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
+        <div>
+          <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${_vvTitle}</div>
+          <div style="font-size:11px;color:var(--ink3);">Sandboxed frame · fed via postMessage · no network access</div>
+        </div>
+        <button onclick="vvRefine()" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">↻ Refine</button>
+        <button onclick="vvNewView()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New view</button>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+        <iframe id="vvFrame" sandbox="allow-scripts" style="width:100%;height:940px;border:0;display:block;background:transparent;"></iframe>
+        <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">AI can make mistakes. Check important info.</div>
+      </div>
+    </div>`;
+  const f=document.getElementById('vvFrame');
+  f.onload=function(){ f.contentWindow.postMessage({__type:'vibe-data',payload:vvBuildPayload()},'*'); };
+  f.srcdoc=_vvHtml;
+}
+
+function vvNewView(){ _vvHtml=null; renderVibeViews(document.getElementById('vibeBody')); }
+
+async function vvRefine(){
+  const instr = window.prompt('Refine this view - what should change?\n(e.g. "show the salary bands as a chart instead of cards")');
+  if (!instr || !instr.trim()) return;
+  const body = document.getElementById('vibeBody');
+  body.innerHTML = `
+    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
+      <div class="vv-spin"></div>
+      <div id="vvGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">Applying your refinement…</div>
+      <div style="font-size:12px;color:var(--ink3);">This usually takes 30-120 seconds - hang tight.</div>
+    </div>`;
+  let i=0; const iv=setInterval(function(){ i=(i+1)%VV_STATUS.length; const l=document.getElementById('vvGenLine'); if(l)l.textContent=VV_STATUS[i]; }, 2200);
+  try {
+    const html = await vvRefineGen(instr.trim());
+    clearInterval(iv);
+    _vvHtml = html;
+    const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i);
+    _vvTitle = tm ? tm[1].trim() : _vvTitle;
+    if (!vvActive()) return;
+    vvRenderView(document.getElementById('vibeBody'));
+  } catch(e) {
+    clearInterval(iv);
+    if (!vvActive()) return;
+    vvRenderError(document.getElementById('vibeBody'), e.message);
+  }
 }
 
 async function connectAnalyticsHRIS() {
@@ -21282,6 +21782,7 @@ async function projConfirmEmailToTask(){
       {label:'Presentations', view:'presentations', ic:'<rect x="3" y="4" width="18" height="12" rx="2"/><path d="M12 16v4M8 20h8"/>'} ] },
     insights:{ label:'Insights', items:[
       {label:'Analytics', view:'analytics', ic:'<path d="M5 20V9M12 20V4M19 20v-7"/>'},
+      {label:'Vibe Views', view:'vibeviews', beta:true, ic:'<path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3.3 7.7L24 14l-7.7 3.3L13 25l-3.3-7.7L2 14l7.7-3.3z"/>'},
       {label:'Compare', view:'compare', ic:'<path d="M12 3v18"/><rect x="4" y="8" width="5" height="8" rx="1"/><rect x="15" y="5" width="5" height="11" rx="1"/>'} ] },
     admin:{ label:'Admin', items:[
       {label:'Settings', view:'settings', ic:'<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.6 1.6 0 0 0 .3 1.8M4.3 9a1.6 1.6 0 0 0 .3-1.8M12 2v3M12 19v3M2 12h3M19 12h3"/>'},
@@ -21336,7 +21837,7 @@ async function projConfirmEmailToTask(){
   }
 
   // ---- global search ----
-  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Talent review',v:'talent',k:'People'},{l:'9-box grid',v:'talent',k:'People'},{l:'Succession planning',v:'talent',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Automations',v:'automations',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Work'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
+  var DEST=[ {l:'Home',v:'chat',k:'Page'},{l:'History',v:'chats',k:'Page'},{l:'Org chart',v:'orgchart',k:'People'},{l:'People plan',v:'peopleplan',k:'People'},{l:'Headcount',v:'headcount',k:'People'},{l:'Talent review',v:'talent',k:'People'},{l:'9-box grid',v:'talent',k:'People'},{l:'Succession planning',v:'talent',k:'People'},{l:'Trackers',v:'trackers',k:'Work'},{l:'Automations',v:'automations',k:'Work'},{l:'Projects',v:'projects',k:'Work'},{l:'Process maps',v:'processmaps',k:'Work'},{l:'Policies',v:'manage',k:'Library'},{l:'Documents',v:'docs',k:'Library'},{l:'Presentations',v:'presentations',k:'Library'},{l:'Meeting notes',v:'recorder',k:'Work'},{l:'Analytics',v:'analytics',k:'Insights'},{l:'Vibe Views',v:'vibeviews',k:'Insights'},{l:'Compare',v:'compare',k:'Insights'},{l:'Settings',v:'settings',k:'Admin'} ];
   var _peopleCache=null, _selIdx=-1;
   async function peopleNames(){
     if(_peopleCache) return _peopleCache;
