@@ -1125,7 +1125,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   #homeBody .hb-topbar .search input{border:0;outline:0;font-family:inherit;font-size:13.5px;color:var(--hb-ink);background:transparent;width:100%;}
   #homeBody .hb-topbar .search input::placeholder{color:var(--hb-ink3);}
   #homeBody .hb-topbar .tb-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-  #homeBody .hb-topbar .notif-bell{margin-left:0;}
+  #homeBody .hb-topbar .notif-bell{margin-left:0;background:var(--hb-surface);border-color:var(--hb-line);color:var(--hb-ink);}
   #homeBody .hb-topbar .tb-profile{display:flex;align-items:center;gap:9px;background:var(--hb-surface);border:1px solid var(--hb-line);border-radius:999px;padding:5px 14px 5px 5px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--hb-ink);}
 
   /* Notification bell + panel */
@@ -6446,16 +6446,13 @@ const BZ_THEMES = {
     '--sidebar-grad':'linear-gradient(180deg,#2B2B33 0%,#232329 55%,#1B1B21 100%)',
     '--hero-grad':'linear-gradient(120deg,#F0654E 0%,#E24E8B 42%,#7B6CF0 72%,#5B8DEF 100%)',
     '--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.86)','--hero-btn-bg':'#A24CD6','--hero-btn-fg':'#ffffff' }},
-  nightfall:{ label:'Nightfall', dark:true, vars:{
-    '--accent':'#7B6CF0','--accent-ink':'#C7BFF5','--accent-bg':'#2A2550','--accent-mid':'#4A3F86',
+  nightfall:{ label:'Nightfall', vars:{
+    '--accent':'#7B6CF0','--accent-ink':'#5A49D6','--accent-bg':'#EEEBFF','--accent-mid':'#C7BFF5',
     '--sidebar-grad':'linear-gradient(180deg,#201F27 0%,#191920 55%,#131319 100%)',
     '--hero-grad':'none','--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.82)',
     '--hero-btn-bg':'rgba(20,20,26,0.55)','--hero-btn-fg':'#ffffff','--hero-shadow':'none',
     '--home-bg':'linear-gradient(120deg,#F0654E 0%,#E24E8B 42%,#7B6CF0 72%,#5B8DEF 100%)',
-    '--home-surface':'rgba(24,22,30,0.62)','--home-ink':'#F5F5F8','--home-ink2':'rgba(245,245,248,0.82)','--home-ink3':'rgba(245,245,248,0.60)','--home-line':'rgba(255,255,255,0.14)',
-    '--bg':'#16141C','--surface':'#221F2A','--surface2':'#2A2733','--surface3':'#34303E',
-    '--border':'rgba(255,255,255,0.10)','--border2':'rgba(255,255,255,0.16)',
-    '--ink':'#F2F1F6','--ink2':'#B7B2C4','--ink3':'#8A8598','--navy':'#F2F1F6' }}
+    '--home-surface':'rgba(24,22,30,0.62)','--home-ink':'#F5F5F8','--home-ink2':'rgba(245,245,248,0.82)','--home-ink3':'rgba(245,245,248,0.60)','--home-line':'rgba(255,255,255,0.14)' }}
 };
 const BZ_KEYS = ['--accent','--accent-ink','--accent-bg','--accent-mid','--sidebar-grad','--hero-grad','--hero-fg','--hero-fg-dim','--hero-btn-bg','--hero-btn-fg','--hero-shadow','--home-bg','--home-surface','--home-ink','--home-ink2','--home-ink3','--home-line','--bg','--surface','--surface2','--surface3','--border','--border2','--ink','--ink2','--ink3','--navy'];
 function applyAccent(name){
