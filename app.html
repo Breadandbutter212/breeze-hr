@@ -30,6 +30,13 @@
   --accent-bg: #EEEBFF;
   --accent-mid: #C7BFF5;
   --accent-ink: #4F3ACF;
+  /* Themeable accent surfaces (overridden at runtime by applyAccent) */
+  --sidebar-grad: linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%);
+  --hero-grad: linear-gradient(115deg,#6D62F0 0%,#9061E6 100%);
+  --hero-fg: #ffffff;
+  --hero-fg-dim: rgba(255,255,255,0.85);
+  --hero-btn-bg: #ffffff;
+  --hero-btn-fg: #5B47E0;
   --green: #15803D;
   --green-bg: #F0FAF3;
   --amber: #E0A800;
@@ -102,7 +109,7 @@ body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: 
 .slimbar { display:none; }
 body.nav-slim .sidebar { display:none !important; }
 body.nav-slim .slimbar { display:flex; }
-.slimbar { width:240px; flex-shrink:0; background:linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%); flex-direction:column; height:100%; }
+.slimbar { width:240px; flex-shrink:0; background:var(--sidebar-grad); flex-direction:column; height:100%; }
 .sgi .ic { width:17px; height:17px; opacity:0.9; flex-shrink:0; }
 .sgi.active .ic { opacity:1; }
 body.nav-slim #slimConnSlot { display:none !important; }
@@ -114,7 +121,7 @@ body.nav-slim #slimConnSlot { display:none !important; }
 .sg { margin-bottom:1px; }
 .sg-head { display:flex; align-items:center; gap:10px; width:100%; padding:8px 10px; border:none; background:none; color:rgba(255,255,255,0.85); font-size:13px; font-weight:400; font-family:inherit; cursor:pointer; border-radius:8px; }
 .sg-head:hover { background:rgba(255,255,255,0.07); }
-.sg-head.active { background:#fff; color:#5B47E0; font-weight:600; box-shadow:0 6px 16px rgba(28,25,60,0.18); }
+.sg-head.active { background:#fff; color:var(--accent); font-weight:600; box-shadow:0 6px 16px rgba(28,25,60,0.18); }
 .sg-head.active svg.ic { opacity:1; }
 .sg-head svg.ic { width:17px; height:17px; flex-shrink:0; opacity:0.85; }
 .sg-head .lbl { flex:1; text-align:left; }
@@ -130,7 +137,17 @@ body.nav-slim #slimConnSlot { display:none !important; }
 .sgi .sgi-lbl { flex:1; min-width:0; text-align:left; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .sgi-badge { min-width:17px; height:17px; padding:0 5px; border-radius:9px; background:#E5484D; color:#fff; font-size:10px; font-weight:600; display:none; align-items:center; justify-content:center; flex-shrink:0; }
 .sgi:hover { background:rgba(255,255,255,0.07); color:#fff; }
-.sgi.active { background:#fff; color:#5B47E0; font-weight:600; box-shadow:0 6px 16px rgba(28,25,60,0.18); }
+.sgi.active { background:#fff; color:var(--accent); font-weight:600; box-shadow:0 6px 16px rgba(28,25,60,0.18); }
+/* Accent-colour swatch picker (Settings > Appearance) */
+.bz-swatch{border:2px solid var(--border);background:var(--surface);border-radius:14px;padding:6px 6px 9px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;align-items:center;gap:8px;width:98px;transition:border-color .12s,transform .12s,box-shadow .12s;}
+.bz-swatch:hover{transform:translateY(-2px);}
+.bz-swatch.sel{border-color:var(--accent);box-shadow:0 6px 16px rgba(46,61,82,.14);}
+.bz-swatch .prev{width:100%;height:46px;border-radius:9px;overflow:hidden;display:flex;border:1px solid var(--border);}
+.bz-swatch .prev .side{width:34%;height:100%;}
+.bz-swatch .prev .body{flex:1;display:flex;align-items:center;justify-content:center;}
+.bz-swatch .prev .body .dot{width:16px;height:16px;border-radius:6px;box-shadow:0 1px 3px rgba(0,0,0,.22);}
+.bz-swatch .lbl{font-size:11.5px;font-weight:600;color:var(--ink2);}
+.bz-swatch.sel .lbl{color:var(--accent);}
 .sgi .beta { font-size:10px; color:rgba(255,255,255,0.45); margin-left:2px; }
 .sgi[aria-disabled="true"] { color:rgba(255,255,255,0.38); cursor:default; }
 .slim-foot { padding:8px 10px; border-top:1px solid rgba(255,255,255,0.08); flex-shrink:0; }
@@ -944,7 +961,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <style>
   #homeBody{
     --hb-surface:#FFFFFF; --hb-ink:#1E1B33; --hb-ink2:#5B5872; --hb-ink3:#8E8BA3; --hb-line:#ECEBF3;
-    --hb-brand:#5B47E0;
+    --hb-brand:var(--accent);
     --hb-tint-indigo:#EEEBFF; --hb-ic-indigo:#5B47E0;
     --hb-tint-teal:#DBF5F1;   --hb-ic-teal:#0E9384;
     --hb-tint-amber:#FDF0DA;  --hb-ic-amber:#DC8A0A;
@@ -959,13 +976,13 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
   /* Hero */
   #homeBody .hero{position:relative;overflow:hidden;border-radius:var(--hb-r-xl);padding:30px 34px;margin-bottom:24px;
-    background:linear-gradient(115deg,#6D62F0 0%,#9061E6 100%);color:#fff;box-shadow:0 12px 30px rgba(109,98,240,.24);}
-  #homeBody .hero-eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:rgba(255,255,255,.72);margin-bottom:10px;}
-  #homeBody .hero h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:#fff;}
-  #homeBody .hero p{font-size:14.5px;color:rgba(255,255,255,.85);margin-top:10px;max-width:440px;}
-  #homeBody .hero p b{color:#fff;font-weight:600;}
-  #homeBody .hero-btn{margin-top:20px;display:inline-flex;align-items:center;gap:9px;background:#fff;color:var(--hb-brand);border:0;border-radius:12px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 18px rgba(28,25,60,.18);}
-  #homeBody .hero-btn svg{width:17px;height:17px;stroke:var(--hb-brand);}
+    background:var(--hero-grad);color:var(--hero-fg);box-shadow:0 12px 30px rgba(46,61,82,.16);}
+  #homeBody .hero-eyebrow{font-size:11.5px;font-weight:600;letter-spacing:.10em;text-transform:uppercase;color:var(--hero-fg-dim);margin-bottom:10px;}
+  #homeBody .hero h1{font-size:30px;font-weight:700;letter-spacing:-.02em;line-height:1.1;color:var(--hero-fg);}
+  #homeBody .hero p{font-size:14.5px;color:var(--hero-fg-dim);margin-top:10px;max-width:440px;}
+  #homeBody .hero p b{color:var(--hero-fg);font-weight:600;}
+  #homeBody .hero-btn{margin-top:20px;display:inline-flex;align-items:center;gap:9px;background:var(--hero-btn-bg);color:var(--hero-btn-fg);border:0;border-radius:12px;padding:12px 20px;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;box-shadow:0 8px 18px rgba(28,25,60,.18);}
+  #homeBody .hero-btn svg{width:17px;height:17px;stroke:var(--hero-btn-fg);}
   #homeBody .hero-art{position:absolute;inset:0;pointer-events:none;}
 
   /* Section heading */
@@ -6389,6 +6406,58 @@ function downloadProcessMap(name, e) {
 }
 
 // ── SETTINGS ──
+// ===== Accent themes (Settings > Appearance) =====
+const BZ_THEMES = {
+  purple:{ label:'Purple', vars:{
+    '--accent':'#5B47E0','--accent-ink':'#4F3ACF','--accent-bg':'#EEEBFF','--accent-mid':'#C7BFF5',
+    '--sidebar-grad':'linear-gradient(180deg,#4F46E5 0%,#5B33D6 55%,#6D28D9 100%)',
+    '--hero-grad':'linear-gradient(115deg,#6D62F0 0%,#9061E6 100%)',
+    '--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.85)','--hero-btn-bg':'#ffffff','--hero-btn-fg':'#5B47E0' }},
+  blue:{ label:'Blue', vars:{
+    '--accent':'#2F6FE0','--accent-ink':'#1E4FA8','--accent-bg':'#EAF2FF','--accent-mid':'#BBD3F7',
+    '--sidebar-grad':'linear-gradient(180deg,#3B82F6 0%,#2F6FE0 55%,#1D4ED8 100%)',
+    '--hero-grad':'linear-gradient(120deg,#EAF2FF 0%,#DCEAFF 60%,#F2F7FF 100%)',
+    '--hero-fg':'#23324A','--hero-fg-dim':'#5B6B84','--hero-btn-bg':'#2F6FE0','--hero-btn-fg':'#ffffff' }},
+  teal:{ label:'Teal', vars:{
+    '--accent':'#0E9384','--accent-ink':'#0B7367','--accent-bg':'#DBF5F1','--accent-mid':'#9FE0D6',
+    '--sidebar-grad':'linear-gradient(180deg,#14B8A6 0%,#0E9384 55%,#0B7367 100%)',
+    '--hero-grad':'linear-gradient(120deg,#DBF5F1 0%,#C7EFE8 60%,#EFFBF8 100%)',
+    '--hero-fg':'#0B3B35','--hero-fg-dim':'#3E6E67','--hero-btn-bg':'#0E9384','--hero-btn-fg':'#ffffff' }},
+  coral:{ label:'Coral', vars:{
+    '--accent':'#E0653A','--accent-ink':'#A8431F','--accent-bg':'#FCEDE7','--accent-mid':'#F3C3AE',
+    '--sidebar-grad':'linear-gradient(180deg,#F0743F 0%,#E0653A 55%,#C6502A 100%)',
+    '--hero-grad':'linear-gradient(120deg,#FCEDE7 0%,#FBE0D5 60%,#FFF3EE 100%)',
+    '--hero-fg':'#5A2A18','--hero-fg-dim':'#8A5540','--hero-btn-bg':'#E0653A','--hero-btn-fg':'#ffffff' }},
+  slate:{ label:'Slate', vars:{
+    '--accent':'#2E3D52','--accent-ink':'#1F2A3D','--accent-bg':'#EAEEF4','--accent-mid':'#C2CCDA',
+    '--sidebar-grad':'linear-gradient(180deg,#3C4E68 0%,#2E3D52 55%,#243141 100%)',
+    '--hero-grad':'linear-gradient(120deg,#EAEEF4 0%,#DCE3EE 60%,#F3F6FA 100%)',
+    '--hero-fg':'#23324A','--hero-fg-dim':'#5B6B84','--hero-btn-bg':'#2E3D52','--hero-btn-fg':'#ffffff' }},
+  aurora:{ label:'Aurora', vars:{
+    '--accent':'#2C2C36','--accent-ink':'#1B1B22','--accent-bg':'#ECECEF','--accent-mid':'#C9C9D2',
+    '--sidebar-grad':'linear-gradient(180deg,#2B2B33 0%,#232329 55%,#1B1B21 100%)',
+    '--hero-grad':'linear-gradient(120deg,#F0654E 0%,#E24E8B 42%,#7B6CF0 72%,#5B8DEF 100%)',
+    '--hero-fg':'#ffffff','--hero-fg-dim':'rgba(255,255,255,0.86)','--hero-btn-bg':'#26262E','--hero-btn-fg':'#ffffff' }}
+};
+function applyAccent(name){
+  name = BZ_THEMES[name] ? name : 'purple';
+  const t = BZ_THEMES[name], r = document.documentElement.style;
+  Object.keys(t.vars).forEach(function(k){ r.setProperty(k, t.vars[k]); });
+  try { localStorage.setItem('bz_accent', name); } catch(e) {}
+  document.querySelectorAll('.bz-swatch').forEach(function(s){ s.classList.toggle('sel', s.dataset.accent===name); });
+}
+function bzCurrentAccent(){ try { return localStorage.getItem('bz_accent') || 'purple'; } catch(e){ return 'purple'; } }
+function bzSwatchHtml(){
+  const cur = bzCurrentAccent();
+  return Object.keys(BZ_THEMES).map(function(k){ const t=BZ_THEMES[k], v=t.vars;
+    return '<button class="bz-swatch'+(k===cur?' sel':'')+'" data-accent="'+k+'" onclick="applyAccent(\''+k+'\')" title="'+t.label+'">'+
+      '<span class="prev"><span class="side" style="background:'+v['--sidebar-grad']+'"></span>'+
+      '<span class="body" style="background:'+v['--hero-grad']+'"><span class="dot" style="background:'+v['--accent']+'"></span></span></span>'+
+      '<span class="lbl">'+t.label+'</span></button>';
+  }).join('');
+}
+try { applyAccent(bzCurrentAccent()); } catch(e) {}
+
 function renderSettings() {
   const body=document.getElementById('settingsBody');if(!body)return;
   const email=currentUser?currentUser.email:'';const name=currentProfile?currentProfile.full_name:'';const coName=currentProfile?.company_name||'';
@@ -6410,6 +6479,12 @@ function renderSettings() {
       <div style="margin-bottom:12px;"><div style="font-size:11px;font-weight:500;color:var(--ink2);margin-bottom:4px;">New password</div><input type="password" id="set-pw" placeholder="Enter new password" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:var(--surface2);" onfocus="this.style.background='white';this.style.borderColor='var(--accent)'" onblur="this.style.background='var(--surface2)';this.style.borderColor='var(--border)'"></div>
       <button class="btn btn-primary btn-sm" onclick="savePassword()">Update password</button>
       <div id="set-pw-msg" style="font-size:12px;margin-top:8px;min-height:16px;"></div>
+    </div>
+    <div style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;">Appearance</div>
+    <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;">
+      <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Accent colour</div>
+      <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">Recolours the sidebar, the home greeting bar and all buttons. Saved to this browser.</div>
+      <div id="bzSwatches" style="display:flex;gap:14px;flex-wrap:wrap;">${bzSwatchHtml()}</div>
     </div>
     <div id="waitlistLabel" style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;display:none;">Beta applicants</div>
     <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:none;" id="waitlistSection">
