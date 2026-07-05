@@ -2412,11 +2412,11 @@ const tmpls = [
   { id:'t22', name:'Redundancy appeal outcome', emoji:'📋', type:'Redundancy',
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Appeal outcome (upheld/not upheld)?",f:'appeal_outcome'},{q:"Reasons for decision?",f:'appeal_reasons'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t27', name:'Standard employment contract', emoji:'📃', type:'Contracts',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Employee's first name?",f:'employee_first_name'},{q:"Job title?",f:'job_title'},{q:"Start date?",f:'start_date'},{q:"Annual salary?",f:'salary'},{q:"Hours per week?",f:'hours_per_week'},{q:"Place of work?",f:'work_location'},{q:"Probation period (e.g. 3 months)?",f:'probation_period'},{q:"Notice period?",f:'notice_period'},{q:"Annual holiday entitlement (days, inc. bank holidays)?",f:'holiday_entitlement'},{q:"Offer acceptance deadline?",f:'acceptance_deadline'},{q:"HR contact name (for returning signed copy)?",f:'hr_contact'},{q:"Signatory name (signing on behalf of company)?",f:'signatory_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Employee's preferred first name?",f:'employee_first_name'},{q:"Job title?",f:'job_title'},{q:"Start date?",f:'start_date'},{q:"Annual salary?",f:'salary'},{q:"Hours per week?",f:'hours_per_week'},{q:"Place of work?",f:'work_location'},{q:"Probation period (e.g. 3 months)?",f:'probation_period'},{q:"Notice period?",f:'notice_period'},{q:"Annual holiday entitlement (days, inc. bank holidays)?",f:'holiday_entitlement'},{q:"Offer acceptance deadline?",f:'acceptance_deadline'},{q:"HR contact name (for returning signed copy)?",f:'hr_contact'},{q:"Signatory name (signing on behalf of company)?",f:'signatory_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t28', name:'Fixed term contract', emoji:'📃', type:'Contracts',
-    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Employee's first name?",f:'employee_first_name'},{q:"Job title?",f:'job_title'},{q:"Start date?",f:'start_date'},{q:"Contract duration (e.g. 12 months)?",f:'contract_duration'},{q:"End date?",f:'end_date'},{q:"Annual salary?",f:'salary'},{q:"Probation period (e.g. 3 months)?",f:'probation_period'},{q:"Notice period?",f:'notice_period'},{q:"Offer acceptance deadline?",f:'acceptance_deadline'},{q:"HR contact name (for returning signed copy)?",f:'hr_contact'},{q:"Signatory name (signing on behalf of company)?",f:'signatory_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Employee's full name?",f:'employee_name'},{q:"Employee's preferred first name?",f:'employee_first_name'},{q:"Job title?",f:'job_title'},{q:"Start date?",f:'start_date'},{q:"Contract duration (e.g. 12 months)?",f:'contract_duration'},{q:"End date?",f:'end_date'},{q:"Annual salary?",f:'salary'},{q:"Probation period (e.g. 3 months)?",f:'probation_period'},{q:"Notice period?",f:'notice_period'},{q:"Offer acceptance deadline?",f:'acceptance_deadline'},{q:"HR contact name (for returning signed copy)?",f:'hr_contact'},{q:"Signatory name (signing on behalf of company)?",f:'signatory_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t29', name:'Internship agreement', emoji:'🎓', type:'Contracts',
-    flow:[{q:"Intern's full name?",f:'employee_name'},{q:"Intern's first name?",f:'employee_first_name'},{q:"Internship role / title?",f:'job_title'},{q:"Start date?",f:'start_date'},{q:"End date?",f:'end_date'},{q:"Pay or stipend (or 'unpaid')?",f:'salary'},{q:"Hours per week?",f:'hours_per_week'},{q:"Place of work?",f:'work_location'},{q:"Supervisor's name?",f:'supervisor_name'},{q:"Offer acceptance deadline?",f:'acceptance_deadline'},{q:"HR contact name (for returning signed copy)?",f:'hr_contact'},{q:"Signatory name (signing on behalf of company)?",f:'signatory_name'},{q:"Your company name?",f:'company_name'}] },
+    flow:[{q:"Intern's full name?",f:'employee_name'},{q:"Intern's preferred first name?",f:'employee_first_name'},{q:"Internship role / title?",f:'job_title'},{q:"Start date?",f:'start_date'},{q:"End date?",f:'end_date'},{q:"Pay or stipend (or 'unpaid')?",f:'salary'},{q:"Hours per week?",f:'hours_per_week'},{q:"Place of work?",f:'work_location'},{q:"Supervisor's name?",f:'supervisor_name'},{q:"Offer acceptance deadline?",f:'acceptance_deadline'},{q:"HR contact name (for returning signed copy)?",f:'hr_contact'},{q:"Signatory name (signing on behalf of company)?",f:'signatory_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t11', name:'Contract variation letter', emoji:'📝', type:'Contracts',
     flow:[{q:"Employee's full name?",f:'employee_name'},{q:"What is changing?",f:'change_description'},{q:"Effective date?",f:'effective_date'},{q:"Consultation date?",f:'consultation_date'},{q:"HR manager's name?",f:'manager_name'},{q:"Your company name?",f:'company_name'}] },
   { id:'t12', name:'TUPE transfer letter', emoji:'🔄', type:'Contracts',
@@ -5151,7 +5151,7 @@ function updatePreview() {
   const salutation=(name='employee_name')=>`<br><p style="margin-bottom:16px;font-size:13px;">Dear ${ph(name)},</p>`;
   const sign=(mgr='manager_name')=>`<div class="doc-sig"><div style="margin-top:32px;font-size:12px;color:var(--ink3);">Signed:</div><div class="doc-sig-name">${ph(mgr)}</div><div style="font-size:12px;color:var(--ink3);margin-top:4px;">On behalf of ${co()}</div><div style="margin-top:28px;border-top:1px solid var(--border);padding-top:8px;font-size:11px;color:var(--ink3);">I acknowledge receipt of this letter:<br><br>Signature: _______________________&nbsp;&nbsp;&nbsp; Date: _______________</div></div>`;
   // Derive first name from a filled value, or fall back to placeholder
-  const firstName=(f='employee_name')=>{const v=vals[f];if(!v)return `<span class="ph" data-f="${f}">[first name]</span>`;return `<span class="filled" data-f="${f}">${escapeHtml(v.trim().split(/\s+/)[0])}</span>`;};
+  const firstName=(f='employee_name')=>{const v=vals[f];if(!v)return `<span class="ph" data-f="${f}">[preferred first name]</span>`;return `<span class="filled" data-f="${f}">${escapeHtml(v.trim().split(/\s+/)[0])}</span>`;};
   // Letter header: company name + rule + date + employee address block + salutation, opens doc-body-text
   const ltrTop=(f='employee_name')=>`${header(false)}<div class="doc-body-text"><p>${ph(f)}<br><strong>Private and Confidential</strong></p><br><p>Dear ${firstName(f)},</p><br>`;
   // Simple letter sign-off: closes doc-body-text, no acknowledgement box
@@ -18032,7 +18032,7 @@ async function wfSubNote(caseId, stepId, subId){
   c.contactLog=c.contactLog||[];
   c.contactLog.push({ date:new Date().toISOString(), type:'note', stepId:(Number.isFinite(Number(stepId))?Number(stepId):stepId), subId:String(subId), note:v.trim() });
   try{ await saveWfCases(); }catch(e){}
-  wfOpenStepTasks(caseId, stepId); wfRunRefresh();
+  wfRefreshSub(caseId, stepId, subId);
 }
 // Attach a file to a specific SUB-TASK (stored on the run, downloadable later).
 function wfSubAttach(caseId, stepId, subId){
@@ -18046,11 +18046,60 @@ function wfSubAttach(caseId, stepId, subId){
       c.contactLog=c.contactLog||[];
       c.contactLog.push({ date:new Date().toISOString(), type:'note', stepId:(Number.isFinite(Number(stepId))?Number(stepId):stepId), subId:String(subId), note:'Attachment added', docFilename:f.name, docBase64:b64, docMimeType:f.type||'application/octet-stream' });
       try{ await saveWfCases(); }catch(e){}
-      wfOpenStepTasks(caseId, stepId); wfRunRefresh();
+      wfRefreshSub(caseId, stepId, subId);
       showBreezeToast('Attachment added');
     }catch(e){ showBreezeToast('Could not attach file'); }
   };
   inp.click();
+}
+// Refresh whichever workflow panels are open after a sub-task change.
+function wfRefreshSub(caseId, stepId, subId){
+  if(document.getElementById('wfSubTask')) wfOpenSubTask(caseId, stepId, subId);
+  if(document.getElementById('wfStepTasks')) wfOpenStepTasks(caseId, stepId);
+  wfRunRefresh();
+}
+// Open a single SUB-TASK: tick it, add a note, attach a file, draft its email/doc,
+// and see everything logged against it (including smart-actioned emails).
+function wfOpenSubTask(caseId, stepId, subId){
+  const c=(wfCases||[]).find(x=>x.id===caseId); if(!c) return;
+  const step=wfGetSteps(c).find(s=>s.id===stepId); if(!step) return;
+  const su=(step.subs||[]).find(x=>String(x.id)===String(subId)); if(!su) return;
+  const checked=(c.checkedSubs||[]).includes(stepId+':'+subId);
+  const subLog=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)&&String(e.subId)===String(subId)).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
+  const _ico={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
+  const logHtml=subLog.length?('<div style="display:flex;flex-direction:column;gap:8px;">'+subLog.map(e=>{
+    const when=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+    const doc=e.docFilename?('<button onclick="wfDownloadLogDoc(\''+caseId+'\',\''+jsAttr(e.date)+'\')" style="margin-top:5px;display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:8px;padding:3px 9px;cursor:pointer;font-family:inherit;">📎 '+escapeHtml(e.docFilename)+'</button>'):'';
+    return '<div style="display:flex;gap:9px;padding:10px 12px;border:1px solid var(--border);border-radius:10px;background:var(--surface2);"><div style="font-size:13px;flex-shrink:0;">'+(_ico[e.type]||'📝')+'</div><div style="flex:1;min-width:0;"><div style="display:flex;gap:8px;align-items:center;"><span style="font-size:10px;font-weight:600;color:var(--ink);text-transform:capitalize;">'+escapeHtml(e.type||'note')+'</span><span style="font-size:10px;color:var(--ink3);margin-left:auto;">'+when+'</span></div>'+(e.note?'<div style="font-size:12px;color:var(--ink2);line-height:1.5;margin-top:2px;white-space:pre-wrap;">'+escapeHtml(e.note)+'</div>':'')+doc+'</div></div>';
+  }).join('')+'</div>'):'<div style="text-align:center;padding:22px 0;color:var(--ink3);font-size:12px;line-height:1.6;">Nothing here yet.<br>Add a note, attach a file, or a smart-actioned email will land here.</div>';
+  const emailBtn=su.email?'<button onclick="wfOpenEmailDraft(\''+caseId+'\','+stepId+',\''+subId+'\')" class="btn btn-secondary btn-sm" style="font-size:11px;color:#047857;">✉️ Draft email</button>':'';
+  const docBtn=su.doc?'<button onclick="wfOpenDocDraft(\''+caseId+'\','+stepId+',\''+subId+'\')" class="btn btn-secondary btn-sm" style="font-size:11px;color:#5B47E0;">📄 Draft document</button>':'';
+  const afBtn=(su.autofill||/\b(screen|dbs|vetting)\b|background check/i.test(su.title))?'<button onclick="wfScreeningAutofill(\''+caseId+'\')" class="btn btn-secondary btn-sm" style="font-size:11px;color:var(--accent);">⚡ Pre-fill screening form</button>':'';
+  let mo=document.getElementById('wfSubTask'); if(!mo){ mo=document.createElement('div'); mo.id='wfSubTask'; document.body.appendChild(mo); }
+  mo.style.cssText='position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:987;display:flex;align-items:center;justify-content:center;padding:20px;';
+  mo.innerHTML=`<div style="background:white;border-radius:var(--r-xl);width:100%;max-width:520px;max-height:88vh;display:flex;flex-direction:column;box-shadow:var(--shadow-lg);overflow:hidden;">
+    <div style="padding:18px 22px;border-bottom:1px solid var(--border);">
+      <div style="display:flex;align-items:flex-start;gap:12px;">
+        <div onclick="wfToggleSub('${caseId}',${stepId},'${subId}')" title="${checked?'Mark not done':'Mark done'}" style="width:24px;height:24px;border-radius:7px;border:2px solid ${checked?'var(--green)':'var(--border2)'};background:${checked?'var(--green)':'white'};color:white;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;flex-shrink:0;margin-top:1px;">${checked?'✓':''}</div>
+        <div style="flex:1;min-width:0;">
+          <div style="font-size:16px;font-weight:700;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.6;':''}">${escapeHtml(su.title)}</div>
+          <div style="font-size:11px;color:var(--ink3);margin-top:3px;">${su.owner?'👤 '+escapeHtml(su.owner)+' · ':''}${checked?'Done':'To do'} · in "${escapeHtml(step.title)}"</div>
+        </div>
+        <button onclick="document.getElementById('wfSubTask').remove()" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;flex-shrink:0;">×</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;">
+        <button onclick="wfSubNote('${caseId}',${stepId},'${subId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">📝 Add note</button>
+        <button onclick="wfSubAttach('${caseId}',${stepId},'${subId}')" class="btn btn-secondary btn-sm" style="font-size:11px;">📎 Attach file</button>
+        ${emailBtn}${docBtn}${afBtn}
+      </div>
+    </div>
+    <div style="padding:16px 22px;overflow-y:auto;flex:1;">${logHtml}</div>
+    <div style="padding:12px 22px;border-top:1px solid var(--border);display:flex;justify-content:space-between;gap:8px;">
+      <button onclick="wfToggleSub('${caseId}',${stepId},'${subId}')" class="btn ${checked?'btn-secondary':'btn-primary'} btn-sm" style="${checked?'':'background:var(--green);border-color:var(--green);'}">${checked?'↺ Mark not done':'✓ Mark done'}</button>
+      <button onclick="document.getElementById('wfSubTask').remove()" class="btn btn-secondary btn-sm">Close</button>
+    </div>
+  </div>`;
+  mo.onclick=e=>{ if(e.target===mo) mo.remove(); };
 }
 // ── Run "Notes & activity": everything logged to this case (emails picked up,
 // attachments, notes), plus a place to add a note. ──
@@ -18177,23 +18226,18 @@ function wfOpenStepTasks(caseId, stepId) {
       const af = (su.autofill || /\b(screen|dbs|vetting)\b|background check/i.test(su.title))
         ? `<span style="display:inline-flex;align-items:center;gap:5px;white-space:nowrap;"><button onclick="event.stopPropagation();wfScreeningAutofill('${caseId}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;color:var(--accent);">⚡ Pre-fill screening form</button><span onclick="event.stopPropagation();wfScreeningAutofillInfo()" title="How it works" style="display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border-radius:50%;border:1px solid var(--border2);color:var(--ink3);font-size:9px;font-style:italic;font-weight:700;cursor:pointer;flex-shrink:0;">i</span></span>`
         : '';
-      const nb = `<button onclick="event.stopPropagation();wfSubNote('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">📝 Note</button>`;
-      const ab = `<button onclick="event.stopPropagation();wfSubAttach('${caseId}',${stepId},'${su.id}')" class="btn btn-secondary btn-sm" style="font-size:10px;white-space:nowrap;">📎 Attach</button>`;
-      // Inline activity for THIS sub-task: notes/attachments/linked emails scoped to it.
-      const subLog=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)&&String(e.subId)===String(su.id)).slice().sort((a,b)=>new Date(a.date)-new Date(b.date));
-      const subLogHtml=subLog.length?('<div style="margin-top:8px;display:flex;flex-direction:column;gap:6px;">'+subLog.map(e=>{
-        const when=new Date(e.date).toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+new Date(e.date).toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
-        const doc=e.docFilename?('<button onclick="event.stopPropagation();wfDownloadLogDoc(\''+caseId+'\',\''+jsAttr(e.date)+'\')" style="display:inline-flex;align-items:center;gap:4px;font-size:10px;color:var(--accent);background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:7px;padding:2px 7px;cursor:pointer;font-family:inherit;margin-top:3px;">📎 '+escapeHtml(e.docFilename)+'</button>'):'';
-        return '<div style="font-size:11px;color:var(--ink2);background:white;border:1px solid var(--border);border-radius:8px;padding:6px 9px;"><div style="display:flex;gap:6px;align-items:center;"><span style="font-size:10px;">'+({email:'✉️',note:'📝'}[e.type]||'📝')+'</span><span style="font-size:9px;color:var(--ink3);margin-left:auto;">'+when+'</span></div>'+(e.note?'<div style="line-height:1.45;margin-top:2px;white-space:pre-wrap;">'+escapeHtml(e.note)+'</div>':'')+doc+'</div>';
-      }).join('')+'</div>'):'';
-      return `<div style="border:1px solid var(--border);border-radius:var(--r);background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
-        <div onclick="wfToggleSub('${caseId}',${stepId},'${su.id}')" style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;cursor:pointer;">
-          <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
-          <div style="flex:1;min-width:0;">
-            <div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>
-            <div style="display:flex;gap:8px;align-items:center;margin-top:7px;flex-wrap:wrap;">${ob}${eb}${db}${af}${nb}${ab}</div>
-            ${subLogHtml}
-          </div>
+      const subCount=(c.contactLog||[]).filter(e=>String(e.stepId)===String(stepId)&&String(e.subId)===String(su.id)).length;
+      const flagChip=(txt,bg,col)=>`<span style="font-size:9px;font-weight:600;padding:2px 7px;border-radius:8px;background:${bg};color:${col};white-space:nowrap;">${txt}</span>`;
+      const chips = ob
+        + (su.email?flagChip('✉️ Email','#E7F6EF','#047857'):'')
+        + (su.doc?flagChip('📄 Doc','#EEEBFF','#5B47E0'):'')
+        + (subCount?flagChip('📎 '+subCount,'var(--surface2)','var(--ink2)'):'');
+      // Clicking the row opens the task's own panel (note / attach / linked email); the checkbox just ticks it.
+      return `<div style="display:flex;gap:12px;align-items:flex-start;padding:12px 14px;border:1px solid var(--border);border-radius:var(--r);background:${checked?'var(--green-bg)':'white'};transition:background 0.12s;">
+        <input type="checkbox" ${checked?'checked':''} onclick="event.stopPropagation();wfToggleSub('${caseId}',${stepId},'${su.id}')" style="width:16px;height:16px;accent-color:var(--green);cursor:pointer;margin-top:1px;flex-shrink:0;">
+        <div onclick="wfOpenSubTask('${caseId}',${stepId},'${su.id}')" style="flex:1;min-width:0;cursor:pointer;">
+          <div style="font-size:13px;font-weight:600;color:var(--ink);${checked?'text-decoration:line-through;opacity:0.55;':''}">${escapeHtml(su.title)}</div>
+          <div style="display:flex;gap:6px;align-items:center;margin-top:7px;flex-wrap:wrap;">${chips}<span style="font-size:10px;color:var(--accent);font-weight:600;margin-left:auto;">Open →</span></div>
         </div>
       </div>`;
     }).join('');
@@ -18281,6 +18325,7 @@ async function wfToggleSub(caseId, stepId, subId) {
   if (allDone && si<0) c.checkedSteps.push(stepId);
   else if (!allDone && si>=0) c.checkedSteps.splice(si,1);
   try { await saveWfCases(); } catch(e){}
+  if(document.getElementById('wfSubTask')) wfOpenSubTask(caseId, stepId, subId);
   wfOpenStepTasks(caseId, stepId);
   wfRunRefresh();
 }
