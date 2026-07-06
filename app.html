@@ -9410,9 +9410,13 @@ function formatChatResponse(text) {
 
   const lines = String(text || '').split('\n');
   let html = '';
+  let listType = null;   // 'ul' | 'ol' | null
+  const closeList = () => { if (listType) { html += listType === 'ul' ? '</ul>' : '</ol>'; listType = null; } };
+  const openList = (t) => { if (listType !== t) { closeList(); html += t === 'ul' ? '<ul style="margin:5px 0;padding-left:22px;">' : '<ol style="margin:5px 0;padding-left:24px;">'; listType = t; } };
   for (let i = 0; i < lines.length; i++) {
     // Markdown pipe table -> styled HTML table
     if (_isMdTableStart(lines, i)) {
+      closeList();
       const rows = []; let j = i;
       while (j < lines.length && lines[j].includes('|')) { rows.push(lines[j]); j++; }
       const header = _mdTableCells(rows[0]);
@@ -9425,19 +9429,28 @@ function formatChatResponse(text) {
       continue;
     }
     const trimmed = lines[i].trim();
-    if (!trimmed) { html += '<br>'; continue; }
+    if (!trimmed) { closeList(); html += '<div style="height:7px;"></div>'; continue; }
+    // Horizontal rule (---, ***, ___) -> subtle divider
+    if (/^([-*_])\1{2,}$/.test(trimmed)) { closeList(); html += '<hr style="border:none;border-top:1px solid var(--border);margin:11px 0;">'; continue; }
     // Heading (#, ##, ###)
     const h = trimmed.match(/^(#{1,6})\s+(.+)$/);
     if (h) {
-      const lvl = h[1].length, size = lvl <= 1 ? 17 : lvl === 2 ? 15 : 14;
-      html += `<div style="font-weight:700;font-size:${size}px;margin:12px 0 4px;">${inline(h[2].trim())}</div>`;
+      closeList();
+      const lvl = h[1].length, size = lvl <= 1 ? 16 : lvl === 2 ? 15 : 14;
+      html += `<div style="font-weight:700;font-size:${size}px;margin:12px 0 5px;color:var(--ink);">${inline(h[2].replace(/\s*#*\s*$/,'').trim())}</div>`;
       continue;
     }
-    // Bullet (• or -)
-    const b = trimmed.match(/^[•-]\s+(.+)$/);
-    if (b) { html += `<li style="margin-left:18px;margin-bottom:3px;">${inline(b[1])}</li>`; continue; }
-    html += inline(trimmed) + '<br>';
+    // Numbered list (1. / 1))
+    const ol = trimmed.match(/^(\d+)[.)]\s+(.+)$/);
+    if (ol) { openList('ol'); html += `<li style="margin-bottom:4px;padding-left:2px;">${inline(ol[2])}</li>`; continue; }
+    // Bullet (•, -, *)
+    const b = trimmed.match(/^[•\-*]\s+(.+)$/);
+    if (b) { openList('ul'); html += `<li style="margin-bottom:4px;padding-left:2px;">${inline(b[1])}</li>`; continue; }
+    // Paragraph
+    closeList();
+    html += `<div style="margin:3px 0;">${inline(trimmed)}</div>`;
   }
+  closeList();
   return html;
 }
 
