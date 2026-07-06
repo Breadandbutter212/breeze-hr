@@ -6263,40 +6263,59 @@ async function pmGenerateData(processName, polText){
   return data;
 }
 
-// Deterministic flowchart renderer - fixed geometry, overlaps impossible by construction.
+// Deterministic flowchart renderer - fixed geometry (overlaps impossible), wrapped text,
+// notes moved to a click-through detail panel, clickable nodes.
 function pmLayout(data){
   const nodes=(data&&Array.isArray(data.nodes))?data.nodes:[];
   if(!nodes.length) return '<div style="padding:40px;text-align:center;color:var(--ink3);">No process steps found.</div>';
-  const COLX=340, MAINW=300, MAINHALF=150, DIAMW=360, DIAMHALF=180, VGAP=52;
-  const RIGHTX=COLX+DIAMHALF+72, BRANCHW=234, TLH=22, SLH=18, PADY=15, LINECOL='#9AA0A6';
-  function sec(n){ const a=[]; const rt=[n.role,n.timing].filter(Boolean).join(' · '); if(rt)a.push(rt); if(n.note)a.push(n.note); return a; }
-  const L=nodes.map(function(n){
+  const COLX=340, MAINW=300, MAINHALF=150, DIAMW=340, DIAMHALF=170, VGAP=48;
+  const RIGHTX=COLX+DIAMHALF+70, BRANCHW=252, TLH=21, SLH=17, PADY=16, LINECOL='#9AA0A6';
+  const capMax=Math.floor(MAINW/6.8), brMax=Math.floor(BRANCHW/6.8);
+  const capOf=function(n){ return [n.role,n.timing].filter(Boolean).join(' · '); };
+  const L=nodes.map(function(n,i){
     const dec=n.type==='decision';
-    const tl=pmWrap(n.title, dec?18:24), sl=sec(n);
-    let h=PADY*2+tl.length*TLH+sl.length*SLH; h=dec?Math.max(h+22,116):Math.max(h,64);
+    const tl=pmWrap(n.title, dec?16:22);
+    const cl=capOf(n)?pmWrap(capOf(n), capMax):[];   // caption only (role · timing); note goes to the panel
+    let shapeH, belowH=0, nodeH;
+    if(dec){ shapeH=Math.max(96, PADY*2+tl.length*TLH); belowH=cl.length?(cl.length*SLH+6):0; nodeH=shapeH+belowH; }
+    else { shapeH=Math.max(62, PADY*2+tl.length*TLH+cl.length*SLH); nodeH=shapeH; }
     let br=null;
-    if(n.branch){ const btl=pmWrap(n.branch.title,20), bsl=sec(n.branch); const bh=Math.max(PADY*2+btl.length*TLH+bsl.length*SLH,58); br={tl:btl,sl:bsl,h:bh}; }
-    return {n,dec,tl,sl,h,br};
+    if(n.branch){ const btl=pmWrap(n.branch.title, brMax-1); const bcl=n.branch.role?pmWrap(n.branch.role, brMax):[]; const bh=Math.max(54, PADY*2+btl.length*TLH+bcl.length*SLH); br={tl:btl,cl:bcl,h:bh}; }
+    return {n,i,dec,tl,cl,shapeH,belowH,nodeH,br};
   });
-  let y=26;
-  L.forEach(function(o){ o.y=y; o.cy=y+o.h/2; let adv=o.h+VGAP; if(o.br){ const need=o.h/2+o.br.h/2+22; if(need>adv)adv=need; } y+=adv; });
+  let y=24;
+  L.forEach(function(o){ o.y=y; o.scy=y+o.shapeH/2; let adv=o.nodeH+VGAP; if(o.br){ const need=(o.scy+o.br.h/2+20)-o.y; if(need>adv)adv=need; } y+=adv; });
   const totalH=y+8, anyBr=L.some(function(o){return o.br;}), totalW=(anyBr?RIGHTX+BRANCHW:COLX+MAINHALF)+30;
   const KIND={ step:{bg:'var(--surface)',br:'var(--border2)',ti:'var(--ink)'}, dec:{bg:'var(--accent-bg)',br:'var(--accent)',ti:'var(--accent-ink)'}, approved:{bg:'#E6F7EE',br:'#15A05B',ti:'#0E7A44'}, danger:{bg:'#FFF1E9',br:'#F97316',ti:'#C2410C'} };
-  function txtBlock(cx, top, tl, sl, tc){ let s='', ty=top; tl.forEach(function(ln){ s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="15.5" font-weight="700" fill="'+tc+'">'+pmEsc(ln)+'</text>'; ty+=TLH; }); sl.forEach(function(ln,k){ s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12.5" fill="'+(k===0?'var(--ink2)':'var(--ink3)')+'">'+pmEsc(ln)+'</text>'; ty+=SLH; }); return s; }
-  function box(x,y,w,h,tl,sl,kind){ const c=KIND[kind]||KIND.step; const top=y+((h-(tl.length*TLH+sl.length*SLH))/2)+16; return '<rect x="'+x+'" y="'+y+'" width="'+w+'" height="'+h+'" rx="14" fill="'+c.bg+'" stroke="'+c.br+'" stroke-width="2"/>'+txtBlock(x+w/2, top, tl, sl, c.ti); }
-  function diamond(cx,cy,w,h,tl,sl){ const c=KIND.dec, hw=w/2, hh=h/2; const top=cy-((tl.length*TLH+sl.length*SLH)/2)+15; return '<polygon points="'+cx+','+(cy-hh)+' '+(cx+hw)+','+cy+' '+cx+','+(cy+hh)+' '+(cx-hw)+','+cy+'" fill="'+c.bg+'" stroke="'+c.br+'" stroke-width="2"/>'+txtBlock(cx, top, tl, sl, c.ti); }
+  function lns(cx,top,tl,cl,tc){ let s='',ty=top; tl.forEach(function(ln){ s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="15" font-weight="700" fill="'+tc+'">'+pmEsc(ln)+'</text>'; ty+=TLH; }); cl.forEach(function(ln,k){ s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" fill="'+(k===0?'var(--ink2)':'var(--ink3)')+'">'+pmEsc(ln)+'</text>'; ty+=SLH; }); return s; }
+  function boxG(idx,which,x,yy,w,h,tl,cl,kind){ const c=KIND[kind]||KIND.step; const top=yy+((h-(tl.length*TLH+cl.length*SLH))/2)+15; return '<g style="cursor:pointer;" onclick="pmShowDetail('+idx+(which?",'"+which+"'":'')+')"><rect x="'+x+'" y="'+yy+'" width="'+w+'" height="'+h+'" rx="14" fill="'+c.bg+'" stroke="'+c.br+'" stroke-width="2"/>'+lns(x+w/2,top,tl,cl,c.ti)+'</g>'; }
+  function diaG(idx,cx,cy,w,h,tl,belowCl,belowY){ const c=KIND.dec,hw=w/2,hh=h/2; const top=cy-((tl.length*TLH)/2)+15; let g='<g style="cursor:pointer;" onclick="pmShowDetail('+idx+')"><polygon points="'+cx+','+(cy-hh)+' '+(cx+hw)+','+cy+' '+cx+','+(cy+hh)+' '+(cx-hw)+','+cy+'" fill="'+c.bg+'" stroke="'+c.br+'" stroke-width="2"/>'+lns(cx,top,tl,[],c.ti); if(belowCl&&belowCl.length){ let ty=belowY+13; belowCl.forEach(function(ln,k){ g+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" fill="'+(k===0?'var(--ink2)':'var(--ink3)')+'">'+pmEsc(ln)+'</text>'; ty+=SLH; }); } return g+'</g>'; }
   function chip(cx,cy,txt,col){ const w=String(txt).length*7.1+16; return '<rect x="'+(cx-w/2)+'" y="'+(cy-10)+'" width="'+w+'" height="20" rx="5" fill="var(--surface)" stroke="'+col+'" stroke-width="1"/><text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="'+col+'">'+pmEsc(txt)+'</text>'; }
   let svg='';
   for(let i=0;i<L.length;i++){ const o=L[i];
-    if(i<L.length-1){ const nx=L[i+1], y1=o.y+o.h, y2=nx.y; svg+='<line x1="'+COLX+'" y1="'+y1+'" x2="'+COLX+'" y2="'+(y2-9)+'" stroke="'+LINECOL+'" stroke-width="2"/><polygon points="'+(COLX-6)+','+(y2-9)+' '+(COLX+6)+','+(y2-9)+' '+COLX+','+y2+'" fill="'+LINECOL+'"/>'; if(o.dec&&o.n.proceedLabel) svg+=chip(COLX+38,(y1+y2)/2,o.n.proceedLabel,'#15A05B'); }
-    if(o.br){ const sx=COLX+(o.dec?DIAMHALF:MAINHALF), bx=RIGHTX; svg+='<line x1="'+sx+'" y1="'+o.cy+'" x2="'+(bx-9)+'" y2="'+o.cy+'" stroke="#F97316" stroke-width="2"/><polygon points="'+(bx-9)+','+(o.cy-6)+' '+(bx-9)+','+(o.cy+6)+' '+bx+','+o.cy+'" fill="#F97316"/>'; if(o.n.branch.label) svg+=chip((sx+bx)/2,o.cy-13,o.n.branch.label,'#F97316'); }
+    if(i<L.length-1){ const nx=L[i+1], y1=o.y+o.nodeH, y2=nx.y; svg+='<line x1="'+COLX+'" y1="'+y1+'" x2="'+COLX+'" y2="'+(y2-9)+'" stroke="'+LINECOL+'" stroke-width="2"/><polygon points="'+(COLX-6)+','+(y2-9)+' '+(COLX+6)+','+(y2-9)+' '+COLX+','+y2+'" fill="'+LINECOL+'"/>'; if(o.dec&&o.n.proceedLabel) svg+=chip(COLX+40,(y1+y2)/2,o.n.proceedLabel,'#15A05B'); }
+    if(o.br){ const sx=COLX+(o.dec?DIAMHALF:MAINHALF), bx=RIGHTX; svg+='<line x1="'+sx+'" y1="'+o.scy+'" x2="'+(bx-9)+'" y2="'+o.scy+'" stroke="#F97316" stroke-width="2"/><polygon points="'+(bx-9)+','+(o.scy-6)+' '+(bx-9)+','+(o.scy+6)+' '+bx+','+o.scy+'" fill="#F97316"/>'; if(o.n.branch.label) svg+=chip((sx+bx)/2,o.scy-13,o.n.branch.label,'#F97316'); }
   }
   L.forEach(function(o){
-    if(o.dec) svg+=diamond(COLX,o.cy,DIAMW,o.h,o.tl,o.sl);
-    else { const k=o.n.type==='end'?(o.n.tone==='declined'?'danger':'approved'):'step'; svg+=box(COLX-MAINHALF,o.y,MAINW,o.h,o.tl,o.sl,k); }
-    if(o.br) svg+=box(RIGHTX,o.cy-o.br.h/2,BRANCHW,o.br.h,o.br.tl,o.br.sl,'danger');
+    if(o.dec) svg+=diaG(o.i,COLX,o.scy,DIAMW,o.shapeH,o.tl,o.cl,o.y+o.shapeH);
+    else { const k=o.n.type==='end'?(o.n.tone==='declined'?'danger':'approved'):'step'; svg+=boxG(o.i,null,COLX-MAINHALF,o.y,MAINW,o.shapeH,o.tl,o.cl,k); }
+    if(o.br) svg+=boxG(o.i,'branch',RIGHTX,o.scy-o.br.h/2,BRANCHW,o.br.h,o.br.tl,o.br.cl,'danger');
   });
   return '<svg width="'+totalW+'" height="'+totalH+'" viewBox="0 0 '+totalW+' '+totalH+'" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:'+totalW+'px;">'+svg+'</svg>';
+}
+function pmShowDetail(i, which){
+  const el=document.getElementById('pmDetail'); if(!el||!_pmData||!Array.isArray(_pmData.nodes)) return;
+  const n=_pmData.nodes[i]; if(!n) return;
+  const src=(which==='branch' && n.branch)?n.branch:n;
+  const rows=[];
+  if(src.role) rows.push(['Responsible', src.role]);
+  if(src.timing) rows.push(['Timing', src.timing]);
+  if(n.type==='decision' && which!=='branch'){ if(n.proceedLabel) rows.push(['Proceed if', n.proceedLabel]); if(n.branch) rows.push([(n.branch.label||'Otherwise'), n.branch.title]); }
+  const note=src.note||'';
+  el.innerHTML='<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px;">'+pmEsc(src.title||n.title)+'</div>'+
+    (note?'<div style="font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:'+(rows.length?'12px':'0')+';">'+pmEsc(note)+'</div>':'')+
+    rows.map(function(r){return '<div style="display:flex;gap:10px;font-size:12.5px;margin-bottom:6px;"><span style="color:var(--ink3);min-width:86px;flex-shrink:0;">'+pmEsc(r[0])+'</span><span style="color:var(--ink);font-weight:500;">'+pmEsc(r[1])+'</span></div>';}).join('')+
+    (!note&&!rows.length?'<div style="font-size:13px;color:var(--ink3);">No extra detail for this stage.</div>':'');
 }
 
 function pmGeneratingHtml(){
@@ -6338,7 +6357,13 @@ function pmRenderMap(body){
         <button onclick="pmSaveCurrent(this)" style="margin-left:auto;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;border-radius:var(--r-sm);cursor:pointer;">Save</button>
         <button onclick="pmNewMap()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New map</button>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:auto;padding:26px 20px;">${svg}</div>
+      <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;">
+        <div style="flex:1;min-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:auto;padding:24px 18px;">${svg}</div>
+        <div style="width:270px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:18px;">
+          <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Stage detail</div>
+          <div id="pmDetail" style="font-size:13px;color:var(--ink3);line-height:1.5;">Click any stage to see who does it, when, and the policy detail.</div>
+        </div>
+      </div>
       <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">Breeze reads your policy to build this. Check it against the source.</div>
     </div>`;
 }
