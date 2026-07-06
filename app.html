@@ -6198,8 +6198,135 @@ async function downloadPolicyFile(id, name) {
 // ── PROCESS MAPS ──
 const openProcessMaps = new Set(['New starter onboarding']); // open by default
 
+// ===== AI PROCESS MAPS (generative, grounded in the company's real policy text) =====
+let _pmHtml=null, _pmTitle='Process map', _pmCurrentId=null, _pmSaved=[], _pmGenerating=false, _pmPolicies=[];
+function pmActive(){ return document.getElementById('view-processmaps')?.classList.contains('active'); }
+function pmUid(){ return 'pm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
+
+function pmSystemPrompt(processName, polText){
+  return [
+'You generate ONE complete, self-contained HTML document that renders an INTERACTIVE PROCESS MAP (flowchart) of a UK HR process inside a sandboxed iframe (desktop-first ~900-1100px, must also work at 380px).',
+'',
+'The process to map: "'+processName+'".',
+(polText && polText.trim()
+  ? 'Ground the map in THIS policy text from the company - reflect its ACTUAL stages, decision points, timings/deadlines and responsible roles. Do not invent steps the policy does not imply:\n"""\n'+polText.trim()+'\n"""'
+  : 'No usable policy text was provided, so build a sensible standard UK HR version of this process and keep it generic.'),
+'',
+'The document receives its theme at runtime via a window "message" event - you MUST wire this up:',
+'  window.addEventListener("message", function(e){ if(e.data && e.data.__type==="vibe-data"){ var t=e.data.payload&&e.data.payload.theme; if(t==="dark") document.documentElement.setAttribute("data-theme","dark"); else document.documentElement.removeAttribute("data-theme"); } });',
+'Render the map immediately (do NOT wait for the message); just apply the theme when it arrives (default light).',
+'',
+'THE MAP:',
+'- Draw an inline SVG (or HTML+SVG) flowchart. Prefer a clear VERTICAL top-to-bottom flow so it stacks on narrow screens.',
+'- Sequential stages are rounded-rectangle nodes joined by arrows. Decision points are diamonds with clearly labelled branches (e.g. "Appeal upheld?" -> Yes / No) wherever the policy has them.',
+'- Each stage shows a short title plus small secondary text for the responsible role and any timing/deadline from the policy (e.g. "HR - within 5 working days").',
+'- Make nodes CLICKABLE: clicking one highlights it and shows its detail in a side/below panel - what happens, who is responsible, the timing, and the specific policy point it comes from.',
+'- Include a title header and a one-line summary of the process.',
+'',
+'HARD RULES:',
+'- Output ONLY the HTML document. No markdown, no code fences, no commentary.',
+'- Line 1 must be an HTML comment with a short title, e.g: <!-- title: Disciplinary process -->',
+'- ZERO network: no fetch, XMLHttpRequest, WebSocket, dynamic import, <script src>, <link>, external fonts/images/CDNs. Everything inline.',
+'- Exactly one <script> tag, vanilla JS only. Inline SVG only, no diagram libraries.',
+'- Use ONLY these CSS custom properties for every colour, and include this :root block verbatim in your <style>:',
+VV_TOKENS,
+'- font-family:"Plus Jakarta Sans",-apple-system,sans-serif. Tolerate a thin policy - still produce a coherent, well-structured map.',
+'',
+'Make it look like a polished, top-tier product diagram - clear, well-spaced, easy to follow.'
+  ].join('\n');
+}
+async function pmGenerate(processName, polText){
+  return vvChat([{ role:'user', content:'Create the interactive process map for: '+processName+'.' }], pmSystemPrompt(processName, polText));
+}
+function pmGeneratingHtml(){
+  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
+    <div class="vv-spin"></div>
+    <div id="pmGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">Reading your policy…</div>
+    <div style="font-size:12px;color:var(--ink3);">Mapping the process - this usually takes 30-90 seconds.</div></div>`;
+}
+async function pmRun(policyName, custom){
+  const pol = (_pmPolicies||[]).find(p=>p.name===policyName);
+  const processName = (custom&&custom.trim()) || policyName || '';
+  if(!processName){ if(window.showBreezeToast) showBreezeToast('Pick a policy or type a process first'); return; }
+  const grounding = pol ? (policyText(pol.content)||'').substring(0,7000) : '';
+  _pmGenerating = true; _pmTitle = processName;
+  const body=document.getElementById('processMapsBody'); if(body) body.innerHTML=pmGeneratingHtml();
+  let i=0; const lines=['Reading your policy…','Finding the stages and decision points…','Mapping owners and timings…','Drawing the flow…','Testing everything works…'];
+  const iv=setInterval(function(){ i=(i+1)%lines.length; const l=document.getElementById('pmGenLine'); if(l)l.textContent=lines[i]; }, 2200);
+  try {
+    const html = await pmGenerate(processName, grounding);
+    clearInterval(iv); _pmGenerating=false; _pmHtml=html; _pmCurrentId=null;
+    const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i); _pmTitle = tm ? tm[1].trim() : processName;
+    if(!pmActive()) return;
+    pmRenderMap(document.getElementById('processMapsBody'));
+  } catch(e){ clearInterval(iv); _pmGenerating=false; if(!pmActive()) return; pmRenderError(document.getElementById('processMapsBody'), e.message); }
+}
+function pmRenderError(body, msg){
+  body.innerHTML = `<div style="max-width:520px;margin:70px auto;text-align:center;padding:0 20px;">
+    <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px;">That didn't quite work</div>
+    <div style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:20px;">${escapeHtml(msg||'The AI could not generate the map.')}</div>
+    <button onclick="pmNewMap()" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;">Try again</button></div>`;
+}
+function pmRenderMap(body){
+  body.innerHTML = `
+    <div style="max-width:1040px;margin:0 auto;padding:16px 20px 30px;">
+      <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
+        <div><div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_pmTitle)}</div>
+          <div style="font-size:11px;color:var(--ink3);">Generated from your policy · sandboxed · read-only</div></div>
+        <button onclick="pmSaveCurrent(this)" style="margin-left:auto;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;border-radius:var(--r-sm);cursor:pointer;">Save</button>
+        <button onclick="pmNewMap()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New map</button>
+      </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+        <iframe id="pmFrame" sandbox="allow-scripts" scrolling="no" style="width:100%;height:640px;border:0;display:block;background:transparent;transition:height .18s ease;"></iframe>
+        <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">AI can make mistakes. Check the map against your source policy.</div>
+      </div>
+    </div>`;
+  const f=document.getElementById('pmFrame');
+  const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  f.onload=function(){ var post=function(){ try{ f.contentWindow.postMessage({__type:'vibe-data',payload:{theme:theme}},'*'); }catch(e){} }; post(); setTimeout(post,120); setTimeout(post,500); };
+  f.srcdoc=_pmHtml;
+}
+function pmNewMap(){ _pmHtml=null; _pmCurrentId=null; renderProcessMaps(); }
+async function pmSaveCurrent(btn){
+  if(!currentProfile){ if(window.showBreezeToast) showBreezeToast('Sign in to save'); return; }
+  if(!_pmHtml) return;
+  const id=_pmCurrentId||pmUid(); const name='PMAP:'+id;
+  const rec={ id, title:_pmTitle||'Process map', html:_pmHtml, updatedAt:new Date().toISOString() };
+  const label=btn?btn.textContent:'';
+  try{
+    if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
+    const { data:ex } = await sb.from('policies').select('id,content').eq('company_id',currentProfile.company_id).eq('name',name).maybeSingle();
+    if(ex){ let created; try{ created=JSON.parse(ex.content).createdAt; }catch(e){} rec.createdAt=created||rec.updatedAt;
+      await sb.from('policies').update({content:JSON.stringify(rec)}).eq('id',ex.id).eq('company_id',currentProfile.company_id); }
+    else { rec.createdAt=rec.updatedAt; await sb.from('policies').insert({company_id:currentProfile.company_id,name,content:JSON.stringify(rec)}); }
+    _pmCurrentId=id; if(window.showBreezeToast) showBreezeToast('Map saved');
+    if(btn){ btn.textContent='✓ Saved'; setTimeout(function(){ if(btn){ btn.textContent=label||'Save'; btn.disabled=false; } }, 1600); }
+  }catch(e){ if(window.showBreezeToast) showBreezeToast('Could not save'); if(btn){ btn.textContent=label||'Save'; btn.disabled=false; } }
+}
+async function pmLoadSaved(){
+  if(!currentProfile) return [];
+  try{ const { data } = await sb.from('policies').select('id,content,created_at').eq('company_id',currentProfile.company_id).like('name','PMAP:%').order('created_at',{ascending:false});
+    return (data||[]).map(function(r){ let c={}; try{ c=JSON.parse(r.content)||{}; }catch(e){} return { rowId:r.id, id:c.id, title:c.title||'Process map', html:c.html||'', createdAt:c.createdAt||r.created_at }; }).filter(function(v){ return v.html; });
+  }catch(e){ return []; }
+}
+function pmOpenSaved(rowId){ const v=(_pmSaved||[]).find(function(x){ return String(x.rowId)===String(rowId); }); if(!v) return; _pmHtml=v.html; _pmTitle=v.title; _pmCurrentId=v.id||null; pmRenderMap(document.getElementById('processMapsBody')); }
+async function pmDeleteSaved(rowId, ev){ if(ev) ev.stopPropagation(); if(!currentProfile) return; if(!await uiConfirm('Delete this saved map?')) return; try{ await sb.from('policies').delete().eq('id',rowId).eq('company_id',currentProfile.company_id); }catch(e){} renderProcessMaps(); }
+function pmSavedListHtml(saved){
+  if(!saved.length) return '';
+  const cards = saved.map(function(v){ const d=v.createdAt?new Date(v.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+    return `<div onclick="pmOpenSaved('${v.rowId}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:12px 15px;cursor:pointer;display:flex;align-items:center;gap:11px;" onmouseover="this.style.borderColor='var(--accent)'" onmouseout="this.style.borderColor='var(--border)'">
+      <span style="width:32px;height:32px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="6" height="5" rx="1.2"/><rect x="15" y="4" width="6" height="5" rx="1.2"/><rect x="9" y="15" width="6" height="5" rx="1.2"/><path d="M6 9v3h12V9M12 12v3"/></svg></span>
+      <div style="flex:1;min-width:0;font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(v.title)}</div>
+      <span style="font-size:11px;color:var(--ink3);flex-shrink:0;">${d}</span>
+      <button onclick="pmDeleteSaved('${v.rowId}',event)" title="Delete" style="border:none;background:none;color:var(--ink3);cursor:pointer;font-size:15px;padding:2px 4px;flex-shrink:0;">✕</button>
+    </div>`; }).join('');
+  return `<div style="margin-top:6px;"><div style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Saved maps</div><div style="display:flex;flex-direction:column;gap:9px;">${cards}</div></div>`;
+}
+
 async function renderProcessMaps() {
   const body=document.getElementById('processMapsBody');if(!body)return;
+  if(_pmHtml){ pmRenderMap(body); return; }
+  if(_pmGenerating){ body.innerHTML=pmGeneratingHtml(); return; }
   body.style.padding='0';
   body.style.overflow='auto';
 
@@ -6207,6 +6334,7 @@ async function renderProcessMaps() {
   let policyProcesses = [...processes];
   if (currentProfile) {
     const {data} = await sb.from('policies').select('name,content').eq('company_id', currentProfile.company_id).not('name','like','TEMPLATE:%').not('name','like','STYLE:%');
+    _pmPolicies = (data||[]).filter(p=>!/:/.test(p.name));   // real uploaded policies (exclude system rows) for the AI map picker
     if (data && data.length) {
       const policyMap = {
         'maternity': {icon:'🤱',name:'Maternity leave',badge:'From your policies',steps:['Employee notifies HR','MATB1 form received','SMP eligibility checked','Leave dates confirmed','Manager notified','Cover arranged','KIT days agreed','Return date set']},
@@ -6227,8 +6355,22 @@ async function renderProcessMaps() {
   }
 
   body.innerHTML=`
+    <div style="padding:18px 20px;border-bottom:1px solid var(--border);background:var(--surface);">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
+        <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></span>
+        <div style="font-size:15px;font-weight:700;color:var(--ink);">Generate an interactive process map</div>
+        <span style="font-size:9px;background:var(--accent);color:#fff;padding:2px 7px;border-radius:6px;font-weight:600;">Beta</span>
+      </div>
+      <div style="font-size:12px;color:var(--ink3);margin:0 0 14px 40px;">Breeze reads a policy and maps the <b>actual</b> process - stages, decision points, timings and who's responsible. Interactive, and grounded in your document.</div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-left:40px;">
+        ${_pmPolicies.length ? `<select id="pmPolicyPick" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);min-width:220px;"><option value="">Choose a policy…</option>${_pmPolicies.map(p=>`<option value="${escapeHtml(p.name)}">${escapeHtml(p.name)}</option>`).join('')}</select>` : ''}
+        <input id="pmCustom" placeholder="${_pmPolicies.length?'…or type a process (e.g. grievance)':'Type a process (e.g. disciplinary, grievance, onboarding)'}" style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);">
+        <button onclick="pmRun(document.getElementById('pmPolicyPick')?document.getElementById('pmPolicyPick').value:'', document.getElementById('pmCustom').value)" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:10px 18px;border-radius:var(--r-sm);cursor:pointer;white-space:nowrap;">✨ Generate map</button>
+      </div>
+      <div id="pmSavedWrap" style="margin:16px 0 0 40px;"></div>
+    </div>
     <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:12px;color:var(--ink3);">Building from chat, SharePoint and connected sources. Upload policies to generate process maps automatically.</div>
+      <div style="font-size:12px;color:var(--ink3);">Pre-built reference processes. Upload policies to generate maps automatically.</div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Building</span>
@@ -6237,6 +6379,7 @@ async function renderProcessMaps() {
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
       ${(window._allProcessMaps = policyProcesses, policyProcesses.map(p=>renderProcessRow(p)).join(''))}
     </div>`;
+  pmLoadSaved().then(function(saved){ _pmSaved=saved; const w=document.getElementById('pmSavedWrap'); if(w) w.innerHTML=pmSavedListHtml(saved); });
 }
 
 function renderProcessRow(p) {
@@ -11043,17 +11186,23 @@ function vvHardenCsp(html){
 if (!window._vvHeightHooked){
   window._vvHeightHooked = true;
   window.addEventListener('message', function(ev){
-    if (!ev || !ev.data || ev.data.__type !== 'vibe-height') return;
-    var f = document.getElementById('vvFrame'); if (!f || !ev.data.height) return;
-    var target = Math.max(320, Math.min(20000, ev.data.height));
-    if (Math.abs(parseInt(f.style.height,10) - target) > 2) f.style.height = target + 'px';
+    if (!ev || !ev.data || ev.data.__type !== 'vibe-height' || !ev.data.height) return;
+    // Resize whichever artifact frame sent the report (Vibe view or process map).
+    var frames = document.querySelectorAll('iframe#vvFrame, iframe#pmFrame');
+    for (var i=0;i<frames.length;i++){
+      if (frames[i].contentWindow === ev.source){
+        var target = Math.max(320, Math.min(20000, ev.data.height));
+        if (Math.abs(parseInt(frames[i].style.height,10) - target) > 2) frames[i].style.height = target + 'px';
+        return;
+      }
+    }
   });
 }
 
 // Shared generation core: generate -> validate -> one repair -> CSP-harden. Used by create + refine.
-async function vvChat(messages){
+async function vvChat(messages, sysOverride){
   const token = await getAuthToken();
-  const sys = vvSystemPrompt();
+  const sys = sysOverride || vvSystemPrompt();
   async function post(msgs){
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
     const timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 150000) : null;   // fail visibly after ~2.5 min instead of spinning forever
