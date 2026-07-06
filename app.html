@@ -9040,6 +9040,22 @@ function isHeavyDocRequest(msg) {
   return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
 }
 
+// Detect a request that should yield a downloadable file/artifact - a Word doc, spreadsheet,
+// letter, email draft, PDF or export. These ALWAYS go to the advisor path, which owns the
+// 📄 DOCUMENT / 📧 DRAFT / 📊 SPREADSHEET output formats. They must never reach the live-data
+// tool agent, which has no file-producing ability and will wrongly say it "can't create files".
+function producesArtifact(msg) {
+  const t = (msg || '').toLowerCase();
+  if (isHeavyDocRequest(t) || isDocumentRequest(t)) return true;
+  if (/\b(word doc|word document|word file|\.?docx|excel|spreadsheet|\.?xlsx|powerpoint|\.?pptx|slide deck|pdf|export|download)\b/.test(t)) return true;
+  // "draft/write/send an email|letter|reply|response|message"
+  if (/\b(draft|write|compose|send|reply|respond)\b[\s\S]{0,40}\b(email|letter|reply|response|message|note)\b/.test(t)) return true;
+  // A named document type paired with a produce verb (incl. "put ... in a ...")
+  if (/\b(letter|template|policy|contract|offer letter|reference|handbook|agreement)\b/.test(t)
+      && /\b(create|write|draft|generate|make|need|produce|prepare|put|format)\b/.test(t)) return true;
+  return false;
+}
+
 // Detect a colour/theme the user asked for ("in orange", "green theme", "#5B47E0") so a
 // generated document can be produced in that accent. Returns a colour name/hex or null.
 // Client-side colour resolver (mirrors the server) so the preview accent matches the download.
@@ -9182,16 +9198,22 @@ async function sendChat(overrideMsg) {
   // Document-style requests get the Opus model and a large output budget so the draft
   // reads like a proper document; quick chat stays on the cheaper, faster default.
   const heavyDoc = isHeavyDocRequest(msg);
-  // ONE brain, no router. Normal chat goes to the unified advisor+HRIS agent, which holds the
-  // full advisor prompt AND the live HRIS tools and decides for itself when a question needs
-  // live people data. It returns null when the HRIS isn't connected (or the user isn't an
-  // admin), and we drop back to the plain advisor on /api/chat with the same prompt - so
-  // nothing is ever misrouted the way a keyword classifier would. Heavy document generation
-  // skips straight to the Opus/streaming path (larger budget, SharePoint context) unchanged.
+  const wantsArtifact = producesArtifact(msg);
+  // ONE brain, no keyword router for the advice-vs-data split. Conversational chat goes to the
+  // unified advisor+HRIS agent, which holds the full advisor prompt AND the live HRIS tools and
+  // decides for itself when a question needs live people data. It returns null when the HRIS
+  // isn't connected (or the user isn't an admin), so we drop back to the plain advisor on
+  // /api/chat with the same prompt - nothing is misrouted the way the old classifier did.
+  // Requests that must produce a downloadable file (Word doc, spreadsheet, letter, email draft,
+  // export) go straight to the advisor path, which owns the 📄/📧/📊 formats - the tool agent
+  // cannot create files. Heavy documents additionally get Opus + a large streaming budget.
   let reply = null;
-  if (!heavyDoc && !spContext) reply = await askHris(apiMessages, chatSystemPrompt);
-  if (reply == null) reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
-    heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 } : null);
+  if (!heavyDoc && !wantsArtifact && !spContext) reply = await askHris(apiMessages, chatSystemPrompt);
+  if (reply == null) {
+    const docOpts = heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 }
+                  : wantsArtifact ? { max_tokens: 8000 } : null;
+    reply = await callClaude(apiMessages, chatSystemPrompt + spContext, docOpts);
+  }
   chatLoading = false;
   stopThinkingWords();
   window._spSearchingForChat = false;
@@ -10939,9 +10961,18 @@ async function vvChat(messages){
   const token = await getAuthToken();
   const sys = vvSystemPrompt();
   async function post(msgs){
-    const r = await fetch('/api/chat', { method:'POST',
-      headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-      body: JSON.stringify({ system:sys, messages:msgs, model:'claude-sonnet-4-6', max_tokens:16000, temperature:0.35 }) });
+    const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+    const timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 150000) : null;   // fail visibly after ~2.5 min instead of spinning forever
+    let r;
+    try {
+      r = await fetch('/api/chat', { method:'POST',
+        headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
+        body: JSON.stringify({ system:sys, messages:msgs, model:'claude-sonnet-4-6', max_tokens:16000, temperature:0.35 }),
+        signal: ctrl ? ctrl.signal : undefined });
+    } catch(err){
+      if (err && err.name === 'AbortError') throw new Error('That took too long to generate (over 2 minutes). Try a simpler prompt, or one with fewer separate charts.');
+      throw new Error('Network error while generating - check your connection and try again.');
+    } finally { if (timer) clearTimeout(timer); }
     const d = await r.json().catch(function(){ return {}; });
     if (!r.ok) throw new Error(d.error || ('Generation failed ('+r.status+')'));
     var text = (d.content && d.content[0] && d.content[0].text) || '';
