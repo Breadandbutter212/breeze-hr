@@ -75,6 +75,8 @@
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { height: 100%; overflow: hidden; }
 body { font-family: 'Plus Jakarta Sans', -apple-system, sans-serif; background: var(--bg); color: var(--ink); font-size: 13px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
+/* Accessibility: visible keyboard-focus ring (only on keyboard nav, not mouse click) */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 4px; }
 ::-webkit-scrollbar { width: 4px; }
 ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
 
@@ -7115,7 +7117,7 @@ async function renderHome(){
   const hcTotal = 254, hcPerm = 206, hcContract = 34, hcProb = 14;
   const donutHtml = `
     <div class="card">
-      <div class="card-h"><h3>Headcount</h3><a onclick="homeGo('headcount')">By type</a></div>
+      <div class="card-h"><h3>Headcount <span style="font-size:10px;font-weight:600;color:#8A5A0A;background:#FDF0DA;padding:2px 7px;border-radius:6px;vertical-align:middle;letter-spacing:.02em;">Sample</span></h3><a onclick="homeGo('headcount')">By type</a></div>
       <div class="donut-wrap col">
         <div class="donut">
           <svg viewBox="0 0 42 42" width="150" height="150">
