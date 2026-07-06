@@ -6227,6 +6227,7 @@ function pmSystemPrompt(processName, polText){
 'If the policy is more RULES than a step-by-step process (e.g. annual-leave entitlement, expenses), do NOT force a long fake process - map the core actions as a compact flow (e.g. Request -> Manager review -> Approve/Decline -> Recorded/Deducted) and show a short summary of the key rules (entitlement, notice period, carry-over) alongside it.',
 '',
 'LAYOUT - avoid the common overlap bug. Lay nodes out in a single vertical column on a fixed grid: every node gets its own row with a clear vertical gap (at least 36px) between boxes. NEVER overlap two boxes, stack them, or place a box/label on top of another box. Size each box to fit its text with padding, and increase the row height if text wraps. Route Yes/No branch and merge connectors DOWN THE SIDE of the column (keep 60px+ horizontal clearance) and into the EDGE of the target node - never draw a connector through a box. Before finishing, sanity-check that no two boxes share vertical space.',
+'ALL TEXT MUST BE HORIZONTAL - never rotate text or use vertical writing (no transform:rotate on text, no writing-mode:vertical). Any label on a connector or arrow (durations like "20 days", notice periods, Yes/No) must be horizontal, placed a few px to the SIDE of the line (not on it), with a small solid background chip behind it (fill = the surface colour) so the line never shows through the text and the label never overlaps the line or a box.',
 '',
 'HARD RULES:',
 '- Output ONLY the HTML document. No markdown, no code fences, no commentary.',
