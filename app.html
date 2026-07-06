@@ -7022,6 +7022,107 @@ function hbProfileMenuOut(ev){
   if (m && !m.contains(ev.target) && p && !p.contains(ev.target)) { m.remove(); document.removeEventListener('click', hbProfileMenuOut); }
 }
 
+// ===== PROACTIVE PEOPLE DIGEST (Home) =====
+// Pure, testable: derive HR signals from the roster (live HRIS or demo).
+function bzNormPerson(e){
+  const empl = (e.employments && e.employments[0]) || {};
+  let team = e.team || e.department || empl.department;
+  if (team && typeof team === 'object') team = team.name || team.id || 'Team';
+  const salaryRaw = (typeof e.salary === 'number') ? e.salary : (empl.pay_rate != null ? Number(empl.pay_rate) : null);
+  return {
+    name: e.name || e.display_full_name || 'Employee',
+    startDate: e.startDate || e.start_date || null,
+    team: team || 'Team',
+    title: e.title || empl.job_title || e.job_title || '',
+    salary: (typeof salaryRaw === 'number' && isFinite(salaryRaw)) ? salaryRaw : null
+  };
+}
+function bzMedian(arr){ const s = arr.slice().sort((a,b)=>a-b); const m = Math.floor(s.length/2); return s.length ? (s.length%2 ? s[m] : (s[m-1]+s[m])/2) : 0; }
+function bzPeopleSignals(roster, now){
+  const MS = 86400000;
+  const people = (roster||[]).map(bzNormPerson).filter(p => p.startDate);
+  const addMonths = (d,m) => { const x = new Date(d); x.setMonth(x.getMonth()+m); return x; };
+  const days = (a,b) => Math.round((a-b)/MS);
+  const byTeam = {};
+  people.forEach(p => { if (typeof p.salary === 'number') (byTeam[p.team] = byTeam[p.team] || []).push(p.salary); });
+  const sig = [];
+  people.forEach(p => {
+    const start = new Date(p.startDate); if (isNaN(start)) return;
+    // 6-month probation review due in next 21 days / overdue up to 7 days
+    const pd = days(addMonths(start,6), now);
+    if (pd >= -7 && pd <= 21) sig.push({ type:'probation', name:p.name, title:p.title, tone: pd<0?'over':'due',
+      label: pd<0 ? `Probation review overdue by ${-pd}d` : pd===0 ? 'Probation review due today' : `Probation review due in ${pd}d` });
+    // Work anniversary this month (>=1yr)
+    const yrs = now.getFullYear() - start.getFullYear();
+    if (yrs >= 1 && start.getMonth() === now.getMonth()) sig.push({ type:'anniv', name:p.name, tone:'info', label:`${yrs}-year work anniversary this month` });
+    // New joiner (last 30 days)
+    const since = days(now, start);
+    if (since >= 0 && since <= 30) sig.push({ type:'joiner', name:p.name, title:p.title, tone:'good', label: since===0 ? 'Started today' : `New joiner - started ${since}d ago` });
+    // Comp outlier: >15% below team median (team of >=3 with salary)
+    if (typeof p.salary === 'number') { const arr = byTeam[p.team] || []; if (arr.length >= 3) { const med = bzMedian(arr); if (med > 0 && p.salary < med*0.85) sig.push({ type:'comp', name:p.name, tone:'warn', label:`Pay ${Math.round((1-p.salary/med)*100)}% below ${p.team} median` }); } }
+  });
+  const rank = { over:0, due:1, warn:2, good:3, info:4 };
+  sig.sort((a,b) => (rank[a.tone]??9) - (rank[b.tone]??9));
+  return sig;
+}
+// Demo roster built relative to "now" so the digest always has realistic signals in demos.
+function bzDemoRoster(now){
+  const ago = (days) => { const d = new Date(now); d.setDate(d.getDate()-days); return d.toISOString().slice(0,10); };
+  const anniv = (yearsAgo) => { const d = new Date(now); d.setFullYear(d.getFullYear()-yearsAgo); d.setDate(Math.max(1, now.getDate()-2)); return d.toISOString().slice(0,10); };
+  return [
+    { name:'Priya Shah',    team:'Engineering', title:'Junior Engineer',  salary:52000, startDate:ago(185) }, // probation overdue
+    { name:'Tom Reid',      team:'Sales',       title:'Sales Executive',  salary:38000, startDate:ago(176) }, // probation due + low pay
+    { name:'Owen Pryce',    team:'Product',     title:'Associate PM',     salary:55000, startDate:ago(6) },   // new joiner
+    { name:'Ada Powell',    team:'Engineering', title:'Senior Engineer',  salary:92000, startDate:anniv(3) }, // 3yr anniversary
+    { name:'Nina Alvarez',  team:'Sales',       title:'Account Manager',  salary:58000, startDate:anniv(2) }, // 2yr anniversary
+    { name:'Ravi Menon',    team:'Engineering', title:'Senior Engineer',  salary:88000, startDate:ago(430) },
+    { name:'Sam Ortiz',     team:'Engineering', title:'Engineer',         salary:68000, startDate:ago(520) },
+    { name:'Chloe Day',     team:'Sales',       title:'SDR',              salary:36000, startDate:ago(300) },
+    { name:'Marcus Bell',   team:'Sales',       title:'Senior AE',        salary:76000, startDate:ago(800) },
+    { name:'Isla Fenn',     team:'Product',     title:'Head of Product',  salary:95000, startDate:ago(900) }
+  ];
+}
+function bzInitials(name){ return String(name||'').trim().split(/\s+/).map(w=>w[0]||'').slice(0,2).join('').toUpperCase() || '?'; }
+function bzDigestRow(s){
+  const tones = { over:{bg:'#FCE7EE',fg:'#E0356E'}, due:{bg:'#FDF0DA',fg:'#DC8A0A'}, warn:{bg:'#FDF0DA',fg:'#DC8A0A'}, good:{bg:'#DBF5F1',fg:'#0E9384'}, info:{bg:'var(--hb-tint-indigo)',fg:'var(--hb-brand)'} };
+  const tags = { probation:'Probation', anniv:'Anniversary', joiner:'New joiner', comp:'Pay' };
+  const t = tones[s.tone] || tones.info;
+  return `<div style="display:flex;align-items:center;gap:12px;padding:11px 22px;border-top:1px solid var(--hb-line);">
+    <span style="width:34px;height:34px;border-radius:10px;background:${t.bg};color:${t.fg};display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;font-weight:700;">${bzInitials(s.name)}</span>
+    <div style="flex:1;min-width:0;">
+      <div style="font-size:13.5px;font-weight:600;color:var(--hb-ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.name)}</div>
+      <div style="font-size:12px;color:var(--hb-ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(s.label)}${s.title?` · ${escapeHtml(s.title)}`:''}</div>
+    </div>
+    <span style="font-size:10px;font-weight:700;letter-spacing:.03em;text-transform:uppercase;color:${t.fg};background:${t.bg};padding:3px 8px;border-radius:6px;white-space:nowrap;flex-shrink:0;">${tags[s.type]||''}</span>
+  </div>`;
+}
+function bzDigestCardHtml(signals, usingLive){
+  const src = usingLive
+    ? '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--hb-ink2);"><span style="width:6px;height:6px;border-radius:50%;background:#12854E;"></span>Live · HRIS</span>'
+    : '<span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--hb-ink2);"><span style="width:6px;height:6px;border-radius:50%;background:#DC8A0A;"></span>Sample data</span>';
+  const top = signals.slice(0,6);
+  const rows = top.length
+    ? top.map(bzDigestRow).join('')
+    : '<div style="padding:18px 22px;font-size:13px;color:var(--hb-ink3);border-top:1px solid var(--hb-line);">Nothing needs a look from your people this week. Nice.</div>';
+  const more = signals.length>6 ? `<div style="padding:9px 22px 2px;font-size:12px;color:var(--hb-ink3);">+${signals.length-6} more</div>` : '';
+  return `<div class="card" id="hbDigest">
+    <div class="card-h"><h3>People signals</h3>${src}</div>
+    <div class="card-sub" style="padding:0 22px;">Proactive checks across your team - this week</div>
+    <div style="margin-top:12px;">${rows}${more}</div>
+    <div style="display:flex;align-items:center;gap:8px;padding:12px 16px 14px;border-top:1px solid var(--hb-line);margin-top:6px;">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--hb-brand)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <input id="hbAsk" placeholder="Ask Breeze about your people…" onkeydown="if(event.key==='Enter'){bzAskBreeze(this.value);this.value='';}" style="flex:1;border:0;outline:0;font-family:inherit;font-size:13px;color:var(--hb-ink);background:transparent;">
+      <button onclick="var i=document.getElementById('hbAsk');bzAskBreeze(i.value);i.value='';" style="border:0;background:var(--hb-brand);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:7px 13px;border-radius:8px;cursor:pointer;white-space:nowrap;">Ask</button>
+    </div>
+  </div>`;
+}
+// Surface Ask Breeze: route a people question into the HRIS chat agent.
+function bzAskBreeze(q){
+  q = (q||'').trim(); if(!q) return;
+  homeGo('chat');
+  setTimeout(function(){ try { const t=document.getElementById('chatInput'); if(t) t.value=q; sendChat(q); } catch(e){} }, 80);
+}
+
 async function renderHome(){
   const el = document.getElementById('homeBody'); if(!el) return;
   const raw = (currentProfile && (currentProfile.full_name || currentProfile.email)) || 'there';
@@ -7052,6 +7153,11 @@ async function renderHome(){
   if (!document.getElementById('homeBody')) return;
   let empTotal = Array.isArray(emps) ? emps.length : 0;
   if (!empTotal && window._isTestAccount) empTotal = 254;
+
+  // ── Proactive people digest (live roster if connected, sample otherwise) ──
+  const _usingLiveRoster = Array.isArray(emps) && emps.length > 0;
+  const _digestRoster = _usingLiveRoster ? emps : bzDemoRoster(new Date());
+  const digestHtml = bzDigestCardHtml(bzPeopleSignals(_digestRoster, new Date()), _usingLiveRoster);
 
   // Ensure projects loaded for the projects card + attention rows. Reload when the
   // cache is empty too (a stale empty [] from init would otherwise show nothing until
@@ -7299,6 +7405,7 @@ async function renderHome(){
 
     <div class="grid">
       <div class="col-left">
+        ${digestHtml}
         <div class="row-hp">${donutHtml}${projHtml}</div>
         ${attnCardHtml}
       </div>
