@@ -6198,131 +6198,56 @@ async function downloadPolicyFile(id, name) {
 // ── PROCESS MAPS ──
 const openProcessMaps = new Set(['New starter onboarding']); // open by default
 
-// ===== AI PROCESS MAPS (AI extracts structure from the real policy; a deterministic renderer draws it) =====
-let _pmData=null, _pmTitle='Process map', _pmCurrentId=null, _pmSaved=[], _pmGenerating=false, _pmPolicies=[];
+// ===== AI PROCESS MAPS (generative, grounded in the company's real policy text) =====
+let _pmHtml=null, _pmTitle='Process map', _pmCurrentId=null, _pmSaved=[], _pmGenerating=false, _pmPolicies=[];
 function pmActive(){ return document.getElementById('view-processmaps')?.classList.contains('active'); }
 function pmUid(){ return 'pm_'+Date.now().toString(36)+Math.random().toString(36).slice(2,7); }
-function pmEsc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
-function pmWrap(s, max){ const w=String(s||'').split(/\s+/); const lines=[]; let c=''; w.forEach(function(x){ if(c && (c+' '+x).length>max){ lines.push(c); c=x; } else c=c?c+' '+x:x; }); if(c)lines.push(c); return lines.length?lines:['']; }
 
 function pmSystemPrompt(processName, polText){
   return [
-'You are a UK HR operations expert. Extract the STRUCTURE of an HR process and return STRICT JSON only - no markdown, no prose, no code fences.',
+'You generate ONE complete, self-contained HTML document that renders an INTERACTIVE PROCESS MAP (flowchart) of a UK HR process inside a sandboxed iframe (desktop-first ~900-1100px, must also work at 380px).',
 '',
-'Process to map: "'+processName+'".',
+'The process to map: "'+processName+'".',
 (polText && polText.trim()
-  ? 'Base it ENTIRELY on this policy text - use its ACTUAL stages, decision points, timings/deadlines and responsible roles. Do NOT invent steps it does not imply:\n"""\n'+polText.trim()+'\n"""'
-  : 'No policy text was provided - produce a sensible, standard UK HR version.'),
+  ? 'Ground the map in THIS policy text from the company - reflect its ACTUAL stages, decision points, timings/deadlines and responsible roles. Do not invent steps the policy does not imply:\n"""\n'+polText.trim()+'\n"""'
+  : 'No usable policy text was provided, so build a sensible standard UK HR version of this process and keep it generic.'),
 '',
-'Return JSON in EXACTLY this shape:',
-'{',
-'  "title": "short title, <= 4 words",',
-'  "summary": "one sentence describing the process",',
-'  "nodes": [',
-'    { "type": "step" | "decision" | "end",',
-'      "title": "short label, <= 6 words",',
-'      "role": "who is responsible (optional, short)",',
-'      "timing": "deadline/timing if the policy states one, e.g. within 5 working days (optional, short)",',
-'      "note": "one short clarifying line (optional)",',
-'      "proceedLabel": "label for the main DOWNWARD path out of a decision, e.g. No / Approved / <=5 days (decisions only)",',
-'      "branch": { "label": "side-path label e.g. Yes / No", "title": "outcome e.g. Declined", "role": "optional", "note": "optional short reason", "tone": "declined" }',
-'    }',
-'  ]',
-'}',
+'The document receives its theme at runtime via a window "message" event - you MUST wire this up:',
+'  window.addEventListener("message", function(e){ if(e.data && e.data.__type==="vibe-data"){ var t=e.data.payload&&e.data.payload.theme; if(t==="dark") document.documentElement.setAttribute("data-theme","dark"); else document.documentElement.removeAttribute("data-theme"); } });',
+'Render the map immediately (do NOT wait for the message); just apply the theme when it arrives (default light).',
 '',
-'Rules:',
-'- "nodes" is the MAIN flow, top to bottom. A "decision" continues DOWN the main flow for its main outcome (label that arrow with proceedLabel) and may have ONE "branch" for the alternative outcome (usually a decline/exit) shown to the side.',
-'- 5 to 9 nodes. Keep EVERY label short - this is a diagram, not prose.',
-'- The final node is usually type "end" (the successful conclusion).',
-'- Ground roles/timings in the policy. Output ONLY the JSON object.'
+'*** THE SINGLE MOST IMPORTANT RULE - LAYOUT (obey this strictly) ***',
+'Build the ENTIRE flowchart with NORMAL HTML DOCUMENT FLOW: one centred vertical column (a <div> with display:flex; flex-direction:column; align-items:center). Each stage is a block-level <div> card that STACKS in that column, one after another. Do NOT use absolute or fixed positioning anywhere. Do NOT lay the chart out with hand-computed x/y SVG coordinates. Because every node is a normal flowed block, boxes PHYSICALLY CANNOT overlap - this is the entire point of the rule, so follow it exactly.',
+'',
+'Structure:',
+'- Stage card = a rounded box: bold title, then small muted text for the responsible role and any timing (e.g. "Line Manager - within 5 working days").',
+'- A DECISION = a distinctly-styled card (accent tint/border) whose title is the question. Directly BELOW it, in the flow: the "proceed" path continues down to the next stage; the alternative outcome (e.g. Declined) is a SEPARATE card immediately under it, tinted amber/red, clearly labelled (e.g. "If no: request declined"). Keep EVERYTHING in the one vertical column - never float a box off to the side at fixed coordinates.',
+'- Between cards, put a short connector as its OWN flowed element: a ~26px vertical line with a small down-chevron, centred. Branch labels (Yes / No / durations like "2 weeks notice") are small HORIZONTAL pills on the card or beside the chevron - NEVER rotated, NEVER a long line with text running along it.',
+'- Make each card clickable to toggle a one-line detail (the policy point). Add a title header + one-line summary at the top.',
+'',
+'Keep it lean: key stages only (6-12 cards), concise labels. If the policy is more RULES than a step-by-step process (e.g. annual-leave entitlement), do NOT force a long fake process - map the core actions (Request -> Manager review -> Approve/Decline -> Recorded) plus a short key-rules summary card.',
+'ALL TEXT MUST BE HORIZONTAL - never rotate text, never writing-mode:vertical.',
+'',
+'HARD RULES:',
+'- Output ONLY the HTML document. No markdown, no code fences, no commentary.',
+'- Line 1 must be an HTML comment with a short title, e.g: <!-- title: Disciplinary process -->',
+'- ZERO network: no fetch, XMLHttpRequest, WebSocket, dynamic import, <script src>, <link>, external fonts/images/CDNs. Everything inline.',
+'- At most one small <script> tag, vanilla JS only (just for the click-to-expand and the theme listener). Lay the chart out with FLOWED HTML+CSS blocks - use inline SVG only for tiny chevron/icon marks, never to position the chart. No diagram libraries.',
+'- Use ONLY these CSS custom properties for every colour, and include this :root block verbatim in your <style>:',
+VV_TOKENS,
+'- font-family:"Plus Jakarta Sans",-apple-system,sans-serif. Tolerate a thin policy - still produce a coherent, well-structured map.',
+'',
+'Make it look like a polished, top-tier product diagram - clear, well-spaced, easy to follow.'
   ].join('\n');
 }
-
-async function pmGenerateData(processName, polText){
-  const token=await getAuthToken();
-  const sys=pmSystemPrompt(processName, polText);
-  async function post(msgs){
-    const ctrl=(typeof AbortController!=='undefined')?new AbortController():null;
-    const timer=ctrl?setTimeout(function(){ctrl.abort();},120000):null;
-    let r;
-    try{ r=await fetch('/api/chat',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+token},body:JSON.stringify({system:sys,messages:msgs,model:'claude-sonnet-4-6',max_tokens:2200,temperature:0.2}),signal:ctrl?ctrl.signal:undefined}); }
-    catch(err){ if(err&&err.name==='AbortError') throw new Error('That took too long to generate. Try again.'); throw new Error('Network error - check your connection and try again.'); }
-    finally{ if(timer)clearTimeout(timer); }
-    const d=await r.json().catch(function(){return{};});
-    if(!r.ok) throw new Error(d.error||('Generation failed ('+r.status+')'));
-    const t=(d.content&&d.content[0]&&d.content[0].text)||''; if(!t) throw new Error('The AI returned an empty response'); return t;
-  }
-  function parse(t){ const a=t.indexOf('{'), b=t.lastIndexOf('}'); if(a<0||b<0)return null; try{ return JSON.parse(t.slice(a,b+1)); }catch(e){ return null; } }
-  let raw=await post([{role:'user',content:'Return the JSON for: '+processName}]);
-  let data=parse(raw);
-  if(!data || !Array.isArray(data.nodes) || !data.nodes.length){
-    raw=await post([{role:'user',content:'Return the JSON for: '+processName},{role:'assistant',content:raw},{role:'user',content:'That was not valid JSON in the required shape. Return ONLY the JSON object with a non-empty "nodes" array.'}]);
-    data=parse(raw);
-  }
-  if(!data || !Array.isArray(data.nodes) || !data.nodes.length) throw new Error('Could not read the process structure. Try again or rephrase.');
-  return data;
+async function pmGenerate(processName, polText){
+  return vvChat([{ role:'user', content:'Create the interactive process map for: '+processName+'.' }], pmSystemPrompt(processName, polText), 11000);
 }
-
-// Deterministic flowchart renderer - fixed geometry (overlaps impossible), wrapped text,
-// notes moved to a click-through detail panel, clickable nodes.
-function pmLayout(data){
-  const nodes=(data&&Array.isArray(data.nodes))?data.nodes:[];
-  if(!nodes.length) return '<div style="padding:40px;text-align:center;color:var(--ink3);">No process steps found.</div>';
-  const COLX=340, MAINW=300, MAINHALF=150, DIAMW=340, DIAMHALF=170, VGAP=48;
-  const RIGHTX=COLX+DIAMHALF+70, BRANCHW=252, TLH=21, SLH=17, PADY=16, LINECOL='#9AA0A6';
-  const capMax=Math.floor(MAINW/6.8), brMax=Math.floor(BRANCHW/6.8);
-  const capOf=function(n){ return [n.role,n.timing].filter(Boolean).join(' · '); };
-  const L=nodes.map(function(n,i){
-    const dec=n.type==='decision';
-    const tl=pmWrap(n.title, dec?16:22);
-    const cl=capOf(n)?pmWrap(capOf(n), capMax):[];   // caption only (role · timing); note goes to the panel
-    let shapeH, belowH=0, nodeH;
-    if(dec){ shapeH=Math.max(96, PADY*2+tl.length*TLH); belowH=cl.length?(cl.length*SLH+6):0; nodeH=shapeH+belowH; }
-    else { shapeH=Math.max(62, PADY*2+tl.length*TLH+cl.length*SLH); nodeH=shapeH; }
-    let br=null;
-    if(n.branch){ const btl=pmWrap(n.branch.title, brMax-1); const bcl=n.branch.role?pmWrap(n.branch.role, brMax):[]; const bh=Math.max(54, PADY*2+btl.length*TLH+bcl.length*SLH); br={tl:btl,cl:bcl,h:bh}; }
-    return {n,i,dec,tl,cl,shapeH,belowH,nodeH,br};
-  });
-  let y=24;
-  L.forEach(function(o){ o.y=y; o.scy=y+o.shapeH/2; let adv=o.nodeH+VGAP; if(o.br){ const need=(o.scy+o.br.h/2+20)-o.y; if(need>adv)adv=need; } y+=adv; });
-  const totalH=y+8, anyBr=L.some(function(o){return o.br;}), totalW=(anyBr?RIGHTX+BRANCHW:COLX+MAINHALF)+30;
-  const KIND={ step:{bg:'var(--surface)',br:'var(--border2)',ti:'var(--ink)'}, dec:{bg:'var(--accent-bg)',br:'var(--accent)',ti:'var(--accent-ink)'}, approved:{bg:'#E6F7EE',br:'#15A05B',ti:'#0E7A44'}, danger:{bg:'#FFF1E9',br:'#F97316',ti:'#C2410C'} };
-  function lns(cx,top,tl,cl,tc){ let s='',ty=top; tl.forEach(function(ln){ s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="15" font-weight="700" fill="'+tc+'">'+pmEsc(ln)+'</text>'; ty+=TLH; }); cl.forEach(function(ln,k){ s+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" fill="'+(k===0?'var(--ink2)':'var(--ink3)')+'">'+pmEsc(ln)+'</text>'; ty+=SLH; }); return s; }
-  function boxG(idx,which,x,yy,w,h,tl,cl,kind){ const c=KIND[kind]||KIND.step; const top=yy+((h-(tl.length*TLH+cl.length*SLH))/2)+15; return '<g style="cursor:pointer;" onclick="pmShowDetail('+idx+(which?",'"+which+"'":'')+')"><rect x="'+x+'" y="'+yy+'" width="'+w+'" height="'+h+'" rx="14" fill="'+c.bg+'" stroke="'+c.br+'" stroke-width="2"/>'+lns(x+w/2,top,tl,cl,c.ti)+'</g>'; }
-  function diaG(idx,cx,cy,w,h,tl,belowCl,belowY){ const c=KIND.dec,hw=w/2,hh=h/2; const top=cy-((tl.length*TLH)/2)+15; let g='<g style="cursor:pointer;" onclick="pmShowDetail('+idx+')"><polygon points="'+cx+','+(cy-hh)+' '+(cx+hw)+','+cy+' '+cx+','+(cy+hh)+' '+(cx-hw)+','+cy+'" fill="'+c.bg+'" stroke="'+c.br+'" stroke-width="2"/>'+lns(cx,top,tl,[],c.ti); if(belowCl&&belowCl.length){ let ty=belowY+13; belowCl.forEach(function(ln,k){ g+='<text x="'+cx+'" y="'+ty+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="12" fill="'+(k===0?'var(--ink2)':'var(--ink3)')+'">'+pmEsc(ln)+'</text>'; ty+=SLH; }); } return g+'</g>'; }
-  function chip(cx,cy,txt,col){ const w=String(txt).length*7.1+16; return '<rect x="'+(cx-w/2)+'" y="'+(cy-10)+'" width="'+w+'" height="20" rx="5" fill="var(--surface)" stroke="'+col+'" stroke-width="1"/><text x="'+cx+'" y="'+(cy+4)+'" text-anchor="middle" font-family="Plus Jakarta Sans,sans-serif" font-size="11" font-weight="700" fill="'+col+'">'+pmEsc(txt)+'</text>'; }
-  let svg='';
-  for(let i=0;i<L.length;i++){ const o=L[i];
-    if(i<L.length-1){ const nx=L[i+1], y1=o.y+o.nodeH, y2=nx.y; svg+='<line x1="'+COLX+'" y1="'+y1+'" x2="'+COLX+'" y2="'+(y2-9)+'" stroke="'+LINECOL+'" stroke-width="2"/><polygon points="'+(COLX-6)+','+(y2-9)+' '+(COLX+6)+','+(y2-9)+' '+COLX+','+y2+'" fill="'+LINECOL+'"/>'; if(o.dec&&o.n.proceedLabel) svg+=chip(COLX+40,(y1+y2)/2,o.n.proceedLabel,'#15A05B'); }
-    if(o.br){ const sx=COLX+(o.dec?DIAMHALF:MAINHALF), bx=RIGHTX; svg+='<line x1="'+sx+'" y1="'+o.scy+'" x2="'+(bx-9)+'" y2="'+o.scy+'" stroke="#F97316" stroke-width="2"/><polygon points="'+(bx-9)+','+(o.scy-6)+' '+(bx-9)+','+(o.scy+6)+' '+bx+','+o.scy+'" fill="#F97316"/>'; if(o.n.branch.label) svg+=chip((sx+bx)/2,o.scy-13,o.n.branch.label,'#F97316'); }
-  }
-  L.forEach(function(o){
-    if(o.dec) svg+=diaG(o.i,COLX,o.scy,DIAMW,o.shapeH,o.tl,o.cl,o.y+o.shapeH);
-    else { const k=o.n.type==='end'?(o.n.tone==='declined'?'danger':'approved'):'step'; svg+=boxG(o.i,null,COLX-MAINHALF,o.y,MAINW,o.shapeH,o.tl,o.cl,k); }
-    if(o.br) svg+=boxG(o.i,'branch',RIGHTX,o.scy-o.br.h/2,BRANCHW,o.br.h,o.br.tl,o.br.cl,'danger');
-  });
-  return '<svg viewBox="0 0 '+totalW+' '+totalH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:auto;max-width:'+totalW+'px;margin:0 auto;">'+svg+'</svg>';
-}
-function pmShowDetail(i, which){
-  const el=document.getElementById('pmDetail'); if(!el||!_pmData||!Array.isArray(_pmData.nodes)) return;
-  const n=_pmData.nodes[i]; if(!n) return;
-  const src=(which==='branch' && n.branch)?n.branch:n;
-  const rows=[];
-  if(src.role) rows.push(['Responsible', src.role]);
-  if(src.timing) rows.push(['Timing', src.timing]);
-  if(n.type==='decision' && which!=='branch'){ if(n.proceedLabel) rows.push(['Proceed if', n.proceedLabel]); if(n.branch) rows.push([(n.branch.label||'Otherwise'), n.branch.title]); }
-  const note=src.note||'';
-  el.innerHTML='<div style="font-size:14px;font-weight:700;color:var(--ink);margin-bottom:8px;">'+pmEsc(src.title||n.title)+'</div>'+
-    (note?'<div style="font-size:13px;color:var(--ink2);line-height:1.55;margin-bottom:'+(rows.length?'12px':'0')+';">'+pmEsc(note)+'</div>':'')+
-    rows.map(function(r){return '<div style="display:flex;gap:10px;font-size:12.5px;margin-bottom:6px;"><span style="color:var(--ink3);min-width:86px;flex-shrink:0;">'+pmEsc(r[0])+'</span><span style="color:var(--ink);font-weight:500;">'+pmEsc(r[1])+'</span></div>';}).join('')+
-    (!note&&!rows.length?'<div style="font-size:13px;color:var(--ink3);">No extra detail for this stage.</div>':'');
-}
-
 function pmGeneratingHtml(){
   return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
     <div class="vv-spin"></div>
     <div id="pmGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">Reading your policy…</div>
-    <div style="font-size:12px;color:var(--ink3);">Mapping the process - usually 15-40 seconds.</div></div>`;
+    <div style="font-size:12px;color:var(--ink3);">Mapping the process - this usually takes 30-90 seconds.</div></div>`;
 }
 async function pmRun(policyName, custom){
   const pol = (_pmPolicies||[]).find(p=>p.name===policyName);
@@ -6331,11 +6256,12 @@ async function pmRun(policyName, custom){
   const grounding = pol ? (policyText(pol.content)||'').substring(0,7000) : '';
   _pmGenerating = true; _pmTitle = processName;
   const body=document.getElementById('processMapsBody'); if(body) body.innerHTML=pmGeneratingHtml();
-  let i=0; const lines=['Reading your policy…','Finding the stages and decision points…','Mapping owners and timings…','Building the flow…'];
-  const iv=setInterval(function(){ i=(i+1)%lines.length; const l=document.getElementById('pmGenLine'); if(l)l.textContent=lines[i]; }, 2000);
+  let i=0; const lines=['Reading your policy…','Finding the stages and decision points…','Mapping owners and timings…','Drawing the flow…','Testing everything works…'];
+  const iv=setInterval(function(){ i=(i+1)%lines.length; const l=document.getElementById('pmGenLine'); if(l)l.textContent=lines[i]; }, 2200);
   try {
-    const data = await pmGenerateData(processName, grounding);
-    clearInterval(iv); _pmGenerating=false; _pmData=data; _pmCurrentId=null; _pmTitle = data.title || processName;
+    const html = await pmGenerate(processName, grounding);
+    clearInterval(iv); _pmGenerating=false; _pmHtml=html; _pmCurrentId=null;
+    const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i); _pmTitle = tm ? tm[1].trim() : processName;
     if(!pmActive()) return;
     pmRenderMap(document.getElementById('processMapsBody'));
   } catch(e){ clearInterval(iv); _pmGenerating=false; if(!pmActive()) return; pmRenderError(document.getElementById('processMapsBody'), e.message); }
@@ -6344,35 +6270,34 @@ function pmRenderError(body, msg){
   body.innerHTML = `<div style="max-width:520px;margin:70px auto;text-align:center;padding:0 20px;">
     <div style="font-size:15px;font-weight:700;color:var(--ink);margin-bottom:8px;">That didn't quite work</div>
     <div style="font-size:13px;color:var(--ink3);line-height:1.6;margin-bottom:20px;">${escapeHtml(msg||'The AI could not generate the map.')}</div>
-    <button onclick="pmNewMap()" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;">Back</button></div>`;
+    <button onclick="pmNewMap()" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:9px 16px;border-radius:var(--r-sm);cursor:pointer;">Try again</button></div>`;
 }
 function pmRenderMap(body){
-  const svg = pmLayout(_pmData);
   body.innerHTML = `
     <div style="max-width:1040px;margin:0 auto;padding:16px 20px 30px;">
       <div style="margin-bottom:6px;"><button onclick="pmNewMap()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:2px 0;">‹ Back to process maps</button></div>
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div><div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_pmTitle)}</div>
-          <div style="font-size:11px;color:var(--ink3);">${escapeHtml((_pmData&&_pmData.summary)||'Generated from your policy')}</div></div>
+          <div style="font-size:11px;color:var(--ink3);">Generated from your policy · sandboxed · read-only</div></div>
         <button onclick="pmSaveCurrent(this)" style="margin-left:auto;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;border-radius:var(--r-sm);cursor:pointer;">Save</button>
         <button onclick="pmNewMap()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New map</button>
       </div>
-      <div style="display:flex;gap:16px;align-items:stretch;flex-wrap:wrap;">
-        <div style="flex:1;min-width:320px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);overflow:auto;padding:24px 18px;">${svg}</div>
-        <div style="width:270px;flex-shrink:0;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);box-shadow:var(--shadow-sm);padding:18px;">
-          <div style="font-size:11px;font-weight:600;color:var(--ink3);text-transform:uppercase;letter-spacing:.04em;margin-bottom:10px;">Stage detail</div>
-          <div id="pmDetail" style="font-size:13px;color:var(--ink3);line-height:1.5;">Click any stage to see who does it, when, and the policy detail.</div>
-        </div>
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+        <iframe id="pmFrame" sandbox="allow-scripts" scrolling="no" style="width:100%;height:640px;border:0;display:block;background:transparent;transition:height .18s ease;"></iframe>
+        <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">AI can make mistakes. Check the map against your source policy.</div>
       </div>
-      <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">Breeze reads your policy to build this. Check it against the source.</div>
     </div>`;
+  const f=document.getElementById('pmFrame');
+  const theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+  f.onload=function(){ var post=function(){ try{ f.contentWindow.postMessage({__type:'vibe-data',payload:{theme:theme}},'*'); }catch(e){} }; post(); setTimeout(post,120); setTimeout(post,500); };
+  f.srcdoc=_pmHtml;
 }
-function pmNewMap(){ _pmData=null; _pmCurrentId=null; renderProcessMaps(); }
+function pmNewMap(){ _pmHtml=null; _pmCurrentId=null; renderProcessMaps(); }
 async function pmSaveCurrent(btn){
   if(!currentProfile){ if(window.showBreezeToast) showBreezeToast('Sign in to save'); return; }
-  if(!_pmData) return;
+  if(!_pmHtml) return;
   const id=_pmCurrentId||pmUid(); const name='PMAP:'+id;
-  const rec={ id, title:_pmTitle||'Process map', data:_pmData, updatedAt:new Date().toISOString() };
+  const rec={ id, title:_pmTitle||'Process map', html:_pmHtml, updatedAt:new Date().toISOString() };
   const label=btn?btn.textContent:'';
   try{
     if(btn){ btn.disabled=true; btn.textContent='Saving…'; }
@@ -6387,10 +6312,10 @@ async function pmSaveCurrent(btn){
 async function pmLoadSaved(){
   if(!currentProfile) return [];
   try{ const { data } = await sb.from('policies').select('id,content,created_at').eq('company_id',currentProfile.company_id).like('name','PMAP:%').order('created_at',{ascending:false});
-    return (data||[]).map(function(r){ let c={}; try{ c=JSON.parse(r.content)||{}; }catch(e){} return { rowId:r.id, id:c.id, title:c.title||'Process map', data:c.data||null, createdAt:c.createdAt||r.created_at }; }).filter(function(v){ return v.data && Array.isArray(v.data.nodes); });
+    return (data||[]).map(function(r){ let c={}; try{ c=JSON.parse(r.content)||{}; }catch(e){} return { rowId:r.id, id:c.id, title:c.title||'Process map', html:c.html||'', createdAt:c.createdAt||r.created_at }; }).filter(function(v){ return v.html; });
   }catch(e){ return []; }
 }
-function pmOpenSaved(rowId){ const v=(_pmSaved||[]).find(function(x){ return String(x.rowId)===String(rowId); }); if(!v) return; _pmData=v.data; _pmTitle=v.title; _pmCurrentId=v.id||null; pmRenderMap(document.getElementById('processMapsBody')); }
+function pmOpenSaved(rowId){ const v=(_pmSaved||[]).find(function(x){ return String(x.rowId)===String(rowId); }); if(!v) return; _pmHtml=v.html; _pmTitle=v.title; _pmCurrentId=v.id||null; pmRenderMap(document.getElementById('processMapsBody')); }
 async function pmDeleteSaved(rowId, ev){ if(ev) ev.stopPropagation(); if(!currentProfile) return; if(!await uiConfirm('Delete this saved map?')) return; try{ await sb.from('policies').delete().eq('id',rowId).eq('company_id',currentProfile.company_id); }catch(e){} renderProcessMaps(); }
 function pmSavedListHtml(saved){
   if(!saved.length) return '';
@@ -6406,7 +6331,7 @@ function pmSavedListHtml(saved){
 
 async function renderProcessMaps() {
   const body=document.getElementById('processMapsBody');if(!body)return;
-  if(_pmData){ pmRenderMap(body); return; }
+  if(_pmHtml){ pmRenderMap(body); return; }
   if(_pmGenerating){ body.innerHTML=pmGeneratingHtml(); return; }
   body.style.padding='0';
   body.style.overflow='auto';
