@@ -16353,11 +16353,16 @@ function ocSetSourceBadge(live){
     : '<span style="width:7px;height:7px;border-radius:50%;background:var(--amber);display:inline-block;"></span> Sample data');
   el.title = live ? 'Showing employees from your connected HRIS.' : 'No HRIS connected - showing sample data. Connect your HRIS from Analytics to see your real org.';
 }
+function ocSyncOpenBtn(){
+  const b = document.getElementById('ocToggleOpen'); const dot = document.getElementById('ocToggleDot');
+  const on = window._ocShowOpen !== false;
+  if (b && b.lastChild) b.lastChild.textContent = 'Open roles: ' + (on ? 'On' : 'Off');
+  if (dot) dot.style.background = on ? 'var(--green)' : 'var(--ink3)';
+}
 function ocToggleOpen(){
   window._ocShowOpen = (window._ocShowOpen === false);   // flip (default is on)
-  const b = document.getElementById('ocToggleOpen'); const dot = document.getElementById('ocToggleDot');
-  if (b) b.lastChild.textContent = 'Open roles: ' + (window._ocShowOpen ? 'On' : 'Off');
-  if (dot) dot.style.background = window._ocShowOpen ? 'var(--green)' : 'var(--ink3)';
+  try { localStorage.setItem('bz_oc_open', window._ocShowOpen ? 'on' : 'off'); } catch(e) {}
+  ocSyncOpenBtn();
   ocLoadData();
 }
 async function ocLoadData() {
@@ -16366,6 +16371,7 @@ async function ocLoadData() {
   window._ocUsingLive = Array.isArray(_live) && _live.length > 0;
   _ocEmps = window._ocUsingLive ? _live.map(e => ({ ...e })) : ocGetDemoData();
   ocSetSourceBadge(window._ocUsingLive);
+  ocSyncOpenBtn();
   // Inject headcount planning open roles as nodes (hidden when the toggle is off)
   if (window._ocShowOpen !== false) {
   if (hcRoles === null) await loadHCRoles();
@@ -20677,7 +20683,7 @@ const OC_COLORS = ['var(--accent)','#1D9E75','#1D9E75','#BA7517','#B42318','#06B
 
 function initOrgChart() {
   // Always reset so HRIS session cache never bleeds in
-  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set(); _ocDefaultApplied=false; _ocFilter=''; window._ocShowOpen=true;
+  _ocEmps=null; _ocRelations={}; _ocDeptOverrides={}; _ocOffsets={}; _ocTree=null; _ocCollapsed=new Set(); _ocDefaultApplied=false; _ocFilter=''; window._ocShowOpen=(function(){try{return localStorage.getItem('bz_oc_open')!=='off';}catch(e){return true;}})();
   const root = document.getElementById('orgChartRoot'); if (!root) return;
   root.innerHTML = `
     <div style="padding:9px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:7px;flex-shrink:0;">
