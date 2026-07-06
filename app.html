@@ -10603,23 +10603,75 @@ function renderAnalytics() {
 function vvActive(){ return document.getElementById('view-vibeviews')?.classList.contains('active'); }
 
 // Demo people data — stands in for the payload builder until an HRIS/CSV is connected.
+function vvR(n){ var x=Math.sin(n)*10000; return x-Math.floor(x); }  // deterministic pseudo-random [0,1)
 const VV_DEMO = (function(){
-  const teams = {
-    Engineering:[["Ada Powell","Senior",92000],["Ravi Menon","Senior",88000],["Jo Fisher","Mid",71000],
-      ["Sam Ortiz","Mid",68000],["Priya Shah","Junior",52000],["Leo Grant","Staff",118000]],
-    Sales:[["Marcus Bell","Senior",76000],["Nina Alvarez","Mid",58000],["Tom Reid","Mid",56000],["Chloe Day","Junior",41000]],
-    Product:[["Isla Fenn","Senior",95000],["Deniz Kaya","Mid",74000],["Owen Pryce","Junior",55000]],
-    People:[["Grace Lin","Senior",70000],["Harry Bloom","Mid",52000]],
-    Marketing:[["Freya Cole","Senior",68000],["Amir Zadeh","Mid",50000],["Ella Rhodes","Junior",39000]]
+  const base = {
+    Engineering:[["Ada Powell","Senior",92000,"Female"],["Ravi Menon","Senior",88000,"Male"],["Jo Fisher","Mid",71000,"Female"],["Sam Ortiz","Mid",68000,"Male"],["Priya Shah","Junior",52000,"Female"],["Leo Grant","Staff",118000,"Male"]],
+    Sales:[["Marcus Bell","Senior",76000,"Male"],["Nina Alvarez","Mid",58000,"Female"],["Tom Reid","Mid",56000,"Male"],["Chloe Day","Junior",41000,"Female"]],
+    Product:[["Isla Fenn","Senior",95000,"Female"],["Deniz Kaya","Mid",74000,"Male"],["Owen Pryce","Junior",55000,"Male"]],
+    People:[["Grace Lin","Senior",70000,"Female"],["Harry Bloom","Mid",52000,"Male"]],
+    Marketing:[["Freya Cole","Senior",68000,"Female"],["Amir Zadeh","Mid",50000,"Male"],["Ella Rhodes","Junior",39000,"Female"]]
   };
-  const out=[]; let id=1; const yearFor={Staff:2019,Senior:2020,Mid:2022,Junior:2024};
-  for(const [team,rows] of Object.entries(teams))
-    for(const [name,seniority,salary] of rows){
-      const y=(yearFor[seniority]||2022)+(id%3), mo=((id*5)%12)+1;
-      out.push({name,team,seniority,salary,start_date:y+'-'+String(mo).padStart(2,'0')+'-01'}); id++;
+  const offices=["London","Manchester","Remote","Berlin","New York"];
+  const etypes=["Permanent","Permanent","Permanent","Permanent","Contract","Part-time"];
+  const ratings=["Outstanding","Exceeds","Meets","Meets","Below"];
+  const potentials=["High","Medium","Medium","Low"];
+  const risks=["Low","Low","Medium","High"];
+  const roleBase={Engineering:"Engineer",Sales:"Account Executive",Product:"Product Manager",People:"People Partner",Marketing:"Marketing Manager"};
+  const levelFor={Junior:"L2",Mid:"L3",Senior:"L4",Staff:"L5"};
+  const yearFor={Staff:2018,Senior:2020,Mid:2022,Junior:2024};
+  const out=[]; let id=1;
+  for(const team of Object.keys(base)){
+    for(const row of base[team]){
+      const name=row[0], seniority=row[1], salary=row[2], gender=row[3];
+      const y=(yearFor[seniority]||2022)+Math.floor(vvR(id)*3), mo=((id*5)%12)+1;
+      const rb=roleBase[team]||"Specialist";
+      const role=seniority==="Junior"?("Associate "+rb):seniority==="Senior"?("Senior "+rb):seniority==="Staff"?("Lead "+rb):rb;
+      const rating=ratings[Math.floor(vvR(id*3.3)*ratings.length)];
+      out.push({
+        id:"e"+id, name:name, team:team, office:offices[Math.floor(vvR(id*1.3)*offices.length)],
+        role:role, seniority:seniority, level:levelFor[seniority]||"L3", gender:gender,
+        salary:salary, currency:"GBP",
+        startDate:y+"-"+String(mo).padStart(2,"0")+"-01", endDate:null,
+        employmentType:etypes[Math.floor(vvR(id*2.1)*etypes.length)],
+        performanceRating:rating, performanceScore:({Outstanding:5,Exceeds:4,Meets:3,Below:2}[rating]||3),
+        potential:potentials[Math.floor(vvR(id*4.2)*potentials.length)],
+        flightRisk:risks[Math.floor(vvR(id*5.1)*risks.length)],
+        engagementScore:55+Math.floor(vvR(id*6.4)*41),
+        lastPromotionDate: vvR(id*7.2)>0.55 ? ((y+2)+"-06-01") : null
+      });
+      id++;
     }
+  }
   return out;
 })();
+
+// Build related HR datasets (time-off, performance, promotions, L&D, attendance) deterministically
+// from whatever employees are in the payload, so any view type has consistent data to render.
+function vvGenRelated(emps, today){
+  const iso=d=>d.toISOString().slice(0,10);
+  const shift=(base,days)=>{ const d=new Date(base); d.setDate(d.getDate()+days); return d; };
+  const toTypes=["Holiday","Holiday","Holiday","Sick","Parental","Unpaid"];
+  const courses=[["Data protection & GDPR","Compliance"],["Inclusive leadership","Leadership"],["Advanced Excel","Technical"],["Manager essentials","Leadership"],["Mental health first aid","Wellbeing"],["Security awareness","Compliance"],["Presentation skills","Technical"]];
+  const scoreMap={Outstanding:5,Exceeds:4,Meets:3,Below:2};
+  const timeOff=[], performanceReviews=[], promotions=[], learning=[], attendance=[];
+  emps.forEach((e,i)=>{
+    const eid=e.id||("e"+i), nm=e.name||("Employee "+(i+1)), tm=e.team||"Unknown";
+    const nTO=1+Math.floor(vvR(i*1.1+1)*2);
+    for(let t=0;t<nTO;t++){ const s=shift(today,-70+Math.floor(vvR(i*1.3+t+1)*130)); const len=1+Math.floor(vvR(i*1.7+t+1)*8);
+      timeOff.push({employeeId:eid,employeeName:nm,team:tm,type:toTypes[Math.floor(vvR(i*1.9+t+1)*toTypes.length)],from:iso(s),to:iso(shift(s,len-1)),days:len,status:vvR(i*2.2+t+1)>0.2?"Approved":"Pending"}); }
+    const rating=e.performanceRating||["Exceeds","Meets","Meets","Below"][Math.floor(vvR(i*2.5+1)*4)];
+    performanceReviews.push({employeeId:eid,employeeName:nm,team:tm,cycle:"Mid-year 2026",rating:rating,score:e.performanceScore||scoreMap[rating]||3,date:iso(shift(today,-25)),reviewer:"Manager"});
+    if(vvR(i*2.7+1)>0.4){ const r2=["Exceeds","Meets","Meets","Below"][Math.floor(vvR(i*2.9+1)*4)]; performanceReviews.push({employeeId:eid,employeeName:nm,team:tm,cycle:"Year-end 2025",rating:r2,score:scoreMap[r2]||3,date:"2025-12-12",reviewer:"Manager"}); }
+    if(vvR(i*3.3+1)>0.7){ const lvl=2+(i%3); promotions.push({employeeId:eid,employeeName:nm,team:tm,fromLevel:"L"+lvl,toLevel:"L"+(lvl+1),date:e.lastPromotionDate||iso(shift(today,-160)),salaryIncrease:3000+Math.floor(vvR(i*3.7+1)*9000)}); }
+    const nL=1+Math.floor(vvR(i*4.1+1)*3);
+    for(let l=0;l<nL;l++){ const c=courses[Math.floor(vvR(i*4.3+l+1)*courses.length)]; const done=vvR(i*4.7+l+1)>0.35;
+      learning.push({employeeId:eid,employeeName:nm,team:tm,course:c[0],category:c[1],status:done?"Completed":"In progress",hours:2+Math.floor(vvR(i*4.9+l+1)*10),completedDate:done?iso(shift(today,-Math.floor(vvR(i*5.1+l+1)*180))):null}); }
+    const absent=Math.floor(vvR(i*5.5+1)*6), late=Math.floor(vvR(i*5.8+1)*5), wfh=Math.floor(vvR(i*6.1+1)*40), wd=63;
+    attendance.push({employeeId:eid,employeeName:nm,team:tm,period:"Last 90 days",workingDays:wd,daysPresent:wd-absent,daysAbsent:absent,lateArrivals:late,wfhDays:wfh,attendanceRate:Math.round((wd-absent)/wd*1000)/10});
+  });
+  return {timeOff,performanceReviews,promotions,learning,attendance};
+}
 
 function vvNum(x){ if(x==null) return null; var n=typeof x==='number'?x:parseFloat(String(x).replace(/[^0-9.\-]/g,'')); return isFinite(n)?n:null; }
 function vvSeniority(title){ title=(title||'').toLowerCase();
@@ -10632,25 +10684,40 @@ function vvSeniority(title){ title=(title||'').toLowerCase();
 function vvBuildPayload(){
   var live = Array.isArray(analyticsData) && analyticsData.length ? analyticsData : null;
   var src = live || VV_DEMO;
-  var employees = src.map(function(r,i){
+  var employees = live ? src.map(function(r,i){
     return {
       id:'e'+i,
       name: r.name || r.Name || ('Employee '+(i+1)),
       team: r.team || r.department || r.Department || r.dept || 'Unknown',
+      office: r.location || r.office || r.Location || '',
+      role: r.job_title || r.role || r.title || r['Job title'] || '',
       seniority: r.seniority || vvSeniority(r.job_title || r.role || r.title || r['Job title']),
+      gender: r.gender || '',
       salary: vvNum(r.salary!=null?r.salary:(r.Salary!=null?r.Salary:r.pay_rate)),
       currency:'GBP',
-      startDate: r.startDate || r.start_date || r['Start date'] || null
+      startDate: r.startDate || r.start_date || r['Start date'] || null,
+      endDate: r.endDate || r.end_date || null,
+      employmentType: r.employment_type || r.employmentType || ''
     };
-  });
+  }) : VV_DEMO.map(function(e){ return Object.assign({}, e); });
+  var rel = vvGenRelated(employees, new Date());
   return {
     employees: employees,
+    timeOff: rel.timeOff,
+    performanceReviews: rel.performanceReviews,
+    promotions: rel.promotions,
+    learning: rel.learning,
+    attendance: rel.attendance,
     meta:{ orgName: live ? (analyticsSource || 'Your org') : 'Demo data', generatedAt:'',
+      note: 'Employees (headcount, team, salary, tenure) are '+(live?'from your connected HRIS':'sample data')+'. Time-off, performance, promotions, learning and attendance are illustrative sample data for demonstrating views.',
       fieldCatalog:[
-        {key:'team',label:'Team',type:'string'},
-        {key:'seniority',label:'Seniority',type:'string'},
-        {key:'salary',label:'Salary',type:'number'},
-        {key:'startDate',label:'Start date',type:'date'}
+        {key:'team',label:'Team',type:'string'},{key:'office',label:'Office',type:'string'},
+        {key:'role',label:'Role',type:'string'},{key:'seniority',label:'Seniority',type:'string'},
+        {key:'level',label:'Level',type:'string'},{key:'gender',label:'Gender',type:'string'},
+        {key:'salary',label:'Salary',type:'number'},{key:'startDate',label:'Start date',type:'date'},
+        {key:'employmentType',label:'Employment type',type:'string'},{key:'performanceRating',label:'Performance rating',type:'string'},
+        {key:'potential',label:'Potential',type:'string'},{key:'flightRisk',label:'Flight risk',type:'string'},
+        {key:'engagementScore',label:'Engagement score',type:'number'}
       ]},
     theme: document.documentElement.classList.contains('dark') ? 'dark' : 'light'
   };
@@ -10857,32 +10924,59 @@ const VV_TOKENS = `:root{
 }`;
 
 // Five anonymised FAKE rows sent to the AI in place of real people (same shape the payload builder emits).
-const VV_FAKE = [
-  {id:'e0',name:'A. Example',team:'Engineering',seniority:'Senior',salary:90000,currency:'GBP',startDate:'2021-03-01'},
-  {id:'e1',name:'B. Sample',team:'Sales',seniority:'Mid',salary:58000,currency:'GBP',startDate:'2022-07-01'},
-  {id:'e2',name:'C. Demo',team:'Product',seniority:'Junior',salary:52000,currency:'GBP',startDate:'2024-01-01'},
-  {id:'e3',name:'D. Placeholder',team:'People',seniority:'Staff',salary:110000,currency:'GBP',startDate:'2019-09-01'},
-  {id:'e4',name:'E. Test',team:'Marketing',seniority:'Mid',salary:49000,currency:'GBP',startDate:'2023-05-01'}
-];
+const VV_FAKE = {
+  employees:[
+    {id:'e0',name:'A. Example',team:'Engineering',office:'London',role:'Senior Engineer',seniority:'Senior',level:'L4',gender:'Female',salary:90000,currency:'GBP',startDate:'2021-03-01',endDate:null,employmentType:'Permanent',performanceRating:'Exceeds',performanceScore:4,potential:'High',flightRisk:'Low',engagementScore:82,lastPromotionDate:'2023-06-01'},
+    {id:'e1',name:'B. Sample',team:'Sales',office:'Manchester',role:'Account Executive',seniority:'Mid',level:'L3',gender:'Male',salary:58000,currency:'GBP',startDate:'2022-07-01',endDate:null,employmentType:'Permanent',performanceRating:'Meets',performanceScore:3,potential:'Medium',flightRisk:'Medium',engagementScore:67,lastPromotionDate:null},
+    {id:'e2',name:'C. Demo',team:'Product',office:'Remote',role:'Associate Product Manager',seniority:'Junior',level:'L2',gender:'Female',salary:52000,currency:'GBP',startDate:'2024-01-01',endDate:null,employmentType:'Contract',performanceRating:'Meets',performanceScore:3,potential:'High',flightRisk:'Low',engagementScore:74,lastPromotionDate:null}
+  ],
+  timeOff:[
+    {employeeId:'e0',employeeName:'A. Example',team:'Engineering',type:'Holiday',from:'2026-06-10',to:'2026-06-16',days:5,status:'Approved'},
+    {employeeId:'e1',employeeName:'B. Sample',team:'Sales',type:'Sick',from:'2026-05-02',to:'2026-05-02',days:1,status:'Approved'}
+  ],
+  performanceReviews:[
+    {employeeId:'e0',employeeName:'A. Example',team:'Engineering',cycle:'Mid-year 2026',rating:'Exceeds',score:4,date:'2026-06-15',reviewer:'Manager'}
+  ],
+  promotions:[
+    {employeeId:'e0',employeeName:'A. Example',team:'Engineering',fromLevel:'L3',toLevel:'L4',date:'2023-06-01',salaryIncrease:8000}
+  ],
+  learning:[
+    {employeeId:'e0',employeeName:'A. Example',team:'Engineering',course:'Inclusive leadership',category:'Leadership',status:'Completed',hours:6,completedDate:'2026-02-10'},
+    {employeeId:'e2',employeeName:'C. Demo',team:'Product',course:'Data protection & GDPR',category:'Compliance',status:'In progress',hours:3,completedDate:null}
+  ],
+  attendance:[
+    {employeeId:'e1',employeeName:'B. Sample',team:'Sales',period:'Last 90 days',workingDays:63,daysPresent:60,daysAbsent:3,lateArrivals:2,wfhDays:24,attendanceRate:95.2}
+  ]
+};
 
 function vvSystemPrompt(){
-  var e0 = VV_FAKE[0];
-  var fields = Object.keys(e0).map(function(k){ return k+': '+(k==='salary'?'number|null':(k==='startDate'?'string|null (ISO date)':typeof e0[k])); }).join('; ');
   return [
 'You generate ONE complete, self-contained HTML document that renders an HR analytics view inside a sandboxed iframe (desktop-first, ~900-1200px wide, must also work down to 380px).',
 '',
 'The document is given its data at runtime via a window "message" event. You MUST wire this up:',
 '  window.addEventListener("message", function(e){ if(e.data && e.data.__type==="vibe-data"){ /* render from */ e.data.payload } });',
 '',
-'payload shape (OrgViewData):',
+'payload shape - use whichever arrays the request needs (some may be empty; show a friendly empty state if so):',
 '{',
-'  employees: Array<{ '+fields+' }>,',
-'  meta: { orgName: string, fieldCatalog: Array<{key:string,label:string,type:string}> },',
+'  employees: Array<{ id, name, team, office, role, seniority, level, gender, salary:number|null (GBP), currency, startDate:ISO|null, endDate:ISO|null (null=current, a value=leaver), employmentType, performanceRating:"Outstanding"|"Exceeds"|"Meets"|"Below", performanceScore:1-5, potential:"High"|"Medium"|"Low", flightRisk:"Low"|"Medium"|"High", engagementScore:0-100, lastPromotionDate:ISO|null }>,',
+'  timeOff: Array<{ employeeId, employeeName, team, type:"Holiday"|"Sick"|"Parental"|"Unpaid", from:ISO, to:ISO, days:number, status:"Approved"|"Pending" }>,',
+'  performanceReviews: Array<{ employeeId, employeeName, team, cycle, rating, score:1-5, date:ISO, reviewer }>,',
+'  promotions: Array<{ employeeId, employeeName, team, fromLevel, toLevel, date:ISO, salaryIncrease:number }>,',
+'  learning: Array<{ employeeId, employeeName, team, course, category:"Compliance"|"Leadership"|"Technical"|"Wellbeing", status:"Completed"|"In progress", hours:number, completedDate:ISO|null }>,',
+'  attendance: Array<{ employeeId, employeeName, team, period, workingDays, daysPresent, daysAbsent, lateArrivals, wfhDays, attendanceRate:percent }>,',
+'  meta: { orgName:string, note:string, fieldCatalog:Array<{key,label,type}> },',
 '  theme: "light" | "dark"',
 '}',
 '',
-'Example employees rows (FAKE, anonymised - never assume these exact values):',
-JSON.stringify(VV_FAKE),
+'Pick the data for the request, e.g: time-off heatmap -> timeOff; 9-box / talent grid -> employees.performanceRating + potential; pay equity -> employees.salary + gender/team; L&D completion -> learning; promotion velocity -> promotions; attrition/flight risk -> employees.flightRisk + engagementScore; headcount/tenure -> employees.startDate.',
+'',
+'Example rows for each array (FAKE, anonymised - never assume these exact values, and there are many more rows at runtime):',
+'employees: '+JSON.stringify(VV_FAKE.employees),
+'timeOff: '+JSON.stringify(VV_FAKE.timeOff),
+'performanceReviews: '+JSON.stringify(VV_FAKE.performanceReviews),
+'promotions: '+JSON.stringify(VV_FAKE.promotions),
+'learning: '+JSON.stringify(VV_FAKE.learning),
+'attendance: '+JSON.stringify(VV_FAKE.attendance),
 '',
 'HARD RULES:',
 '- Output ONLY the HTML document. No markdown, no code fences, no commentary before or after.',
