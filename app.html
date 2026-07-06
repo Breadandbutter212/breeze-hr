@@ -10562,7 +10562,7 @@ async function disconnectMerge() {
 
 // ── ANALYTICS ──
 let analyticsData = null, analyticsSource = '', analyticsCharts = {};
-let _analyticsTab = 'dashboard', _vvHtml = null, _vvTitle = 'People analytics — comp & headcount', _vvLastPrompt = '';
+let _analyticsTab = 'dashboard', _vvHtml = null, _vvTitle = 'People analytics — comp & headcount', _vvLastPrompt = '', _vvCurrentId = null, _vvSaved = [];
 
 function renderAnalytics() {
   const body = document.getElementById('analyticsBody'); if (!body) return;
@@ -11011,7 +11011,9 @@ function renderVibeViews(body){
         </div>
       </div>
       <div style="font-size:11px;color:var(--ink3);margin-top:14px;">Rendered in a sandboxed frame. Your employee data never leaves your browser - only the prompt is sent to the AI.</div>
-    </div>`;
+    </div>
+    <div id="vvSavedWrap"></div>`;
+  vvLoadSaved().then(function(saved){ _vvSaved = saved; const w = document.getElementById('vvSavedWrap'); if (w) w.innerHTML = vvSavedListHtml(saved); });
 }
 
 function vvChip(el){ document.getElementById('vvPrompt').value = el.dataset.p; vvRun(el.dataset.p); }
@@ -11030,7 +11032,7 @@ async function vvRun(prompt){
   try {
     const html = await vvGenerate(_vvLastPrompt);
     clearInterval(iv);
-    _vvHtml = html;
+    _vvHtml = html; _vvCurrentId = null;
     const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i);
     _vvTitle = tm ? tm[1].trim() : 'Generated view';
     if (!vvActive()) return; // user navigated away mid-generation
@@ -11065,7 +11067,8 @@ function vvRenderView(body){
           <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_vvTitle)}</div>
           <div style="font-size:11px;color:var(--ink3);">Sandboxed frame · fed via postMessage · no network access</div>
         </div>
-        <button onclick="vvRefine()" style="margin-left:auto;border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">↻ Refine</button>
+        <button onclick="vvSaveCurrent(this)" style="margin-left:auto;border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:12px;font-weight:600;padding:8px 15px;border-radius:var(--r-sm);cursor:pointer;">Save</button>
+        <button onclick="vvRefine()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">↻ Refine</button>
         <button onclick="vvNewView()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New view</button>
       </div>
       <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
@@ -11078,7 +11081,82 @@ function vvRenderView(body){
   f.srcdoc=_vvHtml;
 }
 
-function vvNewView(){ _vvHtml=null; renderVibeViews(document.getElementById('vibeBody')); }
+function vvNewView(){ _vvHtml=null; _vvCurrentId=null; renderVibeViews(document.getElementById('vibeBody')); }
+
+// ── Vibe Views persistence (stored as VIBE:<id> rows in policies, company-scoped) ──
+function vvUid(){ return 'vv_' + Date.now().toString(36) + Math.random().toString(36).slice(2,7); }
+
+async function vvSaveCurrent(btn){
+  if (!currentProfile){ if(window.showBreezeToast) showBreezeToast('Sign in to save views'); return; }
+  if (!_vvHtml) return;
+  const id = _vvCurrentId || vvUid();
+  const name = 'VIBE:' + id;
+  const rec = { id, title: _vvTitle || 'Untitled view', prompt: _vvLastPrompt || '', html: _vvHtml, updatedAt: new Date().toISOString() };
+  const label = btn ? btn.textContent : '';
+  try {
+    if (btn){ btn.disabled = true; btn.textContent = 'Saving…'; }
+    const { data: ex } = await sb.from('policies').select('id,content').eq('company_id', currentProfile.company_id).eq('name', name).maybeSingle();
+    if (ex){
+      let created; try { created = JSON.parse(ex.content).createdAt; } catch(e){}
+      rec.createdAt = created || rec.updatedAt;
+      await sb.from('policies').update({ content: JSON.stringify(rec) }).eq('id', ex.id).eq('company_id', currentProfile.company_id);
+    } else {
+      rec.createdAt = rec.updatedAt;
+      await sb.from('policies').insert({ company_id: currentProfile.company_id, name, content: JSON.stringify(rec) });
+    }
+    _vvCurrentId = id;
+    if (window.showBreezeToast) showBreezeToast('View saved');
+    if (btn){ btn.textContent = '✓ Saved'; setTimeout(function(){ if(btn){ btn.textContent = label || 'Save'; btn.disabled = false; } }, 1600); }
+  } catch(e){
+    if (window.showBreezeToast) showBreezeToast('Could not save the view');
+    if (btn){ btn.textContent = label || 'Save'; btn.disabled = false; }
+  }
+}
+
+async function vvLoadSaved(){
+  if (!currentProfile) return [];
+  try {
+    const { data } = await sb.from('policies').select('id,content,created_at').eq('company_id', currentProfile.company_id).like('name', 'VIBE:%').order('created_at', { ascending: false });
+    return (data||[]).map(function(r){ let c={}; try { c = JSON.parse(r.content) || {}; } catch(e){}
+      return { rowId: r.id, id: c.id, title: c.title || 'Untitled view', prompt: c.prompt || '', html: c.html || '', createdAt: c.createdAt || r.created_at };
+    }).filter(function(v){ return v.html; });
+  } catch(e){ return []; }
+}
+
+function vvOpenSaved(rowId){
+  const v = (_vvSaved||[]).find(function(x){ return String(x.rowId) === String(rowId); });
+  if (!v) return;
+  _vvHtml = v.html; _vvTitle = v.title; _vvLastPrompt = v.prompt; _vvCurrentId = v.id || null;
+  vvRenderView(document.getElementById('vibeBody'));
+}
+
+async function vvDeleteSaved(rowId, ev){
+  if (ev) ev.stopPropagation();
+  if (!currentProfile) return;
+  if (!await uiConfirm('Delete this saved view?')) return;
+  try { await sb.from('policies').delete().eq('id', rowId).eq('company_id', currentProfile.company_id); } catch(e){}
+  renderVibeViews(document.getElementById('vibeBody'));
+}
+
+function vvSavedListHtml(saved){
+  if (!saved.length) return '';
+  const cards = saved.map(function(v){
+    const d = v.createdAt ? new Date(v.createdAt).toLocaleDateString('en-GB',{day:'numeric',month:'short'}) : '';
+    return `<div onclick="vvOpenSaved('${v.rowId}')" style="text-align:left;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:13px 16px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:border-color .12s,box-shadow .12s;" onmouseover="this.style.borderColor='var(--accent)';this.style.boxShadow='var(--shadow-sm)'" onmouseout="this.style.borderColor='var(--border)';this.style.boxShadow='none'">
+      <span style="width:34px;height:34px;border-radius:9px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 20V9M12 20V4M19 20v-7"/></svg></span>
+      <div style="flex:1;min-width:0;">
+        <div style="font-size:13.5px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(v.title)}</div>
+        <div style="font-size:11.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px;">${escapeHtml(v.prompt||'')}</div>
+      </div>
+      <span style="font-size:11px;color:var(--ink3);flex-shrink:0;">${d}</span>
+      <button onclick="vvDeleteSaved('${v.rowId}',event)" title="Delete" style="border:none;background:none;color:var(--ink3);cursor:pointer;font-size:16px;line-height:1;padding:2px 4px;flex-shrink:0;">✕</button>
+    </div>`;
+  }).join('');
+  return `<div style="max-width:680px;margin:28px auto 40px;padding:0 20px;text-align:left;">
+    <div style="font-size:12px;font-weight:600;color:var(--ink2);text-transform:uppercase;letter-spacing:.04em;margin-bottom:12px;">Saved views</div>
+    <div style="display:flex;flex-direction:column;gap:10px;">${cards}</div>
+  </div>`;
+}
 
 async function vvRefine(){
   const instr = window.prompt('Refine this view - what should change?\n(e.g. "show the salary bands as a chart instead of cards")');
