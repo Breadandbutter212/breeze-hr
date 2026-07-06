@@ -18106,17 +18106,34 @@ function generateAndDownloadICS(events, filename) {
   setTimeout(()=>URL.revokeObjectURL(url),1000);
 }
 function showCalendarModal(events, subtitle, filename) {
-  _pendingCalEvents = {events, filename};
+  // "Dateless" invites: the task has no reliable date (Breeze has no calendar access),
+  // so instead of guessing a day we hand over a fully-detailed reminder and let the user
+  // pick when it lands in their own calendar. Triggered when every event is flagged dateless.
+  const dateless = events.some(e => e.dateless);
+  _pendingCalEvents = {events, filename, dateless};
   document.getElementById('calInviteModal')?.remove();
   const modal = document.createElement('div');
   modal.id = 'calInviteModal';
   modal.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,0.5);z-index:1000;display:flex;align-items:center;justify-content:center;padding:20px;';
+  const pad = n => String(n).padStart(2,'0');
+  const tmr = calTomorrow(10);
+  const defDate = tmr.getFullYear()+'-'+pad(tmr.getMonth()+1)+'-'+pad(tmr.getDate());
+  const pickerHtml = dateless ? `
+      <div style="background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;">
+        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">Choose the day</div>
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:9px;">All the details are ready - just pick when it should sit in your calendar.</div>
+        <input type="date" id="calPickDate" value="${defDate}" min="${defDate.slice(0,4)-1}-01-01" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
+      </div>` : '';
+  const introHtml = dateless
+    ? `Download as a <strong>.ics</strong> file - it opens straight into Google Calendar, Outlook or Apple Calendar as an all-day reminder on the day you choose.`
+    : `Download as a <strong>.ics</strong> file - open it to import into Google Calendar, Outlook or Apple Calendar in one click.`;
   modal.innerHTML = `<div style="background:white;border-radius:14px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,0.25);">
     <div style="padding:18px 20px 14px;border-bottom:1px solid var(--border);"><div style="font-size:14px;font-weight:700;color:var(--ink);">📅 Add to calendar</div><div style="font-size:12px;color:var(--ink3);margin-top:3px;">${escapeHtml(subtitle||'')}</div></div>
     <div style="padding:16px 20px;">
-      <div style="font-size:12px;color:var(--ink2);margin-bottom:12px;">Download as a <strong>.ics</strong> file - open it to import into Google Calendar, Outlook or Apple Calendar in one click.</div>
+      <div style="font-size:12px;color:var(--ink2);margin-bottom:12px;">${introHtml}</div>
+      ${pickerHtml}
       <div style="display:flex;flex-direction:column;gap:6px;margin-bottom:16px;max-height:220px;overflow-y:auto;">
-        ${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);"><span style="font-size:15px;">${e.icon||'📅'}</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.title)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(e.dateLabel||'')}</div></div></div>`).join('')}
+        ${events.map(e=>`<div style="display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface2);border-radius:var(--r-sm);"><span style="font-size:15px;">${e.icon||'📅'}</span><div style="flex:1;min-width:0;"><div style="font-size:12px;font-weight:500;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(e.title)}</div><div style="font-size:10px;color:var(--ink3);">${escapeHtml(e.dateless ? 'No fixed date - you choose the day' : (e.dateLabel||''))}</div></div></div>`).join('')}
       </div>
       <div style="display:flex;gap:8px;justify-content:flex-end;">
         <button onclick="document.getElementById('calInviteModal').remove()" class="btn btn-secondary btn-sm">Cancel</button>
@@ -18129,7 +18146,16 @@ function showCalendarModal(events, subtitle, filename) {
 }
 function confirmCalendarDownload() {
   if (!_pendingCalEvents) return;
-  generateAndDownloadICS(_pendingCalEvents.events, _pendingCalEvents.filename);
+  let { events, filename, dateless } = _pendingCalEvents;
+  if (dateless) {
+    const picked = document.getElementById('calPickDate')?.value;
+    if (!picked) { showBreezeToast('Pick a day first'); return; }
+    const day = new Date(picked + 'T00:00:00');
+    // Turn each dateless event into an all-day reminder on the chosen day, keeping all its detail.
+    // Events that already carry a real date are left untouched.
+    events = events.map(e => e.dateless ? ({ ...e, start: day, allDay: true }) : e);
+  }
+  generateAndDownloadICS(events, filename);
   _pendingCalEvents = null;
   document.getElementById('calInviteModal')?.remove();
   showBreezeToast('📅 Calendar file downloaded - open it to import');
@@ -18855,8 +18881,10 @@ function wfCaseCalendar(caseId) {
   const events = meetingSteps.map((step,i)=>{
     const hr=10+(i%6);
     const due=wfStepDue(c, step.id);
-    const start=due?new Date(due+'T'+String(hr).padStart(2,'0')+':00:00'):calTomorrow(hr);
-    const dateLabel=due?('Due '+start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+hr+':00'):('Suggested: '+(i===0?'tomorrow':'day '+(i+1))+', '+hr+':00');
+    // No due date - hand it over dateless so the user picks the day (Breeze has no calendar access).
+    if (!due) return {title:`${step.title} - ${c.employeeName}`,icon:'📅',dateless:true,description:step.desc};
+    const start=new Date(due+'T'+String(hr).padStart(2,'0')+':00:00');
+    const dateLabel='Due '+start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', '+hr+':00';
     return {title:`${step.title} - ${c.employeeName}`,start,end:new Date(start.getTime()+3600000),icon:'📅',dateLabel,description:step.desc};
   });
   showCalendarModal(events, `${c.employeeName} · ${sc.label}`, `${sc.label} ${c.employeeName}`);
@@ -18866,14 +18894,17 @@ function wfStepCalendarInvite(caseId, stepId) {
   const sc=WF_SCENARIOS.find(s=>s.id===c.scenarioId)||{steps:[]};
   const step=sc.steps.find(s=>s.id===stepId); if(!step) return;
   const due=wfStepDue(c, stepId);
-  const start=due?new Date(due+'T10:00:00'):calTomorrow(10);
-  showCalendarModal([{
+  const ev = due ? (()=>{ const start=new Date(due+'T10:00:00'); return {
     title:`${step.title} - ${c.employeeName}`,
-    start, end:new Date(start.getTime()+3600000),
-    icon:'📅',
-    dateLabel:due?('Due '+start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', 10-11am'):'Suggested: tomorrow 10-11am (edit after import)',
+    start, end:new Date(start.getTime()+3600000), icon:'📅',
+    dateLabel:'Due '+start.toLocaleDateString('en-GB',{day:'numeric',month:'short'})+', 10-11am',
     description:`${step.desc}\n\nTimeframe: ${step.timeframe}`,
-  }], `${c.employeeName} · ${sc.label}`, `${step.title} ${c.employeeName}`);
+  }; })() : {
+    // No due date - dateless invite so the user picks the day it lands in their calendar.
+    title:`${step.title} - ${c.employeeName}`, icon:'📅', dateless:true,
+    description:`${step.desc}\n\nTimeframe: ${step.timeframe}`,
+  };
+  showCalendarModal([ev], `${c.employeeName} · ${sc.label}`, `${step.title} ${c.employeeName}`);
 }
 async function wfToggleStep(caseId, stepId) {
   const c = (wfCases||[]).find(x=>x.id===caseId); if (!c) return;
