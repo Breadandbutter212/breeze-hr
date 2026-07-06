@@ -6223,6 +6223,9 @@ function pmSystemPrompt(processName, polText){
 '- Make nodes CLICKABLE: clicking one highlights it and shows its detail in a side/below panel - what happens, who is responsible, the timing, and the specific policy point it comes from.',
 '- Include a title header and a one-line summary of the process.',
 '',
+'KEEP IT LEAN so it renders fast: map the key stages only (roughly 6-12 nodes), one clean vertical flow, concise labels, simple SVG. No heavy animation, no huge inline data, no verbose repetition.',
+'If the policy is more RULES than a step-by-step process (e.g. annual-leave entitlement, expenses), do NOT force a long fake process - map the core actions as a compact flow (e.g. Request -> Manager review -> Approve/Decline -> Recorded/Deducted) and show a short summary of the key rules (entitlement, notice period, carry-over) alongside it.',
+'',
 'HARD RULES:',
 '- Output ONLY the HTML document. No markdown, no code fences, no commentary.',
 '- Line 1 must be an HTML comment with a short title, e.g: <!-- title: Disciplinary process -->',
@@ -6236,7 +6239,7 @@ VV_TOKENS,
   ].join('\n');
 }
 async function pmGenerate(processName, polText){
-  return vvChat([{ role:'user', content:'Create the interactive process map for: '+processName+'.' }], pmSystemPrompt(processName, polText));
+  return vvChat([{ role:'user', content:'Create the interactive process map for: '+processName+'.' }], pmSystemPrompt(processName, polText), 11000);
 }
 function pmGeneratingHtml(){
   return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
@@ -11200,17 +11203,17 @@ if (!window._vvHeightHooked){
 }
 
 // Shared generation core: generate -> validate -> one repair -> CSP-harden. Used by create + refine.
-async function vvChat(messages, sysOverride){
+async function vvChat(messages, sysOverride, maxTokens){
   const token = await getAuthToken();
   const sys = sysOverride || vvSystemPrompt();
   async function post(msgs){
     const ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
-    const timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 150000) : null;   // fail visibly after ~2.5 min instead of spinning forever
+    const timer = ctrl ? setTimeout(function(){ ctrl.abort(); }, 180000) : null;   // fail visibly after ~3 min instead of spinning forever
     let r;
     try {
       r = await fetch('/api/chat', { method:'POST',
         headers:{ 'Content-Type':'application/json', 'Authorization':'Bearer '+token },
-        body: JSON.stringify({ system:sys, messages:msgs, model:'claude-sonnet-4-6', max_tokens:16000, temperature:0.35 }),
+        body: JSON.stringify({ system:sys, messages:msgs, model:'claude-sonnet-4-6', max_tokens:(maxTokens||16000), temperature:0.35 }),
         signal: ctrl ? ctrl.signal : undefined });
     } catch(err){
       if (err && err.name === 'AbortError') throw new Error('That took too long to generate (over 2 minutes). Try a simpler prompt, or one with fewer separate charts.');
