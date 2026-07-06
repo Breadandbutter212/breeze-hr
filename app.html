@@ -6301,7 +6301,7 @@ function pmLayout(data){
     else { const k=o.n.type==='end'?(o.n.tone==='declined'?'danger':'approved'):'step'; svg+=boxG(o.i,null,COLX-MAINHALF,o.y,MAINW,o.shapeH,o.tl,o.cl,k); }
     if(o.br) svg+=boxG(o.i,'branch',RIGHTX,o.scy-o.br.h/2,BRANCHW,o.br.h,o.br.tl,o.br.cl,'danger');
   });
-  return '<svg width="'+totalW+'" height="'+totalH+'" viewBox="0 0 '+totalW+' '+totalH+'" xmlns="http://www.w3.org/2000/svg" style="display:block;min-width:'+totalW+'px;">'+svg+'</svg>';
+  return '<svg viewBox="0 0 '+totalW+' '+totalH+'" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="xMidYMin meet" style="display:block;width:100%;height:auto;max-width:'+totalW+'px;margin:0 auto;">'+svg+'</svg>';
 }
 function pmShowDetail(i, which){
   const el=document.getElementById('pmDetail'); if(!el||!_pmData||!Array.isArray(_pmData.nodes)) return;
