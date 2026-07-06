@@ -8102,13 +8102,18 @@ async function callClaude(messages, systemPrompt, opts) {
 // Ask the HRIS tool-calling agent (api/hris-chat). It runs Claude with live Merge HRIS
 // tools server-side and returns a plain text answer. Returns null on any fallback/error
 // (no HRIS, not an admin, timeout...) so the caller drops back to the normal chat path.
-async function askHris(messages) {
+// The unified advisor+HRIS agent. Passing the full advisor system prompt makes this ONE brain:
+// it answers HR advice from its own knowledge and workforce-data questions via live HRIS tools,
+// deciding for itself when a tool is needed - so there is no keyword router to misfire. Returns
+// null (fallback) when the HRIS isn't connected or the user isn't an admin, so the caller drops
+// back to the plain advisor on /api/chat.
+async function askHris(messages, system) {
   try {
     const token = await getAuthToken();
     const res = await fetch('/api/merge-search', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-      body: JSON.stringify({ action: 'chat', messages })
+      body: JSON.stringify({ action: 'chat', messages, system })
     });
     const data = await res.json();
     if (!res.ok || data.fallback) return null;
@@ -9035,32 +9040,6 @@ function isHeavyDocRequest(msg) {
   return actions.some(w => lower.includes(w)) && docs.some(w => lower.includes(w));
 }
 
-// Detect a workforce/HRIS data question (who's off, headcount, new joiners, teams,
-// managers, start dates) that the HRIS tool-calling agent should answer. The backend is the
-// source of truth for connection state: if no HRIS is connected (or the user isn't an admin)
-// it returns { fallback:true } and askHris yields null, so we drop back to normal chat.
-function isPeopleDataRequest(msg) {
-  const t = (msg || '').toLowerCase();
-  const patterns = [
-    /\b(who|anyone|anybody)\b.*\b(off|on (holiday|leave|annual leave)|away|absent|booked (time )?off)/,
-    /\b(time off|time-off|on holiday|on leave|annual leave|absent|booked off)\b.*\b(on|this|next|tomorrow|today|week|month|\d{1,2}(st|nd|rd|th)?)/,
-    /\bhow many\b.*\b(employees|people|staff|work here|in (the|our)|team|department|office|based)/,
-    /\bheadcount\b/,
-    /\b(who|which people|which employees|list (of )?(the )?(people|employees|staff))\b.*\b(joined|started|new (hires?|starters?|joiners?)|leavers?|in (the |our )?[a-z ]*(team|department)|report to|reports to|manager)/,
-    /\b(new (starters?|joiners?|hires?)|(who|people|anyone) (joined|started) (us|the (company|team|business)|in the last))/,
-    /\bwho\b.*\b(manages|reports? to|is (the )?manager (of|for))/,
-    /\b(start date|when did .* (start|join)|how long has .* (been here|worked here))\b/,
-    // Meta / linkage questions - the agent holds the HRIS connection so it answers truthfully
-    // when connected; if nothing is connected it declines rather than the advisor guessing "no".
-    /\b(linked|connected|integrat\w*|sync\w*|hooked up|plugged in)\b.*\b(hris|payroll|bamboo\w*|workday|hibob|gusto|merge|system)\b/,
-    /\b(hris|payroll)\b.*\b(linked|connected|live|integrat\w*|sync\w*|real[ -]?time)\b/,
-    /\b(is|are)\s+(this|you|it|the data|these figures?|the numbers?)\s+(linked|connected|live|real[ -]?time|accurate|up[ -]?to[ -]?date|pulling|coming)/,
-    /\bwhere (does|is|are|do)\b.*\b(data|figures?|numbers?|headcount|info\w*)\b.*\b(come|coming|from|pulled|get)/,
-    /\b(live|real[ -]?time|up[ -]?to[ -]?date)\b.*\b(data|figures?|numbers?|headcount|info)\b/
-  ];
-  return patterns.some(re => re.test(t));
-}
-
 // Detect a colour/theme the user asked for ("in orange", "green theme", "#5B47E0") so a
 // generated document can be produced in that accent. Returns a colour name/hex or null.
 // Client-side colour resolver (mirrors the server) so the preview accent matches the download.
@@ -9203,16 +9182,14 @@ async function sendChat(overrideMsg) {
   // Document-style requests get the Opus model and a large output budget so the draft
   // reads like a proper document; quick chat stays on the cheaper, faster default.
   const heavyDoc = isHeavyDocRequest(msg);
-  // People/roster/time-off questions go to the HRIS tool-calling agent, which queries the
-  // connected HRIS live. It must NEVER guess: if the agent can't reach live data it returns
-  // null, and for a data question we decline honestly rather than fall through to the normal
-  // advisor (which would guess from tracker/session context). Non-data questions use the
-  // existing chat path, unchanged.
+  // ONE brain, no router. Normal chat goes to the unified advisor+HRIS agent, which holds the
+  // full advisor prompt AND the live HRIS tools and decides for itself when a question needs
+  // live people data. It returns null when the HRIS isn't connected (or the user isn't an
+  // admin), and we drop back to the plain advisor on /api/chat with the same prompt - so
+  // nothing is ever misrouted the way a keyword classifier would. Heavy document generation
+  // skips straight to the Opus/streaming path (larger budget, SharePoint context) unchanged.
   let reply = null;
-  if (isPeopleDataRequest(msg)) {
-    reply = await askHris(apiMessages);
-    if (reply == null) reply = "I can only answer questions about your people from your live HRIS, and I can't reach it right now - so I won't guess.\n\nConnect your HRIS under **Analytics → Connect HRIS** (you'll need admin access) and I'll pull the exact figures.";
-  }
+  if (!heavyDoc && !spContext) reply = await askHris(apiMessages, chatSystemPrompt);
   if (reply == null) reply = await callClaude(apiMessages, chatSystemPrompt + spContext,
     heavyDoc ? { model: 'claude-opus-4-8', max_tokens: 16000 } : null);
   chatLoading = false;
@@ -11077,7 +11054,12 @@ function vvRenderView(body){
       </div>
     </div>`;
   const f=document.getElementById('vvFrame');
-  f.onload=function(){ f.contentWindow.postMessage({__type:'vibe-data',payload:vvBuildPayload()},'*'); };
+  f.onload=function(){
+    // Re-post a few times so a view whose message listener isn't ready on the first
+    // tick still gets its data (defeats the load race that left tables/graphs empty).
+    var post=function(){ try { f.contentWindow.postMessage({__type:'vibe-data',payload:vvBuildPayload()},'*'); } catch(e){} };
+    post(); setTimeout(post,120); setTimeout(post,500);
+  };
   f.srcdoc=_vvHtml;
 }
 
