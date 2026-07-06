@@ -18890,6 +18890,19 @@ function wfRunRender(){
   const doneN=steps.filter(st=>wfRunStepDone(c,st)).length;
   const pct=steps.length?Math.round(doneN/steps.length*100):0;
   const firstTodo=steps.findIndex(st=>!wfRunStepDone(c,st));
+  // Read-only "at a glance" summary (derived from existing state; no behaviour change).
+  const overdueN=steps.filter(st=>{ if(wfRunStepDone(c,st))return false; const d=wfDueStatus(wfStepDue(c,st.id),false); return d&&d.kind==='overdue'; }).length;
+  const nextStep=firstTodo>=0?steps[firstTodo]:null;
+  const nextDue=nextStep?wfDueStatus(wfStepDue(c,nextStep.id),false):null;
+  const summaryHtml = (pct===100)
+    ? '<div style="padding:11px 24px;background:var(--green-bg);border-bottom:1px solid var(--border);font-size:13px;font-weight:600;color:var(--green);display:flex;align-items:center;gap:7px;">✓ All stages complete</div>'
+    : (nextStep
+      ? '<div style="padding:11px 24px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;background:'+(overdueN?'#FDF0DA':'var(--accent-bg)')+';border-bottom:1px solid var(--border);">'+
+          (overdueN?'<span style="display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;color:'+WF_DUE_COL.overdue+';background:#fff;border:1px solid '+WF_DUE_COL.overdue+';border-radius:999px;padding:4px 11px;flex-shrink:0;">⚠ '+overdueN+' overdue</span>':'')+
+          '<span style="font-size:13px;color:var(--ink2);min-width:0;">Next up: <b style="color:var(--ink);">'+escapeHtml(nextStep.title)+'</b>'+(nextDue?' <span style="color:'+(nextDue.kind==='overdue'?WF_DUE_COL.overdue:nextDue.kind==='soon'?WF_DUE_COL.soon:'var(--ink3)')+';font-weight:600;">· '+wfDueLabel(nextDue)+'</span>':'')+'</span>'+
+          '<button onclick="wfOpenStepTasks(\''+c.id+'\','+nextStep.id+')" style="margin-left:auto;flex-shrink:0;background:var(--accent);color:#fff;border:none;border-radius:var(--r-sm);padding:7px 14px;font-size:12px;font-weight:600;cursor:pointer;font-family:inherit;">Open next step →</button>'+
+        '</div>'
+      : '');
   const nodes=steps.map((st,i)=>{
     const done=wfRunStepDone(c,st);
     const current=(i===firstTodo);
@@ -18928,6 +18941,7 @@ function wfRunRender(){
         '<button onclick="wfRunDeleteCase(\''+c.id+'\')" title="Remove this person from the workflow" style="flex-shrink:0;background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:6px 11px;cursor:pointer;font-family:inherit;font-size:12px;font-weight:600;color:var(--red);">Remove</button>'+
       '</div>'+
       '<div style="height:4px;background:var(--surface3);"><div style="width:'+pct+'%;height:100%;background:'+(pct===100?'var(--green)':'var(--accent)')+';transition:width .3s;"></div></div>'+
+      summaryHtml+
       '<div class="wfMapScroll" style="padding:40px 28px 24px;"><div style="display:flex;align-items:flex-start;flex-wrap:nowrap;min-width:min-content;">'+nodes+'</div>'+
         '<div style="margin-top:38px;font-size:12px;color:var(--ink3);">Click a stage to open its tasks and drafted emails. Finish a stage and it turns green; the next one lights up.</div>'+
       '</div>'+
