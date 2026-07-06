@@ -10539,7 +10539,7 @@ async function disconnectMerge() {
 
 // ── ANALYTICS ──
 let analyticsData = null, analyticsSource = '', analyticsCharts = {};
-let _analyticsTab = 'dashboard', _vvHtml = null, _vvTitle = 'People analytics — comp & headcount', _vvLastPrompt = '', _vvCurrentId = null, _vvSaved = [];
+let _analyticsTab = 'dashboard', _vvHtml = null, _vvTitle = 'People analytics — comp & headcount', _vvLastPrompt = '', _vvCurrentId = null, _vvSaved = [], _vvGenerating = false;
 
 function renderAnalytics() {
   const body = document.getElementById('analyticsBody'); if (!body) return;
@@ -10972,6 +10972,7 @@ async function vvRefineGen(instruction){
 function renderVibeViews(body){
   body = body || document.getElementById('vibeBody'); if(!body) return;
   if(_vvHtml){ vvRenderView(body); return; }
+  if(_vvGenerating){ body.innerHTML = vvGeneratingHtml('Still building your view…'); return; }
   body.innerHTML = `
     <div style="max-width:680px;margin:40px auto 0;padding:0 20px;text-align:center;">
       <div style="font-size:26px;font-weight:700;color:var(--ink);letter-spacing:-0.03em;margin-bottom:8px;">Let's build something incredible.</div>
@@ -10995,27 +10996,44 @@ function renderVibeViews(body){
 
 function vvChip(el){ document.getElementById('vvPrompt').value = el.dataset.p; vvRun(el.dataset.p); }
 
+function vvGeneratingHtml(line){
+  return `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
+      <div class="vv-spin"></div>
+      <div id="vvGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">${line||'Designing your view…'}</div>
+      <div style="font-size:12px;color:var(--ink3);">This usually takes 30-120 seconds - hang tight. You can carry on elsewhere; it keeps building.</div>
+    </div>`;
+}
+// Clickable notification when a build finishes while the user is on another page.
+function vvReadyToast(){
+  const id='vvReadyToast'; const old=document.getElementById(id); if(old) old.remove();
+  const t=document.createElement('div'); t.id=id;
+  t.style.cssText='position:fixed;bottom:22px;right:22px;z-index:9000;display:flex;align-items:center;gap:12px;background:var(--surface);border:1px solid var(--border);border-radius:12px;box-shadow:0 14px 34px rgba(28,40,72,.20);padding:12px 14px;max-width:330px;cursor:pointer;font-family:inherit;';
+  t.onclick=function(){ t.remove(); try { showView('vibeviews'); } catch(e){} };
+  t.innerHTML='<span style="width:34px;height:34px;border-radius:9px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></span>'
+    +'<div style="flex:1;min-width:0;"><div style="font-size:13px;font-weight:600;color:var(--ink);">Your Vibe View is ready</div><div style="font-size:11.5px;color:var(--ink3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">'+escapeHtml(_vvTitle||'')+' — click to open</div></div>';
+  document.body.appendChild(t);
+  setTimeout(function(){ const e=document.getElementById(id); if(e) e.remove(); }, 9000);
+}
+
 async function vvRun(prompt){
   _vvLastPrompt = (prompt || _vvLastPrompt || '').trim();
   if (!_vvLastPrompt){ if(window.showBreezeToast) showBreezeToast('Describe the view you want first'); return; }
+  _vvGenerating = true;
   const body = document.getElementById('vibeBody');
-  body.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
-      <div class="vv-spin"></div>
-      <div id="vvGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">Designing your view…</div>
-      <div style="font-size:12px;color:var(--ink3);">This usually takes 30-120 seconds - hang tight.</div>
-    </div>`;
+  if (body) body.innerHTML = vvGeneratingHtml('Designing your view…');
   let i=0; const iv=setInterval(function(){ i=(i+1)%VV_STATUS.length; const l=document.getElementById('vvGenLine'); if(l)l.textContent=VV_STATUS[i]; }, 2200);
   try {
     const html = await vvGenerate(_vvLastPrompt);
     clearInterval(iv);
+    _vvGenerating = false;
     _vvHtml = html; _vvCurrentId = null;
     const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i);
     _vvTitle = tm ? tm[1].trim() : 'Generated view';
-    if (!vvActive()) return; // user navigated away mid-generation
+    if (!vvActive()) { vvReadyToast(); return; } // finished while on another page -> notify
     vvRenderView(document.getElementById('vibeBody'));
   } catch(e) {
     clearInterval(iv);
+    _vvGenerating = false;
     if (!vvActive()) return;
     vvRenderError(document.getElementById('vibeBody'), e.message);
   }
@@ -11143,24 +11161,22 @@ function vvSavedListHtml(saved){
 async function vvRefine(){
   const instr = window.prompt('Refine this view - what should change?\n(e.g. "show the salary bands as a chart instead of cards")');
   if (!instr || !instr.trim()) return;
+  _vvGenerating = true;
   const body = document.getElementById('vibeBody');
-  body.innerHTML = `
-    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:600px;">
-      <div class="vv-spin"></div>
-      <div id="vvGenLine" style="font-size:14px;color:var(--ink2);font-weight:500;">Applying your refinement…</div>
-      <div style="font-size:12px;color:var(--ink3);">This usually takes 30-120 seconds - hang tight.</div>
-    </div>`;
+  if (body) body.innerHTML = vvGeneratingHtml('Applying your refinement…');
   let i=0; const iv=setInterval(function(){ i=(i+1)%VV_STATUS.length; const l=document.getElementById('vvGenLine'); if(l)l.textContent=VV_STATUS[i]; }, 2200);
   try {
     const html = await vvRefineGen(instr.trim());
     clearInterval(iv);
+    _vvGenerating = false;
     _vvHtml = html;
     const tm = html.match(/<!--\s*title:\s*([\s\S]*?)-->/i);
     _vvTitle = tm ? tm[1].trim() : _vvTitle;
-    if (!vvActive()) return;
+    if (!vvActive()) { vvReadyToast(); return; }
     vvRenderView(document.getElementById('vibeBody'));
   } catch(e) {
     clearInterval(iv);
+    _vvGenerating = false;
     if (!vvActive()) return;
     vvRenderError(document.getElementById('vibeBody'), e.message);
   }
