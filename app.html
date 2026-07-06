@@ -6375,7 +6375,7 @@ async function renderProcessMaps() {
         <input id="pmCustom" placeholder="${_pmPolicies.length?'…or type a process (e.g. grievance)':'Type a process (e.g. disciplinary, grievance, onboarding)'}" style="flex:1;min-width:200px;border:1px solid var(--border);border-radius:var(--r-sm);padding:9px 11px;font-size:13px;font-family:inherit;background:var(--surface);color:var(--ink);">
         <button onclick="pmRun(document.getElementById('pmPolicyPick')?document.getElementById('pmPolicyPick').value:'', document.getElementById('pmCustom').value)" style="border:none;background:var(--accent);color:#fff;font-family:inherit;font-size:13px;font-weight:600;padding:10px 18px;border-radius:var(--r-sm);cursor:pointer;white-space:nowrap;">✨ Generate map</button>
       </div>
-      <div id="pmSavedWrap" style="margin:16px 0 0 40px;"></div>
+      <div id="pmSavedWrap" style="margin:16px 0 0 0;"></div>
     </div>
     <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:12px;color:var(--ink3);">Processes - building from your policies and chat.</div>
