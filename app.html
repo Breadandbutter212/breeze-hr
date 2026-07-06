@@ -6226,6 +6226,8 @@ function pmSystemPrompt(processName, polText){
 'KEEP IT LEAN so it renders fast: map the key stages only (roughly 6-12 nodes), one clean vertical flow, concise labels, simple SVG. No heavy animation, no huge inline data, no verbose repetition.',
 'If the policy is more RULES than a step-by-step process (e.g. annual-leave entitlement, expenses), do NOT force a long fake process - map the core actions as a compact flow (e.g. Request -> Manager review -> Approve/Decline -> Recorded/Deducted) and show a short summary of the key rules (entitlement, notice period, carry-over) alongside it.',
 '',
+'LAYOUT - avoid the common overlap bug. Lay nodes out in a single vertical column on a fixed grid: every node gets its own row with a clear vertical gap (at least 36px) between boxes. NEVER overlap two boxes, stack them, or place a box/label on top of another box. Size each box to fit its text with padding, and increase the row height if text wraps. Route Yes/No branch and merge connectors DOWN THE SIDE of the column (keep 60px+ horizontal clearance) and into the EDGE of the target node - never draw a connector through a box. Before finishing, sanity-check that no two boxes share vertical space.',
+'',
 'HARD RULES:',
 '- Output ONLY the HTML document. No markdown, no code fences, no commentary.',
 '- Line 1 must be an HTML comment with a short title, e.g: <!-- title: Disciplinary process -->',
