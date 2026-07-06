@@ -10076,11 +10076,11 @@ function showSmartActionModal(email, a){
   if(matchedCase){
     actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${tick}Log to <strong>${escapeHtml(matchedCase.employeeName)}</strong>'s ${escapeHtml((sc.label||'case').toLowerCase())} record</div>`);
     if(step) actions.push(`<label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;cursor:pointer;"><input type="checkbox" id="smartTickStep" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">Tick step: <strong>${escapeHtml(step.title)}</strong> <span style="color:var(--ink3);font-weight:400;">(untick to just note it)</span></label>`);
-    atts.forEach(at=>actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${tick}Save <strong>${escapeHtml(at.filename)}</strong> to the case</div>`));
+    atts.forEach((at,i)=>actions.push(`<label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;cursor:pointer;"><input type="checkbox" id="smartAtt${i}" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">Save <strong>${escapeHtml(at.filename)}</strong> to the case</label>`));
   } else if(a.createScenario){
     const newSc=(typeof WF_SCENARIOS!=='undefined'?WF_SCENARIOS:[]).find(s=>s.id===a.createScenario);
     actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${plus}Create a <strong>${escapeHtml(newSc?newSc.label:a.createScenario)}</strong> tracker for ${escapeHtml(a.employee||'this person')}</div>`);
-    atts.forEach(at=>actions.push(`<div style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;">${plus}Attach <strong>${escapeHtml(at.filename)}</strong></div>`));
+    atts.forEach((at,i)=>actions.push(`<label style="display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink);padding:7px 0;cursor:pointer;"><input type="checkbox" id="smartAtt${i}" checked style="width:16px;height:16px;accent-color:var(--accent);cursor:pointer;flex-shrink:0;">Attach <strong>${escapeHtml(at.filename)}</strong></label>`));
   } else {
     actions.push(`<div style="font-size:13px;color:var(--ink3);padding:7px 0;">No matching open case found - open Trackers to handle this manually.</div>`);
   }
@@ -10125,9 +10125,12 @@ function showSmartActionModal(email, a){
 
 function _smartSaveAttachments(c, email){
   const atts = email.attachments||[]; if(!atts.length) return null;
+  // Only save attachments whose checkbox is ticked (defaults to all when the modal isn't open).
+  const selected = atts.filter((at,i)=>{ const cb=document.getElementById('smartAtt'+i); return cb ? cb.checked : true; });
+  if(!selected.length) return null;
   if(!c.docs) c.docs=[];
-  atts.forEach((at,i)=>{ c.docs.push({ id:'doc_'+Date.now()+'_'+i, filename:at.filename, type:'Email attachment', base64:at.base64, mimeType:at.mimeType||'application/octet-stream', uploadedAt:new Date().toISOString() }); });
-  return atts[0];
+  selected.forEach((at,i)=>{ c.docs.push({ id:'doc_'+Date.now()+'_'+i, filename:at.filename, type:'Email attachment', base64:at.base64, mimeType:at.mimeType||'application/octet-stream', uploadedAt:new Date().toISOString() }); });
+  return selected[0];
 }
 
 async function applySmartAction(){
