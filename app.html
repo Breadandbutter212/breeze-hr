@@ -4449,7 +4449,8 @@ async function loadSavedMeetings() {
 }
 
 async function downloadSavedMeeting(id, label) {
-  const { data } = await sb.from('policies').select('content').eq('id', id).single();
+  if (!currentProfile) return;
+  const { data } = await sb.from('policies').select('content').eq('id', id).eq('company_id', currentProfile.company_id).single();
   if (!data?.content) return;
   const res = await fetch('/api/generate-doc', {
     method: 'POST', headers: {'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},
@@ -4876,6 +4877,7 @@ async function deleteAllCompanyData() {
     sb.from('responses').delete().eq('company_id', cid),
     sb.from('ratings').delete().eq('company_id', cid),
   ]);
+  try { await auditLog('data.delete_all', 'Deleted all chat, meeting, response and rating data'); } catch(e) {}
   chatMessages = []; chatList = []; chatSystemPrompt = null;
   if (msg) { msg.textContent = '✓ All data deleted'; setTimeout(() => msg.textContent = '', 4000); }
 }
@@ -5965,15 +5967,16 @@ async function uploadNamedPolicy(event,policyName,existingId) {
 }
 
 async function deletePolicy(id) {
+  if(!currentProfile)return;
   if(!await uiConfirm('Delete this policy?'))return;
-  await sb.from('policies').delete().eq('id',id);
+  await sb.from('policies').delete().eq('id',id).eq('company_id',currentProfile.company_id);
   chatSystemPrompt = null;
   renderManage();
 }
 
 async function viewPolicy(id, name) {
   if (!currentProfile) return;
-  const { data } = await sb.from('policies').select('content,created_at').eq('id', id).single();
+  const { data } = await sb.from('policies').select('content,created_at').eq('id', id).eq('company_id', currentProfile.company_id).single();
   if (!data) return;
   const updTs = data.created_at;
   const lastUpd = updTs ? new Date(updTs).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'}) : '';
@@ -6153,7 +6156,7 @@ function policyPdfSearch(q){
 
 async function downloadPolicyFile(id, name) {
   if (!currentProfile) return;
-  const { data } = await sb.from('policies').select('content').eq('id', id).single();
+  const { data } = await sb.from('policies').select('content').eq('id', id).eq('company_id', currentProfile.company_id).single();
   if (!data) return;
   if (data.content && data.content.startsWith('PDF_BASE64:')) {
     const b64 = data.content.split('|||TEXT:')[0].replace('PDF_BASE64:', '');

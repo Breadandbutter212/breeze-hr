@@ -1,0 +1,27 @@
+{
+  "mode": "offline",
+  "spent": 0,
+  "results": [
+    {
+      "id": "A-probation-letter",
+      "converter": {
+        "path": "/Users/dougie/Desktop/BREEZE HR/experiments/codeexec-test/output/A-probation-letter-converter.docx",
+        "bytes": 9307
+      }
+    },
+    {
+      "id": "B-hybrid-policy",
+      "converter": {
+        "path": "/Users/dougie/Desktop/BREEZE HR/experiments/codeexec-test/output/B-hybrid-policy-converter.docx",
+        "bytes": 9996
+      }
+    },
+    {
+      "id": "C-probation-scorecard",
+      "converter": {
+        "path": "/Users/dougie/Desktop/BREEZE HR/experiments/codeexec-test/output/C-probation-scorecard-converter.docx",
+        "bytes": 9563
+      }
+    }
+  ]
+}

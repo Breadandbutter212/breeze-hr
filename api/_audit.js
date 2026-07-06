@@ -5,7 +5,7 @@
 const ALLOWED_ACTIONS = new Set([
   'login', 'logout',
   'email.send',
-  'document.generate', 'data.export',
+  'document.generate', 'data.export', 'data.delete_all',
   'hris.connect', 'hris.disconnect',
   'integration.connect', 'integration.disconnect',
   'settings.change',

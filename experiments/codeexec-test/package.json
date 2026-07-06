@@ -1,0 +1,9 @@
+{
+  "name": "codeexec-test",
+  "private": true,
+  "type": "module",
+  "description": "Standalone experiment: Anthropic code execution tool vs Breeze's current docx converter",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.0"
+  }
+}

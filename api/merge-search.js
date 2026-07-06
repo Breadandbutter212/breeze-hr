@@ -2,7 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { logAudit, clientIp } from './_audit.js';
 
 const MERGE_BASE = 'https://api.merge.dev/api';
-const SUPER_ADMINS = (process.env.ADMIN_EMAILS || 'dwgordon7@icloud.com').split(',').map(e => e.trim().toLowerCase());
+const SUPER_ADMINS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 function sbAdmin() {
   return createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY);

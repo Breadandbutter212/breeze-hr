@@ -3,7 +3,7 @@ import Anthropic from '@anthropic-ai/sdk';
 import { logAudit, clientIp, ALLOWED_ACTIONS } from './_audit.js';
 
 const BASE_VOYAGE = 'https://api.voyageai.com/v1/embeddings';
-const AUDIT_SUPER_ADMINS = (process.env.ADMIN_EMAILS || 'dwgordon7@icloud.com').split(',').map(e => e.trim().toLowerCase());
+const AUDIT_SUPER_ADMINS = (process.env.ADMIN_EMAILS || '').split(',').map(e => e.trim().toLowerCase()).filter(Boolean);
 
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
