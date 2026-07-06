@@ -6275,6 +6275,7 @@ function pmRenderError(body, msg){
 function pmRenderMap(body){
   body.innerHTML = `
     <div style="max-width:1040px;margin:0 auto;padding:16px 20px 30px;">
+      <div style="margin-bottom:6px;"><button onclick="pmNewMap()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:2px 0;">‹ Back to process maps</button></div>
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div><div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_pmTitle)}</div>
           <div style="font-size:11px;color:var(--ink3);">Generated from your policy · sandboxed · read-only</div></div>
@@ -6375,14 +6376,14 @@ async function renderProcessMaps() {
       <div id="pmSavedWrap" style="margin:16px 0 0 40px;"></div>
     </div>
     <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
-      <div style="font-size:12px;color:var(--ink3);">Pre-built reference processes. Upload policies to generate maps automatically.</div>
+      <div style="font-size:12px;color:var(--ink3);">Processes - building from your policies and chat.</div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Building</span>
       </div>
     </div>
     <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
-      ${(window._allProcessMaps = policyProcesses, policyProcesses.map(p=>renderProcessRow(p)).join(''))}
+      ${(window._allProcessMaps = policyProcesses, policyProcesses.slice(0,3).map(p=>renderProcessRow(p)).join(''))}
     </div>`;
   pmLoadSaved().then(function(saved){ _pmSaved=saved; const w=document.getElementById('pmSavedWrap'); if(w) w.innerHTML=pmSavedListHtml(saved); });
 }
@@ -11339,6 +11340,7 @@ function vvRenderError(body, msg){
 function vvRenderView(body){
   body.innerHTML = `
     <div style="max-width:1140px;margin:0 auto;padding:14px 20px 30px;">
+      <div style="margin-bottom:6px;"><button onclick="vvNewView()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:2px 0;">‹ Back to Vibe Views</button></div>
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div>
           <div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_vvTitle)}</div>
