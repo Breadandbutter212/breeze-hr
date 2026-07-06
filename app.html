@@ -10409,16 +10409,20 @@ async function applySmartAction(){
   }
   // Optional note typed in the Apply modal - logged, and pinned to the step/task if there is one.
   const _noteTxt=(document.getElementById('smartNote')?.value||'').trim();
-  let _noted='';
+  let _noted='', _noteEntryRef=null;
   if(_noteTxt){
     const _st=(a.stepId!=null && typeof wfScenarioFor==='function') ? (((wfScenarioFor(c)||{}).steps||[]).find(s=>String(s.id)===String(a.stepId))||{}).title : '';
     const _noteEntry={ date:new Date().toISOString(), type:'note', note:(_st?_st+' - ':'')+_noteTxt };
     if(_hasStep) _noteEntry.stepId=sid;
     if(_hasSub) _noteEntry.subId=_subId;
     c.contactLog.push(_noteEntry);
+    _noteEntryRef=_noteEntry;
     if(_hasStep){ c.stepNotes=c.stepNotes||{}; c.stepNotes[sid]=_noteTxt; }
     _noted=' · note added';
   }
+  // Mirror the logged email (and any note) onto the linked mat/pat record so it
+  // shows on the Family Leave tracker, not only on the checklist.
+  try{ const _mp=findLinkedMpRecord(c); if(_mp){ if(!_mp.contactLog)_mp.contactLog=[]; _mp.contactLog.push({...entry}); if(_noteEntryRef)_mp.contactLog.push({..._noteEntryRef}); await saveMatPatRecords(); } }catch(e){}
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
   bzToast(`Logged to ${escapeHtml(c.employeeName)}'s record${firstAtt?' · attachment saved':''}${ticked}${_noted}.`);
@@ -10440,6 +10444,12 @@ async function applySmartCreate(){
   const _noteTxt=(document.getElementById('smartNote')?.value||'').trim();
   if(_noteTxt) newCase.contactLog.push({ date:new Date().toISOString(), type:'note', note:_noteTxt });
   wfCases.push(newCase);
+  // Family-leave emails must also land in (or link to) the Maternity/Paternity tracker,
+  // and the logged email/note should show on that record too - not just the checklist.
+  try{
+    const _mpRec = await ensureMpRecordForCase(newCase);
+    if(_mpRec){ if(!_mpRec.contactLog) _mpRec.contactLog=[]; newCase.contactLog.forEach(e=>_mpRec.contactLog.push({...e})); await saveMatPatRecords(); }
+  }catch(e){}
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
   bzToast(`Created a tracker for ${escapeHtml(newCase.employeeName)}${firstAtt?' · attachment saved':''}.`);
@@ -15515,6 +15525,9 @@ async function saveMatPatRecords() {
 
 function mpStatus(rec) {
   const now = new Date();
+  // The linked checklist has been closed off -> the case is done, even if no
+  // literal return date was logged. Keeps this record in step with its wfCase.
+  if (rec.closed) return 'returned';
   if (rec.actualReturn) return 'returned';
   // No leave-start date yet, or it's in the future -> treat as upcoming (don't nag for contact).
   if (!rec.leaveStart || new Date(rec.leaveStart) > now) return 'upcoming';
@@ -15522,6 +15535,61 @@ function mpStatus(rec) {
   // it's no longer active; flag it as completed so HR can confirm the return.
   if (rec.expectedReturn && new Date(rec.expectedReturn) < now) return 'completed';
   return 'active';
+}
+
+// ── wfCases <-> mpRecords sync layer ───────────────────────────────────────
+// The maternity/paternity/adoption tracker (mpRecords) and the Next Steps
+// checklist (wfCases) are two stores describing the SAME real-world case.
+// Every mutation that touches one must route through these helpers so the two
+// can never drift (orphaned rows, split contact logs, "closed here / active there").
+function isFamilyLeaveScenario(scenarioId) {
+  return scenarioId==='maternity-leave' || scenarioId==='paternity-leave' || scenarioId==='adoption-leave';
+}
+function mpTypeForScenario(scenarioId) {
+  return scenarioId==='maternity-leave' ? 'Maternity'
+       : scenarioId==='adoption-leave'  ? 'Adoption'
+       : scenarioId==='paternity-leave' ? 'Paternity' : null;
+}
+function findLinkedMpRecord(c) {
+  if (!c) return null;
+  return (mpRecords||[]).find(r => r.id===c.mpRecordId || r.wfCaseId===c.id) || null;
+}
+function findLinkedWfCase(rec) {
+  if (!rec) return null;
+  return (wfCases||[]).find(c => c.id===rec.wfCaseId || c.mpRecordId===rec.id) || null;
+}
+// Guarantee a family-leave wfCase has a matching mpRecord, with both sides linked.
+// Finds an existing record (by link or by name) or creates one. Returns the record
+// (null for non-family scenarios). Persists mpRecords when it changes them.
+async function ensureMpRecordForCase(c, extra) {
+  if (!c || !isFamilyLeaveScenario(c.scenarioId)) return null;
+  if (mpRecords === null && typeof loadMatPatRecords==='function') await loadMatPatRecords();
+  if (!mpRecords) mpRecords = [];
+  const type = mpTypeForScenario(c.scenarioId);
+  const nameKey = (c.employeeName||'').toLowerCase().trim();
+  let rec = findLinkedMpRecord(c)
+    || mpRecords.find(r => (r.employeeName||'').toLowerCase().trim() === nameKey);
+  let changed = false;
+  if (!rec) {
+    rec = { id:'mp_'+Date.now(), employeeName:c.employeeName||'', jobTitle:'', type,
+      dueDate:(extra&&extra.dueDate)||'', leaveStart:(extra&&extra.leaveStart)||'', expectedReturn:'', actualReturn:'',
+      kitDaysUsed:0, kitDaysMax:(type==='Maternity'||type==='Adoption')?10:0, dependantAdded:false,
+      contactLog:[], notes:(extra&&extra.notes)||'', createdAt:new Date().toISOString(), wfCaseId:c.id };
+    mpRecords.push(rec); changed = true;
+  }
+  if (rec.wfCaseId !== c.id) { rec.wfCaseId = c.id; changed = true; }
+  if (c.mpRecordId !== rec.id) { c.mpRecordId = rec.id; }
+  if (changed) await saveMatPatRecords();
+  return rec;
+}
+// Append a contact-log entry to a case and its linked mpRecord (or vice versa)
+// so the audit trail stays whole from whichever panel it was logged. Pushes a
+// copy to each side; entry.date (ISO ms) is the shared key used to cascade deletes.
+async function appendLinkedContactLog(entry, { wfCase, mpRec }) {
+  if (wfCase) { if (!wfCase.contactLog) wfCase.contactLog=[]; wfCase.contactLog.push({...entry}); }
+  if (mpRec)  { if (!mpRec.contactLog)  mpRec.contactLog=[];  mpRec.contactLog.push({...entry}); }
+  if (wfCase) await saveWfCases();
+  if (mpRec)  await saveMatPatRecords();
 }
 
 function mpDaysSinceContact(rec) {
@@ -16162,6 +16230,11 @@ async function mpUpdateField(id, field, value) {
   if (!rec) return;
   rec[field] = value;
   await saveMatPatRecords();
+  // Logging an actual return date means the leave is over - close off the linked checklist too.
+  if (field === 'actualReturn' && value) {
+    const _wf = findLinkedWfCase(rec);
+    if (_wf && _wf.status !== 'closed') { _wf.status = 'closed'; await saveWfCases(); }
+  }
   // Keep the open panel's status badge in sync (e.g. setting Actual return flips it to Returned)
   const badge = document.getElementById('mpStatusBadge');
   if (badge) {
@@ -16205,6 +16278,9 @@ async function deleteMpLogEntry(id, dateStr) {
   if (!await uiConfirm('Delete this log entry?')) return;
   rec.contactLog = (rec.contactLog||[]).filter(e=>e.date!==dateStr);
   await saveMatPatRecords();
+  // Remove the mirrored copy from the linked checklist (shared ISO-ms date key).
+  const _wf = findLinkedWfCase(rec);
+  if (_wf && (_wf.contactLog||[]).some(e=>e.date===dateStr)) { _wf.contactLog = _wf.contactLog.filter(e=>e.date!==dateStr); await saveWfCases(); }
   const listEl = document.getElementById(`mp-log-list-${id}`);
   if (listEl) listEl.innerHTML = (rec.contactLog||[]).slice().sort((a,b)=>new Date(b.date)-new Date(a.date)).map(e=>mpLogEntry(e,id)).join('') || '<div style="text-align:center;padding:20px 0;color:var(--ink3);font-size:12px;">No contact logged yet</div>';
 }
@@ -16220,8 +16296,8 @@ async function addMpContactLog(id) {
   const attach = window[`_mpLogAttach_${id}`];
   const entry = { date: new Date().toISOString(), type: typeEl?.value || 'note', note };
   if (attach) { entry.docFilename = attach.filename; entry.docBase64 = attach.base64; entry.docMimeType = attach.mimeType; }
-  rec.contactLog.push(entry);
-  await saveMatPatRecords();
+  // Log to the record AND its linked checklist so both panels show the same history.
+  await appendLinkedContactLog(entry, { wfCase:findLinkedWfCase(rec), mpRec:rec });
   if (noteEl) { noteEl.value = ''; noteEl.style.borderColor='var(--border)'; }
   mpLogClearAttach(id);
   const logList = document.getElementById(`mp-log-list-${id}`);
@@ -18345,12 +18421,8 @@ async function createWfCaseForEmployee(employeeName, scenarioId) {
   };
   if (!wfCases) wfCases = [];
   wfCases.push(newCase);
-  // Auto-link to mat/pat record
-  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave' || scenarioId === 'adoption-leave') {
-    if (mpRecords === null) await loadMatPatRecords();
-    const mpRec = (mpRecords||[]).find(r => r.employeeName?.toLowerCase().trim() === employeeName.toLowerCase().trim());
-    if (mpRec) { mpRec.wfCaseId = newCase.id; newCase.mpRecordId = mpRec.id; await saveMatPatRecords(); }
-  }
+  // Auto-link to (or create) the mat/pat record so the two stores stay paired.
+  await ensureMpRecordForCase(newCase);
   await saveWfCases();
   renderTrackersBody();
   setTimeout(() => openWfCasePanel(newCase.id), 150);
@@ -18461,23 +18533,8 @@ async function wfCreateCase(btn) {
   const newCase = { id:'wfc_'+Date.now(), employeeName:name, scenarioId, checkedSteps:[], startedAt:new Date().toISOString(), notes:'', status:'active', docs:[], contactLog:[] };
   if (!wfCases) wfCases = [];
   wfCases.push(newCase);
-  // Auto-add to mat/pat tracker for family leave scenarios
-  if (scenarioId === 'maternity-leave' || scenarioId === 'paternity-leave' || scenarioId === 'adoption-leave') {
-    if (mpRecords === null) await loadMatPatRecords();
-    const exists = (mpRecords||[]).find(r => r.employeeName.toLowerCase().trim() === name.toLowerCase().trim());
-    const type = scenarioId === 'maternity-leave' ? 'Maternity' : scenarioId === 'adoption-leave' ? 'Adoption' : 'Paternity';
-    if (!exists) {
-      const newRec = { id:'mp_'+Date.now(), employeeName:name, jobTitle:'', type, dueDate:'', leaveStart:'', expectedReturn:'', actualReturn:'', kitDaysUsed:0, kitDaysMax:10, dependantAdded:false, contactLog:[], notes:'Added via Next Steps workflow.', createdAt:new Date().toISOString(), wfCaseId: newCase.id };
-      if (!mpRecords) mpRecords = [];
-      mpRecords.push(newRec);
-      newCase.mpRecordId = newRec.id;
-      await saveMatPatRecords();
-    } else {
-      exists.wfCaseId = newCase.id;
-      newCase.mpRecordId = exists.id;
-      await saveMatPatRecords();
-    }
-  }
+  // Auto-add to / link with the mat/pat tracker for family leave scenarios.
+  await ensureMpRecordForCase(newCase, { notes:'Added via Next Steps workflow.' });
   await saveWfCases();
   btn.closest('div[style*=fixed]').remove();
   wfActiveCase = newCase;
@@ -18752,6 +18809,9 @@ async function wfDeleteLogEntry(caseId, dateStr) {
   if (!await uiConfirm('Delete this log entry?')) return;
   c.contactLog = (c.contactLog||[]).filter(e => e.date !== dateStr);
   await saveWfCases();
+  // Remove the mirrored copy from the linked mat/pat record (shared ISO-ms date key).
+  const _mp = findLinkedMpRecord(c);
+  if (_mp && (_mp.contactLog||[]).some(e=>e.date===dateStr)) { _mp.contactLog = _mp.contactLog.filter(e=>e.date!==dateStr); await saveMatPatRecords(); }
   // Re-render log list
   const iconMap={call:'📞',email:'✉️',meeting:'👥',note:'📝',action:'✅'};
   const colMap={call:'var(--accent)',email:'#1D9E75',meeting:'#1D9E75',note:'#BA7517',action:'#1D9E75'};
@@ -18816,8 +18876,8 @@ async function wfAddContactLog(caseId) {
     if (!c.docs) c.docs = [];
     c.docs.push({ id:'doc_'+Date.now(), filename:attach.filename, type:'From contact log', base64:attach.base64, mimeType:attach.mimeType, uploadedAt:new Date().toISOString() });
   }
-  c.contactLog.push(entry);
-  await saveWfCases();
+  // Log to the checklist AND its linked mat/pat record so the audit trail is whole.
+  await appendLinkedContactLog(entry, { wfCase:c, mpRec:findLinkedMpRecord(c) });
   if (noteEl) { noteEl.value=''; noteEl.style.borderColor='var(--border)'; }
   wfLogClearAttach(caseId);
   // Refresh log list
@@ -19006,14 +19066,21 @@ async function wfCloseCase(id) {
   const c = (wfCases||[]).find(x=>x.id===id); if(!c) return;
   c.status = 'closed';
   await saveWfCases();
+  // Reflect closure on the linked mat/pat record so it stops showing as active.
+  const _mp = findLinkedMpRecord(c);
+  if (_mp && !_mp.closed) { _mp.closed = true; await saveMatPatRecords(); }
   wfActiveCase = null;
   await loadWfCases();renderTrackersBody();
 }
 
 async function wfDeleteCase(id, skipConfirm) {
-  if (!skipConfirm && !await uiConfirm('Delete this case record? This cannot be undone.')) return;
+  const c = (wfCases||[]).find(x=>x.id===id);
+  const _mp = findLinkedMpRecord(c);
+  if (!skipConfirm && !await uiConfirm('Delete this case record? This cannot be undone.'+(_mp?' The linked leave tracker record will also be removed.':''))) return;
   wfCases = wfCases.filter(x=>x.id!==id);
   await saveWfCases();
+  // Mirror deleteMatPatRecord's cascade in reverse: remove the linked leave record.
+  if (_mp && mpRecords) { mpRecords = mpRecords.filter(r=>r.id!==_mp.id); await saveMatPatRecords(); }
   wfActiveCase = null;
   closeCenteredModal('wfCaseSlidePanel');
   renderTrackersBody();
