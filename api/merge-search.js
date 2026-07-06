@@ -216,11 +216,28 @@ FORMATTING (match the rest of the app):
 - Be concise and skimmable. Lead with the direct answer.`;
 }
 
-async function hcAnthropic(model, system, messages, tools) {
+// Live-data rules bolted onto the FULL advisor prompt so one agent can answer both HR advice
+// (from its own knowledge) and workforce-data questions (via the tools) without a router. This
+// is the persona-free tail of hcSystemPrompt: it only governs how/when to use the HRIS tools.
+function hcToolGuidance() {
+  const now = new Date();
+  const today = now.toISOString().slice(0, 10);
+  const pretty = now.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: 'Europe/London' });
+  return `━━━ LIVE WORKFORCE DATA (HRIS TOOLS) ━━━
+You have live HRIS tools: search_employees, list_time_off, headcount. Use them - and ONLY them - to answer questions about THIS company's actual people: who works here, headcount, teams, managers, offices, start dates, new joiners/leavers, and who is off/on leave on a given date. For general HR advice, employment law, policy and drafting, answer from your own knowledge as normal and do NOT call a tool.
+
+Today is ${pretty} (${today}). Resolve relative dates ("next week", "last 3 months", "on the 12th") against today and pass ISO YYYY-MM-DD dates to the tools.
+- When a question needs live people data, ALWAYS call a tool. NEVER invent or estimate employees, dates, counts, salaries or leave bookings. If a tool returns nothing, say so plainly (e.g. "No one has time off booked on that date."). Never guess from samples, trackers or memory.
+- If a name is ambiguous or a data question needs a date you don't have, ask one short clarifying question instead of guessing.
+- LINKAGE / "is this live?" - if asked whether you are linked/connected to the HRIS or whether the figures are live/real-time: answer directly and truthfully - YES, you are connected and the employee figures come live from the integration. You have these tools BECAUSE the HRIS is connected, so never say you are not linked.
+- HEADCOUNT - ALWAYS RECONCILE. The headcount tool returns total_records (all records, matching the total shown elsewhere in the app), active (current employees) and inactive. State the active figure AND the total together, e.g. "**86 active employees** (108 records in total, including 22 leavers/inactive)." Never give a bare number that could conflict with the total the user sees elsewhere.`;
+}
+
+async function hcAnthropic(model, system, messages, tools, maxTokens = 1600) {
   const r = await fetch(ANTHROPIC_URL, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', 'x-api-key': process.env.ANTHROPIC_API_KEY, 'anthropic-version': '2023-06-01' },
-    body: JSON.stringify({ model, max_tokens: 1600, system, tools, messages })
+    body: JSON.stringify({ model, max_tokens: maxTokens, system, tools, messages })
   });
   const data = await r.json();
   if (!r.ok) throw new Error(data.error?.message || JSON.stringify(data).slice(0, 200));
@@ -234,10 +251,17 @@ async function handleHrisChat(req, res, { apiKey, accountToken }) {
   const messages = incoming.slice(-12).map(m => ({ role: m.role === 'user' ? 'user' : 'assistant', content: m.content }));
   if (!messages.length) return res.status(200).json({ fallback: true });
   const ctx = { apiKey, accountToken, cache: {} };
-  const system = hcSystemPrompt();
+  // When the client passes the full advisor system prompt, this agent IS the advisor - one
+  // brain with HR knowledge AND live tools - so we append only the tool-usage rules. With no
+  // client prompt we fall back to the standalone data-only persona.
+  const clientSystem = typeof req.body?.system === 'string' && req.body.system.trim() ? req.body.system.trim() : null;
+  const system = clientSystem ? `${clientSystem}\n\n${hcToolGuidance()}` : hcSystemPrompt();
+  // Drafts + HR Actions need more room than a bare data answer; clamp to a sane ceiling.
+  const reqTokens = Number(req.body?.max_tokens);
+  const maxTokens = Number.isFinite(reqTokens) ? Math.min(Math.max(reqTokens, 256), 8000) : 4096;
   try {
     for (let step = 0; step < 6; step++) {
-      const resp = await hcAnthropic(model, system, messages, HC_TOOLS);
+      const resp = await hcAnthropic(model, system, messages, HC_TOOLS, maxTokens);
       if (resp.stop_reason === 'tool_use') {
         messages.push({ role: 'assistant', content: resp.content });
         const toolResults = [];
