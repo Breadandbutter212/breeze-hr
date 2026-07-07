@@ -1300,6 +1300,31 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 
 /* DOCUMENTS letter builder: the preview pane (var(--bg) slab) blends into the framed gen-area card */
 .doc-preview{ background:transparent !important; }
+
+/* ── CONSISTENT PAGE WIDTH ── every page's content caps at 1200px, centred ── */
+#homeBody .hb-wrap{ max-width:1200px !important; }
+.chat-view .chat-pane{ max-width:1200px !important; }
+.chat-history > *{ max-width:1000px !important; }
+#talentBody .tl-panel{ max-width:1200px !important; }
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content,
+#orgChartRoot{ left:24px !important; right:24px !important; max-width:1200px !important;
+  margin-left:auto !important; margin-right:auto !important; }
+#view-presentations > div:not(.manage-topbar){ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
+#analyticsBody, #processMapsBody, #docsBody{ max-width:1248px !important; margin-left:auto !important; margin-right:auto !important; }
+
+/* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
+body.shapes-light{
+  --bg:#e7ebf2 !important;
+  --surface:rgba(255,255,255,.95) !important; --surface2:#f4f6fa !important; --surface3:#e9edf3 !important;
+  --border:rgba(20,30,55,.10) !important; --border2:rgba(20,30,55,.18) !important;
+  --ink:#141B29 !important; --ink2:#3f4759 !important; --ink3:#6b7280 !important; --navy:#141B29 !important;
+}
+/* teal floating toggle */
+#shapesThemeToggle{ position:fixed; right:18px; bottom:18px; z-index:99999; display:inline-flex; align-items:center; gap:7px;
+  background:linear-gradient(135deg,#2DD4BF,#22C7A9); color:#04211D; border:none; border-radius:999px;
+  padding:10px 15px; font-size:12px; font-weight:700; font-family:inherit; cursor:pointer;
+  box-shadow:0 12px 30px rgba(45,212,191,.42); transition:transform .15s; }
+#shapesThemeToggle:hover{ transform:translateY(-2px); }
 /* --- Documents header parity (docs-* classes) + dark skeleton --- */
 .docs-topbar{ background:transparent !important; border-bottom:none !important; padding:22px 26px 12px !important; }
 .docs-title{ color:#fff !important; font-size:26px !important; font-weight:800 !important; letter-spacing:-.02em !important; }
@@ -23829,5 +23854,19 @@ async function projConfirmEmailToTask(){
 </script>
 
 <div id="breezeToast"></div>
+<button id="shapesThemeToggle" type="button">☀ Light boxes</button>
+<script>
+(function(){
+  try{ if(localStorage.getItem('bzShapesLight')==='1') document.body.classList.add('shapes-light'); }catch(e){}
+  var b=document.getElementById('shapesThemeToggle'); if(!b) return;
+  function upd(){ b.textContent = document.body.classList.contains('shapes-light') ? '☾ Dark boxes' : '☀ Light boxes'; }
+  b.addEventListener('click', function(){
+    document.body.classList.toggle('shapes-light');
+    try{ localStorage.setItem('bzShapesLight', document.body.classList.contains('shapes-light')?'1':'0'); }catch(e){}
+    upd();
+  });
+  upd();
+})();
+</script>
 </body>
 </html>
