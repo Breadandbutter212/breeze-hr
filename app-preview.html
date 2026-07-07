@@ -6658,7 +6658,7 @@ async function renderProcessMaps() {
   }
 
   body.innerHTML=`
-    <div style="padding:18px 20px;border-bottom:1px solid var(--border);background:var(--surface);">
+    <div style="padding:18px 20px;border:1px solid var(--border);border-radius:16px;background:var(--surface);margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
         <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></span>
         <div style="font-size:15px;font-weight:700;color:var(--ink);">Generate an interactive process map</div>
@@ -6672,14 +6672,14 @@ async function renderProcessMaps() {
       </div>
       <div id="pmSavedWrap" style="margin:16px 0 0 0;"></div>
     </div>
-    <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
+    <div style="padding:4px 4px 12px;background:transparent;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:12px;color:var(--ink3);">Processes - building from your policies and chat.</div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Building</span>
       </div>
     </div>
-    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
+    <div style="padding:2px 0 10px;display:flex;flex-direction:column;gap:10px;" id="pmList">
       ${(window._allProcessMaps = policyProcesses, policyProcesses.slice(0,3).map(p=>renderProcessRow(p)).join(''))}
     </div>`;
   pmLoadSaved().then(function(saved){ _pmSaved=saved; const w=document.getElementById('pmSavedWrap'); if(w) w.innerHTML=pmSavedListHtml(saved); });
