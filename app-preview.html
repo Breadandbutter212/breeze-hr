@@ -1163,8 +1163,8 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 /* ===== BREEZE x SHAPES THEME (experimental, not deployed) ===== */
 /* Home: let the ambient gradient show through + mockup-style prompt launcher */
 #homeBody{ background:transparent !important; }
-#homeBody .hb-wrap{ max-width:940px !important; }
-#homeBody .hb-launch{ margin-bottom:26px; }
+#homeBody .hb-wrap{ max-width:1200px !important; }
+#homeBody .hb-launch{ max-width:1040px; margin:0 auto 26px; }
 #homeBody .hb-launch-head{ text-align:center; padding:14px 0 20px; }
 #homeBody .hb-launch-date{ font-family:'Instrument Serif',serif; font-style:italic; font-size:22px; color:rgba(255,255,255,.9); }
 #homeBody .hb-launch-greet{ font-size:34px; font-weight:800; color:#fff; letter-spacing:-.02em; margin-top:4px; }
@@ -1284,6 +1284,28 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 /* Projects "Needs attention" panel: dark red-tint + light red text */
 [style*="background:#FFF5F5" i]{ background:rgba(248,113,113,.10) !important; border-color:rgba(248,113,113,.28) !important; }
 [style*="color:#B91C1C" i],[style*="color:#7F1D1D" i]{ color:#FCA5A5 !important; }
+
+/* Remaining semantic tint chips/badges: give them translucent dark versions so they read on dark cards */
+.sp-tag-ppt{ background:rgba(248,113,113,.16) !important; }
+.sp-tag-xls{ background:rgba(74,222,128,.16) !important; }
+.src-indeed{ background:rgba(251,191,36,.16) !important; color:#FBBF24 !important; }
+.src-agency{ background:rgba(248,113,113,.16) !important; color:#F87171 !important; }
+.trk-badge-teal{ background:rgba(45,212,191,.16) !important; color:#5EEAD4 !important; }
+.emp-compare-row.has-diff .emp-compare-head{ background:rgba(251,191,36,.10) !important; }
+.emp-compare-row.salary-diff .emp-compare-head{ background:rgba(248,113,113,.10) !important; }
+.emp-field-table tr.field-diff td{ background:rgba(251,191,36,.08) !important; }
+.emp-field-table tr.field-salary-diff td{ background:rgba(248,113,113,.08) !important; }
+/* Letter-viewer chrome (keep the paper .lv-c/.lv-letter light on purpose) */
+.lv-akpi{ background:var(--surface2) !important; }
+.lv-flag{ background:rgba(251,191,36,.14) !important; }
+.flow.g3 .lv-flag,.flow.g4 .lv-flag{ background:rgba(74,222,128,.14) !important; }
+.tok .ph{ background:var(--surface3) !important; }
+/* Home dashboard delta/rag chips: translucent so they sit on the dark cards */
+#homeBody .up{ background:rgba(74,222,128,.16) !important; }
+#homeBody .rag-green{ background:rgba(74,222,128,.16) !important; }
+#homeBody .rag-amber{ background:rgba(251,191,36,.16) !important; }
+#homeBody .rag-red{ background:rgba(248,113,113,.16) !important; }
+#homeBody .rag-grey{ background:rgba(255,255,255,.08) !important; }
 
 </style>
 </head>
