@@ -1163,7 +1163,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 /* ===== BREEZE x SHAPES THEME (experimental, not deployed) ===== */
 /* Home: let the ambient gradient show through + mockup-style prompt launcher */
 #homeBody{ background:transparent !important; }
-#homeBody .hb-wrap{ max-width:1200px !important; }
+#homeBody .hb-wrap{ max-width:1240px !important; }
 #homeBody .hb-launch{ max-width:1040px; margin:0 auto 26px; }
 #homeBody .hb-launch-head{ text-align:center; padding:14px 0 20px; }
 #homeBody .hb-launch-date{ font-family:'Instrument Serif',serif; font-style:italic; font-size:22px; color:rgba(255,255,255,.9); }
@@ -1302,23 +1302,38 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .doc-preview{ background:transparent !important; }
 
 /* ── CONSISTENT PAGE WIDTH ── every page's content caps at 1200px, centred ── */
-#homeBody .hb-wrap{ max-width:1200px !important; }
-.chat-view .chat-pane{ max-width:1200px !important; }
+#homeBody .hb-wrap{ max-width:1240px !important; }
+.chat-view .chat-pane{ max-width:1240px !important; }
 .chat-history > *{ max-width:1000px !important; }
-#talentBody .tl-panel{ max-width:1200px !important; }
+#talentBody .tl-panel{ max-width:1240px !important; }
 #headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content,
-#orgChartRoot{ left:24px !important; right:24px !important; max-width:1200px !important;
+#orgChartRoot{ left:24px !important; right:24px !important; max-width:1240px !important;
   margin-left:auto !important; margin-right:auto !important; }
-#view-presentations > div:not(.manage-topbar){ max-width:1200px !important; margin-left:auto !important; margin-right:auto !important; }
-#analyticsBody, #processMapsBody, #docsBody{ max-width:1248px !important; margin-left:auto !important; margin-right:auto !important; }
+#view-presentations > div:not(.manage-topbar){ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
+/* manage-body direct-render pages: outer 1240 (=~1200 content after their 20px padding) so they match the boxed pages */
+#analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
+#settingsBody, #faqsBody, #recorderBody, #manageBody{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
 
 /* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
 body.shapes-light{
-  --bg:#e7ebf2 !important;
-  --surface:rgba(255,255,255,.95) !important; --surface2:#f4f6fa !important; --surface3:#e9edf3 !important;
+  --bg:#eef2f7 !important;
+  --surface:rgba(255,255,255,.96) !important; --surface2:#f4f6fa !important; --surface3:#e9edf3 !important;
   --border:rgba(20,30,55,.10) !important; --border2:rgba(20,30,55,.18) !important;
-  --ink:#141B29 !important; --ink2:#3f4759 !important; --ink3:#6b7280 !important; --navy:#141B29 !important;
+  --ink:#141B29 !important; --ink2:#3f4759 !important; --ink3:#5b6472 !important; --navy:#141B29 !important;
 }
+/* light mode: lighten the ambient gradient so text sitting *between* boxes (group headers etc.) still reads */
+body.shapes-light{ background:#e9eef4 !important; }
+body.shapes-light::before{
+  background:
+    radial-gradient(64% 48% at 50% 116%, rgba(240,168,132,.42) 0%, transparent 62%),
+    radial-gradient(52% 44% at 10% 106%, rgba(244,196,150,.34) 0%, transparent 58%),
+    radial-gradient(74% 64% at 90% -10%, rgba(150,182,224,.5) 0%, transparent 60%),
+    linear-gradient(158deg,#d8e5f3 0%,#e7edf3 36%,#f2ede6 68%,#f7e5d9 100%) !important; }
+body.shapes-light::after{ opacity:.03 !important; }
+/* light mode: keep page titles/eyebrows dark (they sit on the light gradient, not in a box) */
+body.shapes-light .manage-title, body.shapes-light .docs-title, body.shapes-light #homeBody .hb-launch-greet,
+body.shapes-light .home-greet, body.shapes-light h1{ color:#141B29 !important; text-shadow:none !important; }
+body.shapes-light .manage-sub, body.shapes-light .docs-sub, body.shapes-light #homeBody .hb-launch-date{ color:#4a5568 !important; }
 /* teal floating toggle */
 #shapesThemeToggle{ position:fixed; right:18px; bottom:18px; z-index:99999; display:inline-flex; align-items:center; gap:7px;
   background:linear-gradient(135deg,#2DD4BF,#22C7A9); color:#04211D; border:none; border-radius:999px;
