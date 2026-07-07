@@ -1254,7 +1254,19 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .gen-area{ border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:var(--shadow-lg) !important; overflow:hidden !important; }
 
 /* org: clear the hero header */
-#orgChartRoot{ top:92px !important; }
+/* PAGE 4 ORG: box the pan/zoom canvas as a floating rounded card (mockup look) + clear the 2-line subtitle */
+#orgChartRoot{ top:118px !important; left:26px !important; right:26px !important; bottom:22px !important;
+  border:1px solid var(--border) !important; border-radius:20px !important; overflow:hidden !important;
+  box-shadow:0 18px 44px rgba(0,0,0,.30) !important; background:var(--surface) !important; }
+#orgChartRoot > div:first-child{ background:transparent !important; }   /* toolbar strip: no double surface */
+#orgChartRoot #ocVP{ background:transparent !important; }               /* viewport shows the card surface */
+#orgChartRoot #ocLegend{ background:transparent !important; }
+/* org nodes: dark card + readable text */
+.org-node{ background:var(--surface2) !important; box-shadow:0 2px 10px rgba(0,0,0,.28) !important; }
+.org-node .org-name{ color:var(--ink) !important; }
+.org-node .org-title{ color:var(--ink3) !important; }
+/* kill leftover "0" badges on the icon rail */
+.sgi-badge:empty,.sg-badge:empty{ display:none !important; }
 /* --- Documents header parity (docs-* classes) + dark skeleton --- */
 .docs-topbar{ background:transparent !important; border-bottom:none !important; padding:22px 26px 12px !important; }
 .docs-title{ color:#fff !important; font-size:26px !important; font-weight:800 !important; letter-spacing:-.02em !important; }
@@ -22629,11 +22641,11 @@ async function projConfirmEmailToTask(){
       var c=GROUPS[g];
       // Groups stay expanded; the group name is a plain section label (not collapsible).
       html+='<div class="sg open" data-g="'+g+'">';
-      html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'</div>';
+      html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none"></span>':'')+'</div>';
       html+='<div class="sg-items">'+c.items.map(function(it){
         if(it.soon) return '<button class="sgi" aria-disabled="true">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
         var on=cur===it.view;
-        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'">0</span></button>';
+        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'"></span></button>';
       }).join('')+'</div></div>';
     });
     box.innerHTML=html;
