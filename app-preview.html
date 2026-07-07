@@ -1299,6 +1299,17 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 /* PAGE 5 PEOPLE PLAN: even-cell zebra was #FAFAFA (near-white) -> subtle dark stripe */
 .pp-cell:nth-child(2n){ background:rgba(255,255,255,.035) !important; }
 
+/* PAGES 6-20: pastel tint chips/headers (Trackers, Headcount, Careers, Immigration, Compare) -> translucent dark + readable light text */
+[style*="background:#DBF5F1" i]{ background:rgba(45,212,191,.16) !important; color:#5EEAD4 !important; }
+[style*="background:#EEEBFF" i]{ background:rgba(167,139,250,.18) !important; color:#C4B5FD !important; }
+[style*="background:#DCFCE7" i]{ background:rgba(74,222,128,.16) !important; color:#4ADE80 !important; border-color:rgba(74,222,128,.4) !important; }
+[style*="background:#ECFDF5" i]{ background:rgba(74,222,128,.14) !important; color:#4ADE80 !important; }
+[style*="background:#E6F7EE" i],[style*="background:#E6F7F4" i]{ background:rgba(74,222,128,.14) !important; }
+[style*="background:#D1FAE5" i]{ background:rgba(74,222,128,.18) !important; color:#4ADE80 !important; }
+[style*="background:#FEE2E2" i],[style*="background:#FEE4E2" i],[style*="background:#FEF2F2" i]{ background:rgba(248,113,113,.14) !important; color:#FCA5A5 !important; }
+[style*="background:#FEF3C7" i]{ background:rgba(251,191,36,.16) !important; color:#FBBF24 !important; }
+[style*="background:#D7DEE8" i],[style*="background:#d7dee8" i]{ background:var(--surface2) !important; }
+
 /* PAGE 3 HISTORY + global: inputs that flash white on focus (inline JS sets background:white) -> keep dark */
 #chatPageSearch:focus,#globalSearch:focus,.topsearch input:focus,.sp-input:focus,.searchbox input:focus{ background:var(--surface2) !important; color:var(--ink) !important; }
 
