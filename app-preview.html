@@ -1254,43 +1254,25 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .gen-area{ border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:var(--shadow-lg) !important; overflow:hidden !important; }
 
 /* org: clear the hero header */
-/* PAGE 4 ORG: box the pan/zoom canvas as a floating rounded card (mockup look) + clear the 2-line subtitle */
-#orgChartRoot{ top:118px !important; left:26px !important; right:26px !important; bottom:22px !important;
-  border:1px solid var(--border) !important; border-radius:20px !important; overflow:hidden !important;
-  box-shadow:0 18px 44px rgba(0,0,0,.30) !important; background:var(--surface) !important; }
-#orgChartRoot > div:first-child{ background:transparent !important; }   /* toolbar strip: no double surface */
-#orgChartRoot #ocVP{ background:transparent !important; }               /* viewport shows the card surface */
-#orgChartRoot #ocLegend{ background:transparent !important; }
-/* org nodes: dark card + readable text */
-.org-node{ background:var(--surface2) !important; box-shadow:0 2px 10px rgba(0,0,0,.28) !important; }
+/* PAGE 4 ORG: clear the 2-line header; transparent canvas (width comes from the uniform rule, no frame) */
+#orgChartRoot{ top:118px !important; background:transparent !important; }
+#orgChartRoot > div:first-child, #orgChartRoot #ocVP, #orgChartRoot #ocLegend{ background:transparent !important; }
+.org-node{ background:var(--surface2) !important; }
 .org-node .org-name{ color:var(--ink) !important; }
 .org-node .org-title{ color:var(--ink3) !important; }
 /* kill leftover "0" badges on the icon rail */
 .sgi-badge:empty,.sg-badge:empty{ display:none !important; }
 
-/* ── BOX THE FULL-BLEED PAGES as floating rounded cards (mockup look) ── */
-/* Headcount + Trackers: the inset:0 var(--bg) slab -> framed card, metric tiles bumped to surface2 */
-#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content{
-  top:14px !important; left:24px !important; right:24px !important; bottom:20px !important;
-  background:var(--surface) !important; border:1px solid var(--border) !important;
-  border-radius:20px !important; box-shadow:0 18px 44px rgba(0,0,0,.30) !important; }
+/* ── NO outer page frames: every page = clean content at the uniform centred column (like Projects/Policies).
+   No borders/backgrounds/shadows on the page containers -> no grey edge lines, no square boxes, all aligned. ── */
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content{ background:transparent !important; }
 #headcountBody .trk-kpi, #trackersBody .trk-kpi{ background:var(--surface2) !important; }
-/* Chat: box the conversation column as a centered card on the gradient */
 .chat-view .chat-main{ background:transparent !important; }
-.chat-view .chat-body{ padding:16px 26px 22px !important; }
-.chat-view .chat-pane{ max-width:920px !important; width:100% !important; margin:0 auto !important;
-  background:var(--surface) !important; border:1px solid var(--border) !important; border-radius:20px !important;
-  box-shadow:0 18px 44px rgba(0,0,0,.30) !important; overflow:hidden !important; }
-/* Presentations: frame the split (left controls + right preview) as one card */
-#view-presentations > div:not(.manage-topbar){
-  margin:14px 26px 22px !important; border:1px solid var(--border) !important; border-radius:20px !important;
-  overflow:hidden !important; box-shadow:0 18px 44px rgba(0,0,0,.30) !important; }
-/* Process maps: give the body padding so its cards float as boxes, not edge-to-edge */
-#processMapsBody{ padding:14px 26px 26px !important; }
-
-/* PAGE 7 TALENT (9-box / succession): frame the panel as a floating card + darken light cell headers */
-#talentBody .tl-tabs{ background:transparent !important; border-bottom:none !important; padding:14px 26px 0 !important; }
-#talentBody .tl-panel{ background:var(--surface) !important; margin:8px auto 22px !important; max-width:1160px !important; width:calc(100% - 52px) !important; border-radius:20px !important; box-shadow:0 18px 44px rgba(0,0,0,.30) !important; }
+.chat-view .chat-body{ padding:16px 0 22px !important; }
+.chat-view .chat-pane{ background:transparent !important; }
+#view-presentations > div:not(.manage-topbar){ background:transparent !important; }
+#talentBody .tl-tabs{ background:transparent !important; border-bottom:none !important; }
+#talentBody .tl-panel{ background:transparent !important; }
 #talentBody .tl-cell{ background:var(--surface2) !important; }
 body:not(.shapes-light) .tone-star .tl-cell-h{background:linear-gradient(180deg,rgba(91,71,224,.22),transparent) !important;} body:not(.shapes-light) .tone-star .nm{color:#C4B5FD !important;}
 body:not(.shapes-light) .tone-good .tl-cell-h{background:linear-gradient(180deg,rgba(74,222,128,.18),transparent) !important;} body:not(.shapes-light) .tone-good .nm{color:#4ADE80 !important;}
