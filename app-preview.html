@@ -1254,26 +1254,22 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .gen-area{ border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:var(--shadow-lg) !important; overflow:hidden !important; }
 
 /* org: clear the hero header */
-/* PAGE 4 ORG: clear the 2-line header; transparent canvas (width comes from the uniform rule, no frame) */
-#orgChartRoot{ top:118px !important; background:transparent !important; }
+/* PAGE 4 ORG: clear the 2-line header */
+#orgChartRoot{ top:118px !important; }
 #orgChartRoot > div:first-child, #orgChartRoot #ocVP, #orgChartRoot #ocLegend{ background:transparent !important; }
 .org-node{ background:var(--surface2) !important; }
 .org-node .org-name{ color:var(--ink) !important; }
 .org-node .org-title{ color:var(--ink3) !important; }
-/* kill leftover "0" badges on the icon rail */
 .sgi-badge:empty,.sg-badge:empty{ display:none !important; }
 
-/* ── NO outer page frames: every page = clean content at the uniform centred column (like Projects/Policies).
-   No borders/backgrounds/shadows on the page containers -> no grey edge lines, no square boxes, all aligned. ── */
-#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content{ background:transparent !important; }
-#headcountBody .trk-kpi, #trackersBody .trk-kpi{ background:var(--surface2) !important; }
+/* ── Canvas/panel pages get a consistent ROUNDED BOX (surface, 20px radius, subtle border, no shadow) ── */
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot,
+.chat-view .chat-pane, #talentBody .tl-panel, #view-presentations > div:not(.manage-topbar){
+  background:var(--surface) !important; border:1px solid var(--border) !important;
+  border-radius:20px !important; overflow:hidden !important; }
+#headcountBody .trk-kpi, #trackersBody .trk-kpi, #talentBody .tl-cell{ background:var(--surface2) !important; }
 .chat-view .chat-main{ background:transparent !important; }
-.chat-view .chat-body{ padding:16px 0 22px !important; }
-.chat-view .chat-pane{ background:transparent !important; }
-#view-presentations > div:not(.manage-topbar){ background:transparent !important; }
 #talentBody .tl-tabs{ background:transparent !important; border-bottom:none !important; }
-#talentBody .tl-panel{ background:transparent !important; }
-#talentBody .tl-cell{ background:var(--surface2) !important; }
 body:not(.shapes-light) .tone-star .tl-cell-h{background:linear-gradient(180deg,rgba(91,71,224,.22),transparent) !important;} body:not(.shapes-light) .tone-star .nm{color:#C4B5FD !important;}
 body:not(.shapes-light) .tone-good .tl-cell-h{background:linear-gradient(180deg,rgba(74,222,128,.18),transparent) !important;} body:not(.shapes-light) .tone-good .nm{color:#4ADE80 !important;}
 body:not(.shapes-light) .tone-core .tl-cell-h{background:linear-gradient(180deg,rgba(255,255,255,.07),transparent) !important;}
@@ -1283,29 +1279,26 @@ body:not(.shapes-light) .tone-risk .tl-cell-h{background:linear-gradient(180deg,
 /* DOCUMENTS letter builder: the preview pane (var(--bg) slab) blends into the framed gen-area card */
 .doc-preview{ background:transparent !important; }
 
-/* ── UNIFORM PAGE WIDTH ── every page capped at the SAME width and centred identically ──
-   One shared max-width for content + title rows, centred with margin auto, 30px gutters. */
+/* ═══ UNIFORM LAYOUT ═══ every page = full width minus a consistent ~0.5cm (20px) gap each side ═══ */
+/* content pages (cards float) + title rows: just the 20px side gutter */
 #homeBody .hb-wrap,
-.chat-view .chat-pane,
-#talentBody .tl-panel, #talentBody .tl-tabs,
-#view-presentations > div:not(.manage-topbar),
-.manage-topbar, .docs-topbar,
-#analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
-#settingsBody, #faqsBody, #recorderBody, #manageBody{
-  max-width:1680px !important; margin-left:auto !important; margin-right:auto !important;
-  box-sizing:border-box !important; width:100% !important;
-  padding-left:30px !important; padding-right:30px !important; }
-/* manage-body pages also need top/bottom breathing room (process maps zeroes its padding in JS) */
-#analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
-#settingsBody, #faqsBody, #recorderBody, #manageBody{ padding-top:20px !important; padding-bottom:24px !important; }
-.chat-history > *{ max-width:1000px !important; }
-/* absolute-positioned boxed pages: centre at the same 1520 */
-#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot{
-  left:24px !important; right:24px !important; max-width:1680px !important;
-  margin-left:auto !important; margin-right:auto !important; }
-/* chat / talent panels have their own padding already - don't double it */
-.chat-view .chat-pane, #talentBody .tl-panel{ padding-left:0 !important; padding-right:0 !important; }
-#talentBody .tl-tabs{ padding-left:18px !important; padding-right:18px !important; }
+.manage-topbar, .docs-topbar, .docs-body,
+#analyticsBody, #automationsBody, #chatsBody, #peoplePlanBody, #processMapsBody,
+#projectsBody, #vibeBody, #settingsBody, #manageBody{
+  max-width:none !important; margin:0 !important; box-sizing:border-box !important; width:100% !important;
+  padding-left:20px !important; padding-right:20px !important; }
+#analyticsBody, #automationsBody, #chatsBody, #peoplePlanBody, #processMapsBody,
+#projectsBody, #vibeBody, #settingsBody, #manageBody{ padding-top:16px !important; padding-bottom:24px !important; }
+.chat-history > *{ max-width:none !important; }
+/* canvas/panel pages: their rounded box, inset by the same 20px gap */
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content{
+  top:8px !important; left:20px !important; right:20px !important; bottom:20px !important; max-width:none !important; margin:0 !important; }
+#orgChartRoot{ left:20px !important; right:20px !important; bottom:20px !important; max-width:none !important; margin:0 !important; }
+.chat-view .chat-body{ padding:8px 0 20px !important; }
+.chat-view .chat-pane{ margin:0 20px !important; max-width:none !important; width:auto !important; padding:0 !important; flex:1 !important; }
+#talentBody .tl-panel{ margin:8px 20px 20px !important; max-width:none !important; width:auto !important; padding:0 !important; }
+#talentBody .tl-tabs{ margin:0 20px !important; max-width:none !important; padding:8px 12px 0 !important; }
+#view-presentations > div:not(.manage-topbar){ margin:8px 20px 20px !important; max-width:none !important; }
 #talentBody .tl-gridwrap{ max-width:none !important; }
 
 /* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
