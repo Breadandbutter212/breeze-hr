@@ -1163,7 +1163,7 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 /* ===== BREEZE x SHAPES THEME (experimental, not deployed) ===== */
 /* Home: let the ambient gradient show through + mockup-style prompt launcher */
 #homeBody{ background:transparent !important; }
-#homeBody .hb-wrap{ max-width:1240px !important; }
+#homeBody .hb-wrap{ max-width:none !important; }
 #homeBody .hb-launch{ max-width:1040px; margin:0 auto 26px; }
 #homeBody .hb-launch-head{ text-align:center; padding:14px 0 20px; }
 #homeBody .hb-launch-date{ font-family:'Instrument Serif',serif; font-style:italic; font-size:22px; color:rgba(255,255,255,.9); }
@@ -1302,20 +1302,20 @@ body:not(.shapes-light) .tone-risk .tl-cell-h{background:linear-gradient(180deg,
 .doc-preview{ background:transparent !important; }
 
 /* ── CONSISTENT PAGE WIDTH ── every page's content caps at 1200px, centred ── */
-#homeBody .hb-wrap{ max-width:1240px !important; }
-.chat-view .chat-pane{ max-width:1240px !important; }
-.chat-history > *{ max-width:1000px !important; }
-#talentBody .tl-panel{ max-width:1240px !important; }
+/* ── FULL-WIDTH pages: content fills the page with consistent 30px gutters (no centred narrow strip). ──
+   Titles, content and action buttons all share the same left/right gutter, so everything lines up. */
+#homeBody .hb-wrap{ max-width:none !important; }
+.chat-view .chat-pane{ max-width:none !important; margin:0 !important; }
+.chat-history > *{ max-width:none !important; }
+#talentBody .tl-panel{ max-width:none !important; margin:0 !important; }
+#talentBody .tl-tabs{ max-width:none !important; margin:0 !important; }
 #headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content,
-#orgChartRoot{ left:24px !important; right:24px !important; max-width:1240px !important;
-  margin-left:auto !important; margin-right:auto !important; }
-#view-presentations > div:not(.manage-topbar){ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
-/* manage-body direct-render pages: outer 1240 (=~1200 content after their 20px padding) so they match the boxed pages */
+#orgChartRoot{ left:30px !important; right:30px !important; max-width:none !important; margin:0 !important; }
+#view-presentations > div:not(.manage-topbar){ max-width:none !important; margin:0 !important; }
+/* manage-body direct-render pages + their title rows: full width, matched 30px gutters */
 #analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
-#settingsBody, #faqsBody, #recorderBody, #manageBody{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
-/* ALSO cap the page TITLE row at the same 1240 centred, so title + content + right-side action buttons line up */
-.manage-topbar, .docs-topbar{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; box-sizing:border-box !important; width:100% !important; }
-#talentBody .tl-tabs{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
+#settingsBody, #faqsBody, #recorderBody, #manageBody{ max-width:none !important; margin:0 !important; padding-left:30px !important; padding-right:30px !important; }
+.manage-topbar, .docs-topbar{ max-width:none !important; margin:0 !important; box-sizing:border-box !important; width:100% !important; padding-left:30px !important; padding-right:30px !important; }
 
 /* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
 body.shapes-light{
