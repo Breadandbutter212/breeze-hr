@@ -1388,7 +1388,7 @@ body.shapes-light .es-title, body.shapes-light .lbl{ color:#141B29 !important; }
 .kanban-card{ background:var(--surface) !important; border-color:var(--border) !important; }
 .kanban-col-count{ background:var(--surface2) !important; }
 .trk-flag{ background:var(--surface2) !important; }
-.chat-input-wrap{ background:var(--surface) !important; border-color:var(--border) !important; }
+.chat-input-wrap{ background:transparent !important; border-color:var(--border) !important; }
 .chat-bubble.ai-bubble{ background:var(--surface) !important; color:var(--ink) !important; }
 .chat-chip,.chat-action-btn{ background:var(--surface2) !important; color:var(--ink) !important; }
 .notif-panel,.hb-pmenu,.search-pop{ background:var(--surface) !important; border-color:var(--border) !important; }
@@ -23911,6 +23911,31 @@ async function projConfirmEmailToTask(){
     upd();
   });
   upd();
+})();
+</script>
+<script>
+/* Instant sidebar tooltips (native title has a ~1s delay + gets clipped by the rail overflow).
+   Reads the label, kills the native title, shows a fixed-position tip immediately. */
+(function(){
+  var tip=null, SEL='.slimbar .sgi, .slimbar .sg-head, .slimbar .slim-logo, .slimbar .slim-user';
+  function tipEl(){ if(!tip){ tip=document.createElement('div'); tip.id='railTip';
+    tip.style.cssText='position:fixed;z-index:100001;pointer-events:none;background:#1E232E;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;transition:opacity .08s;';
+    document.body.appendChild(tip); } return tip; }
+  function labelFor(el){
+    if(el.hasAttribute('title')){ el.setAttribute('data-tip', el.getAttribute('title')); el.removeAttribute('title'); }
+    var t=el.getAttribute('data-tip'); if(t) return t.trim();
+    var s=el.querySelector('.sgi-lbl,.lbl,.nm'); return s? s.textContent.trim() : '';
+  }
+  document.addEventListener('mouseover', function(e){
+    var el=e.target.closest && e.target.closest(SEL); if(!el) return;
+    var label=labelFor(el); if(!label) return;
+    var t=tipEl(); t.textContent=label;
+    var r=el.getBoundingClientRect();
+    t.style.left=(r.right+10)+'px'; t.style.top=(r.top+r.height/2)+'px'; t.style.transform='translateY(-50%)'; t.style.opacity='1';
+  });
+  document.addEventListener('mouseout', function(e){
+    var el=e.target.closest && e.target.closest(SEL); if(el && tip){ tip.style.opacity='0'; }
+  });
 })();
 </script>
 </body>
