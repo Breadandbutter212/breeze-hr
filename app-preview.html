@@ -1161,6 +1161,22 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 </style>
 <style id="breeze-shapes-skin">
 /* ===== BREEZE x SHAPES THEME (experimental, not deployed) ===== */
+/* Home: let the ambient gradient show through + mockup-style prompt launcher */
+#homeBody{ background:transparent !important; }
+#homeBody .hb-wrap{ max-width:940px !important; }
+#homeBody .hb-launch{ margin-bottom:26px; }
+#homeBody .hb-launch-head{ text-align:center; padding:14px 0 20px; }
+#homeBody .hb-launch-date{ font-family:'Instrument Serif',serif; font-style:italic; font-size:22px; color:rgba(255,255,255,.9); }
+#homeBody .hb-launch-greet{ font-size:34px; font-weight:800; color:#fff; letter-spacing:-.02em; margin-top:4px; }
+#homeBody .hb-prompt{ background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px 22px 16px; box-shadow:0 18px 44px rgba(0,0,0,.30); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2); }
+#homeBody .hb-prompt textarea{ width:100%; border:none; background:transparent; resize:none; outline:none; font-family:inherit; font-size:16px; line-height:1.5; color:var(--ink); min-height:92px; }
+#homeBody .hb-prompt textarea::placeholder{ color:var(--ink3); }
+#homeBody .hb-prompt-foot{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px; }
+#homeBody .hb-prompt-lbl{ font-size:12.5px; font-weight:600; color:var(--ink3); }
+#homeBody .hb-chip{ font-size:12.5px; font-weight:600; color:var(--ink2); background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:999px; padding:6px 12px; cursor:pointer; transition:.15s; }
+#homeBody .hb-chip:hover{ background:rgba(255,255,255,.12); color:var(--ink); }
+#homeBody .hb-prompt-go{ margin-left:auto; width:42px; height:42px; border-radius:50%; border:none; background:#fff; color:#141B29; display:grid; place-items:center; cursor:pointer; transition:.15s; flex-shrink:0; }
+#homeBody .hb-prompt-go:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.3); }
 :root{
   --bg:#0f1826 !important; --surface:rgba(23,29,42,.86) !important; --surface2:rgba(32,40,56,.9) !important; --surface3:rgba(46,56,74,.92) !important;
   --border:rgba(255,255,255,.09) !important; --border2:rgba(255,255,255,.16) !important;
@@ -7294,6 +7310,9 @@ async function renderHome(){
   const raw = (currentProfile && (currentProfile.full_name || currentProfile.email)) || 'there';
   const first = String(raw).split('@')[0].split(' ')[0];
   const dateStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const _hbHour = new Date().getHours();
+  const greet = _hbHour < 12 ? 'Good morning' : _hbHour < 18 ? 'Good afternoon' : 'Good evening';
+  const dateShort = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
 
   // Skeleton first so the view never flashes empty.
   el.innerHTML = `<div class="hb-wrap">
@@ -7547,18 +7566,21 @@ async function renderHome(){
   // ── Assemble ──
   el.innerHTML = `<div class="hb-wrap">
     ${topbarHtml}
-    <section class="hero">
-      <svg class="hero-art" viewBox="0 0 900 220" preserveAspectRatio="xMaxYMid slice" fill="none">
-        <circle cx="760" cy="40" r="150" fill="#fff" opacity=".06"/>
-        <circle cx="850" cy="180" r="110" fill="#fff" opacity=".08"/>
-        <circle cx="640" cy="200" r="70" fill="#fff" opacity=".05"/>
-      </svg>
-      <div class="hero-eyebrow">${escapeHtml(dateStr)}</div>
-      <h1>Welcome back, ${escapeHtml(first)}</h1>
-      <p>${heroLine}</p>
-      <button class="hero-btn" onclick="document.getElementById('hbAttn')?.scrollIntoView({behavior:'smooth',block:'center'})">Review now
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </button>
+    <section class="hb-launch">
+      <div class="hb-launch-head">
+        <div class="hb-launch-date">${escapeHtml(dateShort)}</div>
+        <div class="hb-launch-greet">${greet}, ${escapeHtml(first)}</div>
+      </div>
+      <div class="hb-prompt">
+        <textarea id="hbPromptInput" rows="2" placeholder="Describe what HR tool you want to build..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();homeGo('chat')}"></textarea>
+        <div class="hb-prompt-foot">
+          <span class="hb-prompt-lbl">Suggestions:</span>
+          <button class="hb-chip" onclick="homeGo('chat')">Missing data fields report &#8599;</button>
+          <button class="hb-chip" onclick="homeGo('chat')">Employee history view &#8599;</button>
+          <button class="hb-chip" onclick="homeGo('chat')">Remote vs. office heatmap &#8599;</button>
+          <button class="hb-prompt-go" onclick="homeGo('chat')" aria-label="Build"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </div>
+      </div>
     </section>
 
     <div class="sec-head"><h2>Breeze at a glance</h2><span class="sec-sub">This month</span></div>
