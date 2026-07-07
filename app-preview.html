@@ -1232,9 +1232,10 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .slim-more{ display:none !important; }
 .slim-foot{ display:flex; justify-content:center; padding:8px 0 !important; }
 .slim-user{ justify-content:center !important; padding:6px !important; } .slim-user .nm{ display:none !important; }
-/* --- layout parity: Documents rail on the LEFT like the mockup --- */
-.docs-body{ flex-direction:row !important; }
-.tmpl-lib{ border-left:none !important; border-right:1px solid var(--border) !important; }
+/* --- Documents: rail LEFT + two floating rounded cards like the mockup --- */
+.docs-body{ flex-direction:row !important; gap:16px !important; padding:6px 26px 26px !important; overflow:hidden !important; }
+.tmpl-lib{ width:300px !important; border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:var(--shadow-lg) !important; overflow:hidden !important; }
+.gen-area{ border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:var(--shadow-lg) !important; overflow:hidden !important; }
 
 /* org: clear the hero header */
 #orgChartRoot{ top:92px !important; }
