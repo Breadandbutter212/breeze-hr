@@ -1437,6 +1437,38 @@ body:not(.shapes-light) [style*="color:#065F46" i]{ color:#4ADE80 !important; }
 body:not(.shapes-light) [style*="color:#78350F" i], body:not(.shapes-light) [style*="color:#7A5B00" i], body:not(.shapes-light) [style*="color:#92400E" i], body:not(.shapes-light) [style*="color:#DC8A0A" i]{ color:#FBBF24 !important; }
 body:not(.shapes-light) [style*="color:#E0356E" i]{ color:#F9A8D4 !important; }
 body:not(.shapes-light) [style*="color:#667085" i]{ color:#9AA4B6 !important; }
+/* DARK MODE: inline dark/near-black text colours -> light, so nothing is black-on-black.
+   (white-paper letter viewer + white buttons use class-based colours, so they're untouched) */
+body:not(.shapes-light) [style*="color:#0A1628" i],
+body:not(.shapes-light) [style*="color:#141B29" i],
+body:not(.shapes-light) [style*="color:#1A202C" i],
+body:not(.shapes-light) [style*="color:#1A2233" i],
+body:not(.shapes-light) [style*="color:#1D1D1F" i],
+body:not(.shapes-light) [style*="color:#1E232E" i],
+body:not(.shapes-light) [style*="color:#1F2937" i],
+body:not(.shapes-light) [style*="color:#0F172A" i],
+body:not(.shapes-light) [style*="color:#0D1B2A" i],
+body:not(.shapes-light) [style*="color:#111827" i],
+body:not(.shapes-light) [style*="color:#1E1B33" i],
+body:not(.shapes-light) [style*="color:#101" i],
+body:not(.shapes-light) [style*="color:#000" i],
+body:not(.shapes-light) [style*="color:black" i],
+body:not(.shapes-light) [style*="color: #000" i]{ color:var(--ink) !important; }
+/* medium-dark slate text -> ink2 (readable but not full white) */
+body:not(.shapes-light) [style*="color:#334155" i],
+body:not(.shapes-light) [style*="color:#3A4760" i],
+body:not(.shapes-light) [style*="color:#475569" i],
+body:not(.shapes-light) [style*="color:#2D3748" i],
+body:not(.shapes-light) [style*="color:#374151" i]{ color:var(--ink2) !important; }
+/* remaining dark greens -> light green */
+body:not(.shapes-light) [style*="color:#0F7A3D" i],
+body:not(.shapes-light) [style*="color:#16A34A" i],
+body:not(.shapes-light) [style*="color:#0A7A37" i],
+body:not(.shapes-light) [style*="color:#1F8A5B" i],
+body:not(.shapes-light) [style*="color:#1A7A3C" i]{ color:#4ADE80 !important; }
+/* class-based dark-green chip text on dark chips -> light green */
+body:not(.shapes-light) .sp-tag-xls, body:not(.shapes-light) .home-roi-delta,
+body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-green{ color:#4ADE80 !important; }
 
 /* PAGE 3 HISTORY + global: inputs that flash white on focus (inline JS sets background:white) -> keep dark */
 #chatPageSearch:focus,#globalSearch:focus,.topsearch input:focus,.sp-input:focus,.searchbox input:focus{ background:var(--surface2) !important; color:var(--ink) !important; }
