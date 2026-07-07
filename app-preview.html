@@ -1261,6 +1261,10 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .org-node .org-name{ color:var(--ink) !important; }
 .org-node .org-title{ color:var(--ink3) !important; }
 .sgi-badge:empty,.sg-badge:empty{ display:none !important; }
+/* SharePoint button in the rail: centre it like the other icons (was a left-aligned sg-head) */
+.slim-sp-wrap .sg-head{ width:44px !important; height:44px !important; justify-content:center !important; padding:0 !important; margin:0 auto !important; border-radius:12px !important; position:relative; }
+.slim-sp-wrap .sg-head .lbl{ display:none !important; }
+.slim-sp-wrap .sg-head .ic{ margin:0 !important; }
 
 /* ── Canvas/panel pages get a consistent ROUNDED BOX (surface, 20px radius, subtle border, no shadow) ── */
 #headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot,
@@ -1347,7 +1351,13 @@ body.shapes-light .slim-foot{ border-top-color:rgba(20,30,55,.10) !important; }
 
 /* ── SIDEBAR active icon: clean square, same size as the others (was squished/shadowed) ── */
 .sgi{ border-radius:12px !important; }
-.sgi.active{ width:44px !important; height:44px !important; border-radius:12px !important; box-shadow:none !important; transform:none !important; }
+.sgi.active{ width:44px !important; height:44px !important; border-radius:12px !important; box-shadow:none !important; transform:none !important; filter:none !important; }
+/* HR logo badge: same 44px footprint as the icons so the active box doesn't look smaller next to it */
+.slim-logo .mk{ width:44px !important; height:44px !important; border-radius:12px !important; font-size:12px !important; }
+.slim-logo{ padding:16px 10px 10px !important; justify-content:center !important; }
+/* remove the grey fill from text inputs - clean field, border only */
+.chat-input-wrap{ background:transparent !important; box-shadow:none !important; }
+.chat-input-area{ background:transparent !important; }
 
 /* ── LIGHT MODE readability: fix white text that would land on white boxes ── */
 body.shapes-light .btn-secondary{ background:rgba(20,30,55,.05) !important; color:#1f2937 !important; border-color:rgba(20,30,55,.14) !important; }
@@ -7314,6 +7324,8 @@ function showView(v,navEl) {
 
 // ── HOME / TODAY ──────────────────────────────────────────
 function homeGo(v){ const el=document.querySelector(`.ni[onclick*="'${v}'"]`); showView(v, el); }
+// Home prompt -> open the AI chat and send the question (not "build a tool")
+function hbAsk(txt){ txt=(txt||'').trim(); homeGo('chat'); if(txt && typeof sendChat==='function'){ setTimeout(function(){ try{ sendChat(txt); }catch(e){} }, 80); } }
 // Jump from Home straight into a specific workflow run.
 async function homeOpenWfCase(caseId){
   homeGo('automations');
@@ -7740,13 +7752,13 @@ async function renderHome(){
         <div class="hb-launch-greet">${greet}, ${escapeHtml(first)}</div>
       </div>
       <div class="hb-prompt">
-        <textarea id="hbPromptInput" rows="2" placeholder="Describe what HR tool you want to build..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();homeGo('chat')}"></textarea>
+        <textarea id="hbPromptInput" rows="2" placeholder="Ask Breeze anything - a policy question, draft a letter, or query your people data..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hbAsk(this.value)}"></textarea>
         <div class="hb-prompt-foot">
           <span class="hb-prompt-lbl">Suggestions:</span>
-          <button class="hb-chip" onclick="homeGo('chat')">Missing data fields report &#8599;</button>
-          <button class="hb-chip" onclick="homeGo('chat')">Employee history view &#8599;</button>
-          <button class="hb-chip" onclick="homeGo('chat')">Remote vs. office heatmap &#8599;</button>
-          <button class="hb-prompt-go" onclick="homeGo('chat')" aria-label="Build"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+          <button class="hb-chip" onclick="hbAsk('How much maternity leave is an employee entitled to?')">Maternity entitlement &#8599;</button>
+          <button class="hb-chip" onclick="hbAsk('What checks do I need for a new hire?')">Right to work checks &#8599;</button>
+          <button class="hb-chip" onclick="hbAsk('Draft a probation extension letter')">Draft a letter &#8599;</button>
+          <button class="hb-prompt-go" onclick="hbAsk(document.getElementById('hbPromptInput').value)" aria-label="Ask Breeze"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
         </div>
       </div>
     </section>
@@ -22734,9 +22746,9 @@ async function projConfirmEmailToTask(){
       html+='<div class="sg open" data-g="'+g+'">';
       html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none"></span>':'')+'</div>';
       html+='<div class="sg-items">'+c.items.map(function(it){
-        if(it.soon) return '<button class="sgi" aria-disabled="true">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
+        if(it.soon) return '<button class="sgi" aria-disabled="true" title="'+it.label+' (coming soon)">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
         var on=cur===it.view;
-        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'"></span></button>';
+        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' title="'+it.label+'" onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'"></span></button>';
       }).join('')+'</div></div>';
     });
     box.innerHTML=html;
