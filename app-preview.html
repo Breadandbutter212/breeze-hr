@@ -1301,21 +1301,30 @@ body:not(.shapes-light) .tone-risk .tl-cell-h{background:linear-gradient(180deg,
 /* DOCUMENTS letter builder: the preview pane (var(--bg) slab) blends into the framed gen-area card */
 .doc-preview{ background:transparent !important; }
 
-/* ── CONSISTENT PAGE WIDTH ── every page's content caps at 1200px, centred ── */
-/* ── FULL-WIDTH pages: content fills the page with consistent 30px gutters (no centred narrow strip). ──
-   Titles, content and action buttons all share the same left/right gutter, so everything lines up. */
-#homeBody .hb-wrap{ max-width:none !important; }
-.chat-view .chat-pane{ max-width:none !important; margin:0 !important; }
-.chat-history > *{ max-width:none !important; }
-#talentBody .tl-panel{ max-width:none !important; margin:0 !important; }
-#talentBody .tl-tabs{ max-width:none !important; margin:0 !important; }
-#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content,
-#orgChartRoot{ left:30px !important; right:30px !important; max-width:none !important; margin:0 !important; }
-#view-presentations > div:not(.manage-topbar){ max-width:none !important; margin:0 !important; }
-/* manage-body direct-render pages + their title rows: full width, matched 30px gutters */
+/* ── UNIFORM PAGE WIDTH ── every page capped at the SAME width and centred identically ──
+   One shared max-width for content + title rows, centred with margin auto, 30px gutters. */
+#homeBody .hb-wrap,
+.chat-view .chat-pane,
+#talentBody .tl-panel, #talentBody .tl-tabs,
+#view-presentations > div:not(.manage-topbar),
+.manage-topbar, .docs-topbar,
 #analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
-#settingsBody, #faqsBody, #recorderBody, #manageBody{ max-width:none !important; margin:0 !important; padding-left:30px !important; padding-right:30px !important; }
-.manage-topbar, .docs-topbar{ max-width:none !important; margin:0 !important; box-sizing:border-box !important; width:100% !important; padding-left:30px !important; padding-right:30px !important; }
+#settingsBody, #faqsBody, #recorderBody, #manageBody{
+  max-width:1680px !important; margin-left:auto !important; margin-right:auto !important;
+  box-sizing:border-box !important; width:100% !important;
+  padding-left:30px !important; padding-right:30px !important; }
+/* manage-body pages also need top/bottom breathing room (process maps zeroes its padding in JS) */
+#analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
+#settingsBody, #faqsBody, #recorderBody, #manageBody{ padding-top:20px !important; padding-bottom:24px !important; }
+.chat-history > *{ max-width:1000px !important; }
+/* absolute-positioned boxed pages: centre at the same 1520 */
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot{
+  left:24px !important; right:24px !important; max-width:1680px !important;
+  margin-left:auto !important; margin-right:auto !important; }
+/* chat / talent panels have their own padding already - don't double it */
+.chat-view .chat-pane, #talentBody .tl-panel{ padding-left:0 !important; padding-right:0 !important; }
+#talentBody .tl-tabs{ padding-left:18px !important; padding-right:18px !important; }
+#talentBody .tl-gridwrap{ max-width:none !important; }
 
 /* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
 body.shapes-light{
