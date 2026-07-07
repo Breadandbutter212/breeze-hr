@@ -1285,6 +1285,20 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 [style*="background:#FFF5F5" i]{ background:rgba(248,113,113,.10) !important; border-color:rgba(248,113,113,.28) !important; }
 [style*="color:#B91C1C" i],[style*="color:#7F1D1D" i]{ color:#FCA5A5 !important; }
 
+/* ── PAGE 2: CHAT ── match mockup: floating centered column on the ambient bg + gradient spark + bigger title */
+.chat-view{ background:transparent !important; }
+.chat-history{ background:transparent !important; }
+.chat-history > *{ width:100%; max-width:820px; margin-left:auto; margin-right:auto; }
+.chat-welcome{ padding:40px 24px !important; }
+.chat-welcome-spark{ width:52px; height:52px; border-radius:15px; margin:0 auto 16px; display:grid; place-items:center;
+  background:linear-gradient(135deg,#2DD4BF,#22C7A9); box-shadow:0 10px 26px rgba(45,212,191,.34); }
+.chat-welcome-spark svg{ width:26px; height:26px; }
+.chat-welcome-title{ font-size:24px !important; font-weight:800 !important; }
+.chat-welcome-sub{ font-size:13.5px !important; max-width:480px !important; }
+
+/* PAGE 3 HISTORY + global: inputs that flash white on focus (inline JS sets background:white) -> keep dark */
+#chatPageSearch:focus,#globalSearch:focus,.topsearch input:focus,.sp-input:focus,.searchbox input:focus{ background:var(--surface2) !important; color:var(--ink) !important; }
+
 /* Remaining semantic tint chips/badges: give them translucent dark versions so they read on dark cards */
 .sp-tag-ppt{ background:rgba(248,113,113,.16) !important; }
 .sp-tag-xls{ background:rgba(74,222,128,.16) !important; }
@@ -9631,6 +9645,7 @@ function renderChatHistory() {
   if (!chatMessages.length && !chatLoading) {
     const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
+      <div class="chat-welcome-spark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="m12 3 2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2Z"/></svg></div>
       <div class="chat-welcome-title">${firstName ? 'Hi ' + firstName + ', how can I help?' : 'How can I help?'}</div>
       <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or ask me to draft a letter. I'll keep it in your company's style.</div>
       <div class="es-hris">
