@@ -1313,6 +1313,9 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 /* manage-body direct-render pages: outer 1240 (=~1200 content after their 20px padding) so they match the boxed pages */
 #analyticsBody, #processMapsBody, #docsBody, #projectsBody, #vibeBody,
 #settingsBody, #faqsBody, #recorderBody, #manageBody{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
+/* ALSO cap the page TITLE row at the same 1240 centred, so title + content + right-side action buttons line up */
+.manage-topbar, .docs-topbar{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; box-sizing:border-box !important; width:100% !important; }
+#talentBody .tl-tabs{ max-width:1240px !important; margin-left:auto !important; margin-right:auto !important; }
 
 /* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
 body.shapes-light{
@@ -1334,6 +1337,17 @@ body.shapes-light::after{ opacity:.03 !important; }
 body.shapes-light .manage-title, body.shapes-light .docs-title, body.shapes-light #homeBody .hb-launch-greet,
 body.shapes-light .home-greet, body.shapes-light h1{ color:#141B29 !important; text-shadow:none !important; }
 body.shapes-light .manage-sub, body.shapes-light .docs-sub, body.shapes-light #homeBody .hb-launch-date{ color:#4a5568 !important; }
+/* light mode: flip the HOME dashboard cards (they use their own --home-* tokens) back to white */
+body.shapes-light{ --home-surface:rgba(255,255,255,.97) !important; --home-ink:#1E1B33 !important; --home-ink2:#5B5872 !important; --home-ink3:#8E8BA3 !important; --home-line:#ECEBF3 !important; }
+body.shapes-light #homeBody .hero, body.shapes-light #homeBody .card, body.shapes-light #homeBody .stat{ box-shadow:0 1px 2px rgba(28,25,60,.05),0 8px 24px rgba(28,25,60,.06) !important; }
+/* light mode: SIDEBAR rail -> light with dark icons/labels */
+body.shapes-light .slimbar{ background:rgba(255,255,255,.78) !important; border-color:rgba(20,30,55,.10) !important; box-shadow:0 4px 18px rgba(20,30,55,.10) !important; }
+body.shapes-light .slim-logo .nm, body.shapes-light .slim-user .nm{ color:#1E232E !important; }
+body.shapes-light .slim-user .rl{ color:#6b7280 !important; }
+body.shapes-light .sg-head, body.shapes-light .sgi{ color:rgba(25,30,42,.78) !important; }
+body.shapes-light .sgi.active{ background:rgba(45,212,191,.16) !important; color:#0E9384 !important; }
+body.shapes-light .sgi.active .ic{ color:#0E9384 !important; }
+body.shapes-light .slim-foot{ border-top-color:rgba(20,30,55,.10) !important; }
 /* teal floating toggle */
 #shapesThemeToggle{ position:fixed; right:18px; bottom:18px; z-index:99999; display:inline-flex; align-items:center; gap:7px;
   background:linear-gradient(135deg,#2DD4BF,#22C7A9); color:#04211D; border:none; border-radius:999px;
