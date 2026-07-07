@@ -1196,8 +1196,10 @@ body::after{ content:""; position:fixed; inset:0; z-index:-2; pointer-events:non
 .btn-primary{ background:linear-gradient(135deg,#2DD4BF,#22C7A9) !important; color:#04211D !important; border-color:transparent !important; font-weight:700 !important; box-shadow:0 4px 16px rgba(45,212,191,.28) !important; }
 .btn-secondary{ background:rgba(255,255,255,.08) !important; border-color:rgba(255,255,255,.16) !important; color:#fff !important; }
 /* neutralise stubborn hardcoded-white inline surfaces */
-[style*="background:#fff"],[style*="background: #fff"],[style*="background:#FFFFFF"],[style*="background:#ffffff"],[style*="background:white"],[style*="background: white"],[style*="background-color:#fff"],[style*="background-color:white"]{ background:var(--surface) !important; }
-[style*="background:#FAFAFA"],[style*="background:#F9FAFB"],[style*="background:#F4F2EE"],[style*="background:#f8f8f8"]{ background:var(--surface2) !important; }
+[style*="background:#fff" i],[style*="background: #fff" i],[style*="background:white" i],[style*="background: white" i],[style*="background-color:#fff" i],[style*="background-color: #fff" i],[style*="background-color:white" i],[style*="background:rgb(255,255,255)" i],[style*="background:rgba(255,255,255" i],[style*="background:#fef" i],[style*="background:#fdf" i]{ background:var(--surface) !important; }
+[style*="background:#faf" i],[style*="background:#f9f" i],[style*="background:#f8f" i],[style*="background:#f4f" i],[style*="background:#f5f" i],[style*="background:#eef" i]{ background:var(--surface2) !important; }
+/* keep text readable inside those now-dark cards */
+[style*="color:#1" i] [style*="background:#fff" i], .onode, .oc-node{ color:var(--ink) !important; }
 /* form controls on dark */
 input,textarea,select{ background:var(--surface2) !important; color:var(--ink) !important; border-color:var(--border) !important; }
 input::placeholder,textarea::placeholder{ color:var(--ink3) !important; }
@@ -1226,13 +1228,16 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .sg-head .lbl,.sg-head .chev{ display:none !important; }
 .sgi{ width:44px !important; height:44px !important; justify-content:center !important; padding:0 !important; position:relative; }
 .sgi .sgi-lbl,.sgi .beta{ display:none !important; }
-.sgi-badge,.sg-badge{ display:flex !important; position:absolute; top:1px; right:3px; min-width:16px; height:16px; }
+.sgi-badge,.sg-badge{ position:absolute; top:-2px; right:-1px; }
 .slim-more{ display:none !important; }
 .slim-foot{ display:flex; justify-content:center; padding:8px 0 !important; }
 .slim-user{ justify-content:center !important; padding:6px !important; } .slim-user .nm{ display:none !important; }
 /* --- layout parity: Documents rail on the LEFT like the mockup --- */
 .docs-body{ flex-direction:row !important; }
 .tmpl-lib{ border-left:none !important; border-right:1px solid var(--border) !important; }
+
+/* org: clear the hero header */
+#orgChartRoot{ top:92px !important; }
 
 </style>
 </head>
