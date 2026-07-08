@@ -1207,9 +1207,11 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
   .notif-item{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;cursor:pointer;border-bottom:1px solid var(--border);}
   .notif-item:last-child{border-bottom:none;}
   .notif-item:hover{background:var(--surface2);}
+  .notif-x{margin-left:auto;flex-shrink:0;align-self:center;background:none;border:none;color:var(--ink3);cursor:pointer;font-size:12px;line-height:1;padding:4px 5px;border-radius:6px;opacity:.55;transition:opacity .12s,background .12s;font-family:inherit;}
+  .notif-x:hover{background:var(--surface3);opacity:1;color:var(--ink);}
   .notif-ic{width:34px;height:34px;border-radius:10px;flex-shrink:0;display:flex;align-items:center;justify-content:center;}
   .notif-ic svg{width:17px;height:17px;}
-  .notif-tx{min-width:0;}
+  .notif-tx{min-width:0;flex:1;}
   .notif-tx .nt{font-size:13px;font-weight:600;color:var(--ink);line-height:1.35;}
   .notif-tx .ns{font-size:12px;color:var(--ink3);margin-top:2px;line-height:1.4;}
   .notif-empty{padding:40px 22px;text-align:center;color:var(--ink3);font-size:13px;line-height:1.6;}
@@ -7550,7 +7552,8 @@ async function nbBuild(){
       if (days>=0 && days<=14) items.push({ tint:'#EEEBFF', col:'#5B47E0', ic:NB_SVG.cal, title: ev.title||'Upcoming event', sub:`${ev.cat||'People plan'} · ${ev.date.toLocaleDateString('en-GB',{day:'numeric',month:'short'})}`, go:'peopleplan' });
     });
   } catch(e){}
-  return items;
+  // Drop anything the user has dismissed from the bell.
+  try { const dis = nbDismissed(); return items.filter(it=>!dis.has(nbKey(it))); } catch(e){ return items; }
 }
 async function refreshNotifBell(){
   try {
@@ -7570,15 +7573,33 @@ async function toggleNotifPanel(e){
   window._notifItems = items;
   const panel = document.createElement('div');
   panel.id = 'notifPanel'; panel.className = 'notif-panel';
-  panel.innerHTML = `<div class="notif-panel-h"><span class="t">Notifications</span>${items.length?`<span class="c">${items.length}</span>`:''}</div>
-    <div class="notif-list">${items.length
-      ? items.map((it,i)=>`<div class="notif-item" onclick="nbGo(${i})"><span class="notif-ic" style="background:${it.tint};color:${it.col}">${it.ic}</span><div class="notif-tx"><div class="nt">${escapeHtml(it.title)}</div><div class="ns">${escapeHtml(it.sub||'')}</div></div></div>`).join('')
-      : `<div class="notif-empty">You're all caught up.<br>Nothing needs you right now.</div>`}</div>`;
+  panel.innerHTML = nbPanelInner(items);
   document.body.appendChild(panel);
   const r = bell.getBoundingClientRect();
   panel.style.top = (r.bottom + 8) + 'px';
-  panel.style.right = Math.max(12, window.innerWidth - r.right) + 'px';
+  panel.style.right = '16px';   // pin to the right edge of the screen, not the (mid-page) bell
   setTimeout(()=>document.addEventListener('click', nbOutside), 0);
+}
+// Panel body markup (reused when re-rendering after a dismiss).
+function nbPanelInner(items){
+  return `<div class="notif-panel-h"><span class="t">Notifications</span>${items.length?`<span class="c">${items.length}</span>`:''}</div>
+    <div class="notif-list">${items.length
+      ? items.map((it,i)=>`<div class="notif-item" onclick="nbGo(${i})"><span class="notif-ic" style="background:${it.tint};color:${it.col}">${it.ic}</span><div class="notif-tx"><div class="nt">${escapeHtml(it.title)}</div><div class="ns">${escapeHtml(it.sub||'')}</div></div><button class="notif-x" onclick="event.stopPropagation();nbDismiss(${i})" title="Dismiss" aria-label="Dismiss">✕</button></div>`).join('')
+      : `<div class="notif-empty">You're all caught up.<br>Nothing needs you right now.</div>`}</div>`;
+}
+// Dismissing a notification hides it and remembers it (so it doesn't return on refresh).
+function nbKey(it){ return (it.title||'')+'|'+(it.sub||''); }
+function nbDismissed(){ try{ return new Set(JSON.parse(localStorage.getItem('bz_notif_dismissed')||'[]')); }catch(e){ return new Set(); } }
+function nbSaveDismissed(set){ try{ localStorage.setItem('bz_notif_dismissed', JSON.stringify([...set])); }catch(e){} }
+function nbDismiss(i){
+  const items = window._notifItems || [];
+  const it = items[i]; if(!it) return;
+  const dis = nbDismissed(); dis.add(nbKey(it)); nbSaveDismissed(dis);
+  items.splice(i,1); window._notifItems = items;
+  const panel = document.getElementById('notifPanel');
+  if (panel) panel.innerHTML = nbPanelInner(items);
+  const disp = items.length ? 'block' : 'none';
+  ['notifDot','topNotifDot'].forEach(id=>{ const d=document.getElementById(id); if(d) d.style.display=disp; });
 }
 function nbOutside(e){
   const p = document.getElementById('notifPanel'), b = document.getElementById('notifBell');
