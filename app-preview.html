@@ -195,11 +195,14 @@ body.nav-slim #topbarAvatar { display:flex !important; }
 #appTopbar .app-topbar-right{ display:flex; align-items:center; gap:4px; }
 #appTopbar .notif-bell{ margin:0; width:34px; height:34px; background:transparent !important; border:none !important; }
 #appTopbar .notif-bell:hover{ background:rgba(125,135,155,.14) !important; }
-#appTopbar .tb-profile{ display:flex; align-items:center; gap:8px; background:transparent !important; border:none !important; padding:4px 6px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink); }
+#appTopbar .tb-profile{ display:flex; align-items:center; gap:6px; background:transparent !important; border:none !important; padding:3px; cursor:pointer; color:var(--ink); }
+#appTopbar .tb-profile #topName{ display:none !important; }        /* avatar only - keeps the cluster narrow so it doesn't overlap page buttons */
+#appTopbar .tb-profile svg{ display:none !important; }             /* drop the chevron too */
 #appTopbar .tb-profile:hover{ background:rgba(125,135,155,.14); border-radius:999px; }
+#topNotifDot{ display:none !important; }                            /* remove the red notification dot */
 /* manage pages fill from the top (no bar); reserve room on the right so page actions don't sit under the icons */
 body .main > .view.manage-view.active{ top:0 !important; }
-body .manage-topbar, body .docs-topbar{ padding-right:200px !important; }
+body .manage-topbar, body .docs-topbar{ padding-right:150px !important; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:4px 12px 6px; }
 #slimConnSlot .app-topbar-right { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:0; }
@@ -15620,10 +15623,10 @@ async function renderAutomations(){
         </div>
       </div>
       <div style="flex:1;min-height:14px;"></div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" style="font-size:11px;" onclick="autoStartRun('${a.id}')">Launch</button>
-        ${inProgChip}
-        <div style="flex:1;"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:nowrap;min-width:0;">
+        <button class="btn btn-primary btn-sm" style="font-size:11px;flex-shrink:0;" onclick="autoStartRun('${a.id}')">Launch</button>
+        <span style="min-width:0;overflow:hidden;">${inProgChip}</span>
+        <div style="flex:1;min-width:6px;"></div>
         <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
         <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')" title="Delete">✕</button>
       </div>
