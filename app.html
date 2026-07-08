@@ -11584,9 +11584,9 @@ function vvValidate(html){
     [/WebSocket/,'WebSocket'],[/<script[^>]*\ssrc=/i,'external script'],[/<link\b/i,'<link> tag'],
     [/src\s*=\s*["']https?:/i,'external src'],[/document\.cookie/,'document.cookie'],
     [/localStorage|sessionStorage/,'storage access'],
-    // Allow parent.postMessage / top.postMessage (the sandboxed view reports its height back for auto-resize - a number, no data leaves the browser).
-    // Still block genuine escapes: parent.document, parent.location, parent.window, etc.
-    [/\bparent\.(?!postMessage\b)/,'parent access'],[/\btop\.(?!postMessage\b)/,'top access']];
+    // Match only real JS property access (parent.<identifier>), NOT prose like "notify the parent." in the policy text.
+    // Allow parent.postMessage (the sandboxed view reports its height for auto-resize - a number, no data leaves the browser).
+    [/\bparent\.(?!postMessage)\w/,'parent access'],[/\btop\.(?!postMessage)\w/,'top access']];
   for (var i=0;i<banned.length;i++){ if (banned[i][0].test(html)) return 'contains '+banned[i][1]; }
   if (!/addEventListener\(\s*["']message["']/.test(html)) return 'no message-event listener';
   return null;
