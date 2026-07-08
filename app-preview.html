@@ -1243,6 +1243,8 @@ body:not(.shapes-light) [style*="background:#faf" i], body:not(.shapes-light) [s
 body:not(.shapes-light) [style*="color:#1" i] [style*="background:#fff" i], body:not(.shapes-light) .onode, body:not(.shapes-light) .oc-node{ color:var(--ink) !important; }
 /* form controls on dark */
 input,textarea,select{ background:transparent !important; color:var(--ink) !important; border-color:var(--border) !important; }
+/* buttons with no explicit colour default to black (invisible on dark) - inherit the readable ink instead */
+button{ color:inherit; }
 /* selects still need a readable menu surface */
 select{ background:var(--surface) !important; }
 select option{ background:var(--surface2); color:var(--ink); }
@@ -23611,7 +23613,7 @@ async function projConfirmEmailToTask(){
         '<div style="font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;">'+value+(tag||'')+'</div>'+
       '</div>';
     }
-    var companion='<div style="border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:20px 20px 22px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;justify-content:center;">'+
+    var companion='<div style="border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:20px 20px 22px;box-sizing:border-box;height:100%;width:340px;max-width:100%;display:flex;flex-direction:column;justify-content:center;">'+
       '<div style="font-size:13px;font-weight:700;color:var(--ink);">Performance health</div>'+
       '<div style="font-size:11px;color:var(--ink3);margin:3px 0 18px;padding-bottom:16px;border-bottom:1px solid var(--border);">'+total+' rated'+(prevPct?' · vs last cycle':' · vs a healthy curve')+'</div>'+
       '<div style="font-size:32px;font-weight:800;color:var(--ink);letter-spacing:-0.5;line-height:1;">'+meetAbovePct+'%'+arrowTag(meetDelta,' pts',true)+'</div>'+
@@ -23651,7 +23653,7 @@ async function projConfirmEmailToTask(){
       '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">'+sub+'</div>'+
       '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
         '<div style="flex:3;min-width:340px;display:flex;align-items:center;">'+svg+'</div>'+
-        '<div style="flex:1;min-width:240px;display:flex;">'+companion+'</div>'+
+        '<div style="flex:1;min-width:240px;display:flex;justify-content:center;">'+companion+'</div>'+
       '</div>'+
       commentary+
     '</div>';
