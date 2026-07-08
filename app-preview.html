@@ -190,7 +190,7 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 body.nav-slim #topbarAvatar { display:flex !important; }
 /* icons float in the top-right corner, on the same line as the page title (no bar, no white pills) */
 #appTopbar{ display:flex !important; align-items:center; gap:4px; position:absolute !important; top:18px; right:24px; left:auto; width:auto; height:auto; padding:0 !important; background:transparent !important; border:none !important; z-index:60; }
-.main:has(#view-home.active) #appTopbar{ display:none !important; }
+.main:has(#view-home.active) #appTopbar, .main:has(#view-chat.active) #appTopbar{ display:none !important; }
 #appTopbar .topsearch{ display:none !important; }
 #appTopbar .app-topbar-right{ display:flex; align-items:center; gap:4px; }
 #appTopbar .notif-bell{ margin:0; width:34px; height:34px; background:transparent !important; border:none !important; }
