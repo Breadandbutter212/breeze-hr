@@ -9138,10 +9138,12 @@ function parseArtifact(text) {
 
 // Open the current letter in its own browser tab: editable, printable to PDF.
 // Chat edits/regenerations flow through (the tab is re-written); edits made in the tab do not sync back.
-function _artifactTabHtml(a){
-  const title = a.title || 'Document';
-  const inner = formatArtifactContent(docBodyWithTitle(a, a.draft), a.accent);
-  return `<!doctype html><html><head><meta charset="utf-8"><title>${escapeHtml(title)}</title>
+// Static chrome only - strict CSP blocks ALL scripts + inline event handlers, so any markup
+// in the (AI/user-derived) letter content can't execute. Content is injected via innerHTML.
+function _artifactTabChrome(title){
+  return `<!doctype html><html><head><meta charset="utf-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; style-src 'unsafe-inline' https://fonts.googleapis.com; font-src https://fonts.gstatic.com; img-src data: https:;">
+  <title>${escapeHtml(title||'Document')}</title>
   <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap">
   <style>
     *{box-sizing:border-box} body{margin:0;background:#eceef2;font-family:'Plus Jakarta Sans',Arial,sans-serif;color:#1c2230;}
@@ -9154,15 +9156,23 @@ function _artifactTabHtml(a){
     .paper table{border-collapse:collapse;width:100%;margin:12px 0;} .paper td,.paper th{border:1px solid #dcdfe6;padding:6px 10px;text-align:left;} .paper ul,.paper ol{margin:8px 0 8px 22px;}
     @media print{ .bar{display:none} .paper{box-shadow:none;margin:0;max-width:none;border-radius:0;min-height:0;padding:0;} body{background:#fff} }
   </style></head><body>
-  <div class="bar"><span class="t">${escapeHtml(title)}</span><span class="sp"></span>
-    <button onclick="navigator.clipboard.writeText(document.getElementById('doc').innerText)">Copy</button>
-    <button onclick="window.print()">⬇ Save as PDF</button>
+  <div class="bar"><span class="t">${escapeHtml(title||'Document')}</span><span class="sp"></span>
+    <button id="_atCopy">Copy</button>
+    <button id="_atPdf">⬇ Save as PDF</button>
     <span style="font-size:11px;opacity:.7;margin-left:4px;">Editable · use Save as PDF to download</span>
   </div>
-  <div class="paper" id="doc" contenteditable="true" spellcheck="true">${inner}</div>
+  <div class="paper" id="doc" contenteditable="true" spellcheck="true"></div>
   </body></html>`;
 }
-function _artifactTabWrite(a){ const w=window._artifactWin; if(!w||w.closed) return; w.document.open(); w.document.write(_artifactTabHtml(a)); w.document.close(); }
+function _artifactTabWrite(a){
+  const w=window._artifactWin; if(!w||w.closed) return;
+  w.document.open(); w.document.write(_artifactTabChrome(a.title)); w.document.close();
+  // innerHTML does not execute <script>, and the CSP blocks inline event handlers (onerror etc.)
+  const d=w.document.getElementById('doc'); if(d) d.innerHTML = formatArtifactContent(docBodyWithTitle(a, a.draft), a.accent);
+  // Wire the buttons from here (the opener), so no inline handlers are needed in the sandboxed tab
+  const bc=w.document.getElementById('_atCopy'); if(bc) bc.onclick=function(){ try{ w.navigator.clipboard.writeText(d.innerText); }catch(e){} };
+  const bp=w.document.getElementById('_atPdf'); if(bp) bp.onclick=function(){ try{ w.print(); }catch(e){} };
+}
 function openArtifactTab(){
   if(!currentArtifact){ return; }
   const w=window.open('', 'breezeArtifactTab');
