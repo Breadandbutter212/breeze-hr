@@ -1293,6 +1293,9 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .org-node .org-name{ color:var(--ink) !important; }
 .org-node .org-title{ color:var(--ink3) !important; }
 .sgi-badge:empty,.sg-badge:empty{ display:none !important; }
+/* move the sidebar scrollbar to the LEFT side of the rail */
+body.nav-slim .slim-nav{ direction:rtl; }
+body.nav-slim .slim-nav > *{ direction:ltr; }
 /* SharePoint button in the rail: centre it like the other icons (was a left-aligned sg-head) */
 /* Dashboard + SharePoint are .sg-head (not .sgi) - match the icon-rail sizing + active box so they're identical to the others and centred */
 body.nav-slim .sg-head:not(.sg-static){ width:44px !important; height:44px !important; justify-content:center !important; align-items:center !important; padding:0 !important; margin:0 auto 4px !important; border-radius:12px !important; gap:0 !important; position:relative; }
