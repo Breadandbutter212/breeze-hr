@@ -10623,6 +10623,33 @@ function wfDueSoonItems(){
 
 let _smartEmail = null, _smartAnalysis = null;
 
+// Which Trackers tab a case's scenario lives on (mirrors renderTrackersBody).
+function wfTabForScenario(scenarioId){
+  const map = {
+    'maternity-leave':'family-leave','paternity-leave':'family-leave','adoption-leave':'family-leave',
+    'short-term-absence':'absence','long-term-absence':'absence',
+    'resignation':'leavers',
+    'performance-concern':'performance',
+    'disciplinary':'conduct','grievance':'conduct',
+    'immigration-check':'immigration-wf','rtw-new-starter':'immigration-wf','visa-renewal':'immigration-wf','ilr-application':'immigration-wf'
+  };
+  if (map[scenarioId]) return map[scenarioId];
+  // Custom tracker? Its scenarioId is the custom tracker's own id.
+  if (Array.isArray(customTrackers) && customTrackers.some(c=>c.id===scenarioId)) return 'custom:'+scenarioId;
+  return 'family-leave';
+}
+
+// Navigate to the right Trackers tab for a case, then open that person's details drawer.
+function smartOpenCaseDetails(caseId){
+  const c = (wfCases||[]).find(x=>x.id===caseId);
+  const tab = c ? wfTabForScenario(c.scenarioId) : null;
+  try { showView('trackers', document.querySelector('.ni[onclick*=trackers]')); } catch(e){}
+  setTimeout(()=>{
+    try { if (tab && typeof showTrackerTab==='function') showTrackerTab(tab); } catch(e){}
+    setTimeout(()=>{ try { openWfDetailsPanel(caseId); } catch(e){} }, 180);
+  }, 60);
+}
+
 // Find a case this exact email was already logged / created from (dedupe on refresh).
 function wfCaseForEmail(emailId){
   if(emailId==null) return null;
@@ -10685,7 +10712,7 @@ function smartActionClose(){ document.getElementById('smartActionModal')?.remove
 function editSmartActionCase(){
   const a=_smartAnalysis; if(!a||!a.caseId) return;
   smartActionClose();
-  setTimeout(()=>{ try{ openWfDetailsPanel(a.caseId); }catch(e){} }, 80);
+  setTimeout(()=>{ try{ smartOpenCaseDetails(a.caseId); }catch(e){} }, 80);
 }
 
 function showSmartActionModal(email, a){
@@ -10776,7 +10803,7 @@ function showSmartActionDuplicate(email, c){
 }
 function smartActionOpenDup(){
   const id=window._smartDupCaseId; smartActionClose();
-  setTimeout(()=>{ try{ openWfDetailsPanel(id); }catch(e){} }, 120);
+  setTimeout(()=>{ try{ smartOpenCaseDetails(id); }catch(e){} }, 120);
 }
 
 function _smartSaveAttachments(c, email){
@@ -10836,7 +10863,7 @@ async function applySmartAction(){
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
   bzToast(`Logged to ${escapeHtml(c.employeeName)}'s record${firstAtt?' · attachment saved':''}${ticked}${_noted}.`);
-  setTimeout(()=>{ try{ openWfDetailsPanel(c.id); }catch(e){} }, 200);
+  setTimeout(()=>{ try{ smartOpenCaseDetails(c.id); }catch(e){} }, 200);
 }
 
 async function applySmartCreate(){
@@ -10863,7 +10890,7 @@ async function applySmartCreate(){
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
   bzToast(`Created a tracker for ${escapeHtml(newCase.employeeName)}${firstAtt?' · attachment saved':''}.`);
-  setTimeout(()=>{ try{ openWfDetailsPanel(id); }catch(e){} }, 200);
+  setTimeout(()=>{ try{ smartOpenCaseDetails(id); }catch(e){} }, 200);
 }
 
 function openAddMatPatModalPrefilled(name, type) {
