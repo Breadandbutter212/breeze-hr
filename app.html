@@ -522,6 +522,12 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
 .chat-bubble.ai-bubble.ai-plain { background: transparent; border: none; padding: 0; max-width: 100%; border-radius: 0; }
 .chat-msg.ai-row .chat-actions { margin-left: 0; }
 .chat-input-area { flex-shrink: 0; border-top: 1px solid var(--border); background: var(--surface); padding: 10px 24px 18px; margin-bottom: 0; }
+/* Mobile-only chat header (shown via the max-width:700px media query) */
+#mobileChatBar { display: none; align-items: center; justify-content: space-between; padding: 10px 14px; border-bottom: 1px solid var(--border); background: var(--surface); flex-shrink: 0; }
+#mobileChatBar .mcb-brand { font-size: 16px; font-weight: 800; color: var(--ink); letter-spacing: -0.3px; }
+#mobileChatBar .mcb-brand span { color: var(--accent); }
+#mobileChatBar button { border: 1px solid var(--border); background: white; color: var(--ink2); border-radius: 9px; padding: 6px 11px; font-size: 12px; font-weight: 600; font-family: inherit; cursor: pointer; display: inline-flex; align-items: center; gap: 5px; }
+#mobileChatBar button.mcb-icon { padding: 6px 8px; }
 .chat-chips { display: flex; gap: 6px; margin-bottom: 10px; flex-wrap: wrap; }
 .chat-chip { font-size: 12px; padding: 5px 13px; border-radius: 20px; border: 1px solid var(--border); background: white; color: var(--ink2); cursor: pointer; font-family: inherit; transition: all 0.12s; white-space: nowrap; }
 .chat-chip:hover { border-color: var(--accent); color: var(--accent); background: var(--accent-bg); }
@@ -733,10 +739,30 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
 .login-toggle a { color: #5B47E0; text-decoration: none; font-weight: 600; cursor: pointer; }
 .login-toggle a:hover { text-decoration: underline; }
 @media (max-width: 700px) {
-  /* Mobile: show the desktop-only notice over everything (login + app) */
-  .login-input { font-size: 16px; }
-  .shell { display: none !important; }
-  #mobileBlock { display: flex !important; }
+  /* Mobile = chat-only. Login works; the app shows just the chat (all other
+     views are desktop-only and unreachable because the sidebar is hidden). */
+  .login-input, .chat-ta { font-size: 16px !important; }         /* stop iOS auto-zoom */
+  #mobileBlock { display: none !important; }
+  /* Login: drop the marketing panel, let the form fill the screen */
+  .login-screen { flex-direction: column; }
+  .login-left { display: none !important; }
+  .login-right { flex: 1 1 100% !important; max-width: 100% !important; }
+  /* App shell: hide the sidebar rail so the chat is full width */
+  body.nav-slim .slimbar, .slimbar { display: none !important; }
+  .main { margin: 0 !important; }
+  /* No document/artifact pane and no floating header icons on a phone */
+  #chatArtifactPane, .chat-artifact-pane { display: none !important; }
+  #appTopbar { display: none !important; }
+  .chat-actions { display: none !important; }                    /* pure chat - no "view document" */
+  /* Mobile chat header (hidden on desktop) */
+  #mobileChatBar { display: flex !important; }
+  /* Chat body must share height with the header, not claim the full view */
+  .chat-view { flex-direction: column !important; }
+  .chat-main { flex: 1 1 auto !important; height: auto !important; min-height: 0 !important; }
+  /* Roomier, edge-to-edge */
+  .chat-history { padding: 16px 14px !important; }
+  .chat-input-area { padding: 8px 12px 14px !important; }
+  .chat-chips { flex-wrap: wrap !important; }
 }
 
 /* ── EMPLOYEE MATCH COMPARE ── */
@@ -1695,6 +1721,13 @@ body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-gr
 
 <!-- CHAT -->
 <div class="view chat-view" id="view-chat">
+  <div id="mobileChatBar">
+    <span class="mcb-brand">Breeze<span>HR</span></span>
+    <div style="display:flex;gap:6px;">
+      <button onclick="newChat()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>New chat</button>
+      <button class="mcb-icon" onclick="signOut()" title="Sign out" aria-label="Sign out"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg></button>
+    </div>
+  </div>
   <div class="chat-main">
     <div class="chat-body">
       <div class="chat-pane">
@@ -7364,6 +7397,9 @@ async function savePassword() {
 
 // ── NAV ──
 function showView(v,navEl) {
+  // Mobile is chat-only: never navigate to a desktop view (keeps last-view restore
+  // and any internal showView() calls from stranding a phone user on a nav-less page).
+  if (v !== 'chat' && window.matchMedia && window.matchMedia('(max-width:700px)').matches) { v = 'chat'; navEl = null; }
   try { localStorage.setItem('bz_view', v); } catch(e) {}
   // Remove known modal overlays that may have been left open
   ['mpRecordPanel','policyViewModal','sendEmailModal'].forEach(id => document.getElementById(id)?.remove());
