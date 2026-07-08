@@ -200,9 +200,12 @@ body.nav-slim #topbarAvatar { display:flex !important; }
 #appTopbar .tb-profile svg{ display:none !important; }             /* drop the chevron too */
 #appTopbar .tb-profile:hover{ background:rgba(125,135,155,.14); border-radius:999px; }
 #topNotifDot{ display:none !important; }                            /* remove the red notification dot */
-/* manage pages fill from the top (no bar); reserve room on the right so page actions don't sit under the icons */
+/* manage pages fill from the top (no bar) */
 body .main > .view.manage-view.active{ top:0 !important; }
-body .manage-topbar, body .docs-topbar{ padding-right:150px !important; }
+/* Consistent header: title (top-left, cleared from the icons) + action buttons on their own line below, right-aligned */
+body .manage-topbar, body .docs-topbar{ flex-direction:column !important; align-items:stretch !important; gap:10px !important; }
+body .manage-topbar > *:first-child, body .docs-topbar > *:first-child{ padding-right:130px; }
+body .manage-topbar > *:last-child:not(:first-child), body .docs-topbar > *:last-child:not(:first-child){ align-self:flex-end; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; padding-right:0; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:4px 12px 6px; }
 #slimConnSlot .app-topbar-right { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:0; }
@@ -1141,8 +1144,10 @@ body .manage-topbar, body .docs-topbar{ padding-right:150px !important; }
   #homeBody .hb-topbar .search input{border:0;outline:0;font-family:inherit;font-size:13.5px;color:var(--hb-ink);background:transparent;width:100%;}
   #homeBody .hb-topbar .search input::placeholder{color:var(--hb-ink3);}
   #homeBody .hb-topbar .tb-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-  #homeBody .hb-topbar .notif-bell{margin-left:0;background:var(--hb-surface);border-color:var(--hb-line);color:var(--hb-ink);}
-  #homeBody .hb-topbar .tb-profile{display:flex;align-items:center;gap:9px;background:var(--hb-surface);border:1px solid var(--hb-line);border-radius:999px;padding:5px 14px 5px 5px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--hb-ink);}
+  #homeBody .hb-topbar .notif-bell{margin-left:0;background:transparent;border:none;color:var(--hb-ink);}
+  #homeBody .hb-topbar .notif-bell:hover{background:rgba(125,135,155,.14);}
+  #homeBody .hb-topbar .tb-profile{display:flex;align-items:center;gap:9px;background:transparent;border:none;border-radius:999px;padding:4px 8px 4px 5px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--hb-ink);}
+  #homeBody .hb-topbar .tb-profile:hover{background:rgba(125,135,155,.14);}
 
   /* Notification bell + panel */
   .notif-bell{position:relative;width:38px;height:38px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:auto;flex-shrink:0;padding:0;font-family:inherit;transition:background .12s,border-color .12s;}
