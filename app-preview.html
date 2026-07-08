@@ -16176,6 +16176,22 @@ function renderLeaveTracker(body) {
   const matActive = active.filter(r => r.type==='Maternity' || r.type==='Adoption');
   const patActive = active.filter(r => r.type==='Paternity' || r.type==='Shared Parental');
   const flags = mpFlags(recs);
+  const flagsHtml = (()=>{
+    const cid = currentProfile?.company_id||'x';
+    const dismissKey = 'breeze_dismissed_flags_'+cid;
+    const dismissed = new Set(JSON.parse(localStorage.getItem(dismissKey)||'[]'));
+    const fKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
+    const visible = flags.filter(f=>!dismissed.has(fKeyOf(f)));
+    if (!visible.length) return '';
+    return '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px;">'+visible.map(f=>{
+      const fkey = fKeyOf(f);
+      return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#4F3ACF;':''}">
+        <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
+        <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#4F3ACF':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
+        <button onclick="(()=>{const k='breeze_dismissed_flags_${currentProfile?.company_id||'x'}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#EBB9A4':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
+      </div>`;
+    }).join('')+'</div>';
+  })();
 
   const statusBadge = (r) => {
     const s = mpStatus(r);
@@ -16194,6 +16210,7 @@ function renderLeaveTracker(body) {
 
   body.innerHTML = `
   <div style="display:flex;flex-direction:column;gap:18px;">
+    ${flagsHtml}
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi trk-kpi-ico"><div class="trk-kpi-chip" style="background:#DBF5F1;color:#0E9384;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5"/></svg></div><div class="trk-kpi-txt"><div class="trk-kpi-val">${matActive.length}</div><div class="trk-kpi-label">On maternity / adoption leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity'||r.type==='Adoption').length} upcoming</div></div></div>
@@ -16203,24 +16220,6 @@ function renderLeaveTracker(body) {
       <div class="trk-kpi trk-kpi-ico"><div class="trk-kpi-chip" style="background:#EEF0F4;color:#667085;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.5V12a10 10 0 1 1-5.9-9.1"/><polyline points="22 4 12 14 9 11"/></svg></div><div class="trk-kpi-txt"><div class="trk-kpi-val" style="color:var(--ink2);">${returned.length}</div><div class="trk-kpi-label">Returned to work</div><div class="trk-kpi-sub">This year</div></div></div>
     </div>
 
-    <!-- Flags -->
-    ${(()=>{
-      const cid = currentProfile?.company_id||'x';
-      const dismissKey = 'breeze_dismissed_flags_'+cid;
-      const dismissed = new Set(JSON.parse(localStorage.getItem(dismissKey)||'[]'));
-      // Stable key from the flag's message (position-independent, no quotes to escape).
-      const fKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
-      const visible = flags.filter(f=>!dismissed.has(fKeyOf(f)));
-      if (!visible.length) return '<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions.</div>';
-      return '<div style="display:flex;flex-direction:column;gap:8px;">'+visible.map(f=>{
-        const fkey = fKeyOf(f);
-        return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#4F3ACF;'+'':''}">
-          <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
-          <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#4F3ACF':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
-          <button onclick="(()=>{const k='breeze_dismissed_flags_${currentProfile?.company_id||'x'}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#EBB9A4':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
-        </div>`;
-      }).join('')+'</div>';
-    })()}
 
     <!-- Table -->
     <div class="trk-card">
