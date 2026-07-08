@@ -11741,7 +11741,7 @@ function vvRenderError(body, msg){
 
 function vvRenderView(body){
   body.innerHTML = `
-    <div style="max-width:1140px;margin:0 auto;padding:14px 20px 30px;">
+    <div style="max-width:none;margin:0;padding:14px 0 30px;">
       <div style="margin-bottom:6px;"><button onclick="vvNewView()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:2px 0;">‹ Back to Vibe Views</button></div>
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div>
@@ -11752,7 +11752,7 @@ function vvRenderView(body){
         <button onclick="vvRefine()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">↻ Refine</button>
         <button onclick="vvNewView()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New view</button>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
         <iframe id="vvFrame" sandbox="allow-scripts" scrolling="no" style="width:100%;height:620px;border:0;display:block;background:transparent;transition:height .18s ease;"></iframe>
         <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">AI can make mistakes. Check important info.</div>
       </div>
