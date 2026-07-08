@@ -1228,6 +1228,8 @@ input::placeholder,textarea::placeholder{ color:var(--ink3) !important; }
 .trk-table tr:hover td{ background:rgba(255,255,255,.04) !important; }
 .tracker-tab-btn{ color:var(--ink2) !important; }
 .tracker-tab-btn.active-tt{ color:var(--accent) !important; border-color:var(--accent) !important; }
+/* last tab keeps a trailing 18px margin -> bigger gap on the right than the left. Remove it so both sides match. */
+.tracker-tab-btn:last-child{ margin-right:0 !important; }
 .sgi.active{ background:#fff !important; color:#141B29 !important; }
 .sgi.active .ic{ color:#141B29 !important; }
 .chat-view{ background:transparent !important; }
