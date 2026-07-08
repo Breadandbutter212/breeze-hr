@@ -186,10 +186,18 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .slim-sp-wrap { padding:4px 10px 8px; }
 .sp-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.25); flex-shrink:0; }
 .sp-dot.on { background:#30D158; }
-/* slim mode: hide redundant top-right avatar (account lives bottom-left), push connectors to the right */
-body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !important; }
-/* Top bar removed for good; connectors sit as a plain icon row in the sidebar (no box) */
-.app-topbar { display:none !important; }
+/* persistent top bar shows on every page (Home has its own bar, so hide it there) */
+body.nav-slim #topbarAvatar { display:flex !important; }
+#appTopbar{ display:flex !important; align-items:center; gap:14px; height:58px; padding:0 20px !important; background:transparent !important; border-bottom:none !important; flex-shrink:0; }
+.main:has(#view-home.active) #appTopbar{ display:none !important; }
+#appTopbar .topsearch{ flex:1; max-width:440px; display:flex; align-items:center; gap:10px; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:10px 16px; }
+#appTopbar .topsearch .si{ display:flex; color:var(--ink3); }
+#appTopbar .topsearch .si svg{ width:18px; height:18px; }
+#appTopbar .topsearch input{ flex:1; border:none !important; background:transparent !important; outline:none; font-family:inherit; font-size:13.5px; color:var(--ink); }
+#appTopbar .app-topbar-right{ margin-left:auto; display:flex; align-items:center; gap:10px; }
+#appTopbar .tb-profile{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:5px 14px 5px 5px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink); }
+#appTopbar .tb-profile:hover{ border-color:var(--border2); }
+#appTopbar .notif-bell{ margin:0; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:4px 12px 6px; }
 #slimConnSlot .app-topbar-right { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:0; }
@@ -1620,31 +1628,23 @@ body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-gr
 
 <!-- GLOBAL TOP BAR -->
 <div class="app-topbar" id="appTopbar">
-  <div class="app-topbar-greeting" id="appGreeting"></div>
   <div class="topsearch">
     <span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
     <input id="globalSearch" type="text" autocomplete="off" placeholder="Search people, chats, documents..." oninput="slimSearch(this.value)" onfocus="slimSearch(this.value)" onkeydown="slimSearchKey(event)">
   </div>
   <div class="app-topbar-right">
-    <!-- Gmail -->
-    <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail'); else if(window._isTestAccount)toggleEmailPanel('test');" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
+    <button class="notif-bell" id="topNotifBell" onclick="toggleNotifPanel(event)" title="Notifications" aria-label="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="notif-dot" id="topNotifDot" style="display:none"></span>
+    </button>
+    <button class="notif-bell" onclick="(window._gmailConnected?toggleEmailPanel('gmail'):window._outlookConnected?toggleEmailPanel('outlook'):window._isTestAccount?toggleEmailPanel('test'):showView('settings',document.querySelector('.ni[onclick*=settings]')))" title="Inbox" aria-label="Inbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>
+    </button>
+    <div class="tb-profile" id="topProfile" onclick="hbProfileMenu(event)" title="Account">
+      <div id="topbarAvatar" style="width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;overflow:hidden;flex-shrink:0;"></div>
+      <span id="topName"></span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
     </div>
-    <!-- Test inbox (demo emails - test accounts only) -->
-    <div class="app-topbar-integration connected" id="topbar-testmail" title="Test inbox (demo emails)" onclick="toggleEmailPanel('test')" style="cursor:pointer;display:none;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#7C3AED"><path d="M9 2h6v2h-1v5.2l4.8 8.3A2 2 0 0 1 17.1 20H6.9a2 2 0 0 1-1.7-2.5L10 9.2V4H9V2z"/></svg>
-    </div>
-    <!-- Outlook -->
-    <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook inbox" onclick="if(window._outlookConnected)toggleEmailPanel('outlook'); else if(window._isTestAccount)toggleEmailPanel('test');" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 7.387v10.478l-4.262-3.632V9.978z" fill="#0078D4"/><path d="M0 5.919l10.218 6.774L24 7.387v-1.81A1.578 1.578 0 0 0 22.422 4H1.578A1.578 1.578 0 0 0 0 5.578z" fill="#0078D4"/><path d="M0 5.919v12.163a1.578 1.578 0 0 0 1.578 1.578H22.42A1.578 1.578 0 0 0 24 17.865v-.478L10.218 12.69z" fill="#1E4F96"/></svg>
-    </div>
-    <!-- SharePoint -->
-    <div class="app-topbar-integration disconnected" id="topbar-sharepoint" title="Search SharePoint" onclick="toggleSharePoint()" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="#038387"/><circle cx="15" cy="15" r="6" fill="#0078D4" opacity="0.85"/><circle cx="9" cy="15" r="4" fill="#1E4F96" opacity="0.7"/></svg>
-    </div>
-    <div class="app-topbar-divider"></div>
-    <!-- User avatar -->
-    <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;" id="topbarAvatar" onclick="showView('settings',document.querySelector('.ni[onclick*=settings]'))" title="Settings"></div>
   </div>
 </div>
 
@@ -2572,9 +2572,8 @@ async function onSignedIn(user) {
     const sNm = document.getElementById('slimName'); if (sNm && sNm.childNodes[0]) sNm.childNodes[0].nodeValue = (profile.full_name || user.email).split(' ')[0];
     const sCo = document.getElementById('slimCo'); if (sCo) sCo.textContent = profile.company_name || '';
     const firstName = (profile.full_name || user.email).split(' ')[0];
-    const hour = new Date().getHours();
-    const greetEl = document.getElementById('appGreeting');
-    if (greetEl) greetEl.textContent = '';
+    const tn = document.getElementById('topName'); if (tn) tn.textContent = firstName;
+    setTimeout(function(){ try{ refreshNotifBell(); }catch(e){} }, 1400);
     const sidebarCo = document.getElementById('sidebarCompanyName');
     if (sidebarCo && profile.company_name) sidebarCo.textContent = profile.company_name;
   }
@@ -7472,8 +7471,9 @@ async function refreshNotifBell(){
   try {
     const items = await nbBuild();
     window._notifItems = items;
-    const dot = document.getElementById('notifDot');
-    if (dot) dot.style.display = items.length ? 'block' : 'none';
+    const disp = items.length ? 'block' : 'none';
+    const dot = document.getElementById('notifDot'); if (dot) dot.style.display = disp;
+    const tdot = document.getElementById('topNotifDot'); if (tdot) tdot.style.display = disp;
   } catch(e){}
 }
 async function toggleNotifPanel(e){
