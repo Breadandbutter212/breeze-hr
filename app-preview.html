@@ -206,6 +206,12 @@ body .main > .view.manage-view.active{ top:0 !important; }
 body .manage-topbar, body .docs-topbar{ flex-direction:column !important; align-items:stretch !important; gap:10px !important; }
 body .manage-topbar > *:first-child, body .docs-topbar > *:first-child{ padding-right:130px; }
 body .manage-topbar > *:last-child:not(:first-child), body .docs-topbar > *:last-child:not(:first-child){ align-self:flex-end; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; padding-right:0; }
+/* Trackers: the tab bar sits on the LEFT, below the title */
+body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:flex-start !important; justify-content:flex-start !important; }
+/* People Plan calendar: no shadow / hard edge, keep it rounded, taller cells */
+.pp-grid{ box-shadow:none !important; border-radius:16px !important; }
+.pp-timeline{ box-shadow:none !important; }
+.pp-cell{ min-height:92px !important; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:4px 12px 6px; }
 #slimConnSlot .app-topbar-right { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:0; }
@@ -1286,9 +1292,12 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 .org-node .org-title{ color:var(--ink3) !important; }
 .sgi-badge:empty,.sg-badge:empty{ display:none !important; }
 /* SharePoint button in the rail: centre it like the other icons (was a left-aligned sg-head) */
-.slim-sp-wrap .sg-head{ width:44px !important; height:44px !important; justify-content:center !important; padding:0 !important; margin:0 auto !important; border-radius:12px !important; position:relative; }
-.slim-sp-wrap .sg-head .lbl{ display:none !important; }
-.slim-sp-wrap .sg-head .ic{ margin:0 !important; }
+/* Dashboard + SharePoint are .sg-head (not .sgi) - match the icon-rail sizing + active box so they're identical to the others and centred */
+body.nav-slim .sg-head:not(.sg-static){ width:44px !important; height:44px !important; justify-content:center !important; align-items:center !important; padding:0 !important; margin:0 auto 4px !important; border-radius:12px !important; gap:0 !important; position:relative; }
+body.nav-slim .sg-head:not(.sg-static) .lbl, body.nav-slim .sg-head:not(.sg-static) .chev{ display:none !important; }
+body.nav-slim .sg-head:not(.sg-static) .ic{ margin:0 !important; }
+body.nav-slim .sg-head:not(.sg-static).active{ background:#fff !important; color:#141B29 !important; box-shadow:none !important; }
+body.nav-slim .slim-sp-wrap{ display:flex !important; justify-content:center !important; padding:4px 10px 8px !important; }
 
 /* ── Canvas/panel pages get a consistent ROUNDED BOX (surface, 20px radius, subtle border, no shadow) ── */
 #headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot,
@@ -1710,7 +1719,6 @@ body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-gr
 <div class="view manage-view" id="view-chats">
   <div class="manage-topbar">
     <div><div class="manage-title">Chats</div><div class="manage-sub">Your saved conversations with Breeze HR.</div></div>
-    <button class="btn btn-primary btn-sm" onclick="newChat()">+ New chat</button>
   </div>
   <div class="manage-body" id="chatsBody"></div>
 </div>
@@ -1754,13 +1762,6 @@ body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-gr
 <div class="view manage-view" id="view-manage">
   <div class="manage-topbar">
     <div><div class="manage-title">Policies</div><div class="manage-sub">Upload your HR policies - Breeze HR reads these to answer employee questions.</div></div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <a href="https://www.acas.org.uk/advice" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        ACAS guidance
-      </a>
-      <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload policy<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadPolicy(event)"></label>
-    </div>
   </div>
   <div class="manage-body" id="manageBody"></div>
 </div>
