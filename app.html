@@ -5880,11 +5880,26 @@ async function downloadAsDocx() {
       })
     });
     if(!res.ok){
-      // Fallback - download as .txt if docx fails
-      const blob=new Blob([text],{type:'text/plain'});
-      const url=URL.createObjectURL(blob);
-      const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.txt`;a.click();
-      URL.revokeObjectURL(url);
+      // Server failed - build a REAL Word file client-side from the preview (same path the
+      // uploaded-template download uses) so you still get a .docx, not a plain-text file.
+      let done=false;
+      try{
+        const ok=await ensureHtmlDocx();
+        const html=exportHtmlFromPreview();
+        if(ok && html && window.htmlDocx){
+          const full=`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;">${html}</body></html>`;
+          const blob=window.htmlDocx.asBlob(full,{orientation:'portrait',margins:{top:1080,right:1080,bottom:1080,left:1080}});
+          const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();URL.revokeObjectURL(url);
+          done=true;
+        }
+      }catch(e){}
+      if(!done){
+        // Absolute last resort if the client-side builder can't load either.
+        const blob=new Blob([text],{type:'text/plain'});
+        const url=URL.createObjectURL(blob);
+        const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.txt`;a.click();
+        URL.revokeObjectURL(url);
+      }
     } else {
       const blob=await res.blob();
       const url=URL.createObjectURL(blob);
