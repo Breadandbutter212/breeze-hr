@@ -12930,6 +12930,9 @@ function charDiffHtml(oldStr, newStr) {
 }
 
 async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
+  // Collapse the "How it works" intro once results come in
+  const _cmpHow = document.getElementById('compareModeHow'); if (_cmpHow) _cmpHow.style.display = 'none';
+  const _cmpTg = document.getElementById('compareHowToggle'); if (_cmpTg) _cmpTg.textContent = 'How it works';
   const results = document.getElementById('compareResults');
   if (!diffs.length) {
     results.innerHTML = '<div style="padding:20px;color:var(--green);font-size:13px;font-weight:600;">✓ No differences found - the files are identical.</div>';
