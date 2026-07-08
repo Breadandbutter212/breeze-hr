@@ -747,9 +747,15 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
   .login-screen { flex-direction: column; }
   .login-left { display: none !important; }
   .login-right { flex: 1 1 100% !important; max-width: 100% !important; }
-  /* App shell: hide the sidebar rail so the chat is full width */
+  /* App shell: hide the sidebar rail so the chat is full width.
+     Use dynamic viewport height so the composer sits ABOVE Safari's toolbar
+     (100vh extends behind it, pushing the input off-screen). */
+  .shell { height: 100dvh !important; }
   body.nav-slim .slimbar, .slimbar { display: none !important; }
   .main { margin: 0 !important; }
+  /* Smaller welcome hero so the input is reachable without scrolling */
+  .chat-welcome { padding: 20px 18px !important; gap: 6px !important; }
+  .chat-welcome-sub { font-size: 13px !important; }
   /* No document/artifact pane and no floating header icons on a phone */
   #chatArtifactPane, .chat-artifact-pane { display: none !important; }
   #appTopbar { display: none !important; }
