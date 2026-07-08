@@ -573,13 +573,14 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .es-prompt:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
 .es-prompt svg { width:13px; height:13px; flex-shrink:0; }
 /* chat: HRIS people-data box */
-.es-hris { margin-top:22px; width:100%; max-width:360px; border:1px solid var(--border); border-radius:14px; background:white; padding:16px 16px 14px; text-align:center; display:flex; flex-direction:column; align-items:center; }
-.es-hris-head { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; letter-spacing:.01em; color:var(--green,#15803D); background:rgba(21,128,61,.08); border:1px solid rgba(21,128,61,.16); padding:3px 10px 3px 8px; border-radius:20px; margin-bottom:12px; }
+/* No box - a green "connected" pill above suggestion chips in a row */
+.es-hris { margin-top:18px; width:auto; max-width:none; border:none; background:transparent; padding:0; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.es-hris-head { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; letter-spacing:.01em; color:var(--green,#15803D); background:rgba(21,128,61,.10); border:1px solid rgba(21,128,61,.20); padding:4px 12px 4px 10px; border-radius:999px; margin-bottom:0; }
 .es-hris-dot { width:6px; height:6px; border-radius:50%; background:var(--green,#15803D); box-shadow:0 0 0 3px rgba(21,128,61,.18); flex-shrink:0; }
-.es-hris-prompts { display:flex; flex-direction:column; gap:4px; width:100%; }
-.es-hris-q { display:flex; align-items:center; justify-content:center; gap:9px; font-size:13px; color:var(--ink2); padding:8px 12px; border-radius:8px; cursor:pointer; transition:background .12s,color .12s; }
-.es-hris-q:hover { background:var(--accent-bg); color:var(--accent); }
-.es-hris-q svg { width:15px; height:15px; flex-shrink:0; color:var(--ink3); transition:color .12s; }
+.es-hris-prompts { display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:8px; width:auto; }
+.es-hris-q { display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:500; color:var(--ink2); background:var(--surface2); border:1px solid var(--border); padding:8px 14px; border-radius:999px; cursor:pointer; transition:border-color .12s,color .12s,background .12s; }
+.es-hris-q:hover { background:var(--accent-bg); color:var(--accent); border-color:var(--accent-mid); }
+.es-hris-q svg { width:14px; height:14px; flex-shrink:0; color:var(--ink3); transition:color .12s; }
 .es-hris-q:hover svg { color:var(--accent); }
 /* home empty cards: tinted motif */
 .home-empty .es-mini { width:38px; height:38px; border-radius:10px; background:var(--accent-bg); color:var(--accent); display:flex; align-items:center; justify-content:center; margin-bottom:11px; }
@@ -1272,7 +1273,10 @@ body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !im
 #headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot,
 .chat-view .chat-pane, #talentBody .tl-panel, #view-presentations > div:not(.manage-topbar){
   background:var(--surface) !important; border:1px solid var(--border) !important;
-  border-radius:20px !important; overflow:hidden !important; }
+  border-radius:20px !important; }
+/* org/chat/presentations clip; the data pages must SCROLL inside the box */
+#orgChartRoot, .chat-view .chat-pane, #view-presentations > div:not(.manage-topbar){ overflow:hidden !important; }
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #talentBody .tl-panel{ overflow-y:auto !important; overflow-x:hidden !important; }
 #headcountBody .trk-kpi, #trackersBody .trk-kpi, #talentBody .tl-cell{ background:var(--surface2) !important; }
 .chat-view .chat-main{ background:transparent !important; }
 #talentBody .tl-tabs{ background:transparent !important; border-bottom:none !important; }
@@ -1306,6 +1310,8 @@ body:not(.shapes-light) .tone-risk .tl-cell-h{background:linear-gradient(180deg,
 #talentBody .tl-tabs{ margin:0 20px !important; max-width:none !important; padding:8px 12px 0 !important; }
 #view-presentations > div:not(.manage-topbar){ margin:8px 20px 20px !important; max-width:none !important; }
 #talentBody .tl-gridwrap{ max-width:none !important; }
+/* talent panel: inner padding so the +Add person button / content aren't flush on the box edge */
+#talentBody .tl-panel{ padding:14px 16px !important; }
 
 /* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
 body.shapes-light{
@@ -1382,7 +1388,7 @@ body.shapes-light .es-title, body.shapes-light .lbl{ color:#141B29 !important; }
 .oc-toggle{ background:var(--surface2) !important; color:var(--ink) !important; }
 .tl-emp{ background:var(--surface) !important; border-color:var(--border) !important; }
 .tl-emp.lowconf{ background:var(--surface2) !important; }
-.es-hris{ background:var(--surface) !important; border-color:var(--border) !important; }
+.es-hris{ background:transparent !important; border:none !important; }
 .es-slide{ background:var(--surface2) !important; }
 .pp-grid{ background:var(--surface) !important; }
 .pp-cell{ background:transparent !important; border-color:var(--border) !important; }
@@ -14376,8 +14382,7 @@ function renderPPTimeline() {
       <div style="overflow-x:auto;">
         <div class="pp-grid" style="grid-template-columns:150px repeat(12,minmax(130px,1fr));min-width:1710px;">${gridHtml}</div>
       </div>
-    </div>
-    <div class="pp-legend">${legendHtml}</div>`;
+    </div>`;
 
     // Measure pass: keep each title inside its bar; move it to the right (dark) only if
     // the rendered title is genuinely wider than the rendered bar.
