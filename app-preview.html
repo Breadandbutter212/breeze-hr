@@ -14735,6 +14735,7 @@ function renderPPDetails() {
     : `<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">${label}</th>`;
 
   body.innerHTML = `
+    <div style="border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;flex:1;min-height:0;">
     <div style="padding:18px 20px 12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
       <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
         <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Calendar</button>
@@ -14763,7 +14764,7 @@ function renderPPDetails() {
         </thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>`;
+    </div></div>`;
 }
 
 function ppSwitchView(v) {
