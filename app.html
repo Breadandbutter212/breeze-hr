@@ -1124,6 +1124,9 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
   #homeBody .cal-day{aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-size:12.5px;color:var(--hb-ink2);border-radius:10px;position:relative;}
   #homeBody .cal-day.muted{color:var(--hb-ink3);opacity:.5;}
   #homeBody .cal-day.today{background:var(--hb-brand);color:#fff;font-weight:600;}
+  #homeBody .cal-day.has-ev{cursor:pointer;}
+  #homeBody .cal-day.has-ev:hover{background:var(--hb-hover,rgba(0,0,0,.06));}
+  #homeBody .cal-day.has-ev:focus-visible{outline:2px solid var(--hb-brand);outline-offset:1px;}
   #homeBody .cdot{position:absolute;bottom:5px;left:50%;transform:translateX(-50%);width:5px;height:5px;border-radius:50%;}
 
   /* People plan schedule list */
@@ -7891,8 +7894,10 @@ function hbCalendarHtml(refDate, ppList){
   for (let i=0;i<startDow;i++) cells.push(`<div class="cal-day muted">${prevDays-startDow+1+i}</div>`);
   for (let day=1; day<=daysInMonth; day++){
     const isToday = (y===today.getFullYear() && m===today.getMonth() && day===today.getDate());
-    const dot = dots[day] ? `<span class="cdot" style="background:${dots[day]}"></span>` : '';
-    cells.push(`<div class="cal-day${isToday?' today':''}">${day}${dot}</div>`);
+    const has = !!dots[day];
+    const dot = has ? `<span class="cdot" style="background:${dots[day]}"></span>` : '';
+    const clickable = has ? ` has-ev" role="button" tabindex="0" onclick="hbCalOpenDay(${day})" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();hbCalOpenDay(${day});}` : '';
+    cells.push(`<div class="cal-day${isToday?' today':''}${clickable}">${day}${dot}</div>`);
   }
   let trail = 1;
   while (cells.length % 7 !== 0) cells.push(`<div class="cal-day muted">${trail++}</div>`);
@@ -7908,6 +7913,38 @@ function hbCalendarHtml(refDate, ppList){
     <div class="cal-month">${escapeHtml(monthName)}</div>
     <div class="cal-grid">${dow}${cells.join('')}</div>
   </div>`;
+}
+
+// Clicking a calendar day with events pops out that day's schedule.
+function hbCalOpenDay(day){
+  const evs = (_hbCalPP||[]).filter(ev=> ev.date && ev.date.getFullYear()===_hbCalY && ev.date.getMonth()===_hbCalM && ev.date.getDate()===day)
+    .sort((a,b)=> a.date-b.date);
+  const dateStr = new Date(_hbCalY, _hbCalM, day).toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const rows = evs.length ? evs.map(ev=>{
+    const col = HB_CAT_COLOR[hbCatBucket(ev.cat)];
+    return `<div style="display:flex;align-items:flex-start;gap:11px;padding:12px 4px;border-top:1px solid var(--border);">
+      <span style="flex:none;width:9px;height:9px;border-radius:50%;background:${col};margin-top:5px;"></span>
+      <div style="min-width:0;">
+        <div style="font-weight:600;color:var(--ink);font-size:14px;">${escapeHtml(ev.title||'Event')}</div>
+        ${ev.cat?`<div style="font-size:12px;color:var(--ink2);margin-top:2px;">${escapeHtml(ev.cat)}</div>`:''}
+      </div>
+    </div>`;
+  }).join('') : `<div style="padding:16px 4px;color:var(--ink2);font-size:14px;">Nothing scheduled.</div>`;
+  const card=document.createElement('div');
+  card.style.cssText='background:var(--card);border:1px solid var(--border);border-radius:18px;box-shadow:var(--shadow-lg,0 26px 60px rgba(20,30,55,.22));width:min(460px,100%);max-height:80vh;overflow:auto;padding:20px 22px;box-sizing:border-box;';
+  card.innerHTML=`
+    <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:12px;margin-bottom:6px;">
+      <div>
+        <div style="font-size:12px;letter-spacing:.4px;text-transform:uppercase;color:var(--ink2);font-weight:600;">Schedule</div>
+        <div style="font-size:18px;font-weight:700;color:var(--ink);margin-top:3px;">${escapeHtml(dateStr)}</div>
+      </div>
+      <button onclick="closeCenteredModal('hbCalDayModal')" aria-label="Close" style="flex:none;border:none;background:var(--chip,rgba(0,0,0,.05));border-radius:9px;width:30px;height:30px;cursor:pointer;color:var(--ink2);font-size:16px;line-height:1;">✕</button>
+    </div>
+    <div style="margin-top:8px;">${rows}</div>
+    <div style="margin-top:14px;text-align:right;">
+      <button class="btn" onclick="closeCenteredModal('hbCalDayModal');homeGo('peopleplan')" style="font-size:13px;">Open people plan →</button>
+    </div>`;
+  openCenteredModal('hbCalDayModal', card);
 }
 
 // Build the signature ring as a segmented donut. total<0 = loading, 0 = all-clear.
