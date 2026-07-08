@@ -1218,7 +1218,10 @@ body:not(.shapes-light) [style*="background:#faf" i], body:not(.shapes-light) [s
 /* keep text readable inside those now-dark cards */
 body:not(.shapes-light) [style*="color:#1" i] [style*="background:#fff" i], body:not(.shapes-light) .onode, body:not(.shapes-light) .oc-node{ color:var(--ink) !important; }
 /* form controls on dark */
-input,textarea,select{ background:var(--surface2) !important; color:var(--ink) !important; border-color:var(--border) !important; }
+input,textarea,select{ background:transparent !important; color:var(--ink) !important; border-color:var(--border) !important; }
+/* selects still need a readable menu surface */
+select{ background:var(--surface) !important; }
+select option{ background:var(--surface2); color:var(--ink); }
 input::placeholder,textarea::placeholder{ color:var(--ink3) !important; }
 /* --- component parity with the mockup --- */
 .trk-kpi,.trk-card,.policy-card,.kanban-card,.home-card,.home-week,.tl-panel,.sp-panel{ border-radius:16px !important; border:1px solid var(--border) !important; }
@@ -1479,7 +1482,7 @@ body:not(.shapes-light) .sp-tag-xls, body:not(.shapes-light) .home-roi-delta,
 body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-green{ color:#4ADE80 !important; }
 
 /* PAGE 3 HISTORY + global: inputs that flash white on focus (inline JS sets background:white) -> keep dark */
-#chatPageSearch:focus,#globalSearch:focus,.topsearch input:focus,.sp-input:focus,.searchbox input:focus{ background:var(--surface2) !important; color:var(--ink) !important; }
+#chatPageSearch:focus,#globalSearch:focus,.topsearch input:focus,.sp-input:focus,.searchbox input:focus{ background:transparent !important; color:var(--ink) !important; }
 
 /* Remaining semantic tint chips/badges: give them translucent dark versions so they read on dark cards */
 .sp-tag-ppt{ background:rgba(248,113,113,.16) !important; }
