@@ -1270,6 +1270,9 @@ input::placeholder,textarea::placeholder{ color:var(--ink3) !important; }
 #artifactBody{ background:transparent !important; padding:0 16px !important; display:flex !important; flex-direction:column !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
 .artifact-doc{ flex:1 !important; min-height:0 !important; width:auto !important; max-width:none !important; margin:0 !important; overflow-y:auto !important; background:#fff !important; color:#1c2230 !important; border:1px solid rgba(20,30,55,.10) !important; border-radius:16px !important; box-shadow:0 8px 30px rgba(20,30,55,.10) !important; padding:44px 52px !important; }
 .artifact-doc [style*="color:var(--ink)" i], .artifact-doc [style*="color:#EEF2F9" i], .artifact-doc [style*="color:#fff" i]{ color:#1c2230 !important; }
+/* tables in the letter are on white paper: light cells, dark text, readable in dark mode too */
+.artifact-doc table, .artifact-doc tr, .artifact-doc td, .artifact-doc th{ background:#fff !important; color:#1c2230 !important; border-color:#dbdfe6 !important; }
+.artifact-doc th{ background:#f3f5f8 !important; }
 .search-pop,.slim-menu,.hb-pmenu{ background:var(--surface) !important; border-color:var(--border) !important; }
 /* --- icon-only rail like the mockup --- */
 body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !important; -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
@@ -9898,16 +9901,16 @@ function renderChatHistory() {
         <div class="chat-bubble ai-bubble ai-plain" id="bubble-${i}" contenteditable="true" spellcheck="true"
           style="outline:none;cursor:text;" title="Click to edit before copying"
           oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent!=null?m._editedContent:bubbleText)}</div>
-        ${artifact ? `<div style="margin:9px 0 4px 0;display:flex;gap:8px;flex-wrap:wrap;">${isSheet
-          ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatSheetDownload(${i})">⬇ .xlsx</button><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="chatSheetRich(${i},this)" title="Charts and full formatting">✦ Rich Excel</button>`
-          : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 ${isDoc ? 'View document' : 'View draft'}</button>${isDoc ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatArtifactDownload(${i})">⬇ Word</button><button class="artifact-btn" style="font-size:11px;padding:4px 12px;background:#6D28D9;color:#fff;" onclick="chatArtifactPremium(${i},this)" title="Beta: Claude builds the Word file natively for higher-quality formatting (slower)">✨ Premium</button>` : ''}`
-        }</div>` : ''}
-        ${m._spLinks && m._spLinks.length ? `<div style="margin:8px 0 4px 0;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${escapeHtml(/^https?:\/\//i.test(l.path||'')?l.path:'#')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${escapeHtml(l.path||'')}">📄 ${escapeHtml(l.title||'')}${l.ext?' ['+escapeHtml(l.ext)+']':''}</a>`).join('')}</div>` : ''}
-        <div class="chat-actions">
+        <div class="chat-actions" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin:9px 0 4px 0;">
+          ${artifact ? (isSheet
+            ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatSheetDownload(${i})">⬇ .xlsx</button><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="chatSheetRich(${i},this)" title="Charts and full formatting">✦ Rich Excel</button>`
+            : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 ${isDoc ? 'View document' : 'View draft'}</button>${isDoc ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatArtifactDownload(${i})">⬇ Word</button><button class="artifact-btn" style="font-size:11px;padding:4px 12px;background:#6D28D9;color:#fff;" onclick="chatArtifactPremium(${i},this)" title="Beta: Claude builds the Word file natively for higher-quality formatting (slower)">✨ Premium</button>` : ''}`
+          ) : ''}
           <button class="chat-action-btn" id="copy-${i}" onclick="copyChatMsg(${i})">Copy</button>
           <button class="chat-action-btn${m._ratingUp?' rated-up':''}" id="rate-up-${i}" onclick="rateChatMsg(${i},1)">👍</button>
           <button class="chat-action-btn${m._ratingDown?' rated-down':''}" id="rate-down-${i}" onclick="rateChatMsg(${i},-1)">👎</button>
         </div>
+        ${m._spLinks && m._spLinks.length ? `<div style="margin:2px 0 4px 0;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${escapeHtml(/^https?:\/\//i.test(l.path||'')?l.path:'#')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${escapeHtml(l.path||'')}">📄 ${escapeHtml(l.title||'')}${l.ext?' ['+escapeHtml(l.ext)+']':''}</a>`).join('')}</div>` : ''}
       </div>
     </div>`;
   }).join('');
