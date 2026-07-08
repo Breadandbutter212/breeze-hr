@@ -11641,7 +11641,11 @@ async function vvChat(messages, sysOverride, maxTokens){
       throw new Error('Network error while generating - check your connection and try again.');
     } finally { if (timer) clearTimeout(timer); }
     const d = await r.json().catch(function(){ return {}; });
-    if (!r.ok) throw new Error(d.error || ('Generation failed ('+r.status+')'));
+    if (!r.ok) {
+      var em = d && d.error;
+      em = (em && typeof em === 'object') ? (em.message || em.error || JSON.stringify(em)) : em;   // API may return {error:{message}} - don't stringify to [object Object]
+      throw new Error(em || ('Generation failed ('+r.status+')'));
+    }
     var text = (d.content && d.content[0] && d.content[0].text) || '';
     if (!text) throw new Error('The AI returned an empty response');
     return text;
