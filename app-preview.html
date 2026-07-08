@@ -188,16 +188,18 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .sp-dot.on { background:#30D158; }
 /* persistent top bar shows on every page (Home has its own bar, so hide it there) */
 body.nav-slim #topbarAvatar { display:flex !important; }
-/* thin bar, just the icons top-right (no search) */
-#appTopbar{ display:flex !important; align-items:center; justify-content:flex-end; height:52px; padding:0 24px !important; background:transparent !important; border-bottom:none !important; flex-shrink:0; position:relative; z-index:20; }
+/* icons float in the top-right corner, on the same line as the page title (no bar, no white pills) */
+#appTopbar{ display:flex !important; align-items:center; gap:4px; position:absolute !important; top:18px; right:24px; left:auto; width:auto; height:auto; padding:0 !important; background:transparent !important; border:none !important; z-index:60; }
 .main:has(#view-home.active) #appTopbar{ display:none !important; }
 #appTopbar .topsearch{ display:none !important; }
-#appTopbar .app-topbar-right{ display:flex; align-items:center; gap:10px; }
-#appTopbar .tb-profile{ display:flex; align-items:center; gap:9px; background:var(--surface); border:1px solid var(--border); border-radius:999px; padding:5px 14px 5px 5px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink); }
-#appTopbar .tb-profile:hover{ border-color:var(--border2); }
-#appTopbar .notif-bell{ margin:0; }
-/* push absolutely-positioned manage pages below the icon bar so it doesn't overlap the title/actions */
-body .main > .view.manage-view.active{ top:52px !important; }
+#appTopbar .app-topbar-right{ display:flex; align-items:center; gap:4px; }
+#appTopbar .notif-bell{ margin:0; width:34px; height:34px; background:transparent !important; border:none !important; }
+#appTopbar .notif-bell:hover{ background:rgba(125,135,155,.14) !important; }
+#appTopbar .tb-profile{ display:flex; align-items:center; gap:8px; background:transparent !important; border:none !important; padding:4px 6px; cursor:pointer; font-size:13.5px; font-weight:600; color:var(--ink); }
+#appTopbar .tb-profile:hover{ background:rgba(125,135,155,.14); border-radius:999px; }
+/* manage pages fill from the top (no bar); reserve room on the right so page actions don't sit under the icons */
+body .main > .view.manage-view.active{ top:0 !important; }
+body .manage-topbar, body .docs-topbar{ padding-right:200px !important; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:4px 12px 6px; }
 #slimConnSlot .app-topbar-right { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:0; }
