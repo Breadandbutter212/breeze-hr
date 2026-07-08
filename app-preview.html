@@ -7010,6 +7010,13 @@ function renderSettings() {
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Accent colour</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">Recolours the sidebar, the home greeting bar and all buttons. Saved to this browser.</div>
       <div id="bzSwatches" style="display:flex;gap:14px;flex-wrap:wrap;">${bzSwatchHtml()}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Box style</div>
+          <div style="font-size:12px;color:var(--ink3);">Switch between dark boxes and light/white boxes.</div>
+        </div>
+        <button id="bzBoxToggle" onclick="bzToggleBoxes()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">☀ Light boxes</button>
+      </div>
     </div>
     <div id="waitlistLabel" style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;display:none;">Beta applicants</div>
     <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:none;" id="waitlistSection">
@@ -23950,17 +23957,19 @@ async function projConfirmEmailToTask(){
 </script>
 
 <div id="breezeToast"></div>
-<button id="shapesThemeToggle" type="button">☀ Light boxes</button>
 <script>
 (function(){
   try{ if(localStorage.getItem('bzShapesLight')==='1') document.body.classList.add('shapes-light'); }catch(e){}
-  var b=document.getElementById('shapesThemeToggle'); if(!b) return;
-  function upd(){ b.textContent = document.body.classList.contains('shapes-light') ? '☾ Dark boxes' : '☀ Light boxes'; }
-  b.addEventListener('click', function(){
+  function upd(){
+    var on=document.body.classList.contains('shapes-light');
+    var s=document.getElementById('bzBoxToggle'); if(s) s.textContent = on ? '☾ Dark boxes' : '☀ Light boxes';
+  }
+  window.bzToggleBoxes=function(){
     document.body.classList.toggle('shapes-light');
     try{ localStorage.setItem('bzShapesLight', document.body.classList.contains('shapes-light')?'1':'0'); }catch(e){}
     upd();
-  });
+  };
+  window._bzBoxUpd=upd;
   upd();
 })();
 </script>
