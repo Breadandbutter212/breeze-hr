@@ -1264,10 +1264,10 @@ input::placeholder,textarea::placeholder{ color:var(--ink3) !important; }
 .sgi.active .ic{ color:#141B29 !important; }
 .chat-view{ background:transparent !important; }
 .doc-page{ background:var(--surface) !important; color:var(--ink) !important; }
-/* chat letter artifact: a clean white document (paper), dark text, no frame - fills the panel */
-.artifact-doc{ background:#fff !important; color:#1c2230 !important; box-shadow:none !important; border:none !important; border-radius:0 !important; max-width:none !important; }
+/* chat letter artifact: a white "paper" card floating in the panel with a gap around it */
+#artifactBody{ background:var(--surface2) !important; padding:20px !important; }
+.artifact-doc{ background:#fff !important; color:#1c2230 !important; border:1px solid rgba(20,30,55,.10) !important; border-radius:16px !important; box-shadow:0 8px 30px rgba(20,30,55,.10) !important; max-width:760px !important; margin:0 auto !important; padding:48px 52px !important; }
 .artifact-doc [style*="color:var(--ink)" i], .artifact-doc [style*="color:#EEF2F9" i], .artifact-doc [style*="color:#fff" i]{ color:#1c2230 !important; }
-#artifactBody{ background:#fff !important; }
 .artifact-head{ background:transparent !important; }
 .search-pop,.slim-menu,.hb-pmenu{ background:var(--surface) !important; border-color:var(--border) !important; }
 /* --- icon-only rail like the mockup --- */
