@@ -16177,6 +16177,12 @@ function renderGuidancePanel(container, g) {
   container.setAttribute('data-guidance','');
 }
 
+function trkShowFlags(){
+  const inner=document.createElement('div');
+  inner.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;';
+  inner.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">🔔 Notifications</div><button onclick="closeCenteredModal('trkAttnModal')" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;">✕</button></div><div style="padding:14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">${window._trkAttnRows||'<div style="font-size:13px;color:var(--ink3);text-align:center;padding:24px;">No notifications.</div>'}</div>`;
+  openCenteredModal('trkAttnModal', inner);
+}
 function renderLeaveTracker(body) {
   const recs = mpRecords || [];
   const active  = recs.filter(r => mpStatus(r) === 'active');
@@ -16185,22 +16191,14 @@ function renderLeaveTracker(body) {
   const matActive = active.filter(r => r.type==='Maternity' || r.type==='Adoption');
   const patActive = active.filter(r => r.type==='Paternity' || r.type==='Shared Parental');
   const flags = mpFlags(recs);
-  const flagsHtml = (()=>{
-    const cid = currentProfile?.company_id||'x';
-    const dismissKey = 'breeze_dismissed_flags_'+cid;
-    const dismissed = new Set(JSON.parse(localStorage.getItem(dismissKey)||'[]'));
-    const fKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
-    const visible = flags.filter(f=>!dismissed.has(fKeyOf(f)));
-    if (!visible.length) return '';
-    return '<div style="display:flex;flex-direction:column;gap:8px;margin-bottom:2px;">'+visible.map(f=>{
-      const fkey = fKeyOf(f);
-      return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#4F3ACF;':''}">
-        <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
-        <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#4F3ACF':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
-        <button onclick="(()=>{const k='breeze_dismissed_flags_${currentProfile?.company_id||'x'}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#EBB9A4':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
-      </div>`;
-    }).join('')+'</div>';
-  })();
+  const _trkDismissKey = 'breeze_dismissed_flags_'+(currentProfile?.company_id||'x');
+  const _trkFKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
+  const _trkVisibleFlags = (()=>{ const dismissed=new Set(JSON.parse(localStorage.getItem(_trkDismissKey)||'[]')); return flags.filter(f=>!dismissed.has(_trkFKeyOf(f))); })();
+  window._trkAttnRows = _trkVisibleFlags.map(f=>{
+    const fkey=_trkFKeyOf(f);
+    return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#4F3ACF;':''}"><span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span><div style="flex:1;">${f.msg} <a onclick="closeCenteredModal('trkAttnModal');${f.action}" style="color:${f.type==='info'?'#4F3ACF':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div><button onclick="(()=>{const k='${_trkDismissKey}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#EBB9A4':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button></div>`;
+  }).join('');
+  const flagsHtml = _trkVisibleFlags.length ? `<div style="margin-bottom:2px;"><button onclick="trkShowFlags()" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#4F3ACF;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:7px 14px;cursor:pointer;font-family:inherit;">🔔 ${_trkVisibleFlags.length} notification${_trkVisibleFlags.length>1?'s':''}</button></div>` : '';
 
   const statusBadge = (r) => {
     const s = mpStatus(r);
@@ -22064,11 +22062,7 @@ function renderProjects(){
   const sortOpts = [['newest','Newest first'],['oldest','Oldest first'],['due','Due soonest'],['progress','Most progress'],['name','Name A-Z']].map(([v,l])=>`<option value="${v}" ${f.sort===v?'selected':''}>${l}</option>`).join('');
 
   body.innerHTML = `
-    ${(overdueItems.length && !_projHideAttention) ? overdueItems.slice(0,8).map(({p,m})=>`<div class="trk-flag" style="margin-bottom:8px;">
-      <span class="trk-flag-icon">⚠️</span>
-      <div style="flex:1;"><strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} - was due ${projFmtDate(m.dueDate)} <a onclick="openProject('${p.id}')" style="color:#92400E;font-weight:600;cursor:pointer;text-decoration:underline;">View project →</a></div>
-      <button onclick="event.stopPropagation();projDismissAttnItem('${p.id}','${m.id}')" title="Dismiss" style="background:none;border:none;cursor:pointer;color:#fbbf24;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
-    </div>`).join('') : ''}
+    ${overdueItems.length ? `<div style="margin-bottom:16px;"><button onclick="projShowAttention()" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#92400E;background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.4);border-radius:20px;padding:7px 14px;cursor:pointer;font-family:inherit;">⚠️ ${overdueItems.length} item${overdueItems.length>1?'s':''} need${overdueItems.length>1?'':'s'} attention</button></div>` : ''}
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <input id="projSearch" value="${jsAttr(f.q)}" placeholder="Search projects..." oninput="projSetFilter('q',this.value)" style="flex:1;min-width:150px;${ss}cursor:text;">
       <select style="${ss}" onchange="projSetFilter('cat',this.value)">${catOpts}</select>
@@ -22630,6 +22624,14 @@ async function projAiSubtaskHelp(mid,sid){
 async function projClearSubtaskGuidance(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(s){ delete s.guidance; await saveProjects(); renderProjectDetail(); } }
 function projDismissAttention(){ _projHideAttention = true; renderProjects(); }
 function projDismissAttnItem(pid,mid){ _projDismissedAttn[pid+':'+mid] = true; renderProjects(); }
+function projShowAttention(){
+  const items = (projectsData||[]).flatMap(p=>projOverdueList(p).map(m=>({p,m}))).filter(({p,m})=>!_projDismissedAttn[p.id+':'+m.id]);
+  const inner=document.createElement('div');
+  inner.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;';
+  inner.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">⚠️ Needs attention</div><button onclick="closeCenteredModal('projAttnModal')" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;">✕</button></div>
+    <div style="padding:14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">${items.length?items.map(({p,m})=>`<div class="trk-flag"><span class="trk-flag-icon">⚠️</span><div style="flex:1;"><strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} - was due ${projFmtDate(m.dueDate)} <a onclick="closeCenteredModal('projAttnModal');openProject('${p.id}')" style="color:#92400E;font-weight:600;cursor:pointer;text-decoration:underline;">View project →</a></div><button onclick="projDismissAttnItem('${p.id}','${m.id}');projShowAttention()" title="Dismiss" style="background:none;border:none;cursor:pointer;color:#fbbf24;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);text-align:center;padding:24px;">All clear - nothing needs attention.</div>'}</div>`;
+  openCenteredModal('projAttnModal', inner);
+}
 
 // ── Per-task help (popup), attachments, and email linking ──
 async function projTaskHelp(id){
