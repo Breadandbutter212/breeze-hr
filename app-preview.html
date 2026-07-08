@@ -10685,7 +10685,7 @@ function smartActionClose(){ document.getElementById('smartActionModal')?.remove
 function editSmartActionCase(){
   const a=_smartAnalysis; if(!a||!a.caseId) return;
   smartActionClose();
-  setTimeout(()=>{ try{ openWfCasePanel(a.caseId); }catch(e){} }, 80);
+  setTimeout(()=>{ try{ openWfDetailsPanel(a.caseId); }catch(e){} }, 80);
 }
 
 function showSmartActionModal(email, a){
@@ -10776,7 +10776,7 @@ function showSmartActionDuplicate(email, c){
 }
 function smartActionOpenDup(){
   const id=window._smartDupCaseId; smartActionClose();
-  setTimeout(()=>{ try{ openWfCasePanel(id); }catch(e){} }, 120);
+  setTimeout(()=>{ try{ openWfDetailsPanel(id); }catch(e){} }, 120);
 }
 
 function _smartSaveAttachments(c, email){
@@ -10836,7 +10836,7 @@ async function applySmartAction(){
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
   bzToast(`Logged to ${escapeHtml(c.employeeName)}'s record${firstAtt?' · attachment saved':''}${ticked}${_noted}.`);
-  setTimeout(()=>{ try{ openWfCasePanel(c.id); }catch(e){} }, 200);
+  setTimeout(()=>{ try{ openWfDetailsPanel(c.id); }catch(e){} }, 200);
 }
 
 async function applySmartCreate(){
@@ -10863,7 +10863,7 @@ async function applySmartCreate(){
   try{ await saveWfCases(); }catch(e){}
   smartActionClose();
   bzToast(`Created a tracker for ${escapeHtml(newCase.employeeName)}${firstAtt?' · attachment saved':''}.`);
-  setTimeout(()=>{ try{ openWfCasePanel(id); }catch(e){} }, 200);
+  setTimeout(()=>{ try{ openWfDetailsPanel(id); }catch(e){} }, 200);
 }
 
 function openAddMatPatModalPrefilled(name, type) {
@@ -18791,13 +18791,13 @@ async function renderWfCategoryTab(body, scenarioIds, opts = {}) {
                 </td>
                 <td><span style="display:inline-flex;align-items:center;gap:7px;color:var(--ink2);"><span style="color:var(--ink3);display:inline-flex;">${scenarioIco(sc,14)}</span><span style="font-size:12px;">${sc.label}</span></span></td>
                 <td style="font-size:12px;color:var(--ink3);white-space:nowrap;">${started}</td>
-                <td style="min-width:140px;">
+                <td style="width:100%;min-width:160px;">
                   <div style="display:flex;align-items:center;gap:8px;">
                     <div style="flex:1;height:5px;background:var(--border);border-radius:3px;overflow:hidden;min-width:60px;"><div data-wf-bar="${c.id}" style="width:${pct}%;height:100%;background:${pct===100?'var(--green)':'var(--accent)'};border-radius:3px;"></div></div>
                     <span data-wf-pct="${c.id}" style="font-size:12px;font-weight:600;color:${pct===100?'var(--green)':'var(--ink)'};">${pct}%</span>
                   </div>
                 </td>
-                <td><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● Active</span></td>
+                <td style="white-space:nowrap;"><span class="trk-badge ${pct===100?'trk-badge-green':'trk-badge-blue'}">● Active</span></td>
                 <td style="white-space:nowrap;text-align:right;">
                   <button data-wf-btn="${c.id}" onclick="event.stopPropagation();openWfCasePanel('${c.id}')" class="btn btn-primary btn-sm" style="font-size:11px;white-space:nowrap;min-width:90px;text-align:center;${pct===100?'background:var(--green);border-color:var(--green);':''}">Checklist →</button>
                   <button onclick="event.stopPropagation();openWfDetailsPanel('${c.id}')" class="btn btn-secondary btn-sm" style="font-size:11px;margin-left:8px;">Details</button>
