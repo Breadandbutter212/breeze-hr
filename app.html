@@ -756,6 +756,10 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
   /* Smaller welcome hero so the input is reachable without scrolling */
   .chat-welcome { padding: 20px 18px !important; gap: 6px !important; }
   .chat-welcome-sub { font-size: 13px !important; }
+  /* Login form must fit the screen: let the waitlist line wrap, keep the box padded */
+  .login-toggle { white-space: normal !important; }
+  .login-right { padding: 24px 20px !important; box-sizing: border-box; }
+  .login-box { width: 100% !important; max-width: 100% !important; }
   /* No document/artifact pane and no floating header icons on a phone */
   #chatArtifactPane, .chat-artifact-pane { display: none !important; }
   #appTopbar { display: none !important; }
