@@ -11580,14 +11580,21 @@ function vvExtractHtml(t){
 
 function vvValidate(html){
   if (!html || html.length < 80) return 'empty document';
-  var banned = [[/\bfetch\s*\(/,'fetch()'],[/XMLHttpRequest/,'XMLHttpRequest'],[/\bimport\s*\(/,'dynamic import'],
-    [/WebSocket/,'WebSocket'],[/<script[^>]*\ssrc=/i,'external script'],[/<link\b/i,'<link> tag'],
-    [/src\s*=\s*["']https?:/i,'external src'],[/document\.cookie/,'document.cookie'],
-    [/localStorage|sessionStorage/,'storage access'],
-    // Match only real JS property access (parent.<identifier>), NOT prose like "notify the parent." in the policy text.
-    // Allow parent.postMessage (the sandboxed view reports its height for auto-resize - a number, no data leaves the browser).
-    [/\bparent\.(?!postMessage)\w/,'parent access'],[/\btop\.(?!postMessage)\w/,'top access']];
-  for (var i=0;i<banned.length;i++){ if (banned[i][0].test(html)) return 'contains '+banned[i][1]; }
+  // Document-level: external resources (these live in tags/attributes, so scan the whole thing).
+  var htmlBanned = [[/<script[^>]*\ssrc=/i,'external script'],[/<link\b/i,'<link> tag'],[/src\s*=\s*["']https?:/i,'external src']];
+  for (var i=0;i<htmlBanned.length;i++){ if (htmlBanned[i][0].test(html)) return 'contains '+htmlBanned[i][1]; }
+  // Executable JS only = <script> bodies + inline on*= handlers. Scanning this (not document prose)
+  // means "notify the parent." in a policy can't false-trip the parent/network guards, while whitespace/
+  // bracket obfuscation (parent . location, parent['location']) is still caught.
+  var js = (html.match(/<script\b[^>]*>([\s\S]*?)<\/script>/gi)||[]).join('\n')
+         + '\n' + (html.match(/\son\w+\s*=\s*("[^"]*"|'[^']*')/gi)||[]).join('\n');
+  var jsBanned = [[/\bfetch\s*\(/,'fetch()'],[/\bXMLHttpRequest\b/,'XMLHttpRequest'],[/\bimport\s*\(/,'dynamic import'],
+    [/\bWebSocket\b/,'WebSocket'],[/\bdocument\s*\.\s*cookie\b/,'document.cookie'],
+    [/\b(?:local|session)Storage\b/,'storage access'],
+    // real parent/top window access only; parent.postMessage (height auto-resize) is allowed
+    [/\bparent\s*(?:\[|\.\s*(?!postMessage\b)[A-Za-z_$\\])/,'parent access'],
+    [/\btop\s*(?:\[|\.\s*(?!postMessage\b)[A-Za-z_$\\])/,'top access']];
+  for (var k=0;k<jsBanned.length;k++){ if (jsBanned[k][0].test(js)) return 'contains '+jsBanned[k][1]; }
   if (!/addEventListener\(\s*["']message["']/.test(html)) return 'no message-event listener';
   return null;
 }
