@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Breeze HR</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet"><script defer src="/_vercel/insights/script.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet"><script defer src="/_vercel/insights/script.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/pizzip@3.1.4/dist/pizzip.js"></script>
@@ -186,10 +186,32 @@ body.nav-slim .app-topbar-right { margin-left:auto; }
 .slim-sp-wrap { padding:4px 10px 8px; }
 .sp-dot { width:7px; height:7px; border-radius:50%; background:rgba(255,255,255,0.25); flex-shrink:0; }
 .sp-dot.on { background:#30D158; }
-/* slim mode: hide redundant top-right avatar (account lives bottom-left), push connectors to the right */
-body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !important; }
-/* Top bar removed for good; connectors sit as a plain icon row in the sidebar (no box) */
-.app-topbar { display:none !important; }
+/* persistent top bar shows on every page (Home has its own bar, so hide it there) */
+body.nav-slim #topbarAvatar { display:flex !important; }
+/* icons float in the top-right corner, on the same line as the page title (no bar, no white pills) */
+#appTopbar{ display:flex !important; align-items:center; gap:4px; position:absolute !important; top:18px; right:24px; left:auto; width:auto; height:auto; padding:0 !important; background:transparent !important; border:none !important; z-index:60; }
+.main:has(#view-home.active) #appTopbar, .main:has(#view-chat.active) #appTopbar{ display:none !important; }
+#appTopbar .topsearch{ display:none !important; }
+#appTopbar .app-topbar-right{ display:flex; align-items:center; gap:4px; }
+#appTopbar .notif-bell{ margin:0; width:34px; height:34px; background:transparent !important; border:none !important; }
+#appTopbar .notif-bell:hover{ background:rgba(125,135,155,.14) !important; }
+#appTopbar .tb-profile{ display:flex; align-items:center; gap:6px; background:transparent !important; border:none !important; padding:3px; cursor:pointer; color:var(--ink); }
+#appTopbar .tb-profile #topName{ display:none !important; }        /* avatar only - keeps the cluster narrow so it doesn't overlap page buttons */
+#appTopbar .tb-profile svg{ display:none !important; }             /* drop the chevron too */
+#appTopbar .tb-profile:hover{ background:rgba(125,135,155,.14); border-radius:999px; }
+#topNotifDot{ display:none !important; }                            /* remove the red notification dot */
+/* manage pages fill from the top (no bar) */
+body .main > .view.manage-view.active{ top:0 !important; }
+/* Consistent header: title (top-left, cleared from the icons) + action buttons on their own line below, right-aligned */
+body .manage-topbar, body .docs-topbar{ flex-direction:column !important; align-items:stretch !important; gap:10px !important; }
+body .manage-topbar > *:first-child, body .docs-topbar > *:first-child{ padding-right:130px; }
+body .manage-topbar > *:last-child:not(:first-child), body .docs-topbar > *:last-child:not(:first-child){ align-self:flex-end; display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:flex-end; padding-right:0; }
+/* Trackers: the tab bar sits on the LEFT, below the title */
+body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:flex-start !important; justify-content:flex-start !important; }
+/* People Plan calendar: no shadow / hard edge, keep it rounded, taller cells */
+.pp-grid{ box-shadow:none !important; border-radius:16px !important; }
+.pp-timeline{ box-shadow:none !important; }
+.pp-cell{ min-height:74px !important; }
 #slimSearchSlot:empty, #slimConnSlot:empty { display:none; }
 #slimConnSlot { padding:4px 12px 6px; }
 #slimConnSlot .app-topbar-right { display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap; margin:0; }
@@ -573,13 +595,14 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .es-prompt:hover { border-color:var(--accent); color:var(--accent); background:var(--accent-bg); }
 .es-prompt svg { width:13px; height:13px; flex-shrink:0; }
 /* chat: HRIS people-data box */
-.es-hris { margin-top:22px; width:100%; max-width:360px; border:1px solid var(--border); border-radius:14px; background:white; padding:16px 16px 14px; text-align:center; display:flex; flex-direction:column; align-items:center; }
-.es-hris-head { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; letter-spacing:.01em; color:var(--green,#15803D); background:rgba(21,128,61,.08); border:1px solid rgba(21,128,61,.16); padding:3px 10px 3px 8px; border-radius:20px; margin-bottom:12px; }
+/* No box - a green "connected" pill above suggestion chips in a row */
+.es-hris { margin-top:18px; width:auto; max-width:none; border:none; background:transparent; padding:0; text-align:center; display:flex; flex-direction:column; align-items:center; gap:12px; }
+.es-hris-head { display:inline-flex; align-items:center; gap:6px; font-size:11.5px; font-weight:600; letter-spacing:.01em; color:var(--green,#15803D); background:rgba(21,128,61,.10); border:1px solid rgba(21,128,61,.20); padding:4px 12px 4px 10px; border-radius:999px; margin-bottom:0; }
 .es-hris-dot { width:6px; height:6px; border-radius:50%; background:var(--green,#15803D); box-shadow:0 0 0 3px rgba(21,128,61,.18); flex-shrink:0; }
-.es-hris-prompts { display:flex; flex-direction:column; gap:4px; width:100%; }
-.es-hris-q { display:flex; align-items:center; justify-content:center; gap:9px; font-size:13px; color:var(--ink2); padding:8px 12px; border-radius:8px; cursor:pointer; transition:background .12s,color .12s; }
-.es-hris-q:hover { background:var(--accent-bg); color:var(--accent); }
-.es-hris-q svg { width:15px; height:15px; flex-shrink:0; color:var(--ink3); transition:color .12s; }
+.es-hris-prompts { display:flex; flex-direction:row; flex-wrap:wrap; justify-content:center; gap:8px; width:auto; }
+.es-hris-q { display:inline-flex; align-items:center; gap:8px; font-size:12.5px; font-weight:500; color:var(--ink2); background:var(--surface2); border:1px solid var(--border); padding:8px 14px; border-radius:999px; cursor:pointer; transition:border-color .12s,color .12s,background .12s; }
+.es-hris-q:hover { background:var(--accent-bg); color:var(--accent); border-color:var(--accent-mid); }
+.es-hris-q svg { width:14px; height:14px; flex-shrink:0; color:var(--ink3); transition:color .12s; }
 .es-hris-q:hover svg { color:var(--accent); }
 /* home empty cards: tinted motif */
 .home-empty .es-mini { width:38px; height:38px; border-radius:10px; background:var(--accent-bg); color:var(--accent); display:flex; align-items:center; justify-content:center; margin-bottom:11px; }
@@ -806,13 +829,13 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 .pp-cat-label { display:flex; align-items:center; gap:8px; padding:10px 12px; font-size:11px; font-weight:600; color:var(--ink); background:var(--surface2); border-right:1px solid var(--border); border-bottom:1px solid var(--border); cursor:pointer; user-select:none; }
 .pp-cat-label:last-child { border-bottom:none; }
 .pp-cat-dot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
-.pp-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); min-height:52px; position:relative; padding:4px 3px; background:white; }
+.pp-cell { border-right:1px solid var(--border); border-bottom:1px solid var(--border); min-height:74px; position:relative; padding:5px 4px; background:white; }
 .pp-cell:nth-child(2n) { background:#FAFAFA; }
 .pp-cell:last-child { border-right:none; }
 .pp-row:last-child .pp-cell { border-bottom:none; }
-.pp-event { border-radius:5px; padding:4px 7px; font-size:10px; font-weight:600; color:white; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-bottom:3px; transition:filter 0.12s; line-height:1.3; }
+.pp-event { border-radius:5px; padding:4px 7px; font-size:10px; font-weight:600; color:white; cursor:pointer; white-space:normal; overflow:hidden; margin-bottom:3px; transition:filter 0.12s; line-height:1.3; }
 .pp-event:hover { filter:brightness(1.12); }
-.pp-event-span { border-radius:5px; padding:4px 7px; font-size:10px; font-weight:600; color:white; cursor:pointer; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; transition:filter 0.12s; line-height:1.3; position:absolute; top:4px; z-index:2; }
+.pp-event-span { border-radius:5px; padding:4px 7px; font-size:10px; font-weight:600; color:white; cursor:pointer; white-space:normal; overflow:hidden; transition:filter 0.12s; line-height:1.3; position:absolute; top:4px; z-index:2; }
 .pp-event-span:hover { filter:brightness(1.12); }
 .pp-wizard { max-width:640px; margin:48px auto; padding:0 24px; }
 .pp-wizard-step { background:white; border:1px solid var(--border); border-radius:var(--r-xl); padding:32px 36px; box-shadow:var(--shadow); }
@@ -1127,8 +1150,10 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   #homeBody .hb-topbar .search input{border:0;outline:0;font-family:inherit;font-size:13.5px;color:var(--hb-ink);background:transparent;width:100%;}
   #homeBody .hb-topbar .search input::placeholder{color:var(--hb-ink3);}
   #homeBody .hb-topbar .tb-right{margin-left:auto;display:flex;align-items:center;gap:12px;}
-  #homeBody .hb-topbar .notif-bell{margin-left:0;background:var(--hb-surface);border-color:var(--hb-line);color:var(--hb-ink);}
-  #homeBody .hb-topbar .tb-profile{display:flex;align-items:center;gap:9px;background:var(--hb-surface);border:1px solid var(--hb-line);border-radius:999px;padding:5px 14px 5px 5px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--hb-ink);}
+  #homeBody .hb-topbar .notif-bell{margin-left:0;background:transparent;border:none;color:var(--hb-ink);}
+  #homeBody .hb-topbar .notif-bell:hover{background:rgba(125,135,155,.14);}
+  #homeBody .hb-topbar .tb-profile{display:flex;align-items:center;gap:9px;background:transparent;border:none;border-radius:999px;padding:4px 8px 4px 5px;cursor:pointer;font-size:13.5px;font-weight:600;color:var(--hb-ink);}
+  #homeBody .hb-topbar .tb-profile:hover{background:rgba(125,135,155,.14);}
 
   /* Notification bell + panel */
   .notif-bell{position:relative;width:38px;height:38px;border-radius:10px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;margin-left:auto;flex-shrink:0;padding:0;font-family:inherit;transition:background .12s,border-color .12s;}
@@ -1158,6 +1183,369 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
   .hb-pmenu button.danger{color:var(--red);}
   .hb-pmenu button.danger svg{stroke:var(--red);}
   .hb-pmenu-div{height:1px;background:var(--border);margin:5px 6px;}
+</style>
+<style id="breeze-shapes-skin">
+/* ===== BREEZE x SHAPES THEME ===== */
+/* Home: let the ambient gradient show through + mockup-style prompt launcher */
+#homeBody{ background:transparent !important; }
+#homeBody .hb-wrap{ max-width:none !important; }
+#homeBody .hb-launch{ max-width:1040px; margin:0 auto 26px; }
+#homeBody .hb-launch-head{ text-align:center; padding:14px 0 20px; }
+#homeBody .hb-launch-date{ font-family:'Instrument Serif',serif; font-style:italic; font-size:22px; color:rgba(255,255,255,.9); }
+#homeBody .hb-launch-greet{ font-size:34px; font-weight:800; color:#fff; letter-spacing:-.02em; margin-top:4px; }
+#homeBody .hb-prompt{ background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:20px 22px 16px; box-shadow:0 18px 44px rgba(0,0,0,.30); backdrop-filter:blur(18px) saturate(1.2); -webkit-backdrop-filter:blur(18px) saturate(1.2); }
+#homeBody .hb-prompt textarea{ width:100%; border:none; background:transparent; resize:none; outline:none; font-family:inherit; font-size:16px; line-height:1.5; color:var(--ink); min-height:92px; }
+#homeBody .hb-prompt textarea::placeholder{ color:var(--ink3); }
+#homeBody .hb-prompt-foot{ display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-top:6px; }
+#homeBody .hb-prompt-lbl{ font-size:12.5px; font-weight:600; color:var(--ink3); }
+#homeBody .hb-chip{ font-size:12.5px; font-weight:600; color:var(--ink2); background:rgba(255,255,255,.06); border:1px solid var(--border); border-radius:999px; padding:6px 12px; cursor:pointer; transition:.15s; }
+#homeBody .hb-chip:hover{ background:rgba(255,255,255,.12); color:var(--ink); }
+#homeBody .hb-prompt-go{ margin-left:auto; width:42px; height:42px; border-radius:50%; border:none; background:#fff; color:#141B29; display:grid; place-items:center; cursor:pointer; transition:.15s; flex-shrink:0; }
+#homeBody .hb-prompt-go:hover{ transform:translateY(-1px); box-shadow:0 8px 20px rgba(0,0,0,.3); }
+:root{
+  --bg:#0f1826 !important; --surface:rgba(23,29,42,.86) !important; --surface2:rgba(32,40,56,.9) !important; --surface3:rgba(46,56,74,.92) !important;
+  --border:rgba(255,255,255,.09) !important; --border2:rgba(255,255,255,.16) !important;
+  --ink:#EEF2F9 !important; --ink2:#AEB8CB !important; --ink3:#828CA1 !important; --navy:#EEF2F9 !important;
+  --accent:#2DD4BF !important; --accent-ink:#5EEAD4 !important; --accent-bg:rgba(45,212,191,.16) !important; --accent-mid:rgba(45,212,191,.42) !important;
+  --green:#4ADE80 !important; --green-bg:rgba(74,222,128,.15) !important; --amber:#FBBF24 !important; --amber-bg:rgba(251,191,36,.15) !important;
+  --red:#F87171 !important; --red-bg:rgba(248,113,113,.15) !important; --teal:#2DD4BF !important; --purple:#A78BFA !important; --purple-bg:rgba(167,139,250,.18) !important;
+  --shadow:0 10px 30px rgba(0,0,0,.3) !important; --shadow-sm:0 2px 8px rgba(0,0,0,.22) !important; --shadow-lg:0 24px 60px rgba(0,0,0,.45) !important;
+  --hero-grad:none !important; --hero-fg:#fff !important; --hero-fg-dim:rgba(255,255,255,.82) !important; --hero-btn-bg:rgba(255,255,255,.12) !important; --hero-btn-fg:#fff !important;
+  --home-bg:transparent !important; --home-surface:rgba(23,29,42,.72) !important; --home-ink:#F5F7FB !important; --home-ink2:rgba(245,247,251,.82) !important; --home-ink3:rgba(245,247,251,.6) !important; --home-line:rgba(255,255,255,.12) !important;
+}
+/* ambient grainy gradient canvas */
+body{ background:#243c52 !important; color:var(--ink); }
+body::before{ content:""; position:fixed; inset:0; z-index:-2; pointer-events:none;
+  background:
+    radial-gradient(64% 48% at 50% 114%, rgba(212,82,44,.55) 0%, transparent 62%),
+    radial-gradient(52% 44% at 12% 104%, rgba(232,152,98,.38) 0%, transparent 58%),
+    radial-gradient(74% 64% at 88% -8%, rgba(26,56,104,.7) 0%, transparent 60%),
+    linear-gradient(158deg,#274764 0%,#3a5672 34%,#8a7c73 68%,#b15b43 100%); }
+body::after{ content:""; position:fixed; inset:0; z-index:-2; pointer-events:none; opacity:.05; mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E"); }
+/* let the gradient show through the app shell */
+.shell{ position:relative; z-index:1; background:transparent !important; }
+.main{ background:transparent !important; }
+.view,.manage-view,.manage-body{ background:transparent !important; }
+/* page header lifted onto the gradient with a serif-italic subtitle */
+.manage-topbar{ background:transparent !important; border-bottom:none !important; padding:22px 26px 10px !important; }
+.manage-title{ color:#fff !important; font-size:26px !important; font-weight:800 !important; letter-spacing:-.02em; }
+.manage-sub{ font-family:'Instrument Serif',serif !important; font-style:italic; font-size:16px !important; color:rgba(255,255,255,.8) !important; margin-top:4px; }
+/* frosted glass on major panels */
+[class*="card"],[class*="-panel"],[class*="-lib"],[class*="gen-"],[class*="doc-preview"],.home-week,.trk-card,.policy-card,.tmpl-lib{ -webkit-backdrop-filter:blur(14px); backdrop-filter:blur(14px); }
+/* teal primary buttons */
+.btn-primary{ background:linear-gradient(135deg,#2DD4BF,#22C7A9) !important; color:#04211D !important; border-color:transparent !important; font-weight:700 !important; box-shadow:0 4px 16px rgba(45,212,191,.28) !important; }
+.btn-secondary{ background:rgba(255,255,255,.08) !important; border-color:rgba(255,255,255,.16) !important; color:#fff !important; }
+/* neutralise stubborn hardcoded-white inline surfaces */
+body:not(.shapes-light) [style*="background:#fff" i], body:not(.shapes-light) [style*="background: #fff" i], body:not(.shapes-light) [style*="background:white" i], body:not(.shapes-light) [style*="background: white" i], body:not(.shapes-light) [style*="background-color:#fff" i], body:not(.shapes-light) [style*="background-color: #fff" i], body:not(.shapes-light) [style*="background-color:white" i], body:not(.shapes-light) [style*="background:rgb(255, body:not(.shapes-light) 255, body:not(.shapes-light) 255)" i], body:not(.shapes-light) [style*="background:rgba(255, body:not(.shapes-light) 255, body:not(.shapes-light) 255" i], body:not(.shapes-light) [style*="background:#fef" i], body:not(.shapes-light) [style*="background:#fdf" i]{ background:var(--surface) !important; }
+body:not(.shapes-light) [style*="background:#faf" i], body:not(.shapes-light) [style*="background:#f9f" i], body:not(.shapes-light) [style*="background:#f8f" i], body:not(.shapes-light) [style*="background:#f4f" i], body:not(.shapes-light) [style*="background:#f5f" i], body:not(.shapes-light) [style*="background:#eef" i]{ background:var(--surface2) !important; }
+/* keep text readable inside those now-dark cards */
+body:not(.shapes-light) [style*="color:#1" i] [style*="background:#fff" i], body:not(.shapes-light) .onode, body:not(.shapes-light) .oc-node{ color:var(--ink) !important; }
+/* form controls on dark */
+input,textarea,select{ background:transparent !important; color:var(--ink) !important; border-color:var(--border) !important; }
+/* buttons with no explicit colour default to black (invisible on dark) - inherit the readable ink instead */
+button{ color:inherit; }
+/* selects still need a readable menu surface */
+select{ background:var(--surface) !important; }
+select option{ background:var(--surface2); color:var(--ink); }
+input::placeholder,textarea::placeholder{ color:var(--ink3) !important; }
+/* --- component parity with the mockup --- */
+.trk-kpi,.trk-card,.policy-card,.kanban-card,.home-card,.home-week,.tl-panel,.sp-panel{ border-radius:16px !important; border:1px solid var(--border) !important; }
+.trk-kpi{ transition:transform .18s ease,border-color .18s ease; }
+.trk-kpi:hover{ transform:translateY(-2px); border-color:var(--border2) !important; }
+.trk-table th,.diff-table th{ text-transform:uppercase !important; font-size:10.5px !important; letter-spacing:.03em !important; color:var(--ink3) !important; }
+.trk-table td,.diff-table td{ border-top:1px solid var(--border) !important; }
+.trk-table tr:hover td{ background:rgba(255,255,255,.04) !important; }
+.tracker-tab-btn{ color:var(--ink2) !important; }
+.tracker-tab-btn.active-tt{ color:var(--accent) !important; border-color:var(--accent) !important; }
+/* last tab keeps a trailing 18px margin -> bigger gap on the right than the left. Remove it so both sides match. */
+.tracker-tab-btn:last-child{ margin-right:0 !important; }
+.sgi.active{ background:#fff !important; color:#141B29 !important; }
+.sgi.active .ic{ color:#141B29 !important; }
+.chat-view{ background:transparent !important; }
+.doc-page{ background:var(--surface) !important; color:var(--ink) !important; }
+/* chat letter artifact: a white "paper" card that fills the pane height, exactly aligned with the chat card; close x sits inside the card */
+.chat-artifact-pane{ background:transparent !important; border-left:none !important; position:relative !important; }
+.artifact-head{ background:transparent !important; border-bottom:none !important; position:absolute !important; top:16px; right:30px; z-index:6; padding:0 !important; width:auto !important; }
+#artifactBody{ background:transparent !important; padding:0 16px !important; display:flex !important; flex-direction:column !important; flex:1 !important; min-height:0 !important; overflow:hidden !important; }
+.artifact-doc{ flex:1 !important; min-height:0 !important; width:auto !important; max-width:none !important; margin:0 !important; overflow-y:auto !important; background:#fff !important; color:#1c2230 !important; border:1px solid rgba(20,30,55,.10) !important; border-radius:16px !important; box-shadow:0 8px 30px rgba(20,30,55,.10) !important; padding:44px 52px !important; }
+.artifact-doc [style*="color:var(--ink)" i], .artifact-doc [style*="color:#EEF2F9" i], .artifact-doc [style*="color:#fff" i]{ color:#1c2230 !important; }
+.search-pop,.slim-menu,.hb-pmenu{ background:var(--surface) !important; border-color:var(--border) !important; }
+/* --- icon-only rail like the mockup --- */
+body.nav-slim .slimbar{ width:64px !important; background:rgba(15,19,29,.62) !important; -webkit-backdrop-filter:blur(20px); backdrop-filter:blur(20px); }
+.slim-logo{ justify-content:center !important; padding:12px 0 10px !important; } .slim-logo .nm{ display:none !important; }
+.slim-nav{ align-items:center !important; padding:4px 0 !important; }
+.sg{ width:100%; display:flex !important; flex-direction:column; align-items:center; }
+.sg-items{ width:100%; display:flex; flex-direction:column; align-items:center; max-height:none !important; overflow:visible !important; }
+.sg-head.sg-static{ display:none !important; }
+.sg-head{ width:44px !important; height:44px !important; justify-content:center !important; padding:0 !important; }
+.sg-head .lbl,.sg-head .chev{ display:none !important; }
+.sgi{ width:44px !important; height:44px !important; justify-content:center !important; padding:0 !important; position:relative; }
+.sgi .sgi-lbl,.sgi .beta{ display:none !important; }
+.sgi-badge,.sg-badge{ position:absolute; top:-2px; right:-1px; }
+.slim-more{ display:none !important; }
+.slim-foot{ display:flex; justify-content:center; padding:8px 0 !important; }
+.slim-user{ justify-content:center !important; padding:6px !important; } .slim-user .nm{ display:none !important; }
+/* --- Documents: rail LEFT + two floating rounded cards like the mockup --- */
+.docs-body{ flex-direction:row !important; gap:16px !important; padding:6px 26px 26px !important; overflow:hidden !important; }
+.tmpl-lib{ width:300px !important; border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:none !important; overflow:hidden !important; }
+.gen-area{ border:1px solid var(--border) !important; border-radius:16px !important; background:var(--surface) !important; box-shadow:none !important; overflow:hidden !important; }
+
+/* org: clear the hero header */
+/* PAGE 4 ORG: clear the 2-line header */
+#orgChartRoot{ top:118px !important; }
+#orgChartRoot > div:first-child, #orgChartRoot #ocVP, #orgChartRoot #ocLegend{ background:transparent !important; }
+.org-node{ background:var(--surface2) !important; }
+.org-node .org-name{ color:var(--ink) !important; }
+.org-node .org-title{ color:var(--ink3) !important; }
+.sgi-badge:empty,.sg-badge:empty{ display:none !important; }
+/* move the sidebar scrollbar to the LEFT side of the rail */
+body.nav-slim .slim-nav{ direction:rtl; }
+body.nav-slim .slim-nav > *{ direction:ltr; }
+/* SharePoint button in the rail: centre it like the other icons (was a left-aligned sg-head) */
+/* Dashboard + SharePoint are .sg-head (not .sgi) - match the icon-rail sizing + active box so they're identical to the others and centred */
+body.nav-slim .sg-head:not(.sg-static){ width:44px !important; height:44px !important; justify-content:center !important; align-items:center !important; padding:0 !important; margin:0 auto 4px !important; border-radius:12px !important; gap:0 !important; position:relative; }
+body.nav-slim .sg-head:not(.sg-static) .lbl, body.nav-slim .sg-head:not(.sg-static) .chev{ display:none !important; }
+body.nav-slim .sg-head:not(.sg-static) .ic{ margin:0 !important; }
+body.nav-slim .sg-head:not(.sg-static).active{ background:#fff !important; color:#141B29 !important; box-shadow:none !important; }
+body.nav-slim .slim-sp-wrap{ display:flex !important; justify-content:center !important; padding:4px 10px 8px !important; }
+
+/* ── Canvas/panel pages get a consistent ROUNDED BOX (surface, 20px radius, subtle border, no shadow) ── */
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #orgChartRoot,
+.chat-view .chat-pane, #talentBody .tl-panel, #view-presentations > div:not(.manage-topbar){
+  background:var(--surface) !important; border:1px solid var(--border) !important;
+  border-radius:20px !important; }
+/* org/chat/presentations clip; the data pages must SCROLL inside the box */
+#orgChartRoot, .chat-view .chat-pane, #view-presentations > div:not(.manage-topbar){ overflow:hidden !important; }
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content, #talentBody .tl-panel{ overflow-y:auto !important; overflow-x:hidden !important; }
+#headcountBody .trk-kpi, #trackersBody .trk-kpi, #talentBody .tl-cell{ background:var(--surface2) !important; }
+.chat-view .chat-main{ background:transparent !important; }
+#talentBody .tl-tabs{ background:transparent !important; border-bottom:none !important; }
+body:not(.shapes-light) .tone-star .tl-cell-h{background:linear-gradient(180deg,rgba(91,71,224,.22),transparent) !important;} body:not(.shapes-light) .tone-star .nm{color:#C4B5FD !important;}
+body:not(.shapes-light) .tone-good .tl-cell-h{background:linear-gradient(180deg,rgba(74,222,128,.18),transparent) !important;} body:not(.shapes-light) .tone-good .nm{color:#4ADE80 !important;}
+body:not(.shapes-light) .tone-core .tl-cell-h{background:linear-gradient(180deg,rgba(255,255,255,.07),transparent) !important;}
+body:not(.shapes-light) .tone-watch .tl-cell-h{background:linear-gradient(180deg,rgba(251,191,36,.18),transparent) !important;} body:not(.shapes-light) .tone-watch .nm{color:#FBBF24 !important;}
+body:not(.shapes-light) .tone-risk .tl-cell-h{background:linear-gradient(180deg,rgba(248,113,113,.18),transparent) !important;} body:not(.shapes-light) .tone-risk .nm{color:#FCA5A5 !important;}
+
+/* DOCUMENTS letter builder: the preview pane (var(--bg) slab) blends into the framed gen-area card */
+.doc-preview{ background:transparent !important; }
+
+/* ═══ UNIFORM LAYOUT ═══ every page = full width minus a consistent ~0.5cm (20px) gap each side ═══ */
+/* content pages (cards float) + title rows: just the 20px side gutter */
+#homeBody .hb-wrap,
+.manage-topbar, .docs-topbar, .docs-body,
+#analyticsBody, #automationsBody, #chatsBody, #peoplePlanBody, #processMapsBody,
+#projectsBody, #vibeBody, #settingsBody, #manageBody{
+  max-width:none !important; margin:0 !important; box-sizing:border-box !important; width:100% !important;
+  padding-left:20px !important; padding-right:20px !important; }
+#analyticsBody, #automationsBody, #chatsBody, #peoplePlanBody, #processMapsBody,
+#projectsBody, #vibeBody, #settingsBody, #manageBody{ padding-top:16px !important; padding-bottom:24px !important; }
+.chat-history > *{ max-width:none !important; }
+/* canvas/panel pages: their rounded box, inset by the same 20px gap */
+#headcountBody > div, #trackersBody > div, #trackersBody #wf-main-content{
+  top:8px !important; left:20px !important; right:20px !important; bottom:20px !important; max-width:none !important; margin:0 !important; }
+#orgChartRoot{ left:20px !important; right:20px !important; bottom:20px !important; max-width:none !important; margin:0 !important; }
+.chat-view .chat-body{ padding:8px 0 20px !important; }
+.chat-view .chat-pane{ margin:0 20px !important; max-width:none !important; width:auto !important; padding:0 !important; flex:1 !important; }
+#talentBody .tl-panel{ margin:8px 20px 20px !important; max-width:none !important; width:auto !important; padding:0 !important; }
+#talentBody .tl-tabs{ margin:0 20px !important; max-width:none !important; padding:8px 12px 0 !important; }
+#view-presentations > div:not(.manage-topbar){ margin:8px 20px 20px !important; max-width:none !important; }
+#talentBody .tl-gridwrap{ max-width:none !important; }
+/* succession + CHRO summary fill the panel (no white gap on the right) */
+#talentBody .tl-succ, #talentBody .tl-summary, #talentBody .tl-sum-doc{ max-width:none !important; }
+/* talent panel: inner padding so the +Add person button / content aren't flush on the box edge */
+#talentBody .tl-panel{ padding:14px 16px !important; }
+
+/* ── LIGHT-BOX MODE ── toggled by body.shapes-light: white boxes instead of dark/grey ── */
+body.shapes-light{
+  --bg:#eef2f7 !important;
+  --surface:rgba(255,255,255,.96) !important; --surface2:#f4f6fa !important; --surface3:#e9edf3 !important;
+  --border:rgba(20,30,55,.10) !important; --border2:rgba(20,30,55,.18) !important;
+  --ink:#141B29 !important; --ink2:#3f4759 !important; --ink3:#5b6472 !important; --navy:#141B29 !important;
+}
+/* light mode: lighten the ambient gradient so text sitting *between* boxes (group headers etc.) still reads */
+body.shapes-light{ background:#e9eef4 !important; }
+body.shapes-light::before{
+  background:
+    radial-gradient(64% 48% at 50% 116%, rgba(240,168,132,.42) 0%, transparent 62%),
+    radial-gradient(52% 44% at 10% 106%, rgba(244,196,150,.34) 0%, transparent 58%),
+    radial-gradient(74% 64% at 90% -10%, rgba(150,182,224,.5) 0%, transparent 60%),
+    linear-gradient(158deg,#d8e5f3 0%,#e7edf3 36%,#f2ede6 68%,#f7e5d9 100%) !important; }
+body.shapes-light::after{ opacity:.03 !important; }
+/* light mode: keep page titles/eyebrows dark (they sit on the light gradient, not in a box) */
+body.shapes-light .manage-title, body.shapes-light .docs-title, body.shapes-light #homeBody .hb-launch-greet,
+body.shapes-light .home-greet, body.shapes-light h1{ color:#141B29 !important; text-shadow:none !important; }
+body.shapes-light .manage-sub, body.shapes-light .docs-sub, body.shapes-light #homeBody .hb-launch-date{ color:#4a5568 !important; }
+/* light mode: flip the HOME dashboard cards (they use their own --home-* tokens) back to white */
+body.shapes-light{ --home-surface:rgba(255,255,255,.97) !important; --home-ink:#1E1B33 !important; --home-ink2:#5B5872 !important; --home-ink3:#8E8BA3 !important; --home-line:#ECEBF3 !important; }
+body.shapes-light #homeBody .hero, body.shapes-light #homeBody .card, body.shapes-light #homeBody .stat{ box-shadow:0 1px 2px rgba(28,25,60,.05),0 8px 24px rgba(28,25,60,.06) !important; }
+/* light mode: SIDEBAR rail -> light with dark icons/labels */
+body.shapes-light .slimbar{ background:rgba(255,255,255,.78) !important; border-color:rgba(20,30,55,.10) !important; box-shadow:0 4px 18px rgba(20,30,55,.10) !important; }
+body.shapes-light .slim-logo .nm, body.shapes-light .slim-user .nm{ color:#1E232E !important; }
+body.shapes-light .slim-user .rl{ color:#6b7280 !important; }
+body.shapes-light .sg-head, body.shapes-light .sgi{ color:rgba(25,30,42,.78) !important; }
+body.shapes-light .sgi.active{ background:rgba(45,212,191,.16) !important; color:#0E9384 !important; }
+body.shapes-light .sgi.active .ic{ color:#0E9384 !important; }
+body.shapes-light .slim-foot{ border-top-color:rgba(20,30,55,.10) !important; }
+/* teal floating toggle */
+#shapesThemeToggle{ position:fixed; right:18px; bottom:18px; z-index:99999; display:inline-flex; align-items:center; gap:7px;
+  background:linear-gradient(135deg,#2DD4BF,#22C7A9); color:#04211D; border:none; border-radius:999px;
+  padding:10px 15px; font-size:12px; font-weight:700; font-family:inherit; cursor:pointer;
+  box-shadow:0 12px 30px rgba(45,212,191,.42); transition:transform .15s; }
+#shapesThemeToggle:hover{ transform:translateY(-2px); }
+
+/* ── NO SHADOWS on boxes (both modes) ── */
+.card,[class*="card"],[class*="-panel"],.trk-kpi,.trk-card,.policy-card,.home-week,.home-card,.tl-panel,.tl-cell,
+.gen-area,.org-node,.hb-prompt,#homeBody .stat,#homeBody .hero,#homeBody .card,#orgChartRoot,
+#headcountBody > div,#trackersBody > div,#trackersBody #wf-main-content,.chat-view .chat-pane,
+#view-presentations > div:not(.manage-topbar),.kanban-card,.sp-panel,.sgi,.sgi.active{ box-shadow:none !important; }
+
+/* ── SIDEBAR active icon: clean square, same size as the others (was squished/shadowed) ── */
+.sgi{ border-radius:12px !important; }
+.sgi.active{ width:44px !important; height:44px !important; border-radius:12px !important; box-shadow:none !important; transform:none !important; filter:none !important; }
+/* HR logo badge: same 44px footprint as the icons so the active box doesn't look smaller next to it */
+.slim-logo .mk{ width:44px !important; height:44px !important; border-radius:12px !important; font-size:12px !important; }
+.slim-logo{ padding:16px 10px 10px !important; justify-content:center !important; }
+/* remove the grey fill from text inputs - clean field, border only */
+.chat-input-wrap{ background:transparent !important; box-shadow:none !important; }
+.chat-input-area{ background:transparent !important; }
+
+/* ── LIGHT MODE readability: fix white text that would land on white boxes ── */
+body.shapes-light .btn-secondary{ background:rgba(20,30,55,.05) !important; color:#1f2937 !important; border-color:rgba(20,30,55,.14) !important; }
+body.shapes-light .gen-empty h3, body.shapes-light .gen-empty .es-title, body.shapes-light .gen-empty p{ color:#141B29 !important; }
+body.shapes-light .manage-title, body.shapes-light .docs-title{ color:#141B29 !important; }
+body.shapes-light .manage-sub, body.shapes-light .docs-sub{ color:#4a5568 !important; }
+body.shapes-light #homeBody .hb-launch-greet{ color:#141B29 !important; }
+body.shapes-light #homeBody .hb-launch-date{ color:#4a5568 !important; }
+body.shapes-light .es-title, body.shapes-light .lbl{ color:#141B29 !important; }
+
+/* --- Documents header parity (docs-* classes) + dark skeleton --- */
+.docs-topbar{ background:transparent !important; border-bottom:none !important; padding:22px 26px 12px !important; }
+.docs-title{ color:#fff !important; font-size:26px !important; font-weight:800 !important; letter-spacing:-.02em !important; }
+.docs-sub{ font-family:'Instrument Serif',serif !important; font-style:italic !important; font-size:16px !important; color:rgba(255,255,255,.82) !important; margin-top:4px !important; }
+.es-doc{ background:#1b2333 !important; border-color:var(--border) !important; box-shadow:0 10px 30px rgba(0,0,0,.3) !important; }
+.es-doc .ln{ background:rgba(255,255,255,.13) !important; }
+.gen-empty h3,.gen-empty .es-title{ color:#fff !important; }
+/* --- white CSS-class surfaces -> dark (Talent/Org/Chat/PeoplePlan/kanban/popups) --- */
+.org-node{ background:var(--surface) !important; border-color:var(--border) !important; }
+.oc-toggle{ background:var(--surface2) !important; color:var(--ink) !important; }
+.tl-emp{ background:var(--surface) !important; border-color:var(--border) !important; }
+.tl-emp.lowconf{ background:var(--surface2) !important; }
+.es-hris{ background:transparent !important; border:none !important; }
+.es-slide{ background:var(--surface2) !important; }
+.pp-grid{ background:var(--surface) !important; }
+.pp-cell{ background:transparent !important; border-color:var(--border) !important; }
+.pp-month-chip,.pp-chip,.pp-wizard-step{ background:var(--surface2) !important; color:var(--ink) !important; }
+.kanban-card{ background:var(--surface) !important; border-color:var(--border) !important; }
+.kanban-col-count{ background:var(--surface2) !important; }
+.trk-flag{ background:var(--surface2) !important; }
+.chat-input-wrap{ background:transparent !important; border-color:var(--border) !important; }
+.chat-bubble.ai-bubble{ background:var(--surface) !important; color:var(--ink) !important; }
+.chat-chip,.chat-action-btn{ background:var(--surface2) !important; color:var(--ink) !important; }
+.notif-panel,.hb-pmenu,.search-pop{ background:var(--surface) !important; border-color:var(--border) !important; }
+.app-topbar-integration{ background:var(--surface2) !important; }
+.cal-nav button,.act-btn{ background:var(--surface2) !important; color:var(--ink) !important; }
+/* Projects "Needs attention" panel: dark red-tint + light red text */
+body:not(.shapes-light) [style*="background:#FFF5F5" i]{ background:rgba(248,113,113,.10) !important; border-color:rgba(248,113,113,.28) !important; }
+body:not(.shapes-light) [style*="color:#B91C1C" i], body:not(.shapes-light) [style*="color:#7F1D1D" i]{ color:#FCA5A5 !important; }
+
+/* ── PAGE 2: CHAT ── match mockup: floating centered column on the ambient bg + gradient spark + bigger title */
+.chat-view{ background:transparent !important; }
+.chat-history{ background:transparent !important; }
+.chat-history > *{ width:100%; max-width:820px; margin-left:auto; margin-right:auto; }
+.chat-welcome{ padding:40px 24px !important; }
+.chat-welcome-spark{ width:52px; height:52px; border-radius:15px; margin:0 auto 16px; display:grid; place-items:center;
+  background:linear-gradient(135deg,#2DD4BF,#22C7A9); box-shadow:0 10px 26px rgba(45,212,191,.34); }
+.chat-welcome-spark svg{ width:26px; height:26px; }
+.chat-welcome-title{ font-size:24px !important; font-weight:800 !important; }
+.chat-welcome-sub{ font-size:13.5px !important; max-width:480px !important; }
+
+/* PAGE 5 PEOPLE PLAN: even-cell zebra was #FAFAFA (near-white) -> subtle dark stripe */
+.pp-cell:nth-child(2n){ background:rgba(255,255,255,.035) !important; }
+
+/* PAGES 6-20: pastel tint chips/headers (Trackers, Headcount, Careers, Immigration, Compare) -> translucent dark + readable light text */
+body:not(.shapes-light) [style*="background:#DBF5F1" i]{ background:rgba(45,212,191,.16) !important; color:#5EEAD4 !important; }
+body:not(.shapes-light) [style*="background:#EEEBFF" i]{ background:rgba(167,139,250,.18) !important; color:#C4B5FD !important; }
+body:not(.shapes-light) [style*="background:#DCFCE7" i]{ background:rgba(74,222,128,.16) !important; color:#4ADE80 !important; border-color:rgba(74,222,128,.4) !important; }
+body:not(.shapes-light) [style*="background:#ECFDF5" i]{ background:rgba(74,222,128,.14) !important; color:#4ADE80 !important; }
+body:not(.shapes-light) [style*="background:#E6F7EE" i], body:not(.shapes-light) [style*="background:#E6F7F4" i]{ background:rgba(74,222,128,.14) !important; }
+body:not(.shapes-light) [style*="background:#D1FAE5" i]{ background:rgba(74,222,128,.18) !important; color:#4ADE80 !important; }
+body:not(.shapes-light) [style*="background:#FEE2E2" i], body:not(.shapes-light) [style*="background:#FEE4E2" i], body:not(.shapes-light) [style*="background:#FEF2F2" i]{ background:rgba(248,113,113,.14) !important; color:#FCA5A5 !important; }
+body:not(.shapes-light) [style*="background:#FEF3C7" i]{ background:rgba(251,191,36,.16) !important; color:#FBBF24 !important; }
+body:not(.shapes-light) [style*="background:#D7DEE8" i], body:not(.shapes-light) [style*="background:#d7dee8" i]{ background:var(--surface2) !important; }
+/* last neutral-grey inline backgrounds (Headcount briefing pill #F3F4F6 etc.) */
+body:not(.shapes-light) [style*="background:#F3F4F6" i], body:not(.shapes-light) [style*="background:#F6F7F9" i], body:not(.shapes-light) [style*="background:#F7F8FA" i], body:not(.shapes-light) [style*="background:#F1F5F9" i], body:not(.shapes-light) [style*="background:#F2F4F7" i], body:not(.shapes-light) [style*="background:#EEF2F6" i]{ background:var(--surface2) !important; }
+/* dark semantic TEXT colours -> lighter so they read on dark pills/cards (Headcount/Trackers/Projects) */
+body:not(.shapes-light) [style*="color:#12854E" i], body:not(.shapes-light) [style*="color:#1D9E75" i], body:not(.shapes-light) [style*="color:#059669" i], body:not(.shapes-light) [style*="color:#047857" i], body:not(.shapes-light) [style*="color:#15803D" i], body:not(.shapes-light) [style*="color:#12854e" i]{ color:#4ADE80 !important; }
+body:not(.shapes-light) [style*="color:#0E9384" i], body:not(.shapes-light) [style*="color:#0F766E" i], body:not(.shapes-light) [style*="color:#0D9488" i]{ color:#5EEAD4 !important; }
+body:not(.shapes-light) [style*="color:#B42318" i], body:not(.shapes-light) [style*="color:#C0362C" i], body:not(.shapes-light) [style*="color:#DC2626" i], body:not(.shapes-light) [style*="color:#991B1B" i]{ color:#FCA5A5 !important; }
+body:not(.shapes-light) [style*="color:#BA7517" i], body:not(.shapes-light) [style*="color:#8A5A0A" i], body:not(.shapes-light) [style*="color:#92610A" i], body:not(.shapes-light) [style*="color:#B45309" i]{ color:#FBBF24 !important; }
+body:not(.shapes-light) [style*="color:#5B47E0" i], body:not(.shapes-light) [style*="color:#6D28D9" i], body:not(.shapes-light) [style*="color:#7C3AED" i], body:not(.shapes-light) [style*="color:#4F3ACF" i]{ color:#C4B5FD !important; }
+/* PAGE 9 TRACKERS: remaining tints + dark text used across leave/careers/immigration/recruitment tabs */
+body:not(.shapes-light) [style*="background:#EEF0F4" i]{ background:var(--surface2) !important; }
+body:not(.shapes-light) [style*="background:#FCE7EE" i]{ background:rgba(244,114,182,.15) !important; color:#F9A8D4 !important; }
+body:not(.shapes-light) [style*="color:#065F46" i]{ color:#4ADE80 !important; }
+body:not(.shapes-light) [style*="color:#78350F" i], body:not(.shapes-light) [style*="color:#7A5B00" i], body:not(.shapes-light) [style*="color:#92400E" i], body:not(.shapes-light) [style*="color:#DC8A0A" i]{ color:#FBBF24 !important; }
+body:not(.shapes-light) [style*="color:#E0356E" i]{ color:#F9A8D4 !important; }
+body:not(.shapes-light) [style*="color:#667085" i]{ color:#9AA4B6 !important; }
+/* DARK MODE: inline dark/near-black text colours -> light, so nothing is black-on-black.
+   (white-paper letter viewer + white buttons use class-based colours, so they're untouched) */
+body:not(.shapes-light) [style*="color:#0A1628" i],
+body:not(.shapes-light) [style*="color:#141B29" i],
+body:not(.shapes-light) [style*="color:#1A202C" i],
+body:not(.shapes-light) [style*="color:#1A2233" i],
+body:not(.shapes-light) [style*="color:#1D1D1F" i],
+body:not(.shapes-light) [style*="color:#1E232E" i],
+body:not(.shapes-light) [style*="color:#1F2937" i],
+body:not(.shapes-light) [style*="color:#0F172A" i],
+body:not(.shapes-light) [style*="color:#0D1B2A" i],
+body:not(.shapes-light) [style*="color:#111827" i],
+body:not(.shapes-light) [style*="color:#1E1B33" i],
+body:not(.shapes-light) [style*="color:#101" i],
+body:not(.shapes-light) [style*="color:#000" i],
+body:not(.shapes-light) [style*="color:black" i],
+body:not(.shapes-light) [style*="color: #000" i]{ color:var(--ink) !important; }
+/* medium-dark slate text -> ink2 (readable but not full white) */
+body:not(.shapes-light) [style*="color:#334155" i],
+body:not(.shapes-light) [style*="color:#3A4760" i],
+body:not(.shapes-light) [style*="color:#475569" i],
+body:not(.shapes-light) [style*="color:#2D3748" i],
+body:not(.shapes-light) [style*="color:#374151" i]{ color:var(--ink2) !important; }
+/* remaining dark greens -> light green */
+body:not(.shapes-light) [style*="color:#0F7A3D" i],
+body:not(.shapes-light) [style*="color:#16A34A" i],
+body:not(.shapes-light) [style*="color:#0A7A37" i],
+body:not(.shapes-light) [style*="color:#1F8A5B" i],
+body:not(.shapes-light) [style*="color:#1A7A3C" i]{ color:#4ADE80 !important; }
+/* class-based dark-green chip text on dark chips -> light green */
+body:not(.shapes-light) .sp-tag-xls, body:not(.shapes-light) .home-roi-delta,
+body:not(.shapes-light) #homeBody .up, body:not(.shapes-light) #homeBody .rag-green{ color:#4ADE80 !important; }
+
+/* PAGE 3 HISTORY + global: inputs that flash white on focus (inline JS sets background:white) -> keep dark */
+#chatPageSearch:focus,#globalSearch:focus,.topsearch input:focus,.sp-input:focus,.searchbox input:focus{ background:transparent !important; color:var(--ink) !important; }
+
+/* Remaining semantic tint chips/badges: give them translucent dark versions so they read on dark cards */
+.sp-tag-ppt{ background:rgba(248,113,113,.16) !important; }
+.sp-tag-xls{ background:rgba(74,222,128,.16) !important; }
+.src-indeed{ background:rgba(251,191,36,.16) !important; color:#FBBF24 !important; }
+.src-agency{ background:rgba(248,113,113,.16) !important; color:#F87171 !important; }
+.trk-badge-teal{ background:rgba(45,212,191,.16) !important; color:#5EEAD4 !important; }
+.emp-compare-row.has-diff .emp-compare-head{ background:rgba(251,191,36,.10) !important; }
+.emp-compare-row.salary-diff .emp-compare-head{ background:rgba(248,113,113,.10) !important; }
+.emp-field-table tr.field-diff td{ background:rgba(251,191,36,.08) !important; }
+.emp-field-table tr.field-salary-diff td{ background:rgba(248,113,113,.08) !important; }
+/* Letter-viewer chrome (keep the paper .lv-c/.lv-letter light on purpose) */
+.lv-akpi{ background:var(--surface2) !important; }
+.lv-flag{ background:rgba(251,191,36,.14) !important; }
+.flow.g3 .lv-flag,.flow.g4 .lv-flag{ background:rgba(74,222,128,.14) !important; }
+.tok .ph{ background:var(--surface3) !important; }
+/* Home dashboard delta/rag chips: translucent so they sit on the dark cards */
+#homeBody .up{ background:rgba(74,222,128,.16) !important; }
+#homeBody .rag-green{ background:rgba(74,222,128,.16) !important; }
+#homeBody .rag-amber{ background:rgba(251,191,36,.16) !important; }
+#homeBody .rag-red{ background:rgba(248,113,113,.16) !important; }
+#homeBody .rag-grey{ background:rgba(255,255,255,.08) !important; }
+
 </style>
 </head>
 <body>
@@ -1272,31 +1660,23 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 
 <!-- GLOBAL TOP BAR -->
 <div class="app-topbar" id="appTopbar">
-  <div class="app-topbar-greeting" id="appGreeting"></div>
   <div class="topsearch">
     <span class="si"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
     <input id="globalSearch" type="text" autocomplete="off" placeholder="Search people, chats, documents..." oninput="slimSearch(this.value)" onfocus="slimSearch(this.value)" onkeydown="slimSearchKey(event)">
   </div>
   <div class="app-topbar-right">
-    <!-- Gmail -->
-    <div class="app-topbar-integration disconnected" id="topbar-gmail" title="Gmail inbox" onclick="if(window._gmailConnected)toggleEmailPanel('gmail'); else if(window._isTestAccount)toggleEmailPanel('test');" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 5.457v13.909c0 .904-.732 1.636-1.636 1.636h-3.819V11.73L12 16.64l-6.545-4.91v9.273H1.636A1.636 1.636 0 0 1 0 19.366V5.457c0-2.023 2.309-3.178 3.927-1.964L5.455 4.64 12 9.548l6.545-4.910 1.528-1.145C21.69 2.28 24 3.434 24 5.457z" fill="#EA4335"/></svg>
+    <button class="notif-bell" id="topNotifBell" onclick="toggleNotifPanel(event)" title="Notifications" aria-label="Notifications">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/></svg>
+      <span class="notif-dot" id="topNotifDot" style="display:none"></span>
+    </button>
+    <button class="notif-bell" onclick="(window._gmailConnected?toggleEmailPanel('gmail'):window._outlookConnected?toggleEmailPanel('outlook'):window._isTestAccount?toggleEmailPanel('test'):showView('settings',document.querySelector('.ni[onclick*=settings]')))" title="Inbox" aria-label="Inbox">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 7l9 6 9-6"/></svg>
+    </button>
+    <div class="tb-profile" id="topProfile" onclick="hbProfileMenu(event)" title="Account">
+      <div id="topbarAvatar" style="width:30px;height:30px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;overflow:hidden;flex-shrink:0;"></div>
+      <span id="topName"></span>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="opacity:.6;flex-shrink:0;"><path d="M6 9l6 6 6-6"/></svg>
     </div>
-    <!-- Test inbox (demo emails - test accounts only) -->
-    <div class="app-topbar-integration connected" id="topbar-testmail" title="Test inbox (demo emails)" onclick="toggleEmailPanel('test')" style="cursor:pointer;display:none;">
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="#7C3AED"><path d="M9 2h6v2h-1v5.2l4.8 8.3A2 2 0 0 1 17.1 20H6.9a2 2 0 0 1-1.7-2.5L10 9.2V4H9V2z"/></svg>
-    </div>
-    <!-- Outlook -->
-    <div class="app-topbar-integration disconnected" id="topbar-outlook" title="Outlook inbox" onclick="if(window._outlookConnected)toggleEmailPanel('outlook'); else if(window._isTestAccount)toggleEmailPanel('test');" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M24 7.387v10.478l-4.262-3.632V9.978z" fill="#0078D4"/><path d="M0 5.919l10.218 6.774L24 7.387v-1.81A1.578 1.578 0 0 0 22.422 4H1.578A1.578 1.578 0 0 0 0 5.578z" fill="#0078D4"/><path d="M0 5.919v12.163a1.578 1.578 0 0 0 1.578 1.578H22.42A1.578 1.578 0 0 0 24 17.865v-.478L10.218 12.69z" fill="#1E4F96"/></svg>
-    </div>
-    <!-- SharePoint -->
-    <div class="app-topbar-integration disconnected" id="topbar-sharepoint" title="Search SharePoint" onclick="toggleSharePoint()" style="cursor:pointer;">
-      <svg width="16" height="16" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><circle cx="9" cy="9" r="6" fill="#038387"/><circle cx="15" cy="15" r="6" fill="#0078D4" opacity="0.85"/><circle cx="9" cy="15" r="4" fill="#1E4F96" opacity="0.7"/></svg>
-    </div>
-    <div class="app-topbar-divider"></div>
-    <!-- User avatar -->
-    <div style="width:30px;height:30px;border-radius:50%;background:var(--accent);color:white;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;cursor:pointer;" id="topbarAvatar" onclick="showView('settings',document.querySelector('.ni[onclick*=settings]'))" title="Settings"></div>
   </div>
 </div>
 
@@ -1352,7 +1732,6 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <div class="view manage-view" id="view-chats">
   <div class="manage-topbar">
     <div><div class="manage-title">Chats</div><div class="manage-sub">Your saved conversations with Breeze HR.</div></div>
-    <button class="btn btn-primary btn-sm" onclick="newChat()">+ New chat</button>
   </div>
   <div class="manage-body" id="chatsBody"></div>
 </div>
@@ -1396,13 +1775,6 @@ body.nav-slim #topbarAvatar, body.nav-slim .app-topbar-divider { display:none !i
 <div class="view manage-view" id="view-manage">
   <div class="manage-topbar">
     <div><div class="manage-title">Policies</div><div class="manage-sub">Upload your HR policies - Breeze HR reads these to answer employee questions.</div></div>
-    <div style="display:flex;gap:8px;align-items:center;">
-      <a href="https://www.acas.org.uk/advice" target="_blank" class="btn btn-secondary btn-sm" style="text-decoration:none;">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
-        ACAS guidance
-      </a>
-      <label class="btn btn-primary btn-sm" style="cursor:pointer;">+ Upload policy<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadPolicy(event)"></label>
-    </div>
   </div>
   <div class="manage-body" id="manageBody"></div>
 </div>
@@ -2224,9 +2596,8 @@ async function onSignedIn(user) {
     const sNm = document.getElementById('slimName'); if (sNm && sNm.childNodes[0]) sNm.childNodes[0].nodeValue = (profile.full_name || user.email).split(' ')[0];
     const sCo = document.getElementById('slimCo'); if (sCo) sCo.textContent = profile.company_name || '';
     const firstName = (profile.full_name || user.email).split(' ')[0];
-    const hour = new Date().getHours();
-    const greetEl = document.getElementById('appGreeting');
-    if (greetEl) greetEl.textContent = '';
+    const tn = document.getElementById('topName'); if (tn) tn.textContent = firstName;
+    setTimeout(function(){ try{ refreshNotifBell(); }catch(e){} }, 1400);
     const sidebarCo = document.getElementById('sidebarCompanyName');
     if (sidebarCo && profile.company_name) sidebarCo.textContent = profile.company_name;
   }
@@ -5845,7 +6216,7 @@ async function renderManage() {
         <div style="display:flex;gap:8px;align-items:center;">
           ${handbook ? `<button class="btn btn-ghost btn-sm" onclick="viewPolicy('${handbook.id}','${jsAttr(handbook.name.replace('HANDBOOK:','').trim())}')">View</button><button class="btn btn-ghost btn-sm" onclick="downloadPolicyFile('${handbook.id}','${jsAttr(handbook.name.replace('HANDBOOK:','').trim())}')">⬇</button>` : ''}
           <label class="btn btn-primary btn-sm" style="cursor:pointer;margin:0;">${handbook?'Replace':'Upload handbook'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadHandbook(event,'${handbook?.id||''}')"></label>
-          ${handbook ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deletePolicy('${handbook.id}')">Delete</button>` : ''}
+          ${handbook ? `<button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="deletePolicy('${handbook.id}')" title="Delete">✕</button>` : ''}
         </div>
       </div>
     </div>
@@ -5856,7 +6227,7 @@ async function renderManage() {
       <input id="policySearch" type="text" placeholder="Search policies..." oninput="filterPolicies(this.value)" style="width:100%;padding:8px 12px 8px 34px;border:1px solid var(--border);border-radius:var(--r-sm);font-size:12px;font-family:inherit;background:var(--surface);color:var(--ink);" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
     </div>`;
 
-  body.innerHTML=`${handbookHtml}<div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card" data-pname="${escapeHtml(p.name)}"><div class="pc-icon">${policyIco(p.name)}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${jsAttr(p.name)}')">${_ICO_DL}</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${jsAttr(p.name)}','${p.dbId||''}')"></label></div></div></div>`).join('')}</div>${regularDb.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${regularDb.map(p=>`<div class="uploaded-policy-row" data-pname="${escapeHtml(p.name)}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${escapeHtml(p.name)}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${jsAttr(p.name)}')">${_ICO_DL}</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')">Delete</button></div>`).join('')}</div>`:''}`;
+  body.innerHTML=`${handbookHtml}<div class="policy-grid">${allPolicies.map(p=>`<div class="policy-card" data-pname="${escapeHtml(p.name)}"><div class="pc-icon">${policyIco(p.name)}</div><div class="pc-name">${p.name}</div><div class="pc-desc">${p.desc}</div>${p.acas?`<div style="margin-top:6px;"><a href="${p.acas}" target="_blank" style="font-size:10px;color:var(--accent);text-decoration:none;">ACAS guidance →</a></div>`:''}  <div class="pc-foot"><span class="pc-status ${p.status==='uploaded'?'pcs-uploaded':'pcs-missing'}">${p.status==='uploaded'?'✓ Uploaded':'Not uploaded'}</span><div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">${p.status==='uploaded'&&p.dbId?`<button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="viewPolicy('${p.dbId}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:10px;padding:2px 7px;" onclick="downloadPolicyFile('${p.dbId}','${jsAttr(p.name)}')">${_ICO_DL}</button>`:''}<label style="font-size:11px;color:var(--accent);cursor:pointer;">${p.status==='uploaded'?'Replace':'Upload'}<input type="file" accept=".txt,.docx,.pdf" style="display:none" onchange="uploadNamedPolicy(event,'${jsAttr(p.name)}','${p.dbId||''}')"></label></div></div></div>`).join('')}</div>${regularDb.length?`<div style="margin-top:24px;"><div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:10px;">Uploaded policies</div>${regularDb.map(p=>`<div class="uploaded-policy-row" data-pname="${escapeHtml(p.name)}" style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg><span id="pname-${p.id}" style="font-size:12px;color:var(--ink);flex:1;">${escapeHtml(p.name)}</span><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--accent);" onclick="viewPolicy('${p.id}','${jsAttr(p.name)}')">View</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="downloadPolicyFile('${p.id}','${jsAttr(p.name)}')">${_ICO_DL}</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--ink2);" onclick="renamePolicy('${p.id}')">Rename</button><button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deletePolicy('${p.id}')" title="Delete">✕</button></div>`).join('')}</div>`:''}`;
 }
 
 function filterPolicies(q){
@@ -6276,7 +6647,7 @@ function pmRenderError(body, msg){
 }
 function pmRenderMap(body){
   body.innerHTML = `
-    <div style="max-width:1040px;margin:0 auto;padding:16px 20px 30px;">
+    <div style="max-width:none;margin:0;padding:16px 0 30px;">
       <div style="margin-bottom:6px;"><button onclick="pmNewMap()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:2px 0;">‹ Back to process maps</button></div>
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div><div style="font-size:16px;font-weight:700;color:var(--ink);letter-spacing:-0.02em;">${escapeHtml(_pmTitle)}</div>
@@ -6363,7 +6734,7 @@ async function renderProcessMaps() {
   }
 
   body.innerHTML=`
-    <div style="padding:18px 20px;border-bottom:1px solid var(--border);background:var(--surface);">
+    <div style="padding:18px 20px;border:1px solid var(--border);border-radius:16px;background:var(--surface);margin-bottom:16px;">
       <div style="display:flex;align-items:center;gap:10px;margin-bottom:4px;">
         <span style="width:30px;height:30px;border-radius:8px;background:var(--accent-bg);color:var(--accent);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3v4M3 5h4M6 17v4M4 19h4"/><path d="M13 3l3 7 7 3-7 3-3 7-3-7-7-3 7-3z"/></svg></span>
         <div style="font-size:15px;font-weight:700;color:var(--ink);">Generate an interactive process map</div>
@@ -6377,14 +6748,14 @@ async function renderProcessMaps() {
       </div>
       <div id="pmSavedWrap" style="margin:16px 0 0 0;"></div>
     </div>
-    <div style="padding:14px 20px 10px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;justify-content:space-between;">
+    <div style="padding:4px 4px 12px;background:transparent;display:flex;align-items:center;justify-content:space-between;">
       <div style="font-size:12px;color:var(--ink3);">Processes - building from your policies and chat.</div>
       <div style="display:flex;gap:10px;align-items:center;">
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--green);font-weight:500;">● From your policies</span>
         <span style="display:flex;align-items:center;gap:4px;font-size:11px;color:var(--accent);font-weight:500;">● Building</span>
       </div>
     </div>
-    <div style="padding:16px 20px;display:flex;flex-direction:column;gap:10px;" id="pmList">
+    <div style="padding:2px 0 10px;display:flex;flex-direction:column;gap:10px;" id="pmList">
       ${(window._allProcessMaps = policyProcesses, policyProcesses.slice(0,3).map(p=>renderProcessRow(p)).join(''))}
     </div>`;
   pmLoadSaved().then(function(saved){ _pmSaved=saved; const w=document.getElementById('pmSavedWrap'); if(w) w.innerHTML=pmSavedListHtml(saved); });
@@ -6650,6 +7021,13 @@ function renderSettings() {
       <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Accent colour</div>
       <div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">Recolours the sidebar, the home greeting bar and all buttons. Saved to this browser.</div>
       <div id="bzSwatches" style="display:flex;gap:14px;flex-wrap:wrap;">${bzSwatchHtml()}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:18px;padding-top:16px;border-top:1px solid var(--border);">
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--ink);margin-bottom:4px;">Box style</div>
+          <div style="font-size:12px;color:var(--ink3);">Switch between dark boxes and light/white boxes.</div>
+        </div>
+        <button id="bzBoxToggle" onclick="bzToggleBoxes()" class="btn btn-secondary btn-sm" style="flex-shrink:0;">☀ Light boxes</button>
+      </div>
     </div>
     <div id="waitlistLabel" style="grid-column:1/-1;font-size:11px;font-weight:600;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink3);padding-bottom:4px;border-bottom:1px solid var(--border);margin-top:4px;display:none;">Beta applicants</div>
     <div style="grid-column:1/-1;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:20px;display:none;" id="waitlistSection">
@@ -6815,7 +7193,7 @@ async function loadSettingsDocs() {
       let card = `<div style="border:1px solid var(--border);border-radius:var(--r-sm);margin-bottom:6px;overflow:hidden;">`;
       card += `<div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);">
         <div style="display:flex;align-items:center;gap:7px;">${fileIcon('var(--green)')}<span style="font-size:12px;font-weight:500;color:var(--ink);">${escapeHtml(name)}</span>${older.length ? `<span style="font-size:10px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:1px 7px;">${versions.length} versions</span>` : ''}</div>
-        <button onclick="deletePolicy('${current.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;">Delete</button>
+        <button onclick="deletePolicy('${current.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;" title="Delete">✕</button>
       </div>`;
       card += `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;border-top:1px solid var(--border);">
         <span style="font-size:11px;color:var(--ink3);">Current &nbsp;·&nbsp; uploaded ${fmtDate(current.created_at)}</span>
@@ -6826,7 +7204,7 @@ async function loadSettingsDocs() {
         older.forEach((v, i) => {
           card += `<div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px;background:var(--surface);${i < older.length-1 ? 'border-bottom:1px solid var(--border);' : ''}">
             <span style="font-size:11px;color:var(--ink3);">v${older.length - i} &nbsp;·&nbsp; ${fmtDate(v.created_at)}</span>
-            <button onclick="deletePolicy('${v.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;">Delete</button>
+            <button onclick="deletePolicy('${v.id}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;padding:0;" title="Delete">✕</button>
           </div>`;
         });
         card += `</div>`;
@@ -6845,7 +7223,7 @@ async function loadSettingsDocs() {
         <div style="display:flex;align-items:center;gap:7px;">${fileIcon('var(--accent)')}<span style="font-size:12px;">📄 ${escapeHtml(displayName)}</span></div>
         <div style="display:flex;gap:8px;">
           <button onclick="renameTmpl('${tmplId}')" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;">Rename</button>
-          <button onclick="deleteTemplate('${tmplId}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;">Delete</button>
+          <button onclick="deleteTemplate('${tmplId}')" style="font-size:11px;color:var(--red);background:none;border:none;cursor:pointer;" title="Delete">✕</button>
         </div>
       </div>`;
     }).join('');
@@ -7019,6 +7397,8 @@ function showView(v,navEl) {
 
 // ── HOME / TODAY ──────────────────────────────────────────
 function homeGo(v){ const el=document.querySelector(`.ni[onclick*="'${v}'"]`); showView(v, el); }
+// Home prompt -> open the AI chat and send the question (not "build a tool")
+function hbAsk(txt){ txt=(txt||'').trim(); homeGo('chat'); if(txt && typeof sendChat==='function'){ setTimeout(function(){ try{ sendChat(txt); }catch(e){} }, 80); } }
 // Jump from Home straight into a specific workflow run.
 async function homeOpenWfCase(caseId){
   homeGo('automations');
@@ -7122,8 +7502,9 @@ async function refreshNotifBell(){
   try {
     const items = await nbBuild();
     window._notifItems = items;
-    const dot = document.getElementById('notifDot');
-    if (dot) dot.style.display = items.length ? 'block' : 'none';
+    const disp = items.length ? 'block' : 'none';
+    const dot = document.getElementById('notifDot'); if (dot) dot.style.display = disp;
+    const tdot = document.getElementById('topNotifDot'); if (tdot) tdot.style.display = disp;
   } catch(e){}
 }
 async function toggleNotifPanel(e){
@@ -7183,6 +7564,9 @@ async function renderHome(){
   const raw = (currentProfile && (currentProfile.full_name || currentProfile.email)) || 'there';
   const first = String(raw).split('@')[0].split(' ')[0];
   const dateStr = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long',year:'numeric'});
+  const _hbHour = new Date().getHours();
+  const greet = _hbHour < 12 ? 'Good morning' : _hbHour < 18 ? 'Good afternoon' : 'Good evening';
+  const dateShort = new Date().toLocaleDateString('en-GB',{weekday:'long',day:'numeric',month:'long'});
 
   // Skeleton first so the view never flashes empty.
   el.innerHTML = `<div class="hb-wrap">
@@ -7436,18 +7820,21 @@ async function renderHome(){
   // ── Assemble ──
   el.innerHTML = `<div class="hb-wrap">
     ${topbarHtml}
-    <section class="hero">
-      <svg class="hero-art" viewBox="0 0 900 220" preserveAspectRatio="xMaxYMid slice" fill="none">
-        <circle cx="760" cy="40" r="150" fill="#fff" opacity=".06"/>
-        <circle cx="850" cy="180" r="110" fill="#fff" opacity=".08"/>
-        <circle cx="640" cy="200" r="70" fill="#fff" opacity=".05"/>
-      </svg>
-      <div class="hero-eyebrow">${escapeHtml(dateStr)}</div>
-      <h1>Welcome back, ${escapeHtml(first)}</h1>
-      <p>${heroLine}</p>
-      <button class="hero-btn" onclick="document.getElementById('hbAttn')?.scrollIntoView({behavior:'smooth',block:'center'})">Review now
-        <svg viewBox="0 0 24 24" fill="none" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14M13 6l6 6-6 6"/></svg>
-      </button>
+    <section class="hb-launch">
+      <div class="hb-launch-head">
+        <div class="hb-launch-date">${escapeHtml(dateShort)}</div>
+        <div class="hb-launch-greet">${greet}, ${escapeHtml(first)}</div>
+      </div>
+      <div class="hb-prompt">
+        <textarea id="hbPromptInput" rows="2" placeholder="Ask Breeze anything - a policy question, draft a letter, or query your people data..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();hbAsk(this.value)}"></textarea>
+        <div class="hb-prompt-foot">
+          <span class="hb-prompt-lbl">Suggestions:</span>
+          <button class="hb-chip" onclick="hbAsk('How much maternity leave is an employee entitled to?')">Maternity entitlement &#8599;</button>
+          <button class="hb-chip" onclick="hbAsk('What checks do I need for a new hire?')">Right to work checks &#8599;</button>
+          <button class="hb-chip" onclick="hbAsk('Draft a probation extension letter')">Draft a letter &#8599;</button>
+          <button class="hb-prompt-go" onclick="hbAsk(document.getElementById('hbPromptInput').value)" aria-label="Ask Breeze"><svg viewBox="0 0 24 24" width="18" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 19V5M5 12l7-7 7 7"/></svg></button>
+        </div>
+      </div>
     </section>
 
     <div class="sec-head"><h2>Breeze at a glance</h2><span class="sec-sub">This month</span></div>
@@ -8755,6 +9142,9 @@ function parseArtifact(text) {
   return { type: 'Draft', draft, advice: [advice, hrSection].filter(Boolean).join('\n\n') };
 }
 
+// Download a chat letter's Word file directly from the chat message (sets it as the current artifact first)
+function chatArtifactDownload(i){ const a=window._chatArtifacts&&window._chatArtifacts[i]; if(!a) return; currentArtifact=a; currentArtifact._md=a.draft; downloadArtifact(); }
+function chatArtifactPremium(i,btn){ const a=window._chatArtifacts&&window._chatArtifacts[i]; if(!a) return; currentArtifact=a; currentArtifact._md=a.draft; downloadArtifactPremium(); }
 function showArtifact(artifact, msgIdx) {
   currentArtifact = artifact;
   const pane = document.getElementById('chatArtifactPane');
@@ -8777,15 +9167,17 @@ function showArtifact(artifact, msgIdx) {
   }
   const emailProvider = window._emailProvider || null;
   const isDoc = artifact.type === 'Document';
-  head.innerHTML = `
-    <span class="artifact-type">${isDoc ? 'Document' : artifact.type}</span>
-    <span class="artifact-title">${isDoc ? escapeHtml(artifact.title || 'Document') : 'Draft response'}</span>
-    <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
-    <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
-    <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
-    ${isDoc ? `<button class="artifact-btn" style="background:#6D28D9;color:white;" onclick="downloadArtifactPremium()" title="Beta: Claude builds the Word file natively for higher-quality formatting (slower)">✨ Premium</button>` : ''}
-    ${!isDoc && emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
-    <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
+  // Documents: no header/title/buttons - just a clean white doc with a close ✕ (download/premium live in the chat).
+  head.innerHTML = isDoc
+    ? `<button class="artifact-close" onclick="closeArtifact()" style="margin-left:auto;">✕</button>`
+    : `<span class="artifact-type">${artifact.type}</span>
+       <span class="artifact-title">Draft response</span>
+       <span style="font-size:10px;color:var(--ink3);">Click to edit</span>
+       <button class="artifact-btn" onclick="copyArtifact()">Copy</button>
+       <button class="artifact-btn primary" onclick="downloadArtifact()">⬇ .docx</button>
+       ${emailProvider && !artifact.draft.includes('[PLACEHOLDER]') && !artifact.draft.includes('[placeholder]') ? `<button class="artifact-btn" style="background:var(--green);color:white;" onclick="openSendEmailModal()">📧 Send</button>` : ''}
+       <button class="artifact-close" onclick="closeArtifact()">✕</button>`;
+  if (isDoc) head.style.borderBottom = 'none'; else head.style.borderBottom = '';
   const previewSrc = isDoc ? docBodyWithTitle(artifact, artifact.draft) : artifact.draft;
   body.innerHTML = `<div class="artifact-doc" id="artifactDoc" contenteditable="true" spellcheck="true" style="outline:none;cursor:text;" title="Click to edit">${formatArtifactContent(previewSrc, artifact.accent)}</div>`;
   // Keep the original markdown so an unedited download renders headings/tables cleanly
@@ -9476,15 +9868,9 @@ function renderChatHistory() {
   if (!chatMessages.length && !chatLoading) {
     const firstName = currentProfile?.full_name?.split(' ')[0] || '';
     el.innerHTML = `<div class="chat-welcome">
+      <div class="chat-welcome-spark"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2"><path d="m12 3 2.2 5.8L20 11l-5.8 2.2L12 19l-2.2-5.8L4 11l5.8-2.2Z"/></svg></div>
       <div class="chat-welcome-title">${firstName ? 'Hi ' + firstName + ', how can I help?' : 'How can I help?'}</div>
-      <div class="chat-welcome-sub">Ask a policy question, paste an employee email, or ask me to draft a letter. I'll keep it in your company's style.</div>
-      <div class="es-hris">
-        <div class="es-hris-head"><span class="es-hris-dot"></span>Connected to your HRIS</div>
-        <div class="es-hris-prompts">
-          <div class="es-hris-q" onclick="sendChat('What is our current headcount?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>What is our current headcount?</div>
-          <div class="es-hris-q" onclick="sendChat('Who is on leave next week?')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>Who is on leave next week?</div>
-        </div>
-      </div>
+      <div class="chat-welcome-sub">Ask a policy question, draft a letter, or check your people data - headcount, who's on leave and more. I'll keep it in your company's style.</div>
     </div>`;
     return;
   }
@@ -9514,7 +9900,7 @@ function renderChatHistory() {
           oninput="chatMessages[${i}]._editedContent=this.innerText">${formatChatResponse(m._editedContent!=null?m._editedContent:bubbleText)}</div>
         ${artifact ? `<div style="margin:9px 0 4px 0;display:flex;gap:8px;flex-wrap:wrap;">${isSheet
           ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatSheetDownload(${i})">⬇ .xlsx</button><button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="chatSheetRich(${i},this)" title="Charts and full formatting">✦ Rich Excel</button>`
-          : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 ${isDoc ? 'View document' : 'View draft'}</button>`
+          : `<button class="artifact-btn primary" style="font-size:11px;padding:4px 12px;" onclick="showArtifact(window._chatArtifacts[${i}],${i})">📄 ${isDoc ? 'View document' : 'View draft'}</button>${isDoc ? `<button class="artifact-btn" style="font-size:11px;padding:4px 12px;" onclick="chatArtifactDownload(${i})">⬇ Word</button><button class="artifact-btn" style="font-size:11px;padding:4px 12px;background:#6D28D9;color:#fff;" onclick="chatArtifactPremium(${i},this)" title="Beta: Claude builds the Word file natively for higher-quality formatting (slower)">✨ Premium</button>` : ''}`
         }</div>` : ''}
         ${m._spLinks && m._spLinks.length ? `<div style="margin:8px 0 4px 0;display:flex;flex-wrap:wrap;gap:6px;">${m._spLinks.map(l=>`<a href="${escapeHtml(/^https?:\/\//i.test(l.path||'')?l.path:'#')}" target="_blank" rel="noopener" style="display:inline-flex;align-items:center;gap:5px;font-size:11px;color:var(--accent);background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:3px 9px;text-decoration:none;" title="${escapeHtml(l.path||'')}">📄 ${escapeHtml(l.title||'')}${l.ext?' ['+escapeHtml(l.ext)+']':''}</a>`).join('')}</div>` : ''}
         <div class="chat-actions">
@@ -11364,7 +11750,7 @@ function vvRenderError(body, msg){
 
 function vvRenderView(body){
   body.innerHTML = `
-    <div style="max-width:1140px;margin:0 auto;padding:14px 20px 30px;">
+    <div style="max-width:none;margin:0;padding:14px 0 30px;">
       <div style="margin-bottom:6px;"><button onclick="vvNewView()" style="display:inline-flex;align-items:center;gap:6px;background:none;border:none;color:var(--ink2);font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;padding:2px 0;">‹ Back to Vibe Views</button></div>
       <div style="display:flex;align-items:center;gap:12px;padding:2px 2px 14px;">
         <div>
@@ -11375,7 +11761,7 @@ function vvRenderView(body){
         <button onclick="vvRefine()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">↻ Refine</button>
         <button onclick="vvNewView()" style="border:1px solid var(--border);background:var(--surface);color:var(--ink2);font-family:inherit;font-size:12px;font-weight:600;padding:8px 12px;border-radius:var(--r-sm);cursor:pointer;">+ New view</button>
       </div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;box-shadow:var(--shadow-sm);">
+      <div style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);overflow:hidden;">
         <iframe id="vvFrame" sandbox="allow-scripts" scrolling="no" style="width:100%;height:620px;border:0;display:block;background:transparent;transition:height .18s ease;"></iframe>
         <div style="color:var(--ink3);font-size:11px;text-align:center;padding:11px;">AI can make mistakes. Check important info.</div>
       </div>
@@ -12171,7 +12557,7 @@ function chatItemHtml(c) {
     </div>
     <button onclick="event.stopPropagation();deleteChatHistory('${c.id}')"
       style="background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:11px;color:var(--red);cursor:pointer;font-family:inherit;flex-shrink:0;transition:background 0.1s;"
-      onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'">Delete</button>
+      onmouseover="this.style.background='var(--red-bg)'" onmouseout="this.style.background='none'" title="Delete">✕</button>
   </div>`;
 }
 
@@ -12551,6 +12937,9 @@ function charDiffHtml(oldStr, newStr) {
 }
 
 async function renderCompareDiffs(diffs, isExcel, nameA, nameB) {
+  // Collapse the "How it works" intro once results come in
+  const _cmpHow = document.getElementById('compareModeHow'); if (_cmpHow) _cmpHow.style.display = 'none';
+  const _cmpTg = document.getElementById('compareHowToggle'); if (_cmpTg) _cmpTg.textContent = 'How it works';
   const results = document.getElementById('compareResults');
   if (!diffs.length) {
     results.innerHTML = '<div style="padding:20px;color:var(--green);font-size:13px;font-weight:600;">✓ No differences found - the files are identical.</div>';
@@ -13585,15 +13974,7 @@ function renderPeoplePlan() {
     if (btns) btns.innerHTML = '';
     renderPPWizard();
   } else {
-    if (btns) btns.innerHTML = `
-      <select id="ppYearSel" onchange="ppChangeYear(this.value)" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;background:var(--surface2);">
-        ${[-3,-2,-1,0,1,2,3].map(d=>ppPlan.year+d).map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
-      </select>
-      <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
-      <button class="btn btn-secondary btn-sm" onclick="ppAddCategory()">+ Category</button>
-      <button onclick="ppExportCalendar()" style="font-size:11px;color:#5B47E0;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">📅 Calendar</button>
-      <button onclick="ppDownloadPDF()" style="font-size:11px;color:#059669;background:#ECFDF5;border:1px solid #6EE7B7;border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">⬇ PDF</button>
-      <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>`;
+    if (btns) btns.innerHTML = '';   // controls now sit above the calendar, not in the page title bar
     renderPPTimeline();
   }
 }
@@ -14016,20 +14397,26 @@ function renderPPTimeline() {
 
   body.innerHTML = `
     <div class="pp-timeline">
-      <div style="display:flex;align-items:center;justify-content:flex-end;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
-        <div style="display:flex;align-items:center;gap:8px;">
-          <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
-            <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Calendar</button>
-            <button onclick="ppSwitchView('details')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Details</button>
-          </div>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px;">
+        <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
+          <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:var(--accent);color:white;font-weight:600;">Calendar</button>
+          <button onclick="ppSwitchView('details')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:transparent;color:var(--ink);font-weight:500;">Details</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+          <select id="ppYearSel" onchange="ppChangeYear(this.value)" style="border:1px solid var(--border);border-radius:var(--r-sm);padding:5px 10px;font-size:12px;font-family:inherit;outline:none;">
+            ${[-3,-2,-1,0,1,2,3].map(d=>ppPlan.year+d).map(y=>`<option value="${y}"${y===ppPlan.year?' selected':''}>${y}</option>`).join('')}
+          </select>
           <button class="btn btn-secondary btn-sm" onclick="ppAddEvent()">+ Add event</button>
+          <button class="btn btn-secondary btn-sm" onclick="ppAddCategory()">+ Category</button>
+          <button onclick="ppExportCalendar()" style="font-size:11px;color:#5B47E0;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">📅 Calendar</button>
+          <button onclick="ppDownloadPDF()" style="font-size:11px;color:#059669;background:var(--green-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">⬇ PDF</button>
+          <button class="btn btn-ghost btn-sm" onclick="ppReset()" style="color:var(--ink3);">↺ Reset</button>
         </div>
       </div>
       <div style="overflow-x:auto;">
         <div class="pp-grid" style="grid-template-columns:150px repeat(12,minmax(130px,1fr));min-width:1710px;">${gridHtml}</div>
       </div>
-    </div>
-    <div class="pp-legend">${legendHtml}</div>`;
+    </div>`;
 
     // Measure pass: keep each title inside its bar; move it to the right (dark) only if
     // the rendered title is genuinely wider than the rendered bar.
@@ -14164,7 +14551,7 @@ function ppEditEvent(id) {
       <div><div style="font-size:11px;font-weight:600;color:var(--ink2);margin-bottom:4px;">Notes <span style="color:var(--ink3);font-weight:400;">(optional)</span></div><input id="ppEditNotes" value="${escapeHtml(ev.notes||'')}" placeholder="Any details..." style="${inp}" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'"></div>
     </div>
     <div style="padding:14px 24px;border-top:1px solid var(--border);display:flex;align-items:center;gap:8px;">
-      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="ppDeleteEvent(${id},this)">Delete</button>
+      <button class="btn btn-ghost btn-sm" style="color:var(--red);" onclick="ppDeleteEvent(${id},this)" title="Delete">✕</button>
       <div style="flex:1;"></div>
       <button class="btn btn-secondary btn-sm" onclick="this.closest('div[style*=fixed]').remove()">Cancel</button>
       <button class="btn btn-secondary btn-sm" style="display:inline-flex;align-items:center;gap:5px;" onclick="ppSaveEditAndInvite(${id},this)">
@@ -14360,6 +14747,7 @@ function renderPPDetails() {
     : `<th style="padding:10px 14px;text-align:left;font-size:10px;font-weight:500;color:var(--ink3);letter-spacing:0.06em;white-space:nowrap;">${label}</th>`;
 
   body.innerHTML = `
+    <div style="border:1px solid var(--border);border-radius:16px;overflow:hidden;background:var(--surface);display:flex;flex-direction:column;flex:1;min-height:0;">
     <div style="padding:18px 20px 12px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;align-items:center;gap:10px;flex-shrink:0;">
       <div style="display:flex;background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:2px;gap:2px;">
         <button onclick="ppSwitchView('timeline')" style="font-size:11px;padding:5px 12px;border-radius:5px;border:none;cursor:pointer;font-family:inherit;background:white;color:var(--ink);font-weight:500;box-shadow:var(--shadow-sm);">Calendar</button>
@@ -14388,7 +14776,7 @@ function renderPPDetails() {
         </thead>
         <tbody>${rows}</tbody>
       </table>
-    </div>`;
+    </div></div>`;
 }
 
 function ppSwitchView(v) {
@@ -15263,17 +15651,17 @@ async function renderAutomations(){
         </div>
       </div>
       <div style="flex:1;min-height:14px;"></div>
-      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:wrap;">
-        <button class="btn btn-primary btn-sm" style="font-size:11px;" onclick="autoStartRun('${a.id}')">Launch</button>
-        ${inProgChip}
-        <div style="flex:1;"></div>
+      <div style="display:flex;align-items:center;gap:6px;margin-top:14px;flex-wrap:nowrap;min-width:0;">
+        <button class="btn btn-primary btn-sm" style="font-size:11px;flex-shrink:0;" onclick="autoStartRun('${a.id}')">Launch</button>
+        <span style="min-width:0;overflow:hidden;">${inProgChip}</span>
+        <div style="flex:1;min-width:6px;"></div>
         <button class="btn btn-secondary btn-sm" style="font-size:11px;" onclick="openWorkflowBuilder('${a.id}')"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:3px;"><path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/></svg>Edit</button>
-        <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')">Delete</button>
+        <button class="btn btn-ghost btn-sm" style="font-size:11px;color:var(--red);" onclick="deleteAutomation('${a.id}')" title="Delete">✕</button>
       </div>
     </div>`;
   }).join('');
 
-  el.innerHTML=header+`<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px;">${cards}</div>`;
+  el.innerHTML=header+`<div style="display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px;">${cards}</div>`;
 }
 
 function setAutoTab(tab,filter){ _autoTab=tab; _autoRunFilter=filter||null; if(tab==='runs') _autoRunStatus='active'; renderAutomations(); }
@@ -15802,6 +16190,12 @@ function renderGuidancePanel(container, g) {
   container.setAttribute('data-guidance','');
 }
 
+function trkShowFlags(){
+  const inner=document.createElement('div');
+  inner.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;';
+  inner.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">🔔 Notifications</div><button onclick="closeCenteredModal('trkAttnModal')" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;">✕</button></div><div style="padding:14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">${window._trkAttnRows||'<div style="font-size:13px;color:var(--ink3);text-align:center;padding:24px;">No notifications.</div>'}</div>`;
+  openCenteredModal('trkAttnModal', inner);
+}
 function renderLeaveTracker(body) {
   const recs = mpRecords || [];
   const active  = recs.filter(r => mpStatus(r) === 'active');
@@ -15810,6 +16204,14 @@ function renderLeaveTracker(body) {
   const matActive = active.filter(r => r.type==='Maternity' || r.type==='Adoption');
   const patActive = active.filter(r => r.type==='Paternity' || r.type==='Shared Parental');
   const flags = mpFlags(recs);
+  const _trkDismissKey = 'breeze_dismissed_flags_'+(currentProfile?.company_id||'x');
+  const _trkFKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
+  const _trkVisibleFlags = (()=>{ const dismissed=new Set(JSON.parse(localStorage.getItem(_trkDismissKey)||'[]')); return flags.filter(f=>!dismissed.has(_trkFKeyOf(f))); })();
+  window._trkAttnRows = _trkVisibleFlags.map(f=>{
+    const fkey=_trkFKeyOf(f);
+    return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#4F3ACF;':''}"><span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span><div style="flex:1;">${f.msg} <a onclick="closeCenteredModal('trkAttnModal');${f.action}" style="color:${f.type==='info'?'#4F3ACF':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div><button onclick="(()=>{const k='${_trkDismissKey}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#EBB9A4':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button></div>`;
+  }).join('');
+  const flagsHtml = _trkVisibleFlags.length ? `<div style="margin-bottom:2px;"><button onclick="trkShowFlags()" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#4F3ACF;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:20px;padding:7px 14px;cursor:pointer;font-family:inherit;">🔔 ${_trkVisibleFlags.length} notification${_trkVisibleFlags.length>1?'s':''}</button></div>` : '';
 
   const statusBadge = (r) => {
     const s = mpStatus(r);
@@ -15828,6 +16230,7 @@ function renderLeaveTracker(body) {
 
   body.innerHTML = `
   <div style="display:flex;flex-direction:column;gap:18px;">
+    ${flagsHtml}
     <!-- KPIs -->
     <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:12px;">
       <div class="trk-kpi trk-kpi-ico"><div class="trk-kpi-chip" style="background:#DBF5F1;color:#0E9384;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="7" r="3.2"/><path d="M5.5 20c0-3.6 3-5.5 6.5-5.5s6.5 1.9 6.5 5.5"/></svg></div><div class="trk-kpi-txt"><div class="trk-kpi-val">${matActive.length}</div><div class="trk-kpi-label">On maternity / adoption leave</div><div class="trk-kpi-sub">${upcoming.filter(r=>r.type==='Maternity'||r.type==='Adoption').length} upcoming</div></div></div>
@@ -15837,24 +16240,6 @@ function renderLeaveTracker(body) {
       <div class="trk-kpi trk-kpi-ico"><div class="trk-kpi-chip" style="background:#EEF0F4;color:#667085;"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.5V12a10 10 0 1 1-5.9-9.1"/><polyline points="22 4 12 14 9 11"/></svg></div><div class="trk-kpi-txt"><div class="trk-kpi-val" style="color:var(--ink2);">${returned.length}</div><div class="trk-kpi-label">Returned to work</div><div class="trk-kpi-sub">This year</div></div></div>
     </div>
 
-    <!-- Flags -->
-    ${(()=>{
-      const cid = currentProfile?.company_id||'x';
-      const dismissKey = 'breeze_dismissed_flags_'+cid;
-      const dismissed = new Set(JSON.parse(localStorage.getItem(dismissKey)||'[]'));
-      // Stable key from the flag's message (position-independent, no quotes to escape).
-      const fKeyOf = f => { let h=0; const s=f.msg||''; for(let i=0;i<s.length;i++) h=(h*31+s.charCodeAt(i))>>>0; return 'f'+h; };
-      const visible = flags.filter(f=>!dismissed.has(fKeyOf(f)));
-      if (!visible.length) return '<div style="background:#ECFDF5;border:1px solid #A7F3D0;border-radius:var(--r);padding:10px 14px;font-size:12px;color:#065F46;display:flex;gap:8px;align-items:center;"><span>✓</span> No outstanding actions.</div>';
-      return '<div style="display:flex;flex-direction:column;gap:8px;">'+visible.map(f=>{
-        const fkey = fKeyOf(f);
-        return `<div class="trk-flag" style="${f.type==='info'?'background:var(--accent-bg);border-color:var(--accent-mid);color:#4F3ACF;'+'':''}">
-          <span class="trk-flag-icon">${f.type==='info'?'ℹ️':'⚠️'}</span>
-          <div style="flex:1;">${f.msg} <a onclick="${f.action}" style="color:${f.type==='info'?'#4F3ACF':'#92400E'};font-weight:600;cursor:pointer;text-decoration:underline;">${f.actionLabel}</a></div>
-          <button onclick="(()=>{const k='breeze_dismissed_flags_${currentProfile?.company_id||'x'}';const d=new Set(JSON.parse(localStorage.getItem(k)||'[]'));d.add('${fkey.replace(/'/g,'&#39;')}');localStorage.setItem(k,JSON.stringify([...d]));this.closest('.trk-flag').remove();})()" style="background:none;border:none;cursor:pointer;color:${f.type==='info'?'#EBB9A4':'#fbbf24'};font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button>
-        </div>`;
-      }).join('')+'</div>';
-    })()}
 
     <!-- Table -->
     <div class="trk-card">
@@ -18701,7 +19086,7 @@ function wfRenderCase(c) {
         ${pct===100?`<button onclick="wfCloseCase('${c.id}')" class="btn btn-primary btn-sm" style="background:var(--green);border-color:var(--green);font-size:11px;">✓ Close</button>`:''}
         <button onclick="wfCaseCalendar('${c.id}')" style="font-size:11px;color:#5B47E0;background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r-sm);padding:5px 10px;cursor:pointer;font-family:inherit;">📅 Schedule</button>
         <button onclick="closeCenteredModal('wfCaseSlidePanel')" class="btn btn-secondary btn-sm" style="font-size:11px;">✕ Close</button>
-        <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;">Delete</button>
+        <button onclick="wfDeleteCase('${c.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);font-size:10px;" title="Delete">✕</button>
       </div>
     </div>
 
@@ -21183,7 +21568,7 @@ function initOrgChart() {
       <div style="flex:1;"></div>
       <button id="ocToggleOpen" onclick="ocToggleOpen()" title="Show or hide open roles from your headcount plan" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'"><span id="ocToggleDot" style="width:7px;height:7px;border-radius:50%;background:var(--green);display:inline-block;"></span>Open roles: On</button>
       <button onclick="ocAddPerson()" style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='var(--surface2)'" onmouseout="this.style.background='var(--surface)'">+ Add person</button>
-      <button onclick="ocAddOpenRole()" style="font-size:11px;background:#F0FDF4;color:#059669;border:1.5px dashed #6EE7B7;border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='#D1FAE5'" onmouseout="this.style.background='#F0FDF4'">+ Open role</button>
+      <button onclick="ocAddOpenRole()" style="font-size:11px;background:rgba(74,222,128,.14);color:#4ADE80;border:1.5px dashed rgba(74,222,128,.5);border-radius:var(--r-sm);padding:0 10px;height:28px;cursor:pointer;font-family:inherit;" onmouseover="this.style.background='rgba(74,222,128,.24)'" onmouseout="this.style.background='rgba(74,222,128,.14)'">+ Open role</button>
       <button onclick="ocExportXlsx()" style="font-size:11px;background:#217346;color:white;border:none;border-radius:var(--r-sm);padding:0 12px;height:28px;cursor:pointer;font-family:inherit;">&#8659; Excel</button>
     </div>
     <div id="ocLegend" style="padding:5px 16px;border-bottom:1px solid var(--border);background:var(--surface);display:flex;gap:8px;flex-wrap:wrap;align-items:center;min-height:34px;flex-shrink:0;"></div>
@@ -21525,7 +21910,7 @@ window.seedDemoData = async function() {
 // ════════════════════════════════════════════════════════════════
 // HR PROJECT TRACKER
 // ════════════════════════════════════════════════════════════════
-let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'board', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {};
+let projectsData = null, projectActiveId = null, _projEmailPick = [], _projExpandedMs = {}, _projDetailView = 'board', _projHideAttention = false, _projFilter = {q:'',cat:'',owner:'',sort:'newest'}, _projEmailToAdd = null, _projPickProject = null, _projDismissedAttn = {}, _projVisible = 6;
 
 const PROJ_STAGES = {
   'not-started': { label: 'Not started', color: '#98A2B3' },
@@ -21690,10 +22075,7 @@ function renderProjects(){
   const sortOpts = [['newest','Newest first'],['oldest','Oldest first'],['due','Due soonest'],['progress','Most progress'],['name','Name A-Z']].map(([v,l])=>`<option value="${v}" ${f.sort===v?'selected':''}>${l}</option>`).join('');
 
   body.innerHTML = `
-    ${(overdueItems.length && !_projHideAttention) ? `<div style="background:#FFF5F5;border:1px solid #FECACA;border-radius:var(--r-lg);padding:12px 16px;margin-bottom:16px;">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:6px;"><div style="font-size:12px;font-weight:600;color:#B91C1C;">⚠ Needs attention</div><button onclick="projDismissAttention()" title="Dismiss all" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:11px;line-height:1;padding:0 2px;">Dismiss all</button></div>
-      ${overdueItems.slice(0,8).map(({p,m})=>`<div style="display:flex;align-items:center;gap:8px;padding:2px 0;"><div style="flex:1;font-size:12px;color:#7F1D1D;cursor:pointer;" onclick="openProject('${p.id}')">• <strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} - was due ${projFmtDate(m.dueDate)}</div><button onclick="event.stopPropagation();projDismissAttnItem('${p.id}','${m.id}')" title="Dismiss this one" style="background:none;border:none;cursor:pointer;color:#B91C1C;font-size:13px;line-height:1;flex-shrink:0;">✕</button></div>`).join('')}
-    </div>` : ''}
+    ${overdueItems.length ? `<div style="margin-bottom:16px;"><button onclick="projShowAttention()" style="display:inline-flex;align-items:center;gap:8px;font-size:12.5px;font-weight:600;color:#92400E;background:rgba(251,191,36,.14);border:1px solid rgba(251,191,36,.4);border-radius:20px;padding:7px 14px;cursor:pointer;font-family:inherit;">⚠️ ${overdueItems.length} item${overdueItems.length>1?'s':''} need${overdueItems.length>1?'':'s'} attention</button></div>` : ''}
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
       <input id="projSearch" value="${jsAttr(f.q)}" placeholder="Search projects..." oninput="projSetFilter('q',this.value)" style="flex:1;min-width:150px;${ss}cursor:text;">
       <select style="${ss}" onchange="projSetFilter('cat',this.value)">${catOpts}</select>
@@ -21705,7 +22087,7 @@ function renderProjects(){
   renderProjectsList();
 }
 
-function projSetFilter(k,v){ _projFilter[k]=v; renderProjectsList(); }
+function projSetFilter(k,v){ _projFilter[k]=v; _projVisible=6; renderProjectsList(); }
 
 function renderProjectsList(){
   const wrap = document.getElementById('projListWrap'); if(!wrap) return;
@@ -21724,15 +22106,16 @@ function renderProjectsList(){
     }
   });
   if (!ps.length) { wrap.innerHTML = `<div style="text-align:center;padding:50px 20px;color:var(--ink3);font-size:13px;">No projects match. Click <strong>+ New project</strong> to start.</div>`; return; }
-  wrap.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` + ps.map(p=>{
+  if (typeof _projVisible === 'undefined' || _projVisible < 6) _projVisible = 6;
+  const _projShown = ps.slice(0, _projVisible);
+  const _projRemain = ps.length - _projShown.length;
+  wrap.innerHTML = `<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;">` + _projShown.map(p=>{
     const rag = projComputeRag(p); const st = PROJ_STAGES[p.stage]||PROJ_STAGES['not-started']; const pct = projPct(p); const od = projOverdueList(p).length;
     return `<div onclick="openProject('${p.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:var(--r-lg);padding:18px;cursor:pointer;transition:box-shadow 0.12s,border-color 0.12s;" onmouseover="this.style.boxShadow='var(--shadow-sm)';this.style.borderColor='var(--border2)'" onmouseout="this.style.boxShadow='none';this.style.borderColor='var(--border)'">
       <div style="display:flex;gap:14px;align-items:center;">
-        <div style="width:58px;height:58px;border-radius:50%;background:conic-gradient(${projPctColor(pct)} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:var(--ink);">${pct}%</div></div>
+        <div style="width:58px;height:58px;border-radius:50%;background:conic-gradient(${projPctColor(pct)} ${pct*3.6}deg, var(--surface3) 0deg);display:flex;align-items:center;justify-content:center;flex-shrink:0;"><div style="width:44px;height:44px;border-radius:50%;background:var(--surface);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--ink);">${pct>0?pct+'%':''}</div></div>
         <div style="flex:1;min-width:0;">
           <div style="font-size:14px;font-weight:600;color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${escapeHtml(p.name)}</div>
-          <div style="font-size:11px;color:var(--ink3);margin-top:4px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 12 0v1"/></svg>${escapeHtml(p.owner||'Unassigned')}</div>
-          <div style="font-size:11px;color:${od?'#B42318':'var(--ink3)'};margin-top:3px;display:flex;align-items:center;gap:5px;"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>Due ${projFmtDate(p.targetDate)}${od?` · ${od} overdue`:''}</div>
         </div>
       </div>
       <div style="display:flex;align-items:center;justify-content:space-between;margin-top:14px;">
@@ -21740,7 +22123,9 @@ function renderProjectsList(){
         <span style="font-size:11px;color:var(--ink3);">${escapeHtml(p.category||'')}</span>
       </div>
     </div>`;
-  }).join('') + `</div>`;
+  }).join('') + `</div>` + (_projRemain > 0
+    ? `<div style="text-align:center;margin-top:16px;"><button onclick="_projVisible+=6;renderProjectsList();" style="font-size:12px;color:var(--accent);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 16px;cursor:pointer;font-family:inherit;">Show ${Math.min(6,_projRemain)} more · ${_projRemain} remaining</button></div>`
+    : (_projVisible > 6 ? `<div style="text-align:center;margin-top:16px;"><button onclick="_projVisible=6;renderProjectsList();document.getElementById('projListWrap')?.scrollIntoView({behavior:'smooth',block:'start'});" style="font-size:12px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 16px;cursor:pointer;font-family:inherit;">Show less</button></div>` : ''));
 }
 
 function openProject(id){ projectActiveId = id; renderProjectDetail(); }
@@ -21765,7 +22150,7 @@ function renderProjectDetail(){
       <button onclick="backToProjects()" class="btn btn-secondary btn-sm">← All projects</button>
       <div style="flex:1;"></div>
       <button onclick="openProjectStatusReport()" class="btn btn-secondary btn-sm">✦ Status report</button>
-      <button onclick="projDeleteProject('${p.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);">Delete</button>
+      <button onclick="projDeleteProject('${p.id}')" class="btn btn-ghost btn-sm" style="color:var(--red);" title="Delete">✕</button>
     </div>
 
     <div style="${card}">
@@ -22257,6 +22642,14 @@ async function projAiSubtaskHelp(mid,sid){
 async function projClearSubtaskGuidance(mid,sid){ const p=projActive(); const m=(p.milestones||[]).find(x=>x.id===mid); if(!m) return; const s=(m.subtasks||[]).find(x=>x.id===sid); if(s){ delete s.guidance; await saveProjects(); renderProjectDetail(); } }
 function projDismissAttention(){ _projHideAttention = true; renderProjects(); }
 function projDismissAttnItem(pid,mid){ _projDismissedAttn[pid+':'+mid] = true; renderProjects(); }
+function projShowAttention(){
+  const items = (projectsData||[]).flatMap(p=>projOverdueList(p).map(m=>({p,m}))).filter(({p,m})=>!_projDismissedAttn[p.id+':'+m.id]);
+  const inner=document.createElement('div');
+  inner.style.cssText='background:var(--surface);border:1px solid var(--border);border-radius:16px;width:100%;max-width:580px;max-height:80vh;display:flex;flex-direction:column;overflow:hidden;';
+  inner.innerHTML=`<div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);"><div style="font-size:15px;font-weight:700;color:var(--ink);">⚠️ Needs attention</div><button onclick="closeCenteredModal('projAttnModal')" style="background:none;border:none;font-size:20px;color:var(--ink3);cursor:pointer;line-height:1;">✕</button></div>
+    <div style="padding:14px 18px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;">${items.length?items.map(({p,m})=>`<div class="trk-flag"><span class="trk-flag-icon">⚠️</span><div style="flex:1;"><strong>${escapeHtml(m.title)}</strong> in ${escapeHtml(p.name)} - was due ${projFmtDate(m.dueDate)} <a onclick="closeCenteredModal('projAttnModal');openProject('${p.id}')" style="color:#92400E;font-weight:600;cursor:pointer;text-decoration:underline;">View project →</a></div><button onclick="projDismissAttnItem('${p.id}','${m.id}');projShowAttention()" title="Dismiss" style="background:none;border:none;cursor:pointer;color:#fbbf24;font-size:16px;line-height:1;padding:0 2px;flex-shrink:0;">✕</button></div>`).join(''):'<div style="font-size:13px;color:var(--ink3);text-align:center;padding:24px;">All clear - nothing needs attention.</div>'}</div>`;
+  openCenteredModal('projAttnModal', inner);
+}
 
 // ── Per-task help (popup), attachments, and email linking ──
 async function projTaskHelp(id){
@@ -22430,11 +22823,11 @@ async function projConfirmEmailToTask(){
       var c=GROUPS[g];
       // Groups stay expanded; the group name is a plain section label (not collapsible).
       html+='<div class="sg open" data-g="'+g+'">';
-      html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none">0</span>':'')+'</div>';
+      html+='<div class="sg-head sg-static"><span class="lbl">'+c.label+'</span>'+(c.badge?'<span class="sg-badge" id="slimActionBadge" style="display:none"></span>':'')+'</div>';
       html+='<div class="sg-items">'+c.items.map(function(it){
-        if(it.soon) return '<button class="sgi" aria-disabled="true">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
+        if(it.soon) return '<button class="sgi" aria-disabled="true" title="'+it.label+' (coming soon)">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+' <span class="beta">soon</span></span></button>';
         var on=cur===it.view;
-        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'">0</span></button>';
+        return '<button class="sgi'+(on?' active':'')+'"'+(on?' aria-current="page"':'')+' title="'+it.label+'" onclick="slimGo(\''+it.view+'\')">'+ic(it.ic||'')+'<span class="sgi-lbl">'+it.label+(it.beta?' <span class="beta">Beta</span>':'')+'</span><span class="sgi-badge" id="slimItemBadge-'+it.view+'"></span></button>';
       }).join('')+'</div></div>';
     });
     box.innerHTML=html;
@@ -22534,8 +22927,7 @@ async function projConfirmEmailToTask(){
   function initSlim(){
     document.body.classList.add('nav-slim');
     // Top bar removed. Global search is dropped (left hidden in the top bar).
-    // Connectors move into the sidebar as a plain icon row above Search SharePoint.
-    var rt=document.querySelector('.app-topbar-right'), cs=document.getElementById('slimConnSlot'); if(rt&&cs) cs.appendChild(rt);
+    // Keep the notification/inbox/profile icons in the persistent top bar (don't move to sidebar).
     var sav=document.getElementById('slimAv'); if(sav && !sav.innerHTML.trim()){ sav.innerHTML=(document.getElementById('topbarAvatar')||{}).innerHTML||''; sav.style.background='transparent'; sav.style.overflow='hidden'; }
     render();
   }
@@ -22594,7 +22986,7 @@ async function projConfirmEmailToTask(){
   .tl-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
   .tl-axis-y{writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--ink2);text-transform:uppercase;}
   .tl-axis-x{text-align:center;font-size:11px;font-weight:700;letter-spacing:.5px;color:var(--ink2);text-transform:uppercase;padding-top:8px;}
-  .tl-gridwrap{display:grid;grid-template-columns:26px 1fr;gap:8px;max-width:1080px;}
+  .tl-gridwrap{display:grid;grid-template-columns:26px 1fr;gap:8px;max-width:1200px;}
   .tl-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;}
   .tl-cell{background:var(--surface);border:1px solid var(--border);border-radius:var(--r);min-height:150px;display:flex;flex-direction:column;transition:.15s;}
   .tl-cell.over{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent-mid) inset;}
@@ -22627,7 +23019,7 @@ async function projConfirmEmailToTask(){
   .tl-dot.fr-h{background:#E5484D;box-shadow:0 0 0 3px rgba(229,72,77,.13);}
   .tl-dot.fr-m{background:#E8A317;box-shadow:0 0 0 3px rgba(232,163,23,.13);}
   .tl-key{display:inline-block;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:.4px;color:#8A6D00;background:#FBF3DA;border:1px solid #ECDFB0;border-radius:4px;padding:1px 5px;margin-left:6px;vertical-align:1px;line-height:1.5;}
-  .tl-tray{background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);padding:10px;margin-top:14px;max-width:1080px;}
+  .tl-tray{background:var(--surface2);border:1px dashed var(--border2);border-radius:var(--r);padding:10px;margin-top:14px;max-width:1200px;}
   .tl-tray .h{font-size:12px;font-weight:700;color:var(--ink2);margin-bottom:8px;}
   .tl-tray .row{display:flex;gap:8px;flex-wrap:wrap;}
   .tl-tray .tl-emp{width:220px;}
@@ -22655,7 +23047,7 @@ async function projConfirmEmailToTask(){
   .tl-x{cursor:pointer;color:var(--ink3);font-size:20px;line-height:1;background:none;border:none;}
   .tl-loading{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;color:var(--ink2);}
   .tl-spin{width:30px;height:30px;border:3px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite;}
-  .tl-note{font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;max-width:1080px;}
+  .tl-note{font-size:11px;color:var(--ink2);background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:8px 12px;margin-bottom:14px;max-width:1200px;}
   .tl-summary .tl-input{font-size:13px;line-height:1.65;min-height:340px;}
   .tl-sum-stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:18px;max-width:760px;}
   .tl-sum-stat{flex:1;min-width:96px;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;}
@@ -23236,7 +23628,7 @@ async function projConfirmEmailToTask(){
         '<div style="font-size:15px;font-weight:700;color:var(--ink);white-space:nowrap;">'+value+(tag||'')+'</div>'+
       '</div>';
     }
-    var companion='<div style="border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:20px 20px 22px;box-sizing:border-box;height:100%;display:flex;flex-direction:column;justify-content:center;">'+
+    var companion='<div style="border:1px solid var(--border);border-radius:var(--r-lg);background:var(--surface);padding:20px 20px 22px;box-sizing:border-box;height:100%;width:340px;max-width:100%;display:flex;flex-direction:column;justify-content:center;">'+
       '<div style="font-size:13px;font-weight:700;color:var(--ink);">Performance health</div>'+
       '<div style="font-size:11px;color:var(--ink3);margin:3px 0 18px;padding-bottom:16px;border-bottom:1px solid var(--border);">'+total+' rated'+(prevPct?' · vs last cycle':' · vs a healthy curve')+'</div>'+
       '<div style="font-size:32px;font-weight:800;color:var(--ink);letter-spacing:-0.5;line-height:1;">'+meetAbovePct+'%'+arrowTag(meetDelta,' pts',true)+'</div>'+
@@ -23271,12 +23663,12 @@ async function projConfirmEmailToTask(){
       '</div>'+
     '</div>';
 
-    panel.innerHTML='<div style="max-width:1320px;margin:0 auto;">'+
+    panel.innerHTML='<div style="max-width:none;">'+
       '<div class="tl-bar" style="margin-bottom:4px;"><div style="font-size:13px;font-weight:600;color:var(--ink);display:flex;align-items:center;gap:7px;">Performance rating distribution <span class="tl-i" data-tip="How each person latest review maps to three bands. The curve shows the shape of the distribution; the panel on the right gives the exact split and the change since the last review cycle.">i</span></div></div>'+
       '<div style="font-size:12px;color:var(--ink3);margin-bottom:16px;">'+sub+'</div>'+
       '<div style="display:flex;gap:20px;flex-wrap:wrap;align-items:stretch;">'+
         '<div style="flex:3;min-width:340px;display:flex;align-items:center;">'+svg+'</div>'+
-        '<div style="flex:1;min-width:240px;display:flex;">'+companion+'</div>'+
+        '<div style="flex:1;min-width:240px;display:flex;justify-content:center;">'+companion+'</div>'+
       '</div>'+
       commentary+
     '</div>';
@@ -23585,5 +23977,46 @@ async function projConfirmEmailToTask(){
 </script>
 
 <div id="breezeToast"></div>
+<script>
+(function(){
+  try{ if(localStorage.getItem('bzShapesLight')==='1') document.body.classList.add('shapes-light'); }catch(e){}
+  function upd(){
+    var on=document.body.classList.contains('shapes-light');
+    var s=document.getElementById('bzBoxToggle'); if(s) s.textContent = on ? '☾ Dark boxes' : '☀ Light boxes';
+  }
+  window.bzToggleBoxes=function(){
+    document.body.classList.toggle('shapes-light');
+    try{ localStorage.setItem('bzShapesLight', document.body.classList.contains('shapes-light')?'1':'0'); }catch(e){}
+    upd();
+  };
+  window._bzBoxUpd=upd;
+  upd();
+})();
+</script>
+<script>
+/* Instant sidebar tooltips (native title has a ~1s delay + gets clipped by the rail overflow).
+   Reads the label, kills the native title, shows a fixed-position tip immediately. */
+(function(){
+  var tip=null, SEL='.slimbar .sgi, .slimbar .sg-head, .slimbar .slim-logo, .slimbar .slim-user';
+  function tipEl(){ if(!tip){ tip=document.createElement('div'); tip.id='railTip';
+    tip.style.cssText='position:fixed;z-index:100001;pointer-events:none;background:#1E232E;color:#fff;padding:6px 10px;border-radius:8px;font-size:12px;font-weight:600;white-space:nowrap;box-shadow:0 6px 20px rgba(0,0,0,.35);opacity:0;transition:opacity .08s;';
+    document.body.appendChild(tip); } return tip; }
+  function labelFor(el){
+    if(el.hasAttribute('title')){ el.setAttribute('data-tip', el.getAttribute('title')); el.removeAttribute('title'); }
+    var t=el.getAttribute('data-tip'); if(t) return t.trim();
+    var s=el.querySelector('.sgi-lbl,.lbl,.nm'); return s? s.textContent.trim() : '';
+  }
+  document.addEventListener('mouseover', function(e){
+    var el=e.target.closest && e.target.closest(SEL); if(!el) return;
+    var label=labelFor(el); if(!label) return;
+    var t=tipEl(); t.textContent=label;
+    var r=el.getBoundingClientRect();
+    t.style.left=(r.right+10)+'px'; t.style.top=(r.top+r.height/2)+'px'; t.style.transform='translateY(-50%)'; t.style.opacity='1';
+  });
+  document.addEventListener('mouseout', function(e){
+    var el=e.target.closest && e.target.closest(SEL); if(el && tip){ tip.style.opacity='0'; }
+  });
+})();
+</script>
 </body>
 </html>
