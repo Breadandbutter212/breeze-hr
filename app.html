@@ -14497,7 +14497,9 @@ function renderPPTimeline() {
   const body = document.getElementById('peoplePlanBody');
   if (!body || !ppPlan) return;
   const { year, events } = ppPlan;
-  const cats = PP_CATS.filter(c => events.some(e => e.catId === c.id));
+  // Show any category that has events, plus custom categories you've added (even empty),
+  // so a newly-added category appears as a row you can populate.
+  const cats = PP_CATS.filter(c => events.some(e => e.catId === c.id) || c.custom);
   if (!cats.length) { body.innerHTML = '<div style="padding:40px;text-align:center;color:var(--ink3);font-size:13px;">No events yet. <a onclick="ppAddEvent()" style="color:var(--accent);cursor:pointer;">Add an event</a></div>'; return; }
 
   const LANE_H = 40;
@@ -14510,7 +14512,7 @@ function renderPPTimeline() {
   cats.forEach(cat => {
     const catEvents = events.filter(e => e.catId === cat.id);
     const { laneMap, numLanes } = ppAssignLanes(catEvents);
-    const rowH = numLanes * LANE_H + PAD * 2;
+    const rowH = Math.max(numLanes, 1) * LANE_H + PAD * 2;   // empty categories still get a full-height row
 
     gridHtml += `<div class="pp-cat-label" style="min-height:${rowH}px;align-items:flex-start;padding-top:${PAD + (LANE_H - BAR_H) / 2}px;" onclick="ppAddEvent('${cat.id}')"><span style="overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${cat.label}</span></div>`;
 
@@ -14558,11 +14560,15 @@ function renderPPTimeline() {
           if (isStart) inner += '<div data-pplabel="'+ev.id+'" style="position:absolute;top:'+top+'px;left:calc('+leftPct+'% + '+gapL+'px + 10px);height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:#fff;white-space:nowrap;pointer-events:none;z-index:4;">'+titleStr+'</div>';
         }
       });
+      // Empty category: show a subtle "+ Add an event" affordance in the first month cell.
+      if (!catEvents.length && m === 1) {
+        inner += '<div onclick="ppAddEvent(\''+cat.id+'\')" style="position:absolute;top:'+(PAD + (LANE_H - BAR_H)/2)+'px;left:10px;height:'+BAR_H+'px;line-height:'+BAR_H+'px;font-size:10px;font-weight:600;color:var(--ink3);cursor:pointer;white-space:nowrap;z-index:4;">+ Add an event</div>';
+      }
       gridHtml += `<div class="pp-cell" style="position:relative;min-height:${rowH}px;overflow:visible;">${inner}</div>`;
     }
   });
 
-  const legendHtml = PP_CATS.filter(c => events.some(e => e.catId === c.id)).map(c =>
+  const legendHtml = PP_CATS.filter(c => events.some(e => e.catId === c.id) || c.custom).map(c =>
     `<div class="pp-legend-item"><div style="width:10px;height:10px;border-radius:3px;background:${c.color};flex-shrink:0;"></div>${c.label}</div>`
   ).join('');
 
