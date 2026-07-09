@@ -6021,9 +6021,15 @@ function exportHtmlFromPreview() {
     for (const p of borderProps) { const v = cs.getPropertyValue(p); if (v && !/^0px/.test(v) && !/\bnone\b/.test(v)) s += `;${p}:${v}`; }
     cloneEls[i].setAttribute('style', s);
   }
-  // The accent rule bar is a thin background div with no intrinsic height in Word - render it as an <hr>.
-  const accent = (getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim() || '#1F3864';
-  clone.querySelectorAll('.doc-rule').forEach(el => { const hr=document.createElement('hr'); hr.setAttribute('style',`border:none;border-top:2px solid ${accent};margin:4px 0 18px;`); el.replaceWith(hr); });
+  // The accent rule bar is a thin background div with no intrinsic height in Word. Render it as a
+  // bottom-bordered block (reliable in Word) using the RULE'S OWN colour so it matches the preview
+  // exactly (reading --accent off the root can give the wrong colour if the theme sets it elsewhere).
+  const liveRule = page.querySelector('.doc-rule');
+  let ruleColor = liveRule ? getComputedStyle(liveRule).backgroundColor : '';
+  if (!ruleColor || ruleColor === 'rgba(0, 0, 0, 0)' || ruleColor === 'transparent') {
+    ruleColor = (getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim() || '#1F3864';
+  }
+  clone.querySelectorAll('.doc-rule').forEach(el => { const d=document.createElement('div'); d.setAttribute('style',`border-bottom:2.5px solid ${ruleColor};margin:2px 0 18px;font-size:0;line-height:0;height:0;`); el.replaceWith(d); });
   // Field chips -> their visible text (values kept; unfilled keep their [field name])
   clone.querySelectorAll('.filled,[data-f]').forEach(sp => sp.replaceWith(document.createTextNode(sp.textContent)));
   // Styles are now inlined, so drop the <style> block (Word handles inline styles best)
