@@ -314,7 +314,12 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
 .dp-head { height: 52px; box-sizing: border-box; padding: 8px 16px; border-bottom: 1px solid var(--border); background: var(--surface); display: flex; align-items: center; justify-content: space-between; }
 .dp-title { font-size: 12px; font-weight: 600; color: var(--ink); }
 .dp-btns { display: flex; gap: 5px; }
-.dp-body { flex: 1; overflow-y: auto; padding: 20px; }
+.dp-body { flex: 1; overflow-y: auto; overflow-x: auto; padding: 20px; }
+/* Keep an uploaded .docx preview inside the panel instead of bleeding off the right edge. */
+.doc-page.docx-fidelity { max-width: 100% !important; }
+.doc-page.docx-fidelity table { max-width: 100% !important; table-layout: fixed; }
+.doc-page.docx-fidelity td, .doc-page.docx-fidelity th { word-break: break-word; overflow-wrap: anywhere; }
+.doc-page.docx-fidelity img, .doc-page.docx-fidelity svg { max-width: 100% !important; height: auto !important; }
 .doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 48px 52px; max-width: 640px; margin: 0 auto; min-height: 480px; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.75; }
 /* Faithful Word render (docx-preview): let the document's own styles win, drop the page chrome it adds */
 .doc-page.docx-fidelity { font-family: inherit; line-height: inherit; }
@@ -5526,7 +5531,7 @@ async function openTmpl(t) {
   renderTmpls(document.getElementById('tmplSearch').value);
   document.getElementById('genEmpty').style.display='none';
   const split=document.getElementById('genSplit');split.style.display='flex';
-  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the left'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="closeTmpl()" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?(t.flow&&t.flow.length?`I found ${t.flow.length} field${t.flow.length!==1?'s':''} to fill in.`:'I could not find any fillable fields. To make parts of this template fillable, wrap them in {curly} or [square] brackets - e.g. [first name] - then click <strong>Detect fields</strong>.'):'Answer each question and the letter preview will update on the left.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns">${t.isCustom?`<button class="btn btn-secondary btn-sm" onclick="rescanTemplateFields()" title="Scan the template for {curly} or [square] brackets you've added and make them fillable fields">🔍 Detect fields</button>`:''}<button class="btn btn-secondary btn-sm" id="saveTmplBtn" onclick="saveToTemplate()" title="Save your edits back to this template for future use">💾 Save to template</button>${t.isCustom?'':`<button class="btn btn-secondary btn-sm" id="dlBtn" onclick="downloadAsDocx()">⬇ Word</button>`}<button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
+  split.innerHTML=`<div class="gen-chat"><div class="gc-head" style="display:flex;align-items:center;justify-content:space-between;gap:8px;"><div style="min-width:0;overflow:hidden;"><div class="gc-title">${t.emoji} ${t.name}</div><div class="gc-sub" style="white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${t.isCustom?'Your template - answer each question to populate it':'Answer each question - letter builds live on the left'}</div></div><div style="display:flex;align-items:center;gap:6px;flex-shrink:0;"><button onclick="openTmpl(selTmpl)" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Start over">↺ Start over</button><button onclick="closeTmpl()" style="font-size:11px;color:var(--ink3);background:none;border:1px solid var(--border);border-radius:var(--r-sm);padding:4px 10px;cursor:pointer;font-family:inherit;flex-shrink:0;" title="Close">✕</button></div></div><div class="gc-msgs" id="gcMsgs"><div class="gm"><div class="gm-av ai">B</div><div class="gm-b ai">I'll generate the <strong>${t.name.toLowerCase()}</strong>. ${t.isCustom?(t.flow&&t.flow.length?`I found ${t.flow.length} field${t.flow.length!==1?'s':''} to fill in.`:'I could not find any fillable fields. To make parts of this template fillable, wrap them in {curly} or [square] brackets - e.g. [first name] - then click <strong>Detect fields</strong>.'):'Answer each question and the letter preview will update on the left.'}</div></div></div><div class="gc-field" id="gcField"></div></div><div class="doc-preview"><div class="dp-head"><div class="dp-title">${t.isCustom?'📄 '+t.name:'Letter preview'}</div><div class="dp-btns">${t.isCustom?`<button class="btn btn-secondary btn-sm" onclick="rescanTemplateFields()" title="Scan the template for {curly} or [square] brackets you've added and make them fillable fields">🔍 Detect fields</button>`:''}<button class="btn btn-secondary btn-sm" id="saveTmplBtn" onclick="saveToTemplate()" title="Save your edits back to this template for future use">💾 Save to template</button><button class="btn btn-secondary btn-sm" id="dlBtn" onclick="(selTmpl&&selTmpl.isDocx?downloadDocx:downloadAsDocx)()">⬇ Word</button><button class="btn btn-secondary btn-sm" id="dlPdfBtn" onclick="downloadDocAsPdf()">⬇ PDF</button><button class="btn btn-primary btn-sm" id="sendBtn" style="display:none">Send</button></div></div><div class="dp-body" id="dpBody"></div></div>`;
   updatePreview(); // show initial preview immediately
   // For DB-loaded docx templates, re-run mammoth on the binary for full untruncated preview
   if (t.isCustom && t.base64 && t.id.startsWith('t_db_')) {
@@ -5618,6 +5623,8 @@ function updatePreview() {
     const notice = fid ? '' : `<div style="font-size:11px;color:var(--ink3);background:var(--surface2);border:1px solid var(--border);border-radius:var(--r-sm);padding:7px 12px;margin-bottom:12px;display:flex;align-items:center;gap:6px;"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>Preview is approximate - formatting is fully preserved in the downloaded Word doc.</div>`;
     if (isHtml) {
       body.innerHTML = `${notice}<div class="doc-page ${fid?'docx-fidelity':'mammoth-doc'}" contenteditable="true" spellcheck="true" oninput="if(selTmpl)selTmpl._edited=true" style="outline:none;cursor:text;">${styleTag}${rendered}</div>`;
+      // Baseline (field-filled, pre-edit) text so a later download can apply only the changed paragraphs.
+      try{ if(selTmpl) selTmpl._editBaseline = tmplPreviewLines(body.querySelector('.doc-page')); }catch(e){}
     } else {
       const paragraphs = rendered.split(/\n\n+/).map(p=>`<p style="margin-bottom:14px;">${p.replace(/\n/g,'<br>')}</p>`).join('');
       body.innerHTML = `${notice}<div class="doc-page" contenteditable="true" spellcheck="true" oninput="if(selTmpl)selTmpl._edited=true" style="outline:none;cursor:text;">${paragraphs}</div>`;
@@ -6107,6 +6114,24 @@ async function saveToTemplate() {
   }
 }
 
+// Uploaded .docx editing: we keep the ORIGINAL file (logo, images, header/footer, styling) and
+// apply manual text edits as paragraph replacements. These helpers snapshot the field-filled text
+// before editing and diff it against the edited text so only changed paragraphs are sent.
+function tmplPreviewLines(pageEl){
+  if(!pageEl) return [];
+  return String(pageEl.innerText||'').split('\n').map(s=>s.replace(/\s+/g,' ').trim());
+}
+function tmplComputeEdits(){
+  const page=document.querySelector('#dpBody .doc-page');
+  const base=selTmpl && selTmpl._editBaseline;
+  if(!page || !Array.isArray(base) || !base.length) return null;
+  const cur=tmplPreviewLines(page);
+  if(cur.length!==base.length) return null;      // paragraphs added/removed - can't map safely
+  const edits=[];
+  for(let i=0;i<base.length;i++){ if(base[i] && base[i]!==cur[i]) edits.push({find:base[i], replace:cur[i]}); }
+  return edits;   // [] = no text changes (plain field-fill is already faithful)
+}
+
 async function downloadDocx() {
   if(typeof roiAddDoc==='function') roiAddDoc(1);
   const btn=document.getElementById('dlBtn');btn.textContent='Generating...';btn.disabled=true;
@@ -6120,6 +6145,24 @@ async function downloadDocx() {
     // preview so the user's changes and the on-screen formatting are what gets downloaded.
     const _wantHtml = !!_page && (selTmpl._edited || !selTmpl.base64);
     if (_wantHtml) {
+      // If we still have the original .docx, keep it (logo, images, header/footer, styling intact)
+      // and apply the manual edits as paragraph replacements - only fall back to the lossy HTML
+      // rebuild when the edits can't be mapped (paragraphs added/removed) or the server fails.
+      if (selTmpl.base64 && selTmpl._edited) {
+        const edits = tmplComputeEdits();
+        if (edits) {
+          const fields={};Object.entries(genVals).forEach(([k,v])=>{fields[k]=v;fields[k.toLowerCase().replace(/\s+/g,'_')]=v;fields[k.toLowerCase().replace(/\s+/g,'')]=v;});
+          try{
+            const r=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},body:JSON.stringify({templateBase64:selTmpl.base64,fields,edits,templateName:selTmpl.name})});
+            if(r.ok){
+              const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();URL.revokeObjectURL(url);
+              btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);
+              return;
+            }
+          }catch(e){}
+          // fall through to the HTML rebuild on any failure
+        }
+      }
       const ok = await ensureHtmlDocx();
       const html = exportHtmlFromPreview();
       if (ok && html && window.htmlDocx) {

@@ -47,6 +47,36 @@ function resolveTheme(accentReq) {
   return { ...THEME_PALETTE.navy };
 }
 
+// Apply manual paragraph edits to a filled .docx's body without disturbing headers, footers,
+// images, styles or section properties. For each <w:p> whose visible text matches an edit's
+// `find`, the replacement text is written into the paragraph's first <w:t> and the remaining
+// text runs are blanked - drawings/images and every other element are left untouched.
+function applyParagraphEdits(xml, edits) {
+  const norm = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  const decode = s => s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+  const encode = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+  const map = new Map();
+  for (const e of edits) { const f = norm(e && e.find); if (f) map.set(f, e && e.replace == null ? '' : String(e.replace)); }
+  if (!map.size) return xml;
+  return xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, (para) => {
+    if (para.indexOf('<w:t') === -1) return para;
+    const tRe = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g; let m; const parts = [];
+    while ((m = tRe.exec(para)) !== null) parts.push(m[1]);
+    const full = norm(decode(parts.join('')));
+    if (!map.has(full)) return para;
+    const replacement = map.get(full);
+    let first = true;
+    return para.replace(/(<w:t\b)([^>]*)(>)([\s\S]*?)(<\/w:t>)/g, (mm, o1, attrs, o3, _t, close) => {
+      if (first) {
+        first = false;
+        if (!/xml:space=/.test(attrs)) attrs += ' xml:space="preserve"';
+        return o1 + attrs + o3 + encode(replacement) + close;
+      }
+      return o1 + attrs + o3 + close; // blank the remaining runs in this paragraph
+    });
+  });
+}
+
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return null;
@@ -91,7 +121,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { templateBase64, fields, plainText, templateName, accent } = req.body;
+    const { templateBase64, fields, plainText, templateName, accent, edits } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';
     // Premium path (beta): Claude builds the .docx natively via the code execution tool.
     // Falls back to the standard converter on any failure so the caller always gets a document.
@@ -130,7 +160,15 @@ export default async function handler(req, res) {
     const zip = new PizZip(templateBuffer);
     const doc = new Docxtemplater(zip, { paragraphLoop: true, linebreaks: true, nullGetter: () => '' });
     doc.render(fields);
-    const outputBuffer = doc.getZip().generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+    const outZip = doc.getZip();
+    // Apply any manual paragraph edits to the body, leaving header/footer/images/styles intact.
+    if (Array.isArray(edits) && edits.length) {
+      try {
+        const docXmlFile = outZip.file('word/document.xml');
+        if (docXmlFile) outZip.file('word/document.xml', applyParagraphEdits(docXmlFile.asText(), edits));
+      } catch (e) { /* keep the field-filled version if the patch fails */ }
+    }
+    const outputBuffer = outZip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
     res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
     res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
     return res.status(200).send(outputBuffer);
