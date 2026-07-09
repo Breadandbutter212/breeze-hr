@@ -86,12 +86,26 @@ function applyParagraphDeletes(xml, deletes) {
   const want = new Map();
   for (const d of deletes) { const t = norm(d); if (t) want.set(t, (want.get(t) || 0) + 1); }
   if (!want.size) return xml;
+  let justDropped = false; // did we just remove content? then swallow the spacing that follows it
   return xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, (para) => {
-    if (/<w:drawing\b|<w:pict\b|<pic:pic\b|<w:sectPr\b/.test(para)) return para; // never drop images or section props
+    const hasObj = /<w:drawing\b|<w:pict\b|<pic:pic\b|<w:sectPr\b/.test(para); // images / section props: keep
     const tRe = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g; let m; const parts = [];
     while ((m = tRe.exec(para)) !== null) parts.push(m[1]);
     const full = norm(decode(parts.join('')));
-    if (want.get(full) > 0) { want.set(full, want.get(full) - 1); return ''; }
+    const isPageBreak = /<w:br\b[^>]*w:type="page"/.test(para);
+    const isBlank = !full && !hasObj && !isPageBreak;
+    const isLoneBreak = !full && !hasObj && isPageBreak;
+
+    // 1) Remove the deleted content paragraphs.
+    if (!hasObj && want.get(full) > 0) { want.set(full, want.get(full) - 1); justDropped = true; return ''; }
+
+    // 2) After a deletion, pull the rest of the document up: swallow the blank spacer paragraphs
+    //    and any lone page break, then strip a page-break-before from the next real paragraph.
+    if (justDropped) {
+      if (isBlank || isLoneBreak) return '';
+      justDropped = false;
+      return para.replace(/<w:pageBreakBefore\s*\/>/g, '').replace(/<w:pageBreakBefore\b[^>]*>[\s\S]*?<\/w:pageBreakBefore>/g, '');
+    }
     return para;
   });
 }
