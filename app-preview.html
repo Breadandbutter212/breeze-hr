@@ -6126,15 +6126,47 @@ function tmplPreviewLines(pageEl){
   if(!pageEl) return [];
   return String(pageEl.innerText||'').split('\n').map(s=>s.replace(/\s+/g,' ').trim());
 }
+// Line diff (LCS) so we can tell edits from deletions/additions even when the line count changes.
+function _diffLines(a, b){
+  const n=a.length, m=b.length;
+  const dp=Array.from({length:n+1},()=>new Int32Array(m+1));
+  for(let i=n-1;i>=0;i--) for(let j=m-1;j>=0;j--){
+    dp[i][j] = a[i]===b[j] ? dp[i+1][j+1]+1 : Math.max(dp[i+1][j], dp[i][j+1]);
+  }
+  const ops=[]; let i=0,j=0;
+  while(i<n && j<m){
+    if(a[i]===b[j]){ ops.push({op:'equal'}); i++; j++; }
+    else if(dp[i+1][j] >= dp[i][j+1]){ ops.push({op:'del', a:a[i]}); i++; }
+    else { ops.push({op:'ins', b:b[j]}); j++; }
+  }
+  while(i<n) ops.push({op:'del', a:a[i++]});
+  while(j<m) ops.push({op:'ins', b:b[j++]});
+  return ops;
+}
+// Returns {edits:[{find,replace}], deletes:[text]} to apply to the ORIGINAL .docx. Additions can't
+// be safely inserted into a Word body, so they're left out (they still show in the PDF).
 function tmplComputeEdits(){
   const page=document.querySelector('#dpBody .doc-page');
   const base=selTmpl && selTmpl._editBaseline;
   if(!page || !Array.isArray(base) || !base.length) return null;
-  const cur=tmplPreviewLines(page);
-  if(cur.length!==base.length) return null;      // paragraphs added/removed - can't map safely
-  const edits=[];
-  for(let i=0;i<base.length;i++){ if(base[i] && base[i]!==cur[i]) edits.push({find:base[i], replace:cur[i]}); }
-  return edits;   // [] = no text changes (plain field-fill is already faithful)
+  const b0=base.filter(x=>x!=='');
+  const c0=tmplPreviewLines(page).filter(x=>x!=='');
+  const ops=_diffLines(b0, c0);
+  const edits=[], deletes=[];
+  let dels=[], inss=[];
+  const flush=()=>{
+    const n=Math.min(dels.length, inss.length);
+    for(let k=0;k<n;k++) edits.push({find:dels[k], replace:inss[k]});   // replace block = text edits
+    for(let k=n;k<dels.length;k++) deletes.push(dels[k]);               // leftover deletions
+    dels=[]; inss=[];                                                    // leftover insertions ignored
+  };
+  for(const o of ops){
+    if(o.op==='equal') flush();
+    else if(o.op==='del') dels.push(o.a);
+    else inss.push(o.b);
+  }
+  flush();
+  return {edits, deletes};
 }
 
 async function downloadDocx() {
@@ -6170,7 +6202,7 @@ async function downloadDocx() {
       // Real .docx binary - fill the ORIGINAL with Docxtemplater (keeps header/footer/logo/tables/
       // bullets exactly). Apply any safe text edits on top; structural body changes aren't sent.
       payload={templateBase64:selTmpl.base64,fields,templateName:selTmpl.name};
-      if (selTmpl._edited) { const _edits = tmplComputeEdits(); if (_edits && _edits.length) payload.edits = _edits; }
+      if (selTmpl._edited) { const _patch = tmplComputeEdits(); if (_patch) { if (_patch.edits.length) payload.edits = _patch.edits; if (_patch.deletes.length) payload.deletes = _patch.deletes; } }
     } else {
       // PDF/txt-sourced template - generate a Word doc from the preview text
       const dpBody=document.getElementById('dpBody');

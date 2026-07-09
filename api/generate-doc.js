@@ -77,6 +77,25 @@ function applyParagraphEdits(xml, edits) {
   });
 }
 
+// Remove whole paragraphs from a filled .docx body whose visible text matches a deleted line.
+// Skips anything holding an image, a picture or the section properties, and removes each match
+// once (so duplicates aren't over-deleted).
+function applyParagraphDeletes(xml, deletes) {
+  const norm = s => String(s == null ? '' : s).replace(/\s+/g, ' ').trim();
+  const decode = s => s.replace(/&amp;/g,'&').replace(/&lt;/g,'<').replace(/&gt;/g,'>').replace(/&quot;/g,'"').replace(/&apos;/g,"'");
+  const want = new Map();
+  for (const d of deletes) { const t = norm(d); if (t) want.set(t, (want.get(t) || 0) + 1); }
+  if (!want.size) return xml;
+  return xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, (para) => {
+    if (/<w:drawing\b|<w:pict\b|<pic:pic\b|<w:sectPr\b/.test(para)) return para; // never drop images or section props
+    const tRe = /<w:t\b[^>]*>([\s\S]*?)<\/w:t>/g; let m; const parts = [];
+    while ((m = tRe.exec(para)) !== null) parts.push(m[1]);
+    const full = norm(decode(parts.join('')));
+    if (want.get(full) > 0) { want.set(full, want.get(full) - 1); return ''; }
+    return para;
+  });
+}
+
 // Graft the original .docx's headers, footers, their images and page setup onto a rebuilt body
 // (the html-docx export of the user's edited preview). The body carries ALL edits - bold, fonts,
 // bullets, added/deleted paragraphs - while the header/footer come byte-for-byte from the original.
@@ -242,7 +261,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    const { templateBase64, fields, plainText, templateName, accent, edits } = req.body;
+    const { templateBase64, fields, plainText, templateName, accent, edits, deletes } = req.body;
     const safeName = (templateName||'document').replace(/[^a-z0-9 _-]/gi,'').trim() || 'document';
     // Premium path (beta): Claude builds the .docx natively via the code execution tool.
     // Falls back to the standard converter on any failure so the caller always gets a document.
@@ -283,10 +302,15 @@ export default async function handler(req, res) {
     doc.render(fields);
     const outZip = doc.getZip();
     // Apply any manual paragraph edits to the body, leaving header/footer/images/styles intact.
-    if (Array.isArray(edits) && edits.length) {
+    if ((Array.isArray(edits) && edits.length) || (Array.isArray(deletes) && deletes.length)) {
       try {
         const docXmlFile = outZip.file('word/document.xml');
-        if (docXmlFile) outZip.file('word/document.xml', applyParagraphEdits(docXmlFile.asText(), edits));
+        if (docXmlFile) {
+          let xml = docXmlFile.asText();
+          if (Array.isArray(edits) && edits.length) xml = applyParagraphEdits(xml, edits);
+          if (Array.isArray(deletes) && deletes.length) xml = applyParagraphDeletes(xml, deletes);
+          outZip.file('word/document.xml', xml);
+        }
       } catch (e) { /* keep the field-filled version if the patch fails */ }
     }
     const outputBuffer = outZip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
