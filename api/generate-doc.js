@@ -96,6 +96,20 @@ function applyParagraphDeletes(xml, deletes) {
   });
 }
 
+// After deleting content, drop the empty "spacer" paragraphs it leaves behind: collapse any run
+// of 2+ consecutive blank body paragraphs down to one, so a removed section doesn't leave a gap.
+// Never touches paragraphs with images, page breaks or the section properties.
+function collapseEmptyParagraphs(xml) {
+  const isEmpty = p => !/<w:drawing\b|<w:pict\b|<pic:pic\b|<w:sectPr\b|<w:br\b/.test(p) && !/<w:t\b[^>]*>\s*\S/.test(p);
+  let prevEmpty = false;
+  return xml.replace(/<w:p\b[^>]*>[\s\S]*?<\/w:p>/g, (p) => {
+    const e = isEmpty(p);
+    if (e && prevEmpty) return '';   // drop the extra consecutive blank
+    prevEmpty = e;
+    return p;
+  });
+}
+
 // Graft the original .docx's headers, footers, their images and page setup onto a rebuilt body
 // (the html-docx export of the user's edited preview). The body carries ALL edits - bold, fonts,
 // bullets, added/deleted paragraphs - while the header/footer come byte-for-byte from the original.
@@ -308,7 +322,7 @@ export default async function handler(req, res) {
         if (docXmlFile) {
           let xml = docXmlFile.asText();
           if (Array.isArray(edits) && edits.length) xml = applyParagraphEdits(xml, edits);
-          if (Array.isArray(deletes) && deletes.length) xml = applyParagraphDeletes(xml, deletes);
+          if (Array.isArray(deletes) && deletes.length) { xml = applyParagraphDeletes(xml, deletes); xml = collapseEmptyParagraphs(xml); }
           outZip.file('word/document.xml', xml);
         }
       } catch (e) { /* keep the field-filled version if the patch fails */ }
