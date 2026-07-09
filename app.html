@@ -315,8 +315,9 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
 .dp-title { font-size: 12px; font-weight: 600; color: var(--ink); }
 .dp-btns { display: flex; gap: 5px; }
 .dp-body { flex: 1; overflow-y: auto; overflow-x: auto; padding: 20px; }
-/* Keep an uploaded .docx preview inside the panel instead of bleeding off the right edge. */
-.doc-page.docx-fidelity { max-width: 100% !important; }
+/* Keep an uploaded .docx preview the SAME width as every other template (the base .doc-page is
+   640px centred) and contain wide content instead of letting it bleed off the right edge. */
+.doc-page.docx-fidelity { max-width: 640px !important; margin: 0 auto !important; }
 .doc-page.docx-fidelity table { max-width: 100% !important; table-layout: fixed; }
 .doc-page.docx-fidelity td, .doc-page.docx-fidelity th { word-break: break-word; overflow-wrap: anywhere; }
 .doc-page.docx-fidelity img, .doc-page.docx-fidelity svg { max-width: 100% !important; height: auto !important; }
@@ -6114,6 +6115,10 @@ async function saveToTemplate() {
   }
 }
 
+// Base64 (no data: prefix) of a Blob - used to hand a generated .docx back to the server for grafting.
+function blobToBase64(blob){
+  return new Promise((resolve,reject)=>{ const r=new FileReader(); r.onload=()=>{ const s=String(r.result||''); resolve(s.slice(s.indexOf(',')+1)); }; r.onerror=reject; r.readAsDataURL(blob); });
+}
 // Uploaded .docx editing: we keep the ORIGINAL file (logo, images, header/footer, styling) and
 // apply manual text edits as paragraph replacements. These helpers snapshot the field-filled text
 // before editing and diff it against the edited text so only changed paragraphs are sent.
@@ -6145,29 +6150,24 @@ async function downloadDocx() {
     // preview so the user's changes and the on-screen formatting are what gets downloaded.
     const _wantHtml = !!_page && (selTmpl._edited || !selTmpl.base64);
     if (_wantHtml) {
-      // If we still have the original .docx, keep it (logo, images, header/footer, styling intact)
-      // and apply the manual edits as paragraph replacements - only fall back to the lossy HTML
-      // rebuild when the edits can't be mapped (paragraphs added/removed) or the server fails.
-      if (selTmpl.base64 && selTmpl._edited) {
-        const edits = tmplComputeEdits();
-        if (edits) {
-          const fields={};Object.entries(genVals).forEach(([k,v])=>{fields[k]=v;fields[k.toLowerCase().replace(/\s+/g,'_')]=v;fields[k.toLowerCase().replace(/\s+/g,'')]=v;});
-          try{
-            const r=await fetch('/api/generate-doc',{method:'POST',headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},body:JSON.stringify({templateBase64:selTmpl.base64,fields,edits,templateName:selTmpl.name})});
-            if(r.ok){
-              const blob=await r.blob();const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();URL.revokeObjectURL(url);
-              btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);
-              return;
-            }
-          }catch(e){}
-          // fall through to the HTML rebuild on any failure
-        }
-      }
       const ok = await ensureHtmlDocx();
       const html = exportHtmlFromPreview();
       if (ok && html && window.htmlDocx) {
-        const full = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;">${html}</body></html>`;
+        const full = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{font-family:Calibri,Arial,sans-serif;}</style></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1a1a1a;">${html}</body></html>`;
         const blob = window.htmlDocx.asBlob(full, { orientation: 'portrait', margins: { top: 1080, right: 1080, bottom: 1080, left: 1080 } });
+        // Uploaded .docx: graft its ORIGINAL header/footer/page-setup back onto this rebuilt body,
+        // so whatever you did to the body (bold, fonts, bullets, add/delete) never touches them.
+        if (selTmpl.base64) {
+          try {
+            const gr = await fetch('/api/generate-doc', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())}, body: JSON.stringify({ action:'graft', htmlDocxBase64: await blobToBase64(blob), templateBase64: selTmpl.base64, templateName: selTmpl.name }) });
+            if (gr.ok) {
+              const mb = await gr.blob(); const u = URL.createObjectURL(mb); const a2 = document.createElement('a'); a2.href = u; a2.download = `${buildDocFileName()}.docx`; a2.click(); URL.revokeObjectURL(u);
+              btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(() => btn.textContent = '⬇ Word', 3000);
+              return;
+            }
+          } catch(e){}
+          // graft failed -> fall through to the plain rebuild below (still a valid .docx)
+        }
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${buildDocFileName()}.docx`; a.click(); URL.revokeObjectURL(url);
         btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(() => btn.textContent = '⬇ Word', 3000);
         return;

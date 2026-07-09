@@ -77,6 +77,113 @@ function applyParagraphEdits(xml, edits) {
   });
 }
 
+// Graft the original .docx's headers, footers, their images and page setup onto a rebuilt body
+// (the html-docx export of the user's edited preview). The body carries ALL edits - bold, fonts,
+// bullets, added/deleted paragraphs - while the header/footer come byte-for-byte from the original.
+// Returns a Buffer, or null if there's nothing to graft / inputs are unusable (caller falls back).
+function graftHeadersFooters(htmlBuf, origBuf) {
+  const htmlZip = new PizZip(htmlBuf);
+  const origZip = new PizZip(origBuf);
+  const txt = (zip, p) => { const f = zip.file(p); return f ? f.asText() : null; };
+
+  let htmlDoc = txt(htmlZip, 'word/document.xml');
+  const origDoc = txt(origZip, 'word/document.xml');
+  if (!htmlDoc || !origDoc) return null;
+
+  // The original's final sectPr holds page size/margins + header/footer references.
+  const secMatches = origDoc.match(/<w:sectPr\b[^>]*>[\s\S]*?<\/w:sectPr>/g);
+  const origSectPr = secMatches ? secMatches[secMatches.length - 1] : null;
+  if (!origSectPr) return null;
+
+  const origRels = txt(origZip, 'word/_rels/document.xml.rels') || '';
+  const relTarget = (rid) => {
+    const m = origRels.match(new RegExp('<Relationship\\b[^>]*Id="' + rid + '"[^>]*Target="([^"]+)"', 'i'))
+           || origRels.match(new RegExp('<Relationship\\b[^>]*Target="([^"]+)"[^>]*Id="' + rid + '"', 'i'));
+    return m ? m[1] : null;
+  };
+
+  // Collect every header/footer reference from the original sectPr.
+  const parts = [];
+  const refRe = /<w:(header|footer)Reference\b([^>]*?)\/>/g; let rm;
+  while ((rm = refRe.exec(origSectPr)) !== null) {
+    const kind = rm[1], attrs = rm[2];
+    const idM = attrs.match(/r:id="([^"]+)"/); if (!idM) continue;
+    let target = relTarget(idM[1]); if (!target) continue;
+    target = target.replace(/^\.\.\//, '').replace(/^\/?word\//, '').replace(/^\//, '');
+    const tyM = attrs.match(/w:type="([^"]+)"/);
+    parts.push({ kind, wtype: tyM ? tyM[1] : 'default', file: target });
+  }
+  if (!parts.length) return null; // no header/footer to preserve
+
+  let htmlRels = txt(htmlZip, 'word/_rels/document.xml.rels')
+    || '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>\n<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"></Relationships>';
+  let ctypes = txt(htmlZip, '[Content_Types].xml');
+  if (!ctypes) return null;
+
+  const CT_MAP = { png:'image/png', jpg:'image/jpeg', jpeg:'image/jpeg', gif:'image/gif', bmp:'image/bmp', tiff:'image/tiff', tif:'image/tiff', emf:'image/x-emf', wmf:'image/x-wmf', svg:'image/svg+xml' };
+  const ensureDefault = (ext) => {
+    if (!new RegExp('Extension="' + ext + '"', 'i').test(ctypes)) {
+      ctypes = ctypes.replace('</Types>', `<Default Extension="${ext}" ContentType="${CT_MAP[ext] || 'application/octet-stream'}"/></Types>`);
+    }
+  };
+  const usedMedia = new Set(Object.keys(htmlZip.files).filter(n => /^word\/media\//.test(n)).map(n => n.replace('word/media/', '')));
+
+  let rid = 7100;
+  const headerRefs = [], footerRefs = [];
+  for (const part of parts) {
+    const partXml = txt(origZip, 'word/' + part.file);
+    if (!partXml) continue;
+
+    // Copy the part's media (logo etc.), renamed to avoid any clash, updating the part's rels.
+    const relsPath = 'word/_rels/' + part.file + '.rels';
+    let partRels = txt(origZip, relsPath);
+    if (partRels) {
+      partRels = partRels.replace(/(Target=")([^"]+)(")/g, (mm, a, tgt, b) => {
+        const norm = tgt.replace(/^\.\.\//, '').replace(/^\/?word\//, '');
+        if (!/^media\//i.test(norm)) return mm; // leave hyperlinks etc.
+        const src = origZip.file('word/' + norm); if (!src) return mm;
+        const baseName = norm.replace(/^media\//, '');
+        let name = 'graft_' + baseName, i = 1;
+        while (usedMedia.has(name)) name = 'graft' + (i++) + '_' + baseName;
+        usedMedia.add(name);
+        htmlZip.file('word/media/' + name, src.asUint8Array(), { binary: true });
+        ensureDefault((name.split('.').pop() || 'png').toLowerCase());
+        return a + 'media/' + name + b;
+      });
+      htmlZip.file(relsPath, partRels);
+    }
+
+    htmlZip.file('word/' + part.file, partXml);
+    const ct = part.kind === 'header'
+      ? 'application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml'
+      : 'application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml';
+    if (!ctypes.includes('PartName="/word/' + part.file + '"')) {
+      ctypes = ctypes.replace('</Types>', `<Override PartName="/word/${part.file}" ContentType="${ct}"/></Types>`);
+    }
+    const relType = 'http://schemas.openxmlformats.org/officeDocument/2006/relationships/' + part.kind;
+    const id = 'rIdGr' + (rid++);
+    htmlRels = htmlRels.replace('</Relationships>', `<Relationship Id="${id}" Type="${relType}" Target="${part.file}"/></Relationships>`);
+    (part.kind === 'header' ? headerRefs : footerRefs).push(`<w:${part.kind}Reference w:type="${part.wtype}" r:id="${id}"/>`);
+  }
+
+  const refBlock = headerRefs.join('') + footerRefs.join('');
+  if (!refBlock) return null;
+
+  // Header/footer references must be the FIRST children of <w:sectPr>. Also adopt the original's
+  // page size and margins so the layout matches.
+  const pgSz = (origSectPr.match(/<w:pgSz\b[^>]*\/>/) || [''])[0];
+  const pgMar = (origSectPr.match(/<w:pgMar\b[^>]*\/>/) || [''])[0];
+  htmlDoc = htmlDoc.replace(/<w:sectPr\b([^>]*)>/, (mm, a) => `<w:sectPr${a}>${refBlock}`);
+  if (pgSz) htmlDoc = /<w:pgSz\b[^>]*\/>/.test(htmlDoc) ? htmlDoc.replace(/<w:pgSz\b[^>]*\/>/, pgSz) : htmlDoc.replace('</w:sectPr>', pgSz + '</w:sectPr>');
+  if (pgMar) htmlDoc = /<w:pgMar\b[^>]*\/>/.test(htmlDoc) ? htmlDoc.replace(/<w:pgMar\b[^>]*\/>/, pgMar) : htmlDoc.replace('</w:sectPr>', pgMar + '</w:sectPr>');
+  if (!/xmlns:r=/.test(htmlDoc)) htmlDoc = htmlDoc.replace(/<w:document\b/, '<w:document xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"');
+
+  htmlZip.file('word/document.xml', htmlDoc);
+  htmlZip.file('word/_rels/document.xml.rels', htmlRels);
+  htmlZip.file('[Content_Types].xml', ctypes);
+  return htmlZip.generate({ type: 'nodebuffer', compression: 'DEFLATE' });
+}
+
 async function verifyAuth(req) {
   const token = req.headers.authorization?.replace('Bearer ', '');
   if (!token) return null;
@@ -93,6 +200,20 @@ export default async function handler(req, res) {
 
   // Require an authenticated caller for every path (doc render, template fill and transcribe).
   if (!(await verifyAuth(req))) return res.status(401).json({ error: 'Unauthorized' });
+
+  // Graft action — merge the original .docx's header/footer/page-setup onto an edited body.
+  if (req.body?.action === 'graft') {
+    const { htmlDocxBase64, templateBase64, templateName } = req.body;
+    if (!htmlDocxBase64 || !templateBase64) return res.status(400).json({ error: 'Missing document data' });
+    try {
+      const merged = graftHeadersFooters(Buffer.from(htmlDocxBase64, 'base64'), Buffer.from(templateBase64, 'base64'));
+      if (!merged) return res.status(422).json({ error: 'Nothing to graft' });
+      const safeName = (templateName || 'document').replace(/[^a-z0-9 _-]/gi, '').trim() || 'document';
+      res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+      res.setHeader('Content-Disposition', `attachment; filename="${safeName}.docx"`);
+      return res.status(200).send(merged);
+    } catch (e) { return res.status(500).json({ error: e.message }); }
+  }
 
   // Transcription action — uses Groq Whisper (server key), so require an authenticated caller
   if (req.body?.action === 'transcribe') {
