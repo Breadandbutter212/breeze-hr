@@ -5874,7 +5874,7 @@ async function downloadAsDocx() {
       const ok = await ensureHtmlDocx();
       const html = exportHtmlFromPreview();
       if (ok && html && window.htmlDocx) {
-        const full = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:'Plus Jakarta Sans',Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1a1a1a;">${html}</body></html>`;
+        const full = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{font-family:Calibri,Arial,sans-serif;}</style></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1a1a1a;">${html}</body></html>`;
         const blob = window.htmlDocx.asBlob(full, { orientation:'portrait', margins:{ top:1080, right:1080, bottom:1080, left:1080 } });
         const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();URL.revokeObjectURL(url);
         finishBtn(); return;
@@ -6000,9 +6000,13 @@ function exportHtmlFromPreview() {
   const clone = page.cloneNode(true);
   const liveEls = page.querySelectorAll('*');
   const cloneEls = clone.querySelectorAll('*');
-  const props = ['font-family','font-size','font-weight','font-style','text-decoration','text-align','line-height','margin-top','margin-bottom','margin-left','margin-right','padding-top','padding-bottom','padding-left','padding-right'];
+  // NB: font-family is deliberately NOT captured - the preview uses a web font (Plus Jakarta Sans)
+  // that Word doesn't have, and html-docx-js then falls back to Times inconsistently. We set one
+  // Word-native font on the whole document instead (see downloadAsDocx), so it stays uniform.
+  const props = ['font-size','font-weight','font-style','text-decoration','text-align','line-height','margin-top','margin-bottom','margin-left','margin-right','padding-top','padding-bottom','padding-left','padding-right'];
   const borderProps = ['border-top','border-bottom','border-left','border-right'];
   const rgbOf = v => { const m=String(v).match(/rgba?\(([^)]+)\)/); if(!m) return null; const a=m[1].split(',').map(parseFloat); return {r:a[0],g:a[1],b:a[2],a:a[3]==null?1:a[3]}; };
+  const rgb2hex = v => { const c=rgbOf(v); if(!c) return null; const h=x=>Math.max(0,Math.min(255,Math.round(x))).toString(16).padStart(2,'0'); return '#'+h(c.r)+h(c.g)+h(c.b); };
   const lum = c => (0.299*c.r + 0.587*c.g + 0.114*c.b) / 255;
   const n = Math.min(liveEls.length, cloneEls.length);
   for (let i = 0; i < n; i++) {
@@ -6027,9 +6031,17 @@ function exportHtmlFromPreview() {
   const liveRule = page.querySelector('.doc-rule');
   let ruleColor = liveRule ? getComputedStyle(liveRule).backgroundColor : '';
   if (!ruleColor || ruleColor === 'rgba(0, 0, 0, 0)' || ruleColor === 'transparent') {
-    ruleColor = (getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim() || '#1F3864';
+    ruleColor = (getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim() || 'rgb(31,56,100)';
   }
-  clone.querySelectorAll('.doc-rule').forEach(el => { const d=document.createElement('div'); d.setAttribute('style',`border-bottom:2.5px solid ${ruleColor};margin:2px 0 18px;font-size:0;line-height:0;height:0;`); el.replaceWith(d); });
+  const ruleHex = rgb2hex(ruleColor) || '#1F3864';
+  // A shaded single-cell table is the one thing html-docx-js renders a solid colour bar for
+  // (empty divs with borders/backgrounds get dropped), so the accent rule survives in Word.
+  clone.querySelectorAll('.doc-rule').forEach(el => {
+    const t=document.createElement('table');
+    t.setAttribute('style','width:100%;border-collapse:collapse;margin:3px 0 16px;');
+    t.innerHTML=`<tr><td bgcolor="${ruleHex}" style="background-color:${ruleHex};height:3px;line-height:3px;font-size:2px;padding:0;border:0;">&nbsp;</td></tr>`;
+    el.replaceWith(t);
+  });
   // Field chips -> their visible text (values kept; unfilled keep their [field name])
   clone.querySelectorAll('.filled,[data-f]').forEach(sp => sp.replaceWith(document.createTextNode(sp.textContent)));
   // Styles are now inlined, so drop the <style> block (Word handles inline styles best)
