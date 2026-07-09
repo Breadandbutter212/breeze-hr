@@ -6034,13 +6034,13 @@ function exportHtmlFromPreview() {
     ruleColor = (getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim() || 'rgb(31,56,100)';
   }
   const ruleHex = rgb2hex(ruleColor) || '#1F3864';
-  // A shaded single-cell table is the one thing html-docx-js renders a solid colour bar for
-  // (empty divs with borders/backgrounds get dropped), so the accent rule survives in Word.
+  // A paragraph BOTTOM BORDER maps to Word's pBdr - a thin, solid, coloured horizontal line.
+  // (A shaded table cell renders at full line height = a fat bar; an empty div gets dropped.)
   clone.querySelectorAll('.doc-rule').forEach(el => {
-    const t=document.createElement('table');
-    t.setAttribute('style','width:100%;border-collapse:collapse;margin:3px 0 16px;');
-    t.innerHTML=`<tr><td bgcolor="${ruleHex}" style="background-color:${ruleHex};height:3px;line-height:3px;font-size:2px;padding:0;border:0;">&nbsp;</td></tr>`;
-    el.replaceWith(t);
+    const p=document.createElement('p');
+    p.setAttribute('style',`border-bottom:3pt solid ${ruleHex};margin:0 0 14px 0;padding:0;font-size:2px;line-height:2px;mso-line-height-rule:exactly;`);
+    p.innerHTML='&#8203;';
+    el.replaceWith(p);
   });
   // Field chips -> their visible text (values kept; unfilled keep their [field name])
   clone.querySelectorAll('.filled,[data-f]').forEach(sp => sp.replaceWith(document.createTextNode(sp.textContent)));
