@@ -315,16 +315,16 @@ body #view-trackers .manage-topbar > *:last-child:not(:first-child){ align-self:
 .dp-title { font-size: 12px; font-weight: 600; color: var(--ink); }
 .dp-btns { display: flex; gap: 5px; }
 .dp-body { flex: 1; overflow-y: auto; overflow-x: auto; padding: 20px; }
-/* Keep an uploaded .docx preview the SAME width as every other template (the base .doc-page is
-   640px centred) and contain wide content instead of letting it bleed off the right edge. */
-.doc-page.docx-fidelity { max-width: 640px !important; margin: 0 auto !important; }
-.doc-page.docx-fidelity table { max-width: 100% !important; table-layout: fixed; }
+/* Every template preview is the SAME width (800px, centred) so built-in letters and uploaded .docx
+   line up, and uploaded-.docx content is forced to fit inside instead of bleeding off the right. */
+.doc-page.docx-fidelity { max-width: 800px !important; margin: 0 auto !important; overflow: hidden !important; }
+.doc-page.docx-fidelity table { width: 100% !important; max-width: 100% !important; table-layout: fixed; }
 .doc-page.docx-fidelity td, .doc-page.docx-fidelity th { word-break: break-word; overflow-wrap: anywhere; }
 .doc-page.docx-fidelity img, .doc-page.docx-fidelity svg { max-width: 100% !important; height: auto !important; }
-.doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 48px 52px; max-width: 640px; margin: 0 auto; min-height: 480px; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.75; }
+.doc-page { background: white; border: 1px solid var(--border); border-radius: var(--r); box-shadow: var(--shadow); padding: 48px 52px; max-width: 800px; margin: 0 auto; min-height: 480px; font-family: 'Plus Jakarta Sans', sans-serif; line-height: 1.75; }
 /* Faithful Word render (docx-preview): let the document's own styles win, drop the page chrome it adds */
 .doc-page.docx-fidelity { font-family: inherit; line-height: inherit; }
-.doc-page.docx-fidelity section.docxr, .doc-page.docx-fidelity .docxr-wrapper > section { box-shadow: none !important; border: 0 !important; margin: 0 auto !important; padding: 0 !important; width: auto !important; min-height: 0 !important; background: transparent !important; overflow: visible !important; }
+.doc-page.docx-fidelity section.docxr, .doc-page.docx-fidelity .docxr-wrapper > section { box-shadow: none !important; border: 0 !important; margin: 0 auto !important; padding: 0 !important; width: 100% !important; max-width: 100% !important; box-sizing: border-box !important; min-height: 0 !important; background: transparent !important; overflow: hidden !important; }
 .doc-page.docx-fidelity .docxr-wrapper { background: transparent !important; padding: 0 !important; }
 /* Keep Word header/footer content in normal flow so it isn't absolutely positioned into a clipped margin */
 .doc-page.docx-fidelity header, .doc-page.docx-fidelity footer { position: static !important; width: auto !important; left: auto !important; top: auto !important; right: auto !important; bottom: auto !important; margin: 0 0 10px !important; }
@@ -6148,26 +6148,16 @@ async function downloadDocx() {
     const _page = document.querySelector('#dpBody .doc-page');
     // Edited (insert/delete) or no original .docx left (saved/text template) -> build from the
     // preview so the user's changes and the on-screen formatting are what gets downloaded.
-    const _wantHtml = !!_page && (selTmpl._edited || !selTmpl.base64);
+    // Only text/PDF-sourced templates (no original binary) are rebuilt from the preview HTML.
+    // An uploaded .docx ALWAYS goes through its original file below - rebuilding a rich Word body
+    // from HTML mangles bullets/tables/formatting, so we never do that for real .docx templates.
+    const _wantHtml = !!_page && !selTmpl.base64;
     if (_wantHtml) {
       const ok = await ensureHtmlDocx();
       const html = exportHtmlFromPreview();
       if (ok && html && window.htmlDocx) {
         const full = `<!DOCTYPE html><html><head><meta charset="utf-8"><style>*{font-family:Calibri,Arial,sans-serif;}</style></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1a1a1a;">${html}</body></html>`;
         const blob = window.htmlDocx.asBlob(full, { orientation: 'portrait', margins: { top: 1080, right: 1080, bottom: 1080, left: 1080 } });
-        // Uploaded .docx: graft its ORIGINAL header/footer/page-setup back onto this rebuilt body,
-        // so whatever you did to the body (bold, fonts, bullets, add/delete) never touches them.
-        if (selTmpl.base64) {
-          try {
-            const gr = await fetch('/api/generate-doc', { method:'POST', headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())}, body: JSON.stringify({ action:'graft', htmlDocxBase64: await blobToBase64(blob), templateBase64: selTmpl.base64, templateName: selTmpl.name }) });
-            if (gr.ok) {
-              const mb = await gr.blob(); const u = URL.createObjectURL(mb); const a2 = document.createElement('a'); a2.href = u; a2.download = `${buildDocFileName()}.docx`; a2.click(); URL.revokeObjectURL(u);
-              btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(() => btn.textContent = '⬇ Word', 3000);
-              return;
-            }
-          } catch(e){}
-          // graft failed -> fall through to the plain rebuild below (still a valid .docx)
-        }
         const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = `${buildDocFileName()}.docx`; a.click(); URL.revokeObjectURL(url);
         btn.textContent = '✓ Downloaded'; btn.disabled = false; setTimeout(() => btn.textContent = '⬇ Word', 3000);
         return;
@@ -6177,8 +6167,10 @@ async function downloadDocx() {
     const fields={};Object.entries(genVals).forEach(([k,v])=>{fields[k]=v;fields[k.toLowerCase().replace(/\s+/g,'_')]=v;fields[k.toLowerCase().replace(/\s+/g,'')]=v;});
     let payload;
     if(selTmpl.base64){
-      // Real .docx binary - fill with Docxtemplater
+      // Real .docx binary - fill the ORIGINAL with Docxtemplater (keeps header/footer/logo/tables/
+      // bullets exactly). Apply any safe text edits on top; structural body changes aren't sent.
       payload={templateBase64:selTmpl.base64,fields,templateName:selTmpl.name};
+      if (selTmpl._edited) { const _edits = tmplComputeEdits(); if (_edits && _edits.length) payload.edits = _edits; }
     } else {
       // PDF/txt-sourced template - generate a Word doc from the preview text
       const dpBody=document.getElementById('dpBody');
