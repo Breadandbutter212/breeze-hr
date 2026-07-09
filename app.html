@@ -5864,49 +5864,42 @@ async function downloadAsDocx() {
   if(typeof roiAddDoc==='function') roiAddDoc(1);
   const btn=document.getElementById('dlBtn');
   if(btn){btn.textContent='Generating...';btn.disabled=true;}
+  const finishBtn=()=>{ if(btn){btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);} };
   try {
     const body=document.getElementById('dpBody');
-    // Exclude the preview notice div from download content
     const docPage = body ? body.querySelector('.doc-page, .mammoth-doc') : null;
+    // WYSIWYG: build the Word file straight from the on-screen preview so the download matches
+    // exactly what you see (fonts, headings, clause numbering, rule line, signature block).
+    try {
+      const ok = await ensureHtmlDocx();
+      const html = exportHtmlFromPreview();
+      if (ok && html && window.htmlDocx) {
+        const full = `<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:'Plus Jakarta Sans',Calibri,Arial,sans-serif;font-size:11pt;line-height:1.5;color:#1a1a1a;">${html}</body></html>`;
+        const blob = window.htmlDocx.asBlob(full, { orientation:'portrait', margins:{ top:1080, right:1080, bottom:1080, left:1080 } });
+        const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();URL.revokeObjectURL(url);
+        finishBtn(); return;
+      }
+    } catch(e){}
+    // Fallback: server render from the text content.
     const text = htmlToMarkdownText(docPage ? docPage.innerHTML : (body ? body.innerHTML : ''));
     const res=await fetch('/api/generate-doc',{
       method:'POST',
       headers:{'Content-Type':'application/json','Authorization':'Bearer '+(await getAuthToken())},
-      body:JSON.stringify({
-        templateBase64: null,
-        fields: genVals,
-        plainText: text,
-        templateName: selTmpl.name
-      })
+      body:JSON.stringify({ templateBase64: null, fields: genVals, plainText: text, templateName: selTmpl.name })
     });
-    if(!res.ok){
-      // Server failed - build a REAL Word file client-side from the preview (same path the
-      // uploaded-template download uses) so you still get a .docx, not a plain-text file.
-      let done=false;
-      try{
-        const ok=await ensureHtmlDocx();
-        const html=exportHtmlFromPreview();
-        if(ok && html && window.htmlDocx){
-          const full=`<!DOCTYPE html><html><head><meta charset="utf-8"></head><body style="font-family:Calibri,Arial,sans-serif;font-size:11pt;">${html}</body></html>`;
-          const blob=window.htmlDocx.asBlob(full,{orientation:'portrait',margins:{top:1080,right:1080,bottom:1080,left:1080}});
-          const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();URL.revokeObjectURL(url);
-          done=true;
-        }
-      }catch(e){}
-      if(!done){
-        // Absolute last resort if the client-side builder can't load either.
-        const blob=new Blob([text],{type:'text/plain'});
-        const url=URL.createObjectURL(blob);
-        const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.txt`;a.click();
-        URL.revokeObjectURL(url);
-      }
-    } else {
+    if(res.ok){
       const blob=await res.blob();
       const url=URL.createObjectURL(blob);
       const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.docx`;a.click();
       URL.revokeObjectURL(url);
+    } else {
+      // Absolute last resort - plain text.
+      const blob=new Blob([text],{type:'text/plain'});
+      const url=URL.createObjectURL(blob);
+      const a=document.createElement('a');a.href=url;a.download=`${buildDocFileName()}.txt`;a.click();
+      URL.revokeObjectURL(url);
     }
-    if(btn){btn.textContent='✓ Downloaded';btn.disabled=false;setTimeout(()=>btn.textContent='⬇ Word',3000);}
+    finishBtn();
   } catch(e){
     if(btn){btn.textContent='⬇ Word';btn.disabled=false;}
   }
@@ -6007,15 +6000,30 @@ function exportHtmlFromPreview() {
   const clone = page.cloneNode(true);
   const liveEls = page.querySelectorAll('*');
   const cloneEls = clone.querySelectorAll('*');
-  const props = ['font-family','font-size','font-weight','font-style','text-decoration','text-align','color','background-color','line-height','margin-top','margin-bottom','margin-left','margin-right','padding-top','padding-bottom','padding-left','padding-right'];
+  const props = ['font-family','font-size','font-weight','font-style','text-decoration','text-align','line-height','margin-top','margin-bottom','margin-left','margin-right','padding-top','padding-bottom','padding-left','padding-right'];
+  const borderProps = ['border-top','border-bottom','border-left','border-right'];
+  const rgbOf = v => { const m=String(v).match(/rgba?\(([^)]+)\)/); if(!m) return null; const a=m[1].split(',').map(parseFloat); return {r:a[0],g:a[1],b:a[2],a:a[3]==null?1:a[3]}; };
+  const lum = c => (0.299*c.r + 0.587*c.g + 0.114*c.b) / 255;
   const n = Math.min(liveEls.length, cloneEls.length);
   for (let i = 0; i < n; i++) {
     if (liveEls[i].tagName === 'STYLE') continue;
     const cs = getComputedStyle(liveEls[i]);
     let s = cloneEls[i].getAttribute('style') || '';
     for (const p of props) { const v = cs.getPropertyValue(p); if (v && v !== 'normal' && v !== 'none' && v !== 'auto') s += `;${p}:${v}`; }
+    // Text colour: keep it, but if the UI is in dark mode the ink is light - darken it so it
+    // stays readable on the white Word page (otherwise you get white-on-white).
+    const col = rgbOf(cs.getPropertyValue('color'));
+    if (col) s += `;color:${lum(col) > 0.7 ? '#222222' : cs.getPropertyValue('color')}`;
+    // Background: keep light tints (callout boxes) but drop dark page/box fills that would print black.
+    const bg = rgbOf(cs.getPropertyValue('background-color'));
+    if (bg && bg.a > 0 && lum(bg) > 0.6) s += `;background-color:${cs.getPropertyValue('background-color')}`;
+    // Real borders only (skip 0px / none) so rule lines, signature underlines and boxes survive.
+    for (const p of borderProps) { const v = cs.getPropertyValue(p); if (v && !/^0px/.test(v) && !/\bnone\b/.test(v)) s += `;${p}:${v}`; }
     cloneEls[i].setAttribute('style', s);
   }
+  // The accent rule bar is a thin background div with no intrinsic height in Word - render it as an <hr>.
+  const accent = (getComputedStyle(document.documentElement).getPropertyValue('--accent')||'').trim() || '#1F3864';
+  clone.querySelectorAll('.doc-rule').forEach(el => { const hr=document.createElement('hr'); hr.setAttribute('style',`border:none;border-top:2px solid ${accent};margin:4px 0 18px;`); el.replaceWith(hr); });
   // Field chips -> their visible text (values kept; unfilled keep their [field name])
   clone.querySelectorAll('.filled,[data-f]').forEach(sp => sp.replaceWith(document.createTextNode(sp.textContent)));
   // Styles are now inlined, so drop the <style> block (Word handles inline styles best)
