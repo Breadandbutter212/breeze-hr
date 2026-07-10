@@ -18809,10 +18809,11 @@ function showCalendarModal(events, subtitle, filename) {
   const pad = n => String(n).padStart(2,'0');
   const tmr = calTomorrow(10);
   const defDate = tmr.getFullYear()+'-'+pad(tmr.getMonth()+1)+'-'+pad(tmr.getDate());
+  const datelessCount = events.filter(e => e.dateless).length;
   const pickerHtml = dateless ? `
       <div style="background:var(--accent-bg);border:1px solid var(--accent-mid);border-radius:var(--r);padding:12px 14px;margin-bottom:14px;">
-        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">Choose the day</div>
-        <div style="font-size:11px;color:var(--ink2);margin-bottom:9px;">All the details are ready - just pick when it should sit in your calendar.</div>
+        <div style="font-size:12px;font-weight:600;color:var(--ink);margin-bottom:2px;">${datelessCount>1?'Choose the start day':'Choose the day'}</div>
+        <div style="font-size:11px;color:var(--ink2);margin-bottom:9px;">${datelessCount>1?`All the details are ready - pick a start day and the ${datelessCount} invites land on consecutive days.`:'All the details are ready - just pick when it should sit in your calendar.'}</div>
         <input type="date" id="calPickDate" value="${defDate}" min="${defDate.slice(0,4)-1}-01-01" style="width:100%;border:1px solid var(--border);border-radius:var(--r-sm);padding:8px 10px;font-size:13px;font-family:inherit;outline:none;background:white;box-sizing:border-box;" onfocus="this.style.borderColor='var(--accent)'" onblur="this.style.borderColor='var(--border)'">
       </div>` : '';
   const introHtml = dateless
@@ -18841,10 +18842,18 @@ function confirmCalendarDownload() {
   if (dateless) {
     const picked = document.getElementById('calPickDate')?.value;
     if (!picked) { showBreezeToast('Pick a day first'); return; }
-    const day = new Date(picked + 'T00:00:00');
-    // Turn each dateless event into an all-day reminder on the chosen day, keeping all its detail.
+    const base = new Date(picked + 'T00:00:00');
+    // Turn each dateless event into an all-day reminder, keeping all its detail.
+    // Space them one day apart from the chosen start so 3 invites land on 3
+    // consecutive days rather than all stacking on the same day.
     // Events that already carry a real date are left untouched.
-    events = events.map(e => e.dateless ? ({ ...e, start: day, allDay: true }) : e);
+    let offset = 0;
+    events = events.map(e => {
+      if (!e.dateless) return e;
+      const day = new Date(base.getTime() + offset * 86400000);
+      offset++;
+      return { ...e, start: day, allDay: true };
+    });
   }
   generateAndDownloadICS(events, filename);
   _pendingCalEvents = null;
@@ -24034,7 +24043,11 @@ async function projConfirmEmailToTask(){
   // ---------- SUCCESSION ----------
   var READY={ready:'Ready now','1to2':'1-2 years','3to5':'3-5 years','5to10':'5-10 years',emergency:'Emergency cover'};
   var SUCC_MIN=4; // show at least this many successor slots per role
-  function padSuccessors(s){ s.successors=s.successors||[]; while(s.successors.length<SUCC_MIN) s.successors.push({name:'',readiness:'1to2'}); return s; }
+  // Default readiness steps up per slot so a fresh plan reads like a ladder
+  // (1-2 years, then 3-5, then 5-10) instead of every row saying the same thing.
+  var SUCC_READY_LADDER=['1to2','3to5','5to10'];
+  function succDefaultReadiness(idx){ return SUCC_READY_LADDER[Math.min(idx, SUCC_READY_LADDER.length-1)]; }
+  function padSuccessors(s){ s.successors=s.successors||[]; while(s.successors.length<SUCC_MIN) s.successors.push({name:'',readiness:succDefaultReadiness(s.successors.length)}); return s; }
   function talentRenderSuccession(){
     var panel=document.getElementById('talentPanel'); if(!panel)return;
     var html='<div class="tl-bar"><div style="font-size:12px;color:var(--ink2);">Succession cover for business-critical roles. Edit readiness, add a successor, or flag a gap.</div><button class="btn btn-secondary btn-sm" style="margin-left:auto" onclick="talentAddSuccession()">+ Add role</button></div>';
@@ -24066,7 +24079,7 @@ async function projConfirmEmailToTask(){
   window.talentSucc=function(i,k,v){ talentState.succession[i][k]=v; };
   window.talentSuccName=function(i,j,v){ talentState.succession[i].successors[j].name=v; };
   window.talentSuccReady=function(i,j,v){ talentState.succession[i].successors[j].readiness=v; };
-  window.talentAddSuccPerson=function(i){ talentState.succession[i].successors=talentState.succession[i].successors||[]; talentState.succession[i].successors.push({name:'',readiness:'1to2'}); talentRenderSuccession(); };
+  window.talentAddSuccPerson=function(i){ var arr=talentState.succession[i].successors=talentState.succession[i].successors||[]; arr.push({name:'',readiness:succDefaultReadiness(arr.length)}); talentRenderSuccession(); };
   window.talentDelSuccPerson=function(i,j){ talentState.succession[i].successors.splice(j,1); talentRenderSuccession(); };
   window.talentDelSucc=function(i){ talentState.succession.splice(i,1); renderTalent(); };
   window.talentAddSuccession=function(){ talentState.succession.push(padSuccessors({role:'',incumbent:'',successors:[],gap:true,gapNote:''})); renderTalent(); };
